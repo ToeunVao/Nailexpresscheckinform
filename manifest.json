@@ -1,7 +1,7 @@
 {
   "name": "Nails Express Check-in",
   "short_name": "NailsExpress",
-  "start_url": "/checkin/",
+  "start_url": "https://toeunvao.github.io/Nailexpresscheckinform/",
   "display": "standalone",
   "background_color": "#fdf7f5",
   "theme_color": "#d63384",

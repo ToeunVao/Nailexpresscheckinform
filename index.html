@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nail Salon Check-In & Reports</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#d63384">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js for reports -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #f8fafc; }
+        h1, h2, h3, .clock { font-family: 'Playfair Display', serif; }
+        .form-input:focus, .form-select:focus, .form-checkbox:focus, button:focus-visible {
+            outline: none;
+            border-color: #d63384;
+            box-shadow: 0 0 0 3px rgba(214, 51, 132, 0.2);
+        }
+        .form-checkbox {
+            appearance: none; background-color: #fff; margin-right: 0.5em; color: currentColor; width: 1.15em;
+            height: 1.15em; border: 0.15em solid #e2e8f0; border-radius: 0.25em; transform: translateY(-0.075em);
+            display: grid; place-content: center; flex-shrink: 0;
+        }
+        .form-checkbox::before {
+            content: ""; width: 0.65em; height: 0.65em; transform: scale(0); transition: 120ms transform ease-in-out;
+            box-shadow: inset 1em 1em #d63384; transform-origin: bottom left;
+            clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+        }
+        .form-checkbox:checked::before { transform: scale(1); }
+        .tab-btn.active { border-color: #d63384; color: #d63384; }
+        .tab-btn { border-color: transparent; }
+        
+        /* Calendar Styles */
+        #calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+        .calendar-day {
+            min-height: 100px;
+            cursor: pointer;
+        }
+         .calendar-day:hover {
+            background-color: #fdf2f8;
+        }
+        .appointment-entry {
+            background-color: #fce7f3; /* pink-100 */
+            color: #be185d; /* pink-700 */
+            padding: 4px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-bottom: 2px;
+            cursor: pointer;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .tech-filter-btn.active {
+             background-color: #db2777; /* pink-600 */
+             color: white;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <header class="bg-white shadow-md">
+        <div class="container mx-auto max-w-7xl p-4 flex justify-center md:justify-between items-center">
+            <div class="hidden md:block">
+                <h1 class="text-2xl font-bold text-pink-700">Nails Express</h1>
+                <p class="text-sm text-gray-500">Nails salon & Spa</p>
+            </div>
+            <div class="text-center">
+                 <h2 class="text-3xl font-bold text-gray-800">Welcome!</h2>
+                 <p class="text-gray-500 mt-1">Please check in for your appointment.</p>
+            </div>
+            <div class="text-right hidden md:block">
+                <div id="live-clock" class="clock text-3xl font-bold text-gray-800"></div>
+                <div id="live-date" class="text-sm text-gray-500"></div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
+        
+        <!-- Check-in Form Card -->
+        <div id="check-in-card" class="bg-white p-6 sm:p-8 rounded-2xl shadow-xl mb-8">
+            <form id="check-in-form">
+                <div class="space-y-8">
+                     <div>
+                        <h3 class="text-xl font-semibold text-gray-700 border-b pb-3 mb-6">Your Information</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <div>
+                                <label for="full-name" class="block text-sm font-medium text-gray-600 mb-1">Full Name</label>
+                                <input type="text" id="full-name" list="checkin-client-names" class="form-input w-full p-3 border border-gray-300 rounded-lg" placeholder="e.g., Jane Doe" required>
+                                <datalist id="checkin-client-names"></datalist>
+                            </div>
+                            <div>
+                                <label for="phone-number" class="block text-sm font-medium text-gray-600 mb-1">Phone</label>
+                                <input type="tel" id="phone-number" list="checkin-client-phones" class="form-input w-full p-3 border border-gray-300 rounded-lg" placeholder="(555) 123-4567">
+                                <datalist id="checkin-client-phones"></datalist>
+                            </div>
+                            <div>
+                                <label for="people-count" class="block text-sm font-medium text-gray-600 mb-1">Group Size</label>
+                                <select id="people-count" class="form-select w-full p-3 border border-gray-300 rounded-lg"></select>
+                            </div>
+                            <div>
+                                <label for="booking-type" class="block text-sm font-medium text-gray-600 mb-1">Booking Type</label>
+                                <select id="booking-type" class="form-select w-full p-3 border border-gray-300 rounded-lg">
+                                    <option>Walk-in</option>
+                                    <option>Booked by Phone</option>
+                                    <option>Booked Online</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-700 border-b pb-3 mb-6">Select Your Services</h3>
+                        <div id="services-container" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+                        <div id="hidden-checkbox-container" class="hidden"></div>
+                    </div>
+                </div>
+                 <div class="mt-8 text-center">
+                     <label class="flex items-center justify-center">
+                        <input type="checkbox" id="policy-agree" class="form-checkbox" checked required>
+                        <span class="ml-2 text-sm text-gray-600">I agree to the <button type="button" id="view-policy-btn" class="text-pink-600 hover:underline font-semibold">Salon Policy</button>.</span>
+                    </label>
+                </div>
+                <div class="mt-4 text-center">
+                    <button type="submit" class="w-full md:w-auto bg-pink-600 text-white font-bold py-3 px-12 rounded-full hover:bg-pink-700 transition-all duration-300 transform hover:scale-105">
+                        <i class="fas fa-check mr-2"></i> Check In
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Client Management Section -->
+        <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-xl">
+            <h2 class="text-2xl font-bold text-gray-800 text-center mb-6">Client Management</h2>
+            <div class="mb-4 border-b border-gray-200">
+                <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="client-tabs">
+                    <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg active" id="queue-tab" type="button">Active Queue <span id="active-count" class="ml-2 bg-pink-100 text-pink-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">0</span></button></li>
+                    <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg" id="finished-tab" type="button">Finished Clients <span id="finished-count" class="ml-2 bg-gray-200 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">0</span></button></li>
+                    <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg" id="calendar-tab" type="button">Booking Calendar <span id="calendar-count" class="ml-2 bg-gray-200 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">0</span></button></li>
+                    <li><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg" id="reports-tab" type="button">Reports <span id="report-count" class="ml-2 bg-gray-200 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded-full hidden">0</span></button></li>
+                </ul>
+            </div>
+            
+            <div id="queue-content">
+                <div class="mb-4">
+                    <input type="text" id="search-active" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="Search active clients by name...">
+                </div>
+                <div class="overflow-x-auto">
+                    <table id="clients-table" class="w-full text-sm text-left text-gray-600">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-center">No.</th>
+                                <th scope="col" class="px-6 py-3">Name</th>
+                                <th scope="col" class="px-6 py-3">Group</th>
+                                <th scope="col" class="px-6 py-3">Services</th>
+                                <th scope="col" class="px-6 py-3">Booking Type</th>
+                                <th scope="col" class="px-6 py-3">Check-in Time</th>
+                                <th scope="col" class="px-6 py-3 text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="finished-content" class="hidden">
+                 <div class="mb-4">
+                    <input type="text" id="search-finished" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="Search finished clients by name...">
+                </div>
+                <div class="overflow-x-auto">
+                    <table id="finished-clients-table" class="w-full text-sm text-left text-gray-600">
+                         <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-center">No.</th>
+                                <th scope="col" class="px-6 py-3">Name</th>
+                                <th scope="col" class="px-6 py-3">Group</th>
+                                <th scope="col" class="px-6 py-3">Services</th>
+                                <th scope="col" class="px-6 py-3">Check-in</th>
+                                <th scope="col" class="px-6 py-3 text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Calendar Content -->
+            <div id="calendar-content" class="hidden">
+                 <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center gap-2">
+                         <button id="today-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg">Today's Bookings <span id="today-count" class="ml-2 bg-pink-100 text-pink-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">0</span></button>
+                         <button id="month-view-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hidden">Month View</button>
+                    </div>
+                    <div id="tech-filter-container" class="flex gap-2">
+                        <button class="tech-filter-btn px-3 py-1 rounded-full text-sm active" data-tech="All">All</button>
+                        <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Any">Any Technician</button>
+                        <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Sokleng">Sokleng</button>
+                        <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Linda">Linda</button>
+                        <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="TJ">TJ</button>
+                    </div>
+                    <div id="month-nav" class="flex items-center gap-2">
+                        <button id="prev-month-btn" class="px-4 py-2 bg-pink-600 text-white rounded-lg"><i class="fas fa-chevron-left"></i></button>
+                        <h3 id="month-year-display" class="text-xl font-bold"></h3>
+                        <button id="next-month-btn" class="px-4 py-2 bg-pink-600 text-white rounded-lg"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                 </div>
+                 <div id="today-view" class="hidden">
+                     <div class="overflow-x-auto">
+                        <table id="today-bookings-table" class="w-full text-sm text-left text-gray-600">
+                             <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3">Name</th>
+                                    <th scope="col" class="px-6 py-3">Services</th>
+                                    <th scope="col" class="px-6 py-3">Technician</th>
+                                    <th scope="col" class="px-6 py-3">Group</th>
+                                    <th scope="col" class="px-6 py-3">Booking Time</th>
+                                    <th scope="col" class="px-6 py-3">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                 </div>
+                 <div id="month-view">
+                    <div class="grid grid-cols-7 text-center font-semibold mb-2">
+                        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                    </div>
+                    <div id="calendar"></div>
+                 </div>
+            </div>
+
+            <!-- Reports Content -->
+            <div id="reports-content" class="hidden">
+                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                     <div>
+                         <label for="report-date" class="block text-sm font-medium text-gray-700">Select Date:</label>
+                         <input type="date" id="report-date" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                         <div class="mt-4 overflow-x-auto">
+                             <h3 class="text-lg font-semibold text-gray-800 mb-2">Finished Clients on This Date</h3>
+                             <table id="report-clients-table" class="w-full text-sm text-left text-gray-600">
+                                 <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                     <tr>
+                                         <th scope="col" class="px-4 py-2">Name</th>
+                                         <th scope="col" class="px-4 py-2">Services</th>
+                                         <th scope="col" class="px-4 py-2">Details</th>
+                                     </tr>
+                                 </thead>
+                                 <tbody></tbody>
+                             </table>
+                         </div>
+                     </div>
+                     <div class="flex flex-col items-center">
+                         <h3 class="text-lg font-semibold text-gray-800 mb-2">Service Popularity</h3>
+                         <div class="w-full max-w-md"><canvas id="service-chart"></canvas></div>
+                     </div>
+                 </div>
+            </div>
+        </div>
+    </main>
+    
+    <footer class="bg-white mt-8">
+         <div class="container mx-auto max-w-7xl p-4 flex justify-between items-center text-sm text-gray-500">
+            <div>Design with ❤️ by Nails Express</div>
+            <div>&copy; <span id="copyright-year"></span> Nails Express. All rights reserved.</div>
+         </div>
+    </footer>
+    
+    <!-- Service Selection Modal -->
+    <div id="service-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="absolute inset-0 bg-black opacity-50 modal-overlay"></div>
+        <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
+            <h3 id="modal-title" class="text-2xl font-bold text-pink-700 mb-4">Select Services</h3>
+            <div id="modal-content" class="space-y-3 max-h-96 overflow-y-auto"></div>
+            <div class="mt-6 text-right">
+                <button id="modal-done-btn" type="button" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client Details & Rebook Modal -->
+     <div id="checkout-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="absolute inset-0 bg-black opacity-50 checkout-modal-overlay"></div>
+        <form id="checkout-form" class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
+            <h3 class="text-2xl font-bold text-pink-700 mb-6">Client Feedback</h3>
+            <input type="hidden" id="checkout-client-id">
+            <div class="space-y-4">
+                 <div>
+                    <label for="color-code" class="block text-sm font-medium text-gray-600">What color code did you choose today?</label>
+                    <input type="text" id="color-code" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg">
+                </div>
+                 <div>
+                    <label for="technician-name-select" class="block text-sm font-medium text-gray-600">Who provided your service today?</label>
+                    <select id="technician-name-select" class="form-select w-full p-2 mt-1 border border-gray-300 rounded-lg">
+                        <option>Any Technician</option>
+                        <option>Sokleng</option>
+                        <option>Linda</option>
+                        <option>TJ</option>
+                        <option value="other">Other</option>
+                    </select>
+                     <input type="text" id="technician-name-other" class="form-input w-full p-2 mt-2 border border-gray-300 rounded-lg hidden" placeholder="Enter technician name">
+                </div>
+                 <div>
+                    <label for="rebook-select" class="block text-sm font-medium text-gray-600">Next Appointment?</label>
+                    <select id="rebook-select" class="form-select w-full p-2 mt-1 border border-gray-300 rounded-lg">
+                        <option value="no">No, thanks</option>
+                        <option value="2w">2 Weeks</option>
+                        <option value="3w">3 Weeks</option>
+                        <option value="other">Pick date</option>
+                    </select>
+                    <input type="datetime-local" id="rebook-other-input" class="form-input w-full p-2 mt-2 border border-gray-300 rounded-lg hidden">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button type="button" id="checkout-cancel-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Cancel</button>
+                <button type="submit" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Submit & Check Out</button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- View/Booking Detail Modal -->
+    <div id="view-detail-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="absolute inset-0 bg-black opacity-50 view-detail-modal-overlay"></div>
+        <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
+            <h3 id="view-detail-title" class="text-2xl font-bold text-pink-700 mb-6"></h3>
+            <div id="view-detail-content" class="space-y-4"></div>
+            <div id="view-detail-actions" class="mt-6 flex justify-end gap-3">
+                <!-- Action buttons will be injected here -->
+                <button type="button" id="view-detail-close-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Salon Policy Modal -->
+    <div id="policy-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="absolute inset-0 bg-black opacity-50 policy-modal-overlay"></div>
+        <div class="relative bg-white w-full max-w-2xl p-6 rounded-2xl shadow-xl m-4">
+            <h3 class="text-2xl font-bold text-pink-700 mb-6">Salon Policy</h3>
+            <div class="prose max-w-none max-h-96 overflow-y-auto text-gray-600">
+                <p>To ensure a pleasant experience for all our clients, we kindly request your observance of the following policies:</p>
+                
+                <h4>1. Appointments</h4>
+                <p>We encourage booking appointments in advance via phone or our online system to secure your preferred time and technician. Walk-ins are welcome but are subject to availability.</p>
+
+                <h4>2. Cancellations & No-Shows</h4>
+                <p>We understand that schedules can change. Please provide at least 24 hours' notice for any cancellations. Cancellations with less than 24 hours' notice or no-shows may be subject to a fee on your next visit.</p>
+
+                <h4>3. Late Arrivals</h4>
+                <p>To ensure our technicians have enough time to provide high-quality service, we may need to shorten your service or reschedule your appointment if you arrive more than 15 minutes late.</p>
+                
+                <h4>4. Technician Requests</h4>
+                <p>You may request a specific technician when booking your appointment. We will do our best to accommodate your request, but we cannot guarantee availability.</p>
+
+                <h4>5. Pricing and Service Adjustments</h4>
+                <p>Prices for services are based on standard nail length and condition. Prices may be adjusted for extra-long nails, complex designs, or additional preparation work required. Your technician will consult with you before any price changes are made.</p>
+
+                <h4>6. Refunds & Service Guarantee</h4>
+                <p>We take pride in our work. If you are not satisfied with your service, please let us know before you leave the salon. We offer a 7-day guarantee for gel polish and acrylic services and will happily fix any issues within this period. We do not offer monetary refunds for services rendered.</p>
+
+                <h4>7. Right to Refuse Service</h4>
+                <p>For the safety and well-being of our clients and staff, we reserve the right to refuse service to anyone with a nail condition we suspect may be contagious, or for any behavior we deem inappropriate.</p>
+                
+                <p>Thank you for your understanding and cooperation!</p>
+            </div>
+            <div class="mt-6 text-right">
+                <button type="button" id="policy-close-btn" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Appointment Modal -->
+     <div id="add-appointment-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="absolute inset-0 bg-black opacity-50 add-appointment-modal-overlay"></div>
+        <form id="add-appointment-form" class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
+            <h3 class="text-2xl font-bold text-pink-700 mb-6">Add New Appointment</h3>
+            <input type="hidden" id="appointment-date">
+            <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+                <div>
+                    <label for="appointment-client-name" class="block text-sm font-medium text-gray-600">Client Name</label>
+                    <input type="text" id="appointment-client-name" list="client-names-list" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" required>
+                    <datalist id="client-names-list"></datalist>
+                </div>
+                 <div>
+                    <label for="appointment-phone" class="block text-sm font-medium text-gray-600">Phone</label>
+                    <input type="tel" id="appointment-phone" list="appointment-client-phones" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg">
+                    <datalist id="appointment-client-phones"></datalist>
+                </div>
+                 <div>
+                    <label for="appointment-people" class="block text-sm font-medium text-gray-600">Group Size</label>
+                    <select id="appointment-people" class="form-select w-full p-2 mt-1 border border-gray-300 rounded-lg"></select>
+                </div>
+                 <div>
+                    <label for="appointment-booking-type" class="block text-sm font-medium text-gray-600">Booking Type</label>
+                    <select id="appointment-booking-type" class="form-select w-full p-2 mt-1 border border-gray-300 rounded-lg">
+                        <option>Booked - Calendar</option>
+                        <option>Booked by Phone</option>
+                        <option>Booked Online</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="appointment-services" class="block text-sm font-medium text-gray-600">Services</label>
+                    <input type="text" id="appointment-services" list="main-services-list" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" placeholder="Select or type a service...">
+                    <datalist id="main-services-list"></datalist>
+                </div>
+                 <div>
+                    <label for="appointment-technician-select" class="block text-sm font-medium text-gray-600">Technician Request</label>
+                    <select id="appointment-technician-select" class="form-select w-full p-2 mt-1 border border-gray-300 rounded-lg">
+                        <option>Any Technician</option>
+                        <option>Sokleng</option>
+                        <option>Linda</option>
+                        <option>TJ</option>
+                    </select>
+                </div>
+                 <div>
+                    <label for="appointment-time" class="block text-sm font-medium text-gray-600">Time</label>
+                    <input type="time" id="appointment-time" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" required>
+                </div>
+                 <div>
+                    <label for="appointment-notes" class="block text-sm font-medium text-gray-600">Notes</label>
+                    <textarea id="appointment-notes" rows="2" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg"></textarea>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button type="button" id="add-appointment-cancel-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Cancel</button>
+                <button type="submit" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Save Appointment</button>
+            </div>
+        </form>
+    </div>
+
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, doc, deleteDoc, serverTimestamp, where, getDocs, orderBy, Timestamp, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAGZBJFVi_o1HeGDmjcSsmCcWxWOkuLc_4",
+            authDomain: "nailexpress-10f2f.firebaseapp.com",
+            databaseURL: "https://nailexpress-10f2f-default-rtdb.firebaseio.com",
+            projectId: "nailexpress-10f2f",
+            storageBucket: "nailexpress-10f2f.appspot.com",
+            messagingSenderId: "1015991996673",
+            appId: "1:1015991996673:web:b6e8888abae83906d34b00",
+            measurementId: "G-22LFQVMGTV"
+        };
+        
+        // --- Main Application Logic ---
+        const initApp = (db) => {
+            const checkInForm = document.getElementById('check-in-form');
+            const peopleCountSelect = document.getElementById('people-count');
+            const servicesContainer = document.getElementById('services-container');
+            const hiddenCheckboxContainer = document.getElementById('hidden-checkbox-container');
+            const serviceModal = document.getElementById('service-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalContent = document.getElementById('modal-content');
+            const modalDoneBtn = document.getElementById('modal-done-btn');
+            const modalOverlay = document.querySelector('.modal-overlay');
+            const reportDateInput = document.getElementById('report-date');
+            
+            // Modals
+            const checkoutModal = document.getElementById('checkout-modal');
+            const checkoutForm = document.getElementById('checkout-form');
+            const viewDetailModal = document.getElementById('view-detail-modal');
+            const policyModal = document.getElementById('policy-modal');
+            const addAppointmentModal = document.getElementById('add-appointment-modal');
+            const addAppointmentForm = document.getElementById('add-appointment-form');
+            
+            const rebookOtherInput = document.getElementById('rebook-other-input');
+            const rebookSelect = document.getElementById('rebook-select');
+
+            // Tab Counts
+            const activeCountSpan = document.getElementById('active-count');
+            const finishedCountSpan = document.getElementById('finished-count');
+            const reportCountSpan = document.getElementById('report-count');
+            const todayCountSpan = document.getElementById('today-count');
+            const calendarCountSpan = document.getElementById('calendar-count');
+            
+            // Calendar Elements
+            const calendarGrid = document.getElementById('calendar');
+            const monthYearDisplay = document.getElementById('month-year-display');
+            let currentMonth = new Date().getMonth();
+            let currentYear = new Date().getFullYear();
+            let currentTechFilter = 'All';
+
+            let allActiveClients = [];
+            let allFinishedClients = [];
+            let allAppointments = [];
+
+            // --- DATA ---
+            const servicesData = {
+                "Acrylic Nail": [{ name: "Acrylic fill in", price: "$40" }, { name: "Acrylic Full set", price: "$50" }, { name: "Acrylic white tips", price: "$55" }, { name: "Acrylic pink & white", price: "$65" }, { name: "Other Acrylic", price: "" }],
+                "SNS Dipping Powder": [{ name: "Take off & new set w/ tips", price: "$55" }, { name: "SNS new Full set", price: "$50" }, { name: "SNS white Tips", price: "$55" }, { name: "Ombré Powder", price: "$65" }],
+                "Pedicure": [{ name: "Regular Pedicure", price: "$35" }, { name: "Regular Spa Pedicure", price: "$40" }, { name: "Deluxe Spa Pedicure", price: "$50" }, { name: "Basic Pedicure w/ Gel", price: "$50" }, { name: "Spa Pedicure w/ Gel", price: "$60" }, { name: "Deluxe Spa Pedicure w/ Gel", price: "$70" }],
+                "Manicure": [{ name: "Basic manicure", price: "$25" }, { name: "Manicure with Gel", price: "$35" }],
+                "Gel Polish": [{ name: "Nail", price: "$30", p: "Gel Polish - " }, { name: "Toe", price: "$30", p: "Gel Polish - " }],
+                "Nail Art & Extras": [{ name: "Design/Finger", price: "$5" }, { name: "Matt top coat", price: "$10" }, { name: "Diamond/finger", price: "$10" }, { name: "Chrome powder", price: "$10" }, { name: "Cat-eye Gel", price: "$10" }, { name: "Glow in the dark (top coat)", price: "$10" }, { name: "Repair - acrylic/finger", price: "$5" }, { name: "Repair - SNS/finger", price: "$5" }]
+            };
+
+            // --- RENDER FUNCTIONS ---
+            const renderTable = (tbody, columns, data, emptyMsg, buttons = []) => {
+                if (!tbody) return;
+                tbody.innerHTML = '';
+                if (data.length === 0) {
+                    const colspan = columns.length + (buttons.length > 0 ? 1 : 0) + 1;
+                    tbody.innerHTML = `<tr><td colspan="${colspan}" class="py-6 text-center text-gray-400">${emptyMsg}</td></tr>`;
+                    return;
+                }
+                data.forEach((item, index) => {
+                    const row = tbody.insertRow();
+                    row.className = 'bg-white border-b';
+                    let cell = row.insertCell();
+                    cell.className = "px-6 py-4 font-medium text-gray-900 text-center";
+                    cell.textContent = index + 1;
+
+                    columns.forEach(col => {
+                        cell = row.insertCell();
+                        cell.className = `px-6 py-4 ${col.align === 'center' ? 'text-center' : ''}`;
+                        cell.textContent = item[col.key] || '';
+                    });
+
+                    if (buttons.length > 0) {
+                        cell = row.insertCell();
+                        cell.className = 'px-6 py-4 text-center space-x-4';
+                        buttons.forEach(btnInfo => {
+                            const button = document.createElement('button');
+                            button.dataset.id = item.id;
+                            button.className = btnInfo.className;
+                            button.innerHTML = btnInfo.label;
+                            cell.appendChild(button);
+                        });
+                    }
+                });
+            };
+            
+            const renderReportClientsTable = (data) => {
+                const tbody = document.querySelector('#report-clients-table tbody');
+                if (!tbody) return;
+                tbody.innerHTML = '';
+                 if (data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="3" class="py-6 text-center text-gray-400">No clients found for this date.</td></tr>`;
+                    return;
+                }
+                 data.forEach(item => {
+                    const row = tbody.insertRow();
+                    row.className = 'bg-white border-b';
+                    row.innerHTML = `<td class="px-4 py-2">${item.name}</td>
+                                     <td class="px-4 py-2">${item.services}</td>
+                                     <td class="px-4 py-2 text-center">
+                                        <button data-id="${item.id}" class="view-feedback-btn-report text-blue-500 hover:underline">Details</button>
+                                     </td>`;
+                 });
+            };
+
+            const renderActiveClients = (clients) => renderTable(
+                document.querySelector('#clients-table tbody'),
+                [{key: 'name'}, {key: 'people', align: 'center'}, {key: 'services'}, {key: 'bookingType'}, {key: 'checkInTime'}],
+                clients,
+                "No clients in the queue.",
+                [
+                    {label: '<i class="fas fa-check-circle text-lg text-blue-500 hover:text-blue-700"></i>', className: 'check-out-btn'},
+                    {label: '<i class="fas fa-trash-alt text-lg text-red-500 hover:text-red-700"></i>', className: 'delete-btn-active'}
+                ]
+            );
+
+            const renderFinishedClients = (clients) => renderTable(
+                document.querySelector('#finished-clients-table tbody'),
+                [{key: 'name'}, {key: 'people', align: 'center'}, {key: 'services'}, {key: 'checkInTime'}],
+                clients,
+                "No clients have finished yet.",
+                [
+                     {label: '<i class="fas fa-comment text-lg text-green-500 hover:text-green-700"></i>', className: 'view-feedback-btn'},
+                     {label: '<i class="fas fa-trash-alt text-lg text-red-500 hover:text-red-700"></i>', className: 'delete-btn-finished'}
+                ]
+            );
+            
+            // --- EVENT LISTENERS & LOGIC ---
+            for (let i = 1; i <= 20; i++) peopleCountSelect.appendChild(new Option(i, i));
+            for (let i = 1; i <= 20; i++) document.getElementById('appointment-people').appendChild(new Option(i, i));
+
+
+            Object.keys(servicesData).forEach(category => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'category-button p-4 border border-gray-200 rounded-lg text-left bg-white hover:border-pink-300 hover:bg-pink-50 transition-all duration-200 shadow-sm';
+                btn.dataset.category = category;
+                btn.innerHTML = `<h3 class="text-lg font-bold text-pink-700">${category}</h3><span class="text-sm text-gray-500 mt-1 block">Click to select</span><span class="selection-count hidden mt-2 bg-pink-600 text-white text-xs font-bold px-2 py-1 rounded-full"></span>`;
+                servicesContainer.appendChild(btn);
+                servicesData[category].forEach(service => {
+                    const val = `${service.p || ''}${service.name}${service.price ? ' ' + service.price : ''}`;
+                    const cb = document.createElement('input');
+                    cb.type = 'checkbox'; cb.name = 'service'; cb.value = val; cb.dataset.category = category;
+                    hiddenCheckboxContainer.appendChild(cb);
+                });
+            });
+
+            const updateSelectionCounts = () => {
+                document.querySelectorAll('.category-button').forEach(button => {
+                    const cat = button.dataset.category;
+                    const count = hiddenCheckboxContainer.querySelectorAll(`input[data-category="${cat}"]:checked`).length;
+                    const badge = button.querySelector('.selection-count');
+                    count > 0 ? (badge.textContent = `${count} selected`, badge.classList.remove('hidden')) : badge.classList.add('hidden');
+                });
+            };
+
+            const openServiceModal = (category) => {
+                modalTitle.textContent = category;
+                modalContent.innerHTML = '';
+                servicesData[category].forEach(service => {
+                    const val = `${service.p || ''}${service.name}${service.price ? ' ' + service.price : ''}`;
+                    const sourceCb = hiddenCheckboxContainer.querySelector(`input[value="${val}"]`);
+                    const label = document.createElement('label');
+                    label.className = 'flex items-center p-3 hover:bg-pink-50 cursor-pointer rounded-lg';
+                    label.innerHTML = `<input type="checkbox" class="form-checkbox modal-checkbox" value="${val}" ${sourceCb.checked ? 'checked' : ''}>
+                                    <span class="ml-3 text-gray-700 flex-grow">${service.name}</span>
+                                    ${service.price ? `<span class="font-semibold">${service.price}</span>` : ''}`;
+                    modalContent.appendChild(label);
+                });
+                serviceModal.classList.add('flex'); serviceModal.classList.remove('hidden');
+            };
+
+            const closeServiceModal = () => {
+                modalContent.querySelectorAll('.modal-checkbox').forEach(modalCb => {
+                    const sourceCb = hiddenCheckboxContainer.querySelector(`input[value="${modalCb.value}"]`);
+                    if (sourceCb) sourceCb.checked = modalCb.checked;
+                });
+                serviceModal.classList.add('hidden'); serviceModal.classList.remove('flex');
+                updateSelectionCounts();
+            };
+            
+            servicesContainer.addEventListener('click', (e) => {
+                const btn = e.target.closest('.category-button');
+                if (btn) openServiceModal(btn.dataset.category);
+            });
+
+            modalDoneBtn.addEventListener('click', closeServiceModal);
+            modalOverlay.addEventListener('click', closeServiceModal);
+
+            checkInForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const services = Array.from(document.querySelectorAll('input[name="service"]:checked')).map(el => el.value);
+                if (!document.getElementById('full-name').value || services.length === 0) {
+                    return alert('Please enter a name and select at least one service.');
+                }
+                try {
+                    await addDoc(collection(db, "active_queue"), {
+                        name: document.getElementById('full-name').value,
+                        phone: document.getElementById('phone-number').value || 'N/A',
+                        people: document.getElementById('people-count').value,
+                        bookingType: document.getElementById('booking-type').value,
+                        services,
+                        checkInTimestamp: serverTimestamp()
+                    });
+                    checkInForm.reset();
+                    hiddenCheckboxContainer.querySelectorAll('input').forEach(cb => cb.checked = false);
+                    updateSelectionCounts();
+                } catch (err) {
+                    console.error("Error adding document: ", err);
+                    alert("Could not add client to the queue. Please try again.");
+                }
+            });
+
+            document.getElementById('queue-content').addEventListener('click', async (e) => {
+                const checkOutBtn = e.target.closest('.check-out-btn');
+                const deleteBtn = e.target.closest('.delete-btn-active');
+                
+                if (checkOutBtn) {
+                    const clientId = checkOutBtn.dataset.id;
+                    document.getElementById('checkout-client-id').value = clientId;
+                    checkoutModal.classList.remove('hidden');
+                    checkoutModal.classList.add('flex');
+                } else if (deleteBtn) {
+                    try {
+                         await deleteDoc(doc(db, "active_queue", deleteBtn.dataset.id));
+                    } catch (err) {
+                        console.error("Error deleting client: ", err);
+                        alert("Could not delete client. Please try again.");
+                    }
+                }
+            });
+
+            const openViewDetailModal = (client, title = "Client Details") => {
+                if (!client) return;
+                const content = document.getElementById('view-detail-content');
+                const actions = document.getElementById('view-detail-actions');
+                document.getElementById('view-detail-title').textContent = title;
+                
+                const lastFinished = allFinishedClients
+                    .filter(c => c.name === client.name)
+                    .sort((a,b) => b.checkOutTimestamp.toMillis() - a.checkOutTimestamp.toMillis())[0];
+
+                let lastAppointmentInfo = 'N/A';
+                let lastServices = client.services;
+                let lastColorCode = client.colorCode;
+                let lastTechnician = client.technician;
+                let lastBookingType = client.bookingType;
+
+                if (lastFinished) {
+                    lastAppointmentInfo = new Date(lastFinished.checkOutTimestamp.seconds * 1000).toLocaleString();
+                    lastServices = lastFinished.services;
+                    lastColorCode = lastFinished.colorCode;
+                    lastTechnician = lastFinished.technician;
+                    lastBookingType = lastFinished.bookingType;
+                } else if (client.checkInTimestamp) {
+                    lastAppointmentInfo = `Checked in at ${new Date(client.checkInTimestamp.seconds * 1000).toLocaleTimeString()}`;
+                } else if (client.appointmentTimestamp) {
+                    lastAppointmentInfo = new Date(client.appointmentTimestamp.seconds * 1000).toLocaleString();
+                }
+
+                
+                const nextAppointment = allAppointments
+                    .filter(appt => appt.name === client.name && appt.appointmentTimestamp.toMillis() > Date.now())
+                    .sort((a, b) => a.appointmentTimestamp.toMillis() - b.appointmentTimestamp.toMillis())[0];
+
+
+                content.innerHTML = `
+                    <div class="space-y-2">
+                        <h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Client Details</h4>
+                        <div><strong class="font-semibold text-gray-700">Name:</strong> ${client.name || 'N/A'}</div>
+                        <div><strong class="font-semibold text-gray-700">Phone:</strong> ${client.phone || 'N/A'}</div>
+                    </div>
+                     <div class="space-y-2">
+                        <h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Last Appointment</h4>
+                        <div><strong class="font-semibold text-gray-700">Date:</strong> ${lastAppointmentInfo}</div>
+                        <div><strong class="font-semibold text-gray-700">Services:</strong> ${Array.isArray(lastServices) ? lastServices.join(', ') : lastServices || 'N/A'}</div>
+                        <div><strong class="font-semibold text-gray-700">Color Code:</strong> ${lastColorCode || 'N/A'}</div>
+                        <div><strong class="font-semibold text-gray-700">Technician:</strong> ${lastTechnician || 'N/A'}</div>
+                        <div><strong class="font-semibold text-gray-700">Booking Type:</strong> ${lastBookingType || 'N/A'}</div>
+
+                    </div>
+                     <div class="space-y-2">
+                        <h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Next Appointment</h4>
+                        <div class="font-bold text-pink-600">${nextAppointment ? new Date(nextAppointment.appointmentTimestamp.seconds * 1000).toLocaleString() : 'Not requested'}</div>
+                    </div>
+                `;
+
+                // Add action buttons for calendar bookings
+                actions.innerHTML = '<button type="button" id="view-detail-close-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Close</button>';
+                if(client.appointmentTimestamp) { // It's a future appointment
+                    actions.insertAdjacentHTML('afterbegin', `
+                        <button type="button" data-id="${client.id}" class="bg-blue-500 text-white font-semibold py-2 px-6 rounded-lg booking-action-btn" data-action="checkin">Check In</button>
+                        <button type="button" data-id="${client.id}" class="bg-red-500 text-white font-semibold py-2 px-6 rounded-lg booking-action-btn" data-action="cancel">Cancel</button>
+                    `);
+                }
+
+                document.getElementById('view-detail-close-btn').addEventListener('click', closeViewDetailModal);
+                viewDetailModal.classList.remove('hidden');
+                viewDetailModal.classList.add('flex');
+            };
+
+            const closeViewDetailModal = () => {
+                viewDetailModal.classList.add('hidden');
+                viewDetailModal.classList.remove('flex');
+            };
+            document.getElementById('view-detail-close-btn').addEventListener('click', closeViewDetailModal);
+            document.querySelector('.view-detail-modal-overlay').addEventListener('click', closeViewDetailModal);
+            
+            document.getElementById('view-detail-actions').addEventListener('click', async (e) => {
+                 if (e.target.classList.contains('booking-action-btn')) {
+                    const action = e.target.dataset.action;
+                    const bookingId = e.target.dataset.id;
+                    const appointment = allAppointments.find(a => a.id === bookingId);
+                    
+                    if (!appointment) return;
+
+                    if (action === 'cancel') {
+                        await deleteDoc(doc(db, "appointments", bookingId));
+                    } else if (action === 'checkin') {
+                         await addDoc(collection(db, "active_queue"), {
+                            name: appointment.name,
+                            phone: appointment.phone,
+                            people: 1, // Default to 1
+                            bookingType: 'Booked - Calendar',
+                            services: Array.isArray(appointment.services) ? appointment.services : [appointment.services],
+                            checkInTimestamp: serverTimestamp()
+                        });
+                        await deleteDoc(doc(db, "appointments", bookingId));
+                    }
+                    closeViewDetailModal();
+                }
+            });
+
+
+             document.getElementById('finished-content').addEventListener('click', async (e) => {
+                const deleteBtn = e.target.closest('.delete-btn-finished');
+                const feedbackBtn = e.target.closest('.view-feedback-btn');
+
+                if (deleteBtn) {
+                    try {
+                         await deleteDoc(doc(db, "finished_clients", deleteBtn.dataset.id));
+                    } catch (err) {
+                        console.error("Error deleting finished client: ", err);
+                        alert("Could not delete finished client. Please try again.");
+                    }
+                } else if (feedbackBtn) {
+                    const client = allFinishedClients.find(c => c.id === feedbackBtn.dataset.id);
+                    openViewDetailModal(client, `Booking Detail`);
+                }
+            });
+            
+             document.getElementById('report-clients-table').addEventListener('click', (e) => {
+                const viewBtn = e.target.closest('.view-feedback-btn-report');
+                if (viewBtn) {
+                    const client = allFinishedClients.find(c => c.id === viewBtn.dataset.id);
+                    openViewDetailModal(client, `Booking Detail`);
+                }
+            });
+
+            const closeCheckoutModal = () => {
+                checkoutForm.reset();
+                rebookOtherInput.classList.add('hidden');
+                checkoutModal.classList.add('hidden');
+                checkoutModal.classList.remove('flex');
+            };
+            
+            rebookSelect.addEventListener('change', (e) => {
+                if(e.target.value === 'other') {
+                    rebookOtherInput.classList.remove('hidden');
+                } else {
+                    rebookOtherInput.classList.add('hidden');
+                }
+            });
+            
+            const technicianNameSelect = document.getElementById('technician-name-select');
+            const technicianNameOther = document.getElementById('technician-name-other');
+            
+            technicianNameSelect.addEventListener('change', (e) => {
+                if (e.target.value === 'other') {
+                    technicianNameOther.classList.remove('hidden');
+                } else {
+                    technicianNameOther.classList.add('hidden');
+                }
+            });
+
+            checkoutForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const clientId = document.getElementById('checkout-client-id').value;
+                const client = allActiveClients.find(c => c.id === clientId);
+
+                if (client) {
+                     try {
+                        const finishedClientData = { ...client };
+                        delete finishedClientData.id;
+                        finishedClientData.checkOutTimestamp = serverTimestamp();
+                        finishedClientData.colorCode = document.getElementById('color-code').value || '';
+                        
+                        let technicianValue = technicianNameSelect.value;
+                        if(technicianValue === 'other') {
+                            technicianValue = technicianNameOther.value;
+                        }
+                        finishedClientData.technician = technicianValue;
+                        
+                        let rebookInfo = rebookSelect.value;
+                        
+                        if (rebookInfo === '2w' || rebookInfo === '3w') {
+                            const interval = (rebookInfo === '2w' ? 14 : 21);
+                            let nextAppointmentDate = new Date();
+                            nextAppointmentDate.setDate(nextAppointmentDate.getDate() + interval);
+                             finishedClientData.rebook = nextAppointmentDate.toLocaleString();
+
+                             await addDoc(collection(db, "appointments"), {
+                                name: client.name,
+                                phone: client.phone,
+                                people: client.people,
+                                bookingType: client.bookingType,
+                                services: client.services,
+                                technician: finishedClientData.technician,
+                                appointmentTimestamp: Timestamp.fromDate(nextAppointmentDate)
+                            });
+                            
+                        } else if (rebookInfo === 'other') {
+                           const otherDateValue = document.getElementById('rebook-other-input').value;
+                           finishedClientData.rebook = otherDateValue ? new Date(otherDateValue).toLocaleString() : 'Other';
+                           if(otherDateValue){
+                                await addDoc(collection(db, "appointments"), {
+                                    name: client.name,
+                                    phone: client.phone,
+                                    people: client.people,
+                                     bookingType: client.bookingType,
+                                    services: client.services,
+                                    technician: finishedClientData.technician,
+                                    appointmentTimestamp: Timestamp.fromDate(new Date(otherDateValue))
+                                });
+                           }
+                        } else {
+                            finishedClientData.rebook = 'No';
+                        }
+
+                        await addDoc(collection(db, "finished_clients"), finishedClientData);
+                        await deleteDoc(doc(db, "active_queue", clientId));
+
+                        closeCheckoutModal();
+                    } catch(err) {
+                         console.error("Error checking out client with feedback: ", err);
+                         alert("Could not check out client. Please try again.");
+                    }
+                }
+            });
+            document.getElementById('checkout-cancel-btn').addEventListener('click', closeCheckoutModal);
+            document.querySelector('.checkout-modal-overlay').addEventListener('click', closeCheckoutModal);
+
+            // Salon Policy Modal Logic
+            const openPolicyModal = () => { policyModal.classList.add('flex'); policyModal.classList.remove('hidden'); };
+            const closePolicyModal = () => { policyModal.classList.add('hidden'); policyModal.classList.remove('flex'); };
+            document.getElementById('view-policy-btn').addEventListener('click', openPolicyModal);
+            document.getElementById('policy-close-btn').addEventListener('click', closePolicyModal);
+            document.querySelector('.policy-modal-overlay').addEventListener('click', closePolicyModal);
+
+            // Real-time listeners
+            onSnapshot(query(collection(db, "active_queue"), orderBy("checkInTimestamp", "asc")), (snapshot) => {
+                allActiveClients = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    checkInTime: doc.data().checkInTimestamp ? new Date(doc.data().checkInTimestamp.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Pending...',
+                    services: (doc.data().services || []).join(', '),
+                    ...doc.data()
+                }));
+                activeCountSpan.textContent = allActiveClients.length;
+                renderActiveClients(allActiveClients);
+            });
+
+            onSnapshot(query(collection(db, "finished_clients"), orderBy("checkOutTimestamp", "desc")), (snapshot) => {
+                allFinishedClients = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    checkInTime: doc.data().checkInTimestamp ? new Date(doc.data().checkInTimestamp.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'N/A',
+                    checkOutTime: doc.data().checkOutTimestamp ? new Date(doc.data().checkOutTimestamp.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'N/A',
+                    services: (doc.data().services || []).join(', '),
+                    ...doc.data()
+                }));
+                finishedCountSpan.textContent = allFinishedClients.length;
+                renderFinishedClients(allFinishedClients);
+                renderCalendar(currentYear, currentMonth, currentTechFilter); 
+                 // Update client name datalists
+                const clientList = document.getElementById('client-names-list');
+                const checkinClientList = document.getElementById('checkin-client-names');
+                const appointmentPhoneList = document.getElementById('appointment-client-phones');
+                const checkinPhoneList = document.getElementById('checkin-client-phones');
+
+                const uniqueNames = [...new Set(allFinishedClients.map(c => c.name))];
+                const uniquePhones = [...new Set(allFinishedClients.filter(c => c.phone && c.phone !== 'N/A').map(c => c.phone))];
+                
+                const nameOptionsHtml = uniqueNames.map(name => `<option value="${name}"></option>`).join('');
+                const phoneOptionsHtml = uniquePhones.map(phone => `<option value="${phone}"></option>`).join('');
+                if(clientList) clientList.innerHTML = nameOptionsHtml;
+                if(checkinClientList) checkinClientList.innerHTML = nameOptionsHtml;
+                if(appointmentPhoneList) appointmentPhoneList.innerHTML = phoneOptionsHtml;
+                if(checkinPhoneList) checkinPhoneList.innerHTML = phoneOptionsHtml;
+            });
+            
+             onSnapshot(query(collection(db, "appointments"), orderBy("appointmentTimestamp", "asc")), (snapshot) => {
+                allAppointments = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    appointmentTime: doc.data().appointmentTimestamp ? new Date(doc.data().appointmentTimestamp.seconds * 1000).toLocaleString() : 'N/A',
+                    ...doc.data()
+                }));
+                renderCalendar(currentYear, currentMonth, currentTechFilter);
+                renderTodaysBookings();
+            });
+            
+            // Search functionality
+            document.getElementById('search-active').addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const filteredClients = allActiveClients.filter(c => c.name.toLowerCase().includes(searchTerm));
+                renderActiveClients(filteredClients);
+            });
+             document.getElementById('search-finished').addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const filteredClients = allFinishedClients.filter(c => c.name.toLowerCase().includes(searchTerm));
+                renderFinishedClients(filteredClients);
+            });
+
+            // Autocomplete for check-in form
+            document.getElementById('full-name').addEventListener('input', (e) => {
+                const selectedClient = allFinishedClients.find(c => c.name === e.target.value);
+                if (selectedClient) {
+                    document.getElementById('phone-number').value = selectedClient.phone;
+                }
+            });
+            document.getElementById('phone-number').addEventListener('input', (e) => {
+                const selectedClient = allFinishedClients.find(c => c.phone === e.target.value);
+                if (selectedClient) {
+                    document.getElementById('full-name').value = selectedClient.name;
+                }
+            });
+
+            // Tabs
+            document.getElementById('client-tabs').addEventListener('click', (e) => {
+                if (e.target.tagName !== 'BUTTON') return;
+                const clickedTab = e.target.closest('button');
+                
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                     btn.classList.remove('active');
+                     const countSpan = btn.querySelector('span');
+                     if(countSpan) {
+                         countSpan.classList.remove('bg-pink-100', 'text-pink-800');
+                         countSpan.classList.add('bg-gray-200', 'text-gray-800');
+                     }
+                });
+                
+                clickedTab.classList.add('active');
+                const activeCountSpan = clickedTab.querySelector('span');
+                 if(activeCountSpan){
+                    activeCountSpan.classList.add('bg-pink-100', 'text-pink-800');
+                    activeCountSpan.classList.remove('bg-gray-200', 'text-gray-800');
+                }
+                
+                document.querySelectorAll('#queue-content, #finished-content, #reports-content, #calendar-content').forEach(el => el.classList.add('hidden'));
+                const contentId = clickedTab.id.replace('-tab', '-content');
+                document.getElementById(contentId).classList.remove('hidden');
+
+                if(contentId === 'reports-content') {
+                     const today = new Date().toISOString().split('T')[0];
+                     reportDateInput.value = today;
+                     generateReportForDate(today);
+                     reportCountSpan.classList.remove('hidden');
+                } else if (contentId === 'calendar-content') {
+                    renderCalendar(currentYear, currentMonth, currentTechFilter);
+                }
+                 else {
+                    reportCountSpan.classList.add('hidden');
+                }
+            });
+            
+            // --- CALENDAR LOGIC ---
+            function renderCalendar(year, month, technicianFilter = 'All') {
+                monthYearDisplay.textContent = `${new Date(year, month).toLocaleString('default', { month: 'long' })} ${year}`;
+                calendarGrid.innerHTML = '';
+                
+                const firstDay = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+                for (let i = 0; i < firstDay; i++) {
+                    calendarGrid.insertAdjacentHTML('beforeend', '<div></div>');
+                }
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dayCell = document.createElement('div');
+                    dayCell.className = 'calendar-day border p-2';
+                    dayCell.dataset.date = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    dayCell.innerHTML = `<div class="font-bold">${day}</div><div id="day-${day}" class="appointments"></div>`;
+                    calendarGrid.appendChild(dayCell);
+                }
+                
+                let filteredAppointments = allAppointments;
+                if (technicianFilter !== 'All') {
+                    filteredAppointments = allAppointments.filter(appt => appt.technician === technicianFilter);
+                }
+
+                filteredAppointments.forEach(appt => {
+                    const apptDate = new Date(appt.appointmentTimestamp.seconds * 1000);
+                     if (apptDate.getFullYear() === year && apptDate.getMonth() === month) {
+                        const day = apptDate.getDate();
+                        const dayCell = document.getElementById(`day-${day}`);
+                        if (dayCell) {
+                             dayCell.insertAdjacentHTML('beforeend', `<div class="appointment-entry bg-blue-100 text-blue-700" data-id="${appt.id}" data-type="appointment">${appt.name}</div>`);
+                        }
+                    }
+                });
+                calendarCountSpan.textContent = calendarGrid.querySelectorAll('.appointment-entry').length;
+            }
+            document.getElementById('prev-month-btn').addEventListener('click', () => {
+                currentMonth--;
+                if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+                renderCalendar(currentYear, currentMonth, currentTechFilter);
+            });
+            document.getElementById('next-month-btn').addEventListener('click', () => {
+                currentMonth++;
+                if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+                renderCalendar(currentYear, currentMonth, currentTechFilter);
+            });
+            calendarGrid.addEventListener('click', (e) => {
+                const dayCell = e.target.closest('.calendar-day');
+                if (!dayCell) return;
+
+                if (e.target.classList.contains('appointment-entry')) {
+                    const client = allAppointments.find(a => a.id === e.target.dataset.id);
+                    openViewDetailModal(client, "Booking Detail");
+                } else {
+                    openAddAppointmentModal(dayCell.dataset.date);
+                }
+            });
+            
+             document.getElementById('tech-filter-container').addEventListener('click', (e) => {
+                if (e.target.classList.contains('tech-filter-btn')) {
+                    document.querySelectorAll('.tech-filter-btn').forEach(btn => btn.classList.remove('active'));
+                    e.target.classList.add('active');
+                    currentTechFilter = e.target.dataset.tech;
+                     if (!document.getElementById('today-view').classList.contains('hidden')) {
+                        renderTodaysBookings();
+                    } else {
+                        renderCalendar(currentYear, currentMonth, currentTechFilter);
+                    }
+                }
+            });
+
+
+            // --- ADD APPOINTMENT MODAL LOGIC ---
+            const openAddAppointmentModal = (date) => {
+                addAppointmentForm.reset();
+                document.getElementById('appointment-date').value = date;
+                const clientList = document.getElementById('client-names-list');
+                const appointmentPhoneList = document.getElementById('appointment-client-phones');
+                const uniqueNames = [...new Set(allFinishedClients.map(c => c.name))];
+                const uniquePhones = [...new Set(allFinishedClients.filter(c => c.phone && c.phone !== 'N/A').map(c => c.phone))];
+                clientList.innerHTML = uniqueNames.map(name => `<option value="${name}"></option>`).join('');
+                appointmentPhoneList.innerHTML = uniquePhones.map(phone => `<option value="${phone}"></option>`).join('');
+                
+                const mainServicesList = document.getElementById('main-services-list');
+                mainServicesList.innerHTML = Object.keys(servicesData).map(category => `<option value="${category}"></option>`).join('');
+
+                addAppointmentModal.classList.remove('hidden');
+                addAppointmentModal.classList.add('flex');
+            };
+
+            const closeAddAppointmentModal = () => {
+                addAppointmentModal.classList.add('hidden');
+                addAppointmentModal.classList.remove('flex');
+            };
+            document.getElementById('add-appointment-cancel-btn').addEventListener('click', closeAddAppointmentModal);
+            document.querySelector('.add-appointment-modal-overlay').addEventListener('click', closeAddAppointmentModal);
+            
+            document.getElementById('appointment-client-name').addEventListener('input', (e) => {
+                const selectedClient = allFinishedClients.find(c => c.name === e.target.value);
+                if (selectedClient) {
+                    document.getElementById('appointment-phone').value = selectedClient.phone;
+                }
+            });
+             document.getElementById('appointment-phone').addEventListener('input', (e) => {
+                const selectedClient = allFinishedClients.find(c => c.phone === e.target.value);
+                if (selectedClient) {
+                    document.getElementById('appointment-client-name').value = selectedClient.name;
+                }
+            });
+            
+            addAppointmentForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const date = document.getElementById('appointment-date').value;
+                const time = document.getElementById('appointment-time').value;
+                const appointmentTimestamp = new Date(`${date}T${time}`);
+                
+                try {
+                     await addDoc(collection(db, "appointments"), {
+                        name: document.getElementById('appointment-client-name').value,
+                        phone: document.getElementById('appointment-phone').value,
+                        people: document.getElementById('appointment-people').value,
+                        bookingType: document.getElementById('appointment-booking-type').value,
+                        services: [document.getElementById('appointment-services').value],
+                        technician: document.getElementById('appointment-technician-select').value,
+                        notes: document.getElementById('appointment-notes').value,
+                        appointmentTimestamp: Timestamp.fromDate(appointmentTimestamp)
+                    });
+                    closeAddAppointmentModal();
+                } catch (err) {
+                    console.error("Error adding appointment:", err);
+                    alert("Could not save the appointment. Please try again.");
+                }
+            });
+
+
+
+            // --- REPORTING LOGIC ---
+            let serviceChart;
+            const generateReportForDate = async (dateString) => {
+                if (!db || !dateString) return;
+
+                const startOfDay = new Date(dateString + 'T00:00:00');
+                const endOfDay = new Date(dateString + 'T23:59:59');
+
+                const startTimestamp = Timestamp.fromDate(startOfDay);
+                const endTimestamp = Timestamp.fromDate(endOfDay);
+                
+                const q = query(collection(db, "finished_clients"), 
+                    where("checkOutTimestamp", ">=", startTimestamp),
+                    where("checkOutTimestamp", "<=", endTimestamp)
+                );
+                
+                const querySnapshot = await getDocs(q);
+                
+                const serviceCounts = {};
+                const dailyClients = querySnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    data.services?.forEach(service => {
+                        const serviceName = service.split(' $')[0];
+                        serviceCounts[serviceName] = (serviceCounts[serviceName] || 0) + 1;
+                    });
+                     return {
+                        id: doc.id,
+                        name: data.name,
+                        services: (data.services || []).join(', '),
+                        checkOutTime: data.checkOutTimestamp ? new Date(doc.data().checkOutTimestamp.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'N/A'
+                    };
+                });
+                
+                reportCountSpan.textContent = dailyClients.length;
+                renderReportClientsTable(dailyClients);
+
+                const labels = Object.keys(serviceCounts);
+                const data = Object.values(serviceCounts);
+
+                const chartCanvas = document.getElementById('service-chart');
+                const ctx = chartCanvas.getContext('2d');
+                if(serviceChart) serviceChart.destroy();
+                
+                if(labels.length === 0){
+                    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                    ctx.font = "16px 'Poppins'";
+                    ctx.fillStyle = 'grey';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`No data for this date.`, ctx.canvas.width / 2, ctx.canvas.height / 2);
+                    return;
+                }
+
+                serviceChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: 'Service Popularity',
+                            data,
+                            backgroundColor: ['#fecdd3', '#fbcfe8', '#f0abfc', '#e879f9', '#d946ef', '#a21caf', '#86198f', '#f9a8d4', '#f472b6', '#ec4899' ],
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: { responsive: true, plugins: { legend: { position: 'top' } } }
+                });
+                chartCanvas.chart = serviceChart;
+            };
+
+            reportDateInput.addEventListener('change', (e) => {
+                generateReportForDate(e.target.value);
+            });
+            
+            // --- TODAY'S BOOKING VIEW ---
+            const renderTodaysBookings = () => {
+                 const today = new Date();
+                const startOfDay = new Date(today.setHours(0, 0, 0, 0));
+                const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+
+                let todaysAppointments = allAppointments.filter(appt => {
+                    const apptDate = new Date(appt.appointmentTimestamp.seconds * 1000);
+                    return apptDate >= startOfDay && apptDate <= endOfDay;
+                });
+                
+                if (currentTechFilter !== 'All') {
+                    todaysAppointments = todaysAppointments.filter(appt => appt.technician === currentTechFilter);
+                }
+
+                
+                todayCountSpan.textContent = todaysAppointments.length;
+                
+                const tbody = document.querySelector('#today-bookings-table tbody');
+                tbody.innerHTML = '';
+                 if (todaysAppointments.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-gray-400">No bookings for today.</td></tr>`;
+                    return;
+                }
+                todaysAppointments.forEach(appt => {
+                    const row = tbody.insertRow();
+                    row.className = 'bg-white border-b';
+                    row.innerHTML = `
+                        <td class="px-6 py-3">${appt.name}</td>
+                        <td class="px-6 py-3">${Array.isArray(appt.services) ? appt.services.join(', ') : appt.services}</td>
+                        <td class="px-6 py-3">${appt.technician}</td>
+                        <td class="px-6 py-3 text-center">${appt.people || 1}</td>
+                        <td class="px-6 py-3">${new Date(appt.appointmentTimestamp.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                        <td class="px-6 py-3 text-center">
+                            <button data-id="${appt.id}" class="checkin-today-btn text-blue-500 hover:underline">Check In</button>
+                        </td>
+                    `;
+                });
+            };
+            
+            document.getElementById('today-btn').addEventListener('click', () => {
+                document.getElementById('month-view').classList.add('hidden');
+                document.getElementById('month-nav').classList.add('hidden');
+                document.getElementById('today-view').classList.remove('hidden');
+                document.getElementById('today-btn').classList.add('hidden');
+                document.getElementById('month-view-btn').classList.remove('hidden');
+                renderTodaysBookings();
+            });
+
+            document.getElementById('month-view-btn').addEventListener('click', () => {
+                document.getElementById('today-view').classList.add('hidden');
+                document.getElementById('month-view-btn').classList.add('hidden');
+                document.getElementById('month-view').classList.remove('hidden');
+                document.getElementById('month-nav').classList.remove('hidden');
+                document.getElementById('today-btn').classList.remove('hidden');
+            });
+            
+            document.getElementById('today-bookings-table').addEventListener('click', async (e) => {
+                if (e.target.classList.contains('checkin-today-btn')) {
+                    const bookingId = e.target.dataset.id;
+                    const appointment = allAppointments.find(a => a.id === bookingId);
+                    if (!appointment) return;
+                    
+                    try {
+                        await addDoc(collection(db, "active_queue"), {
+                            name: appointment.name,
+                            phone: appointment.phone,
+                            people: appointment.people || 1,
+                            bookingType: 'Booked - Calendar',
+                            services: Array.isArray(appointment.services) ? appointment.services : [appointment.services],
+                            checkInTimestamp: serverTimestamp()
+                        });
+                        await deleteDoc(doc(db, "appointments", bookingId));
+                    } catch (err) {
+                        console.error("Error checking in from today's view:", err);
+                        alert("Could not check in this client. Please try again.");
+                    }
+                }
+            });
+
+
+             // --- HEADER CLOCK & DATE ---
+            const clockEl = document.getElementById('live-clock');
+            const dateEl = document.getElementById('live-date');
+            const copyrightYear = document.getElementById('copyright-year');
+            const updateTime = () => {
+                const now = new Date();
+                clockEl.textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                dateEl.textContent = now.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                copyrightYear.textContent = now.getFullYear();
+            };
+            updateTime();
+            setInterval(updateTime, 60000); // Update every minute is sufficient
+        };
+
+        // --- Firebase Initialization ---
+        try {
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+            await signInAnonymously(auth);
+            console.log("Firebase initialized and user signed in anonymously.");
+            initApp(db);
+        } catch (error) {
+            console.error("Firebase initialization error:", error);
+            const checkInCard = document.getElementById('check-in-card');
+            if(checkInCard) {
+                checkInCard.innerHTML = `<div class="p-4 text-center text-red-600 bg-red-100 rounded-lg"><strong>Error:</strong> Could not connect to the database. Please check your Firebase project settings (Anonymous sign-in may be disabled).</div>`;
+            }
+        }
+    </script>
+    
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then(registration => {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                }, err => {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
+

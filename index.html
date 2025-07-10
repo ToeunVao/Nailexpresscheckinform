@@ -97,7 +97,6 @@
 
     <main class="container mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
         
-        <!-- Check-in Form Card -->
         <div id="check-in-card" class="bg-white p-6 sm:p-8 rounded-2xl shadow-xl mb-8">
             <form id="check-in-form">
                 <div class="space-y-8">
@@ -148,12 +147,12 @@
             </form>
         </div>
 
-        <!-- Client Management Section -->
         <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-xl">
             <h2 class="text-2xl font-bold text-gray-800 text-center mb-6">Client Management</h2>
             <div class="mb-4 border-b border-gray-200">
                 <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="client-tabs">
                     <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg active" id="queue-tab" type="button">Active Queue <span id="active-count" class="ml-2 bg-pink-100 text-pink-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">0</span></button></li>
+                    <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg" id="processing-tab" type="button">Processing <span id="processing-count" class="ml-2 bg-gray-200 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">0</span></button></li>
                     <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg" id="finished-tab" type="button">Finished Clients <span id="finished-count" class="ml-2 bg-gray-200 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">0</span></button></li>
                     <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg" id="calendar-tab" type="button">Booking Calendar <span id="calendar-count" class="ml-2 bg-gray-200 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">0</span></button></li>
                     <li><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg" id="reports-tab" type="button">Reports <span id="report-count" class="ml-2 bg-gray-200 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded-full hidden">0</span></button></li>
@@ -161,8 +160,12 @@
             </div>
             
             <div id="queue-content">
-                <div class="mb-4">
-                    <input type="text" id="search-active" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="Search active clients by name...">
+                <div class="flex justify-between items-center mb-4">
+                    <input type="text" id="search-active" class="w-1/2 p-2 border border-gray-300 rounded-lg" placeholder="Search active clients by name...">
+                    <div>
+                         <label for="active-date-filter" class="text-sm font-medium text-gray-700 mr-2">Date:</label>
+                         <input type="date" id="active-date-filter" class="p-2 border border-gray-300 rounded-lg">
+                    </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table id="clients-table" class="w-full text-sm text-left text-gray-600">
@@ -170,9 +173,31 @@
                             <tr>
                                 <th scope="col" class="px-6 py-3 text-center">No.</th>
                                 <th scope="col" class="px-6 py-3">Name</th>
-                                <th scope="col" class="px-6 py-3">Group</th>
                                 <th scope="col" class="px-6 py-3">Services</th>
-                                <th scope="col" class="px-6 py-3">Booking Type</th>
+                                <th scope="col" class="px-6 py-3 text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="processing-content" class="hidden">
+                 <div class="flex justify-between items-center mb-4">
+                    <input type="text" id="search-processing" class="w-1/2 p-2 border border-gray-300 rounded-lg" placeholder="Search processing clients by name...">
+                     <div>
+                         <label for="processing-date-filter" class="text-sm font-medium text-gray-700 mr-2">Date:</label>
+                         <input type="date" id="processing-date-filter" class="p-2 border border-gray-300 rounded-lg">
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table id="processing-table" class="w-full text-sm text-left text-gray-600">
+                         <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-center">No.</th>
+                                <th scope="col" class="px-6 py-3">Name</th>
+                                <th scope="col" class="px-6 py-3">Services</th>
+                                <th scope="col" class="px-6 py-3">Technician</th>
                                 <th scope="col" class="px-6 py-3">Check-in Time</th>
                                 <th scope="col" class="px-6 py-3 text-center">Action</th>
                             </tr>
@@ -181,9 +206,14 @@
                     </table>
                 </div>
             </div>
+
             <div id="finished-content" class="hidden">
-                 <div class="mb-4">
-                    <input type="text" id="search-finished" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="Search finished clients by name...">
+                 <div class="flex justify-between items-center mb-4">
+                    <input type="text" id="search-finished" class="w-1/2 p-2 border border-gray-300 rounded-lg" placeholder="Search finished clients by name...">
+                     <div>
+                         <label for="finished-date-filter" class="text-sm font-medium text-gray-700 mr-2">Date:</label>
+                         <input type="date" id="finished-date-filter" class="p-2 border border-gray-300 rounded-lg">
+                    </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table id="finished-clients-table" class="w-full text-sm text-left text-gray-600">
@@ -193,7 +223,7 @@
                                 <th scope="col" class="px-6 py-3">Name</th>
                                 <th scope="col" class="px-6 py-3">Group</th>
                                 <th scope="col" class="px-6 py-3">Services</th>
-                                <th scope="col" class="px-6 py-3">Check-in</th>
+                                <th scope="col" class="px-6 py-3">Check-in Time</th>
                                 <th scope="col" class="px-6 py-3 text-center">Action</th>
                             </tr>
                         </thead>
@@ -202,7 +232,6 @@
                 </div>
             </div>
             
-            <!-- Calendar Content -->
             <div id="calendar-content" class="hidden">
                  <div class="flex justify-between items-center mb-4">
                     <div class="flex items-center gap-2">
@@ -247,7 +276,6 @@
                  </div>
             </div>
 
-            <!-- Reports Content -->
             <div id="reports-content" class="hidden">
                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                      <div>
@@ -283,7 +311,6 @@
          </div>
     </footer>
     
-    <!-- Service Selection Modal -->
     <div id="service-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
         <div class="absolute inset-0 bg-black opacity-50 modal-overlay"></div>
         <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
@@ -295,8 +322,7 @@
         </div>
     </div>
 
-    <!-- Client Details & Rebook Modal -->
-     <div id="checkout-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+    <div id="checkout-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
         <div class="absolute inset-0 bg-black opacity-50 checkout-modal-overlay"></div>
         <form id="checkout-form" class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
             <h3 class="text-2xl font-bold text-pink-700 mb-6">Client Feedback</h3>
@@ -335,20 +361,17 @@
         </form>
     </div>
     
-    <!-- View/Booking Detail Modal -->
     <div id="view-detail-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
         <div class="absolute inset-0 bg-black opacity-50 view-detail-modal-overlay"></div>
         <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
             <h3 id="view-detail-title" class="text-2xl font-bold text-pink-700 mb-6"></h3>
             <div id="view-detail-content" class="space-y-4"></div>
             <div id="view-detail-actions" class="mt-6 flex justify-end gap-3">
-                <!-- Action buttons will be injected here -->
                 <button type="button" id="view-detail-close-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Close</button>
             </div>
         </div>
     </div>
     
-    <!-- Salon Policy Modal -->
     <div id="policy-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
         <div class="absolute inset-0 bg-black opacity-50 policy-modal-overlay"></div>
         <div class="relative bg-white w-full max-w-2xl p-6 rounded-2xl shadow-xl m-4">
@@ -385,8 +408,7 @@
         </div>
     </div>
     
-    <!-- Add Appointment Modal -->
-     <div id="add-appointment-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+    <div id="add-appointment-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
         <div class="absolute inset-0 bg-black opacity-50 add-appointment-modal-overlay"></div>
         <form id="add-appointment-form" class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
             <h3 class="text-2xl font-bold text-pink-700 mb-6">Add New Appointment</h3>
@@ -492,6 +514,8 @@
             const reportCountSpan = document.getElementById('report-count');
             const todayCountSpan = document.getElementById('today-count');
             const calendarCountSpan = document.getElementById('calendar-count');
+            const processingCountSpan = document.getElementById('processing-count');
+
             
             // Calendar Elements
             const calendarGrid = document.getElementById('calendar');
@@ -503,6 +527,8 @@
             let allActiveClients = [];
             let allFinishedClients = [];
             let allAppointments = [];
+            let allProcessingClients = [];
+
 
             // --- DATA ---
             const servicesData = {
@@ -571,12 +597,22 @@
 
             const renderActiveClients = (clients) => renderTable(
                 document.querySelector('#clients-table tbody'),
-                [{key: 'name'}, {key: 'people', align: 'center'}, {key: 'services'}, {key: 'bookingType'}, {key: 'checkInTime'}],
+                [{key: 'name'}, {key: 'services'},],
                 clients,
                 "No clients in the queue.",
                 [
-                    {label: '<i class="fas fa-check-circle text-lg text-blue-500 hover:text-blue-700"></i>', className: 'check-out-btn'},
-                    {label: '<i class="fas fa-trash-alt text-lg text-red-500 hover:text-red-700"></i>', className: 'delete-btn-active'}
+                    {label: '<i class="fas fa-arrow-right text-lg text-blue-500 hover:text-blue-700"></i>', className: 'move-to-processing-btn'},
+                    {label: '<i class="fas fa-info-circle text-lg text-gray-500 hover:text-gray-700"></i>', className: 'detail-btn-active'}
+                ]
+            );
+
+            const renderProcessingClients = (clients) => renderTable(
+                document.querySelector('#processing-table tbody'),
+                [{key: 'name'}, {key: 'services'}, {key: 'technician'}, {key: 'checkInTime'}],
+                clients,
+                "No clients are being processed.",
+                [
+                    {label: '<i class="fas fa-check-circle text-lg text-green-500 hover:text-green-700"></i>', className: 'check-out-btn-processing'}
                 ]
             );
 
@@ -666,7 +702,8 @@
                         people: document.getElementById('people-count').value,
                         bookingType: document.getElementById('booking-type').value,
                         services,
-                        checkInTimestamp: serverTimestamp()
+                        checkInTimestamp: serverTimestamp(),
+                        status: 'waiting'
                     });
                     checkInForm.reset();
                     hiddenCheckboxContainer.querySelectorAll('input').forEach(cb => cb.checked = false);
@@ -678,21 +715,26 @@
             });
 
             document.getElementById('queue-content').addEventListener('click', async (e) => {
-                const checkOutBtn = e.target.closest('.check-out-btn');
-                const deleteBtn = e.target.closest('.delete-btn-active');
+                const moveBtn = e.target.closest('.move-to-processing-btn');
+                const detailBtn = e.target.closest('.detail-btn-active');
                 
+                if (moveBtn) {
+                    const clientId = moveBtn.dataset.id;
+                    const clientRef = doc(db, "active_queue", clientId);
+                    await updateDoc(clientRef, { status: 'processing' });
+                } else if (detailBtn) {
+                     const client = allActiveClients.find(c => c.id === detailBtn.dataset.id);
+                    openViewDetailModal(client, `Booking Detail`);
+                }
+            });
+            
+             document.getElementById('processing-content').addEventListener('click', async (e) => {
+                const checkOutBtn = e.target.closest('.check-out-btn-processing');
                 if (checkOutBtn) {
                     const clientId = checkOutBtn.dataset.id;
                     document.getElementById('checkout-client-id').value = clientId;
                     checkoutModal.classList.remove('hidden');
                     checkoutModal.classList.add('flex');
-                } else if (deleteBtn) {
-                    try {
-                         await deleteDoc(doc(db, "active_queue", deleteBtn.dataset.id));
-                    } catch (err) {
-                        console.error("Error deleting client: ", err);
-                        alert("Could not delete client. Please try again.");
-                    }
                 }
             });
 
@@ -719,7 +761,7 @@
                     lastTechnician = lastFinished.technician;
                     lastBookingType = lastFinished.bookingType;
                 } else if (client.checkInTimestamp) {
-                    lastAppointmentInfo = `Checked in at ${new Date(client.checkInTimestamp.seconds * 1000).toLocaleTimeString()}`;
+                    lastAppointmentInfo = new Date(client.checkInTimestamp.seconds * 1000).toLocaleString();
                 } else if (client.appointmentTimestamp) {
                     lastAppointmentInfo = new Date(client.appointmentTimestamp.seconds * 1000).toLocaleString();
                 }
@@ -789,7 +831,8 @@
                             people: 1, // Default to 1
                             bookingType: 'Booked - Calendar',
                             services: Array.isArray(appointment.services) ? appointment.services : [appointment.services],
-                            checkInTimestamp: serverTimestamp()
+                            checkInTimestamp: serverTimestamp(),
+                            status: 'waiting'
                         });
                         await deleteDoc(doc(db, "appointments", bookingId));
                     }
@@ -852,7 +895,7 @@
             checkoutForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const clientId = document.getElementById('checkout-client-id').value;
-                const client = allActiveClients.find(c => c.id === clientId);
+                const client = allProcessingClients.find(c => c.id === clientId);
 
                 if (client) {
                      try {
@@ -871,8 +914,8 @@
                         
                         if (rebookInfo === '2w' || rebookInfo === '3w') {
                             const interval = (rebookInfo === '2w' ? 14 : 21);
-                            let nextAppointmentDate = new Date();
-                            nextAppointmentDate.setDate(nextAppointmentDate.getDate() + interval);
+                             let nextAppointmentDate = new Date();
+                             nextAppointmentDate.setDate(nextAppointmentDate.getDate() + interval);
                              finishedClientData.rebook = nextAppointmentDate.toLocaleString();
 
                              await addDoc(collection(db, "appointments"), {
@@ -925,20 +968,28 @@
 
             // Real-time listeners
             onSnapshot(query(collection(db, "active_queue"), orderBy("checkInTimestamp", "asc")), (snapshot) => {
-                allActiveClients = snapshot.docs.map(doc => ({
+                 allActiveClients = snapshot.docs.map(doc => ({
                     id: doc.id,
-                    checkInTime: doc.data().checkInTimestamp ? new Date(doc.data().checkInTimestamp.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Pending...',
+                    checkInTime: doc.data().checkInTimestamp ? new Date(doc.data().checkInTimestamp.seconds * 1000).toLocaleString() : 'Pending...',
                     services: (doc.data().services || []).join(', '),
                     ...doc.data()
                 }));
-                activeCountSpan.textContent = allActiveClients.length;
-                renderActiveClients(allActiveClients);
+                const waitingClients = allActiveClients.filter(c => c.status === 'waiting');
+                const processingClients = allActiveClients.filter(c => c.status === 'processing');
+
+                allProcessingClients = processingClients;
+
+                activeCountSpan.textContent = waitingClients.length;
+                processingCountSpan.textContent = processingClients.length;
+
+                renderActiveClients(waitingClients);
+                renderProcessingClients(processingClients);
             });
 
             onSnapshot(query(collection(db, "finished_clients"), orderBy("checkOutTimestamp", "desc")), (snapshot) => {
                 allFinishedClients = snapshot.docs.map(doc => ({
                     id: doc.id,
-                    checkInTime: doc.data().checkInTimestamp ? new Date(doc.data().checkInTimestamp.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'N/A',
+                    checkInTime: doc.data().checkInTimestamp ? new Date(doc.data().checkInTimestamp.seconds * 1000).toLocaleString() : 'N/A',
                     checkOutTime: doc.data().checkOutTimestamp ? new Date(doc.data().checkOutTimestamp.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'N/A',
                     services: (doc.data().services || []).join(', '),
                     ...doc.data()
@@ -1020,7 +1071,7 @@
                     activeCountSpan.classList.remove('bg-gray-200', 'text-gray-800');
                 }
                 
-                document.querySelectorAll('#queue-content, #finished-content, #reports-content, #calendar-content').forEach(el => el.classList.add('hidden'));
+                document.querySelectorAll('#queue-content, #processing-content, #finished-content, #reports-content, #calendar-content').forEach(el => el.classList.add('hidden'));
                 const contentId = clickedTab.id.replace('-tab', '-content');
                 document.getElementById(contentId).classList.remove('hidden');
 
@@ -1316,7 +1367,8 @@
                             people: appointment.people || 1,
                             bookingType: 'Booked - Calendar',
                             services: Array.isArray(appointment.services) ? appointment.services : [appointment.services],
-                            checkInTimestamp: serverTimestamp()
+                            checkInTimestamp: serverTimestamp(),
+                            status: 'waiting'
                         });
                         await deleteDoc(doc(db, "appointments", bookingId));
                     } catch (err) {
@@ -1358,7 +1410,6 @@
         }
     </script>
     
-    <!-- PWA Service Worker Registration -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -1372,4 +1423,3 @@
     </script>
 </body>
 </html>
-

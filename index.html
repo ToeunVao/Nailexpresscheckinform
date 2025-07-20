@@ -187,7 +187,7 @@
                         <input type="text" id="search-active" class="w-64 p-2 border border-gray-300 rounded-lg" placeholder="Search active clients by name...">
                         <div id="tech-filter-container-active" class="flex gap-2">
                              <button class="tech-filter-btn px-3 py-1 rounded-full text-sm active" data-tech="All">All</button>
-                             <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Any">Any Technician</button>
+                             <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Any Technician">Any Technician</button>
                              <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Sokleng">Sokleng</button>
                              <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Linda">Linda</button>
                              <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="TJ">TJ</button>
@@ -213,7 +213,7 @@
                         <input type="text" id="search-processing" class="w-64 p-2 border border-gray-300 rounded-lg" placeholder="Search processing clients by name...">
                         <div id="tech-filter-container-processing" class="flex gap-2">
                              <button class="tech-filter-btn px-3 py-1 rounded-full text-sm active" data-tech="All">All</button>
-                             <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Any">Any Technician</button>
+                             <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Any Technician">Any Technician</button>
                              <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Sokleng">Sokleng</button>
                              <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Linda">Linda</button>
                              <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="TJ">TJ</button>
@@ -242,7 +242,7 @@
                         <div class="flex items-center gap-4">
                             <div id="tech-filter-container-finished" class="flex gap-2">
                                  <button class="tech-filter-btn px-3 py-1 rounded-full text-sm active" data-tech="All">All</button>
-                                 <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Any">Any Technician</button>
+                                 <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Any Technician">Any Technician</button>
                                  <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Sokleng">Sokleng</button>
                                  <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Linda">Linda</button>
                                  <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="TJ">TJ</button>
@@ -278,7 +278,7 @@
                         </div>
                         <div id="tech-filter-container-calendar" class="flex gap-2">
                             <button class="tech-filter-btn px-3 py-1 rounded-full text-sm active" data-tech="All">All</button>
-                            <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Any">Any Technician</button>
+                            <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Any Technician">Any Technician</button>
                             <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Sokleng">Sokleng</button>
                             <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Linda">Linda</button>
                             <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="TJ">TJ</button>
@@ -337,29 +337,79 @@
                 </div>
 
                 <div id="reports-content" class="tab-content hidden">
-                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                         <div>
-                             <label for="report-date" class="block text-sm font-medium text-gray-700">Select Date:</label>
-                             <input type="date" id="report-date" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
-                             <div class="mt-4 overflow-x-auto">
-                                 <h3 class="text-lg font-semibold text-gray-800 mb-2">Finished Clients on This Date</h3>
-                                 <table id="report-clients-table" class="w-full text-sm text-left text-gray-600">
-                                     <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                                         <tr>
-                                             <th scope="col" class="px-4 py-2">Name</th>
-                                             <th scope="col" class="px-4 py-2">Services</th>
-                                             <th scope="col" class="px-4 py-2">Details</th>
-                                         </tr>
-                                     </thead>
-                                     <tbody></tbody>
-                                 </table>
-                             </div>
-                         </div>
-                         <div class="flex flex-col items-center">
-                             <h3 class="text-lg font-semibold text-gray-800 mb-2">Service Popularity</h3>
-                             <div class="w-full max-w-md"><canvas id="service-chart"></canvas></div>
-                         </div>
-                     </div>
+                     <div id="staff-earning-section">
+                        <h3 class="text-xl font-semibold text-gray-700 border-b pb-3 mb-6">
+                            Staff Earning Report 
+                            <span id="filtered-earning-total" class="ml-2 bg-pink-100 text-pink-800 text-sm font-semibold px-2.5 py-0.5 rounded-full"></span>
+                        </h3>
+                        <form id="staff-earning-form" class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8 items-end">
+                            <div>
+                                <label for="staff-earning-date" class="block text-sm font-medium text-gray-600 mb-1">Date</label>
+                                <input type="date" id="staff-earning-date" class="form-input w-full p-3 border border-gray-300 rounded-lg" required>
+                            </div>
+                            <div>
+                                <label for="staff-name" class="block text-sm font-medium text-gray-600 mb-1">Staff Name</label>
+                                <select id="staff-name" class="form-select w-full p-3 border border-gray-300 rounded-lg" required>
+                                    <option>Sokleng</option>
+                                    <option>TJ</option>
+                                    <option>Linda</option>
+                                    <option>Mama</option>
+                                    <option>Papa</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="staff-earning" class="block text-sm font-medium text-gray-600 mb-1">Earning</label>
+                                <input type="number" step="0.01" id="staff-earning" class="form-input w-full p-3 border border-gray-300 rounded-lg" placeholder="e.g., 100" required>
+                            </div>
+                            <div>
+                                <label for="staff-tip" class="block text-sm font-medium text-gray-600 mb-1">Tip</label>
+                                <input type="number" step="0.01" id="staff-tip" class="form-input w-full p-3 border border-gray-300 rounded-lg" placeholder="e.g., 20" required>
+                            </div>
+                            <div>
+                                <button type="submit" class="w-full bg-pink-600 text-white font-bold py-3 px-6 rounded-full hover:bg-pink-700 transition-all duration-300">
+                                    Add Earning
+                                </button>
+                            </div>
+                        </form>
+    
+                        <div class="flex justify-between items-center mb-4">
+                            <div id="tech-filter-container-earning" class="flex gap-2 flex-wrap">
+                                 <button class="tech-filter-btn px-3 py-1 rounded-full text-sm active" data-tech="All">All</button>
+                                 <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Sokleng">Sokleng</button>
+                                 <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="TJ">TJ</button>
+                                 <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Linda">Linda</button>
+                                 <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Mama">Mama</button>
+                                 <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Papa">Papa</button>
+                            </div>
+                            <div>
+                                <label for="earning-date-filter" class="text-sm font-medium text-gray-700 mr-2">Date:</label>
+                                <input type="date" id="earning-date-filter" class="p-2 border border-gray-300 rounded-lg">
+                           </div>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table id="staff-earning-table" class="w-full text-sm text-left text-gray-600">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3">Date</th>
+                                        <th scope="col" class="px-6 py-3">Staff Name</th>
+                                        <th scope="col" class="px-6 py-3">Earning</th>
+                                        <th scope="col" class="px-6 py-3">Tip</th>
+                                        <th scope="col" class="px-6 py-3 text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                                <tfoot class="bg-gray-100 font-semibold">
+                                    <tr>
+                                        <td colspan="2" class="px-6 py-3 text-right">Total:</td>
+                                        <td id="total-earning" class="px-6 py-3"></td>
+                                        <td id="total-tip" class="px-6 py-3"></td>
+                                        <td class="px-6 py-3"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
@@ -526,6 +576,42 @@
             </form>
         </div>
 
+        <div id="edit-earning-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+            <div class="absolute inset-0 bg-black opacity-50 edit-earning-modal-overlay"></div>
+            <form id="edit-earning-form" class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
+                <h3 class="text-2xl font-bold text-pink-700 mb-6">Edit Earning</h3>
+                <input type="hidden" id="edit-earning-id">
+                <div class="space-y-4">
+                    <div>
+                        <label for="edit-staff-earning-date" class="block text-sm font-medium text-gray-600 mb-1">Date</label>
+                        <input type="date" id="edit-staff-earning-date" class="form-input w-full p-3 border border-gray-300 rounded-lg" required>
+                    </div>
+                    <div>
+                        <label for="edit-staff-name" class="block text-sm font-medium text-gray-600 mb-1">Staff Name</label>
+                        <select id="edit-staff-name" class="form-select w-full p-3 border border-gray-300 rounded-lg" required>
+                            <option>Sokleng</option>
+                            <option>TJ</option>
+                            <option>Linda</option>
+                            <option>Mama</option>
+                            <option>Papa</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="edit-staff-earning" class="block text-sm font-medium text-gray-600 mb-1">Earning</label>
+                        <input type="number" step="0.01" id="edit-staff-earning" class="form-input w-full p-3 border border-gray-300 rounded-lg" required>
+                    </div>
+                    <div>
+                        <label for="edit-staff-tip" class="block text-sm font-medium text-gray-600 mb-1">Tip</label>
+                        <input type="number" step="0.01" id="edit-staff-tip" class="form-input w-full p-3 border border-gray-300 rounded-lg" required>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" id="edit-earning-cancel-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Cancel</button>
+                    <button type="submit" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Save Changes</button>
+                </div>
+            </form>
+        </div>
+
         <!-- Gemini API Modals -->
         <div id="follow-up-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
             <div class="absolute inset-0 bg-black opacity-50"></div>
@@ -577,7 +663,6 @@
                 const modalContent = document.getElementById('modal-content');
                 const modalDoneBtn = document.getElementById('modal-done-btn');
                 const modalOverlay = document.querySelector('.modal-overlay');
-                const reportDateInput = document.getElementById('report-date');
                 
                 // Modals
                 const checkoutModal = document.getElementById('checkout-modal');
@@ -586,19 +671,21 @@
                 const policyModal = document.getElementById('policy-modal');
                 const addAppointmentModal = document.getElementById('add-appointment-modal');
                 const addAppointmentForm = document.getElementById('add-appointment-form');
+                const editEarningModal = document.getElementById('edit-earning-modal');
+                const editEarningForm = document.getElementById('edit-earning-form');
                 const followUpModal = document.getElementById('follow-up-modal');
                 
                 const rebookOtherInput = document.getElementById('rebook-other-input');
                 const rebookSelect = document.getElementById('rebook-select');
 
-                // Tab Counts
+                // Tab Counts & Totals
                 const activeCountSpan = document.getElementById('active-count');
                 const finishedCountSpan = document.getElementById('finished-count');
-                const reportCountSpan = document.getElementById('report-count');
                 const todayCountSpan = document.getElementById('today-count');
                 const calendarCountSpan = document.getElementById('calendar-count');
                 const processingCountSpan = document.getElementById('processing-count');
                 const clientsListCountSpan = document.getElementById('clients-list-count');
+                const filteredEarningTotalSpan = document.getElementById('filtered-earning-total');
 
                 
                 // Calendar Elements
@@ -613,11 +700,15 @@
                 let currentTechFilterProcessing = 'All';
                 let currentTechFilterFinished = 'All';
                 let currentFinishedDateFilter = '';
+                let currentEarningTechFilter = 'All';
+                let currentEarningDateFilter = '';
+
 
                 let allActiveClients = [];
                 let allFinishedClients = [];
                 let allAppointments = [];
                 let aggregatedClients = [];
+                let allEarnings = [];
 
 
                 // --- DATA ---
@@ -684,7 +775,11 @@
                         columns.forEach(col => {
                             cell = row.insertCell();
                             cell.className = `px-6 py-4 ${col.align === 'center' ? 'text-center' : ''}`;
-                            cell.textContent = item[col.key] || '';
+                             if (col.format === 'currency') {
+                                cell.textContent = `$${Number(item[col.key] || 0).toFixed(2)}`;
+                            } else {
+                                cell.textContent = item[col.key] || '';
+                            }
                         });
 
                         if (buttons.length > 0) {
@@ -704,25 +799,6 @@
                     });
                 };
                 
-                const renderReportClientsTable = (data) => {
-                    const tbody = document.querySelector('#report-clients-table tbody');
-                    if (!tbody) return;
-                    tbody.innerHTML = '';
-                     if (data.length === 0) {
-                        tbody.innerHTML = `<tr><td colspan="3" class="py-6 text-center text-gray-400">No clients found for this date.</td></tr>`;
-                        return;
-                    }
-                     data.forEach(item => {
-                        const row = tbody.insertRow();
-                        row.className = 'bg-white border-b';
-                        row.innerHTML = `<td class="px-4 py-2">${item.name}</td>
-                                         <td class="px-4 py-2">${item.services}</td>
-                                         <td class="px-4 py-2 text-center">
-                                            <button data-id="${item.id}" class="view-feedback-btn-report text-blue-500 hover:underline">Details</button>
-                                         </td>`;
-                     });
-                };
-
                 const applyClientFilters = (clients, searchTerm, techFilter, dateFilter) => {
                     let filtered = clients;
 
@@ -730,9 +806,12 @@
                         filtered = filtered.filter(c => c.name.toLowerCase().includes(searchTerm));
                     }
 
-                    if (techFilter !== 'All') {
+                    if (techFilter !== 'All' && techFilter !== 'Any Technician') {
                         filtered = filtered.filter(c => c.technician === techFilter);
+                    } else if (techFilter === 'Any Technician') {
+                         filtered = filtered.filter(c => c.technician === 'Any Technician');
                     }
+
 
                     if (dateFilter) {
                         filtered = filtered.filter(c => {
@@ -805,6 +884,55 @@
                     });
                 };
                 
+                const applyEarningFilters = (earnings, techFilter, dateFilter) => {
+                    let filtered = earnings;
+                    if (techFilter !== 'All') {
+                        filtered = filtered.filter(e => e.staffName === techFilter);
+                    }
+                    if (dateFilter) {
+                        filtered = filtered.filter(e => {
+                            const earningDate = new Date(e.date.seconds * 1000).toISOString().split('T')[0];
+                            return earningDate === dateFilter;
+                        });
+                    }
+                    return filtered;
+                };
+
+                const renderStaffEarnings = (earnings) => {
+                    const tbody = document.querySelector('#staff-earning-table tbody');
+                    if (!tbody) return;
+                    tbody.innerHTML = '';
+
+                    if (earnings.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-gray-400">No earnings found for the selected filters.</td></tr>`;
+                    } else {
+                        earnings.forEach(earning => {
+                            const row = tbody.insertRow();
+                            row.className = 'bg-white border-b';
+                            row.innerHTML = `
+                                <td class="px-6 py-4">${new Date(earning.date.seconds * 1000).toLocaleDateString()}</td>
+                                <td class="px-6 py-4 font-medium text-gray-900">${earning.staffName}</td>
+                                <td class="px-6 py-4">$${earning.earning.toFixed(2)}</td>
+                                <td class="px-6 py-4">$${earning.tip.toFixed(2)}</td>
+                                <td class="px-6 py-4 text-center space-x-2">
+                                    <button data-id="${earning.id}" class="edit-earning-btn text-blue-500 hover:text-blue-700" title="Edit Earning"><i class="fas fa-edit text-lg"></i></button>
+                                    <button data-id="${earning.id}" class="delete-earning-btn text-red-500 hover:text-red-700" title="Delete Earning"><i class="fas fa-trash-alt text-lg"></i></button>
+                                </td>
+                            `;
+                        });
+                    }
+
+                    // Calculate and render totals
+                    const totalEarning = earnings.reduce((sum, e) => sum + e.earning, 0);
+                    const totalTip = earnings.reduce((sum, e) => sum + e.tip, 0);
+                    document.getElementById('total-earning').textContent = `$${totalEarning.toFixed(2)}`;
+                    document.getElementById('total-tip').textContent = `$${totalTip.toFixed(2)}`;
+                    
+                    // Update filtered total
+                    const grandTotal = totalEarning + totalTip;
+                    filteredEarningTotalSpan.textContent = `Filtered Total: $${grandTotal.toFixed(2)}`;
+                };
+
                 // --- EVENT LISTENERS & LOGIC ---
                 for (let i = 1; i <= 20; i++) peopleCountSelect.appendChild(new Option(i, i));
                 for (let i = 1; i <= 20; i++) document.getElementById('appointment-people').appendChild(new Option(i, i));
@@ -882,7 +1010,7 @@
                             services,
                             checkInTimestamp: serverTimestamp(),
                             status: 'waiting',
-                            technician: 'Any' // Default technician
+                            technician: 'Any Technician' // Default technician
                         });
                         checkInForm.reset();
                         hiddenCheckboxContainer.querySelectorAll('input').forEach(cb => cb.checked = false);
@@ -911,6 +1039,10 @@
                     const checkOutBtn = e.target.closest('.check-out-btn-processing');
                     if (checkOutBtn) {
                         const clientId = checkOutBtn.dataset.id;
+                        const client = allActiveClients.find(c => c.id === clientId);
+                        if(client) {
+                            document.getElementById('technician-name-select').value = client.technician;
+                        }
                         document.getElementById('checkout-client-id').value = clientId;
                         checkoutModal.classList.remove('hidden');
                         checkoutModal.classList.add('flex');
@@ -956,6 +1088,7 @@
                             <h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Client Details</h4>
                             <div><strong class="font-semibold text-gray-700">Name:</strong> ${client.name || 'N/A'}</div>
                             <div><strong class="font-semibold text-gray-700">Phone:</strong> ${client.phone || 'N/A'}</div>
+                            <div><strong class="font-semibold text-gray-700">Group Size:</strong> ${client.people || '1'}</div>
                         </div>
                          <div class="space-y-2">
                             <h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Last Appointment</h4>
@@ -974,7 +1107,7 @@
 
                     // Add action buttons for calendar bookings
                     actions.innerHTML = '<button type="button" id="view-detail-close-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Close</button>';
-                    if(client.appointmentTimestamp) { // It's a future appointment
+                    if(client.appointmentTimestamp && client.status !== 'waiting' && client.status !== 'processing') { // It's a future appointment
                         actions.insertAdjacentHTML('afterbegin', `
                             <button type="button" data-id="${client.id}" class="bg-blue-500 text-white font-semibold py-2 px-6 rounded-lg booking-action-btn" data-action="checkin">Check In</button>
                             <button type="button" data-id="${client.id}" class="bg-red-500 text-white font-semibold py-2 px-6 rounded-lg booking-action-btn" data-action="cancel">Cancel</button>
@@ -1002,14 +1135,17 @@
                         if (!appointment) return;
 
                         if (action === 'cancel') {
-                            await deleteDoc(doc(db, "appointments", bookingId));
+                            if(confirm('Are you sure you want to cancel this booking?')) {
+                                await deleteDoc(doc(db, "appointments", bookingId));
+                            }
                         } else if (action === 'checkin') {
                              await addDoc(collection(db, "active_queue"), {
                                 name: appointment.name,
                                 phone: appointment.phone,
-                                people: 1, // Default to 1
+                                people: appointment.people || 1,
                                 bookingType: 'Booked - Calendar',
                                 services: Array.isArray(appointment.services) ? appointment.services : [appointment.services],
+                                technician: appointment.technician,
                                 checkInTimestamp: serverTimestamp(),
                                 status: 'waiting'
                             });
@@ -1030,11 +1166,13 @@
                     if (!client) return;
 
                     if (deleteBtn) {
-                        try {
-                             await deleteDoc(doc(db, "finished_clients", deleteBtn.dataset.id));
-                        } catch (err) {
-                            console.error("Error deleting finished client: ", err);
-                            alert("Could not delete finished client. Please try again.");
+                        if(confirm('Are you sure you want to delete this client record?')) {
+                            try {
+                                 await deleteDoc(doc(db, "finished_clients", deleteBtn.dataset.id));
+                            } catch (err) {
+                                console.error("Error deleting finished client: ", err);
+                                alert("Could not delete finished client. Please try again.");
+                            }
                         }
                     } else if (feedbackBtn) {
                         openViewDetailModal(client, `Booking Detail`);
@@ -1082,14 +1220,6 @@
                     }
                 });
                 
-                 document.getElementById('report-clients-table').addEventListener('click', (e) => {
-                    const viewBtn = e.target.closest('.view-feedback-btn-report');
-                    if (viewBtn) {
-                        const client = allFinishedClients.find(c => c.id === viewBtn.dataset.id);
-                        openViewDetailModal(client, `Booking Detail`);
-                    }
-                });
-
                 const closeCheckoutModal = () => {
                     checkoutForm.reset();
                     rebookOtherInput.classList.add('hidden');
@@ -1283,6 +1413,14 @@
                     renderCalendar(currentYear, currentMonth, currentTechFilterCalendar);
                     renderTodaysBookings();
                 });
+                 
+                onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot) => {
+                    allEarnings = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter));
+                });
                 
                 // Search functionality
                 document.getElementById('search-active').addEventListener('input', (e) => {
@@ -1387,8 +1525,10 @@
                     }
                     
                     let filteredAppointments = allAppointments;
-                    if (technicianFilter !== 'All') {
+                    if (technicianFilter !== 'All' && technicianFilter !== 'Any Technician') {
                         filteredAppointments = allAppointments.filter(appt => appt.technician === technicianFilter);
+                    } else if (technicianFilter === 'Any Technician') {
+                        filteredAppointments = allAppointments.filter(appt => appt.technician === 'Any Technician');
                     }
 
                     filteredAppointments.forEach(appt => {
@@ -1426,12 +1566,12 @@
                 });
                 
                  // --- TECHNICIAN FILTER LOGIC ---
-                const setupTechFilter = (containerId, filterVarCallback, clientListCallback) => {
+                const setupTechFilter = (containerId, callback) => {
                      document.getElementById(containerId).addEventListener('click', (e) => {
                         if (e.target.classList.contains('tech-filter-btn')) {
                             document.querySelectorAll(`#${containerId} .tech-filter-btn`).forEach(btn => btn.classList.remove('active'));
                             e.target.classList.add('active');
-                            filterVarCallback(e.target.dataset.tech);
+                            callback(e.target.dataset.tech);
                         }
                     });
                 };
@@ -1458,6 +1598,14 @@
                     } else {
                         renderCalendar(currentYear, currentMonth, currentTechFilterCalendar);
                     }
+                });
+                setupTechFilter('tech-filter-container-earning', (tech) => {
+                    currentEarningTechFilter = tech;
+                    renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter));
+                });
+                document.getElementById('earning-date-filter').addEventListener('input', (e) => {
+                    currentEarningDateFilter = e.target.value;
+                    renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter));
                 });
 
 
@@ -1503,6 +1651,10 @@
                     e.preventDefault();
                     const date = document.getElementById('appointment-date').value;
                     const time = document.getElementById('appointment-time').value;
+                    if(!time) {
+                        alert('Please select a time for the appointment.');
+                        return;
+                    }
                     const appointmentTimestamp = new Date(`${date}T${time}`);
                     
                     try {
@@ -1522,79 +1674,98 @@
                         alert("Could not save the appointment. Please try again.");
                     }
                 });
+                
+                // --- STAFF EARNING LOGIC ---
+                const staffEarningForm = document.getElementById('staff-earning-form');
+                staffEarningForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const staffName = document.getElementById('staff-name').value;
+                    const earning = parseFloat(document.getElementById('staff-earning').value);
+                    const tip = parseFloat(document.getElementById('staff-tip').value);
+                    const date = document.getElementById('staff-earning-date').value;
 
-
-
-                // --- REPORTING LOGIC ---
-                let serviceChart;
-                const generateReportForDate = async (dateString) => {
-                    if (!db || !dateString) return;
-
-                    const startOfDay = new Date(dateString + 'T00:00:00');
-                    const endOfDay = new Date(dateString + 'T23:59:59');
-
-                    const startTimestamp = Timestamp.fromDate(startOfDay);
-                    const endTimestamp = Timestamp.fromDate(endOfDay);
-                    
-                    const q = query(collection(db, "finished_clients"), 
-                        where("checkOutTimestamp", ">=", startTimestamp),
-                        where("checkOutTimestamp", "<=", endTimestamp)
-                    );
-                    
-                    const querySnapshot = await getDocs(q);
-                    
-                    const serviceCounts = {};
-                    const dailyClients = querySnapshot.docs.map(doc => {
-                        const data = doc.data();
-                        data.services?.forEach(service => {
-                            const serviceName = service.split(' $')[0];
-                            serviceCounts[serviceName] = (serviceCounts[serviceName] || 0) + 1;
-                        });
-                         return {
-                            id: doc.id,
-                            name: data.name,
-                            services: (data.services || []).join(', '),
-                            checkOutTime: data.checkOutTimestamp ? new Date(doc.data().checkOutTimestamp.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'N/A'
-                        };
-                    });
-                    
-                    reportCountSpan.textContent = dailyClients.length;
-                    renderReportClientsTable(dailyClients);
-
-                    const labels = Object.keys(serviceCounts);
-                    const data = Object.values(serviceCounts);
-
-                    const chartCanvas = document.getElementById('service-chart');
-                    const ctx = chartCanvas.getContext('2d');
-                    if(serviceChart) serviceChart.destroy();
-                    
-                    if(labels.length === 0){
-                        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-                        ctx.font = "16px 'Poppins'";
-                        ctx.fillStyle = 'grey';
-                        ctx.textAlign = 'center';
-                        ctx.fillText(`No data for this date.`, ctx.canvas.width / 2, ctx.canvas.height / 2);
-                        return;
+                    if (isNaN(earning) || isNaN(tip)) {
+                        return alert('Please enter valid numbers for earning and tip.');
                     }
+                    if (!date) {
+                        return alert('Please select a date.');
+                    }
+                    
+                    try {
+                        const earningDate = new Date(date + 'T12:00:00'); // Use noon to avoid timezone issues
+                        await addDoc(collection(db, "earnings"), {
+                            staffName,
+                            earning,
+                            tip,
+                            date: Timestamp.fromDate(earningDate)
+                        });
+                        staffEarningForm.reset();
+                        document.getElementById('staff-earning-date').value = new Date().toISOString().split('T')[0];
+                    } catch (err) {
+                        console.error("Error adding earning: ", err);
+                        alert("Could not add earning. Please try again.");
+                    }
+                });
+                
+                document.getElementById('staff-earning-table').addEventListener('click', async (e) => {
+                    const deleteBtn = e.target.closest('.delete-earning-btn');
+                    const editBtn = e.target.closest('.edit-earning-btn');
 
-                    serviceChart = new Chart(ctx, {
-                        type: 'doughnut',
-                        data: {
-                            labels,
-                            datasets: [{
-                                label: 'Service Popularity',
-                                data,
-                                backgroundColor: ['#fecdd3', '#fbcfe8', '#f0abfc', '#e879f9', '#d946ef', '#a21caf', '#86198f', '#f9a8d4', '#f472b6', '#ec4899' ],
-                                hoverOffset: 4
-                            }]
-                        },
-                        options: { responsive: true, plugins: { legend: { position: 'top' } } }
-                    });
-                    chartCanvas.chart = serviceChart;
+                    if(deleteBtn) {
+                        const earningId = deleteBtn.dataset.id;
+                        if(confirm('Are you sure you want to delete this earning entry?')) {
+                            await deleteDoc(doc(db, "earnings", earningId));
+                        }
+                    } else if (editBtn) {
+                        const earningId = editBtn.dataset.id;
+                        const earning = allEarnings.find(e => e.id === earningId);
+                        if (earning) {
+                            openEditEarningModal(earning);
+                        }
+                    }
+                });
+
+                const openEditEarningModal = (earning) => {
+                    editEarningForm.reset();
+                    document.getElementById('edit-earning-id').value = earning.id;
+                    document.getElementById('edit-staff-earning-date').value = new Date(earning.date.seconds * 1000).toISOString().split('T')[0];
+                    document.getElementById('edit-staff-name').value = earning.staffName;
+                    document.getElementById('edit-staff-earning').value = earning.earning;
+                    document.getElementById('edit-staff-tip').value = earning.tip;
+                    editEarningModal.classList.remove('hidden');
+                    editEarningModal.classList.add('flex');
                 };
+                const closeEditEarningModal = () => {
+                    editEarningModal.classList.add('hidden');
+                    editEarningModal.classList.remove('flex');
+                };
+                document.getElementById('edit-earning-cancel-btn').addEventListener('click', closeEditEarningModal);
+                document.querySelector('.edit-earning-modal-overlay').addEventListener('click', closeEditEarningModal);
 
-                reportDateInput.addEventListener('change', (e) => {
-                    generateReportForDate(e.target.value);
+                editEarningForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const earningId = document.getElementById('edit-earning-id').value;
+                    const date = document.getElementById('edit-staff-earning-date').value;
+                    const staffName = document.getElementById('edit-staff-name').value;
+                    const earning = parseFloat(document.getElementById('edit-staff-earning').value);
+                    const tip = parseFloat(document.getElementById('edit-staff-tip').value);
+
+                    if (!earningId) return;
+
+                    try {
+                        const earningDate = new Date(date + 'T12:00:00');
+                        const earningRef = doc(db, "earnings", earningId);
+                        await updateDoc(earningRef, {
+                            staffName,
+                            earning,
+                            tip,
+                            date: Timestamp.fromDate(earningDate)
+                        });
+                        closeEditEarningModal();
+                    } catch(err) {
+                        console.error("Error updating earning:", err);
+                        alert("Could not update earning. Please try again.");
+                    }
                 });
                 
                 // --- TODAY'S BOOKING VIEW ---
@@ -1608,8 +1779,10 @@
                         return apptDate >= startOfDay && apptDate <= endOfDay;
                     });
                     
-                    if (currentTechFilterCalendar !== 'All') {
+                    if (currentTechFilterCalendar !== 'All' && currentTechFilterCalendar !== 'Any Technician') {
                         todaysAppointments = todaysAppointments.filter(appt => appt.technician === currentTechFilterCalendar);
+                    } else if (currentTechFilterCalendar === 'Any Technician') {
+                        todaysAppointments = todaysAppointments.filter(appt => appt.technician === 'Any Technician');
                     }
 
                     
@@ -1667,6 +1840,7 @@
                                 people: appointment.people || 1,
                                 bookingType: 'Booked - Calendar',
                                 services: Array.isArray(appointment.services) ? appointment.services : [appointment.services],
+                                technician: appointment.technician,
                                 checkInTimestamp: serverTimestamp(),
                                 status: 'waiting'
                             });
@@ -1699,6 +1873,20 @@
                 };
                 updateTime();
                 setInterval(updateTime, 60000); // Update every minute is sufficient
+
+                // --- INITIALIZATION ---
+                const todayString = new Date().toISOString().split('T')[0];
+                // Set default date for finished clients filter
+                document.getElementById('finished-date-filter').value = todayString;
+                currentFinishedDateFilter = todayString;
+                renderFinishedClients(applyClientFilters(allFinishedClients, '', 'All', currentFinishedDateFilter));
+                
+                // Set default date for staff earning form and filter
+                document.getElementById('staff-earning-date').value = todayString;
+                document.getElementById('earning-date-filter').value = todayString;
+                currentEarningDateFilter = todayString;
+                renderStaffEarnings(applyEarningFilters(allEarnings, 'All', currentEarningDateFilter));
+
             };
 
             // --- Firebase Initialization ---

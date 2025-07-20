@@ -338,9 +338,12 @@
 
                 <div id="reports-content" class="tab-content hidden">
                      <div id="staff-earning-section">
-                        <h3 class="text-xl font-semibold text-gray-700 border-b pb-3 mb-6">
-                            Staff Earning Report 
-                            <span id="filtered-earning-total" class="ml-2 bg-pink-100 text-pink-800 text-sm font-semibold px-2.5 py-0.5 rounded-full"></span>
+                        <h3 class="text-xl font-semibold text-gray-700 border-b pb-3 mb-6 flex justify-between items-center">
+                            <span>Staff Earning Report</span>
+                            <div class="flex gap-4">
+                                <span id="filtered-earning-total-main" class="ml-2 bg-pink-100 text-pink-800 text-sm font-semibold px-2.5 py-0.5 rounded-full"></span>
+                                <span id="filtered-earning-total-tip" class="ml-2 bg-green-100 text-green-800 text-sm font-semibold px-2.5 py-0.5 rounded-full"></span>
+                            </div>
                         </h3>
                         <form id="staff-earning-form" class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8 items-end">
                             <div>
@@ -381,8 +384,13 @@
                                  <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Mama">Mama</button>
                                  <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Papa">Papa</button>
                             </div>
-                            <div>
-                                <label for="earning-date-filter" class="text-sm font-medium text-gray-700 mr-2">Date:</label>
+                            <div class="flex items-center gap-2">
+                                <select id="earning-range-filter" class="form-select p-2 border border-gray-300 rounded-lg">
+                                    <option value="daily">Daily</option>
+                                    <option value="weekly">This Week</option>
+                                    <option value="monthly">This Month</option>
+                                    <option value="yearly">This Year</option>
+                                </select>
                                 <input type="date" id="earning-date-filter" class="p-2 border border-gray-300 rounded-lg">
                            </div>
                         </div>
@@ -409,7 +417,11 @@
                                 </tfoot>
                             </table>
                         </div>
-                    </div>
+                     </div>
+                     <hr class="my-12 border-t-2 border-gray-200">
+                     <div id="salon-earning-section">
+                        <!-- Salon Earning Report will be injected here by JS -->
+                     </div>
                 </div>
             </div>
         </main>
@@ -685,7 +697,8 @@
                 const calendarCountSpan = document.getElementById('calendar-count');
                 const processingCountSpan = document.getElementById('processing-count');
                 const clientsListCountSpan = document.getElementById('clients-list-count');
-                const filteredEarningTotalSpan = document.getElementById('filtered-earning-total');
+                const filteredEarningTotalMainSpan = document.getElementById('filtered-earning-total-main');
+                const filteredEarningTotalTipSpan = document.getElementById('filtered-earning-total-tip');
 
                 
                 // Calendar Elements
@@ -702,6 +715,7 @@
                 let currentFinishedDateFilter = '';
                 let currentEarningTechFilter = 'All';
                 let currentEarningDateFilter = '';
+                let currentEarningRangeFilter = 'daily';
 
 
                 let allActiveClients = [];
@@ -757,48 +771,6 @@
                 }
                 
                 // --- RENDER FUNCTIONS ---
-                const renderTable = (tbody, columns, data, emptyMsg, buttons = []) => {
-                    if (!tbody) return;
-                    tbody.innerHTML = '';
-                    if (data.length === 0) {
-                        const colspan = columns.length + (buttons.length > 0 ? 1 : 0) + 1;
-                        tbody.innerHTML = `<tr><td colspan="${colspan}" class="py-6 text-center text-gray-400">${emptyMsg}</td></tr>`;
-                        return;
-                    }
-                    data.forEach((item, index) => {
-                        const row = tbody.insertRow();
-                        row.className = 'bg-white border-b';
-                        let cell = row.insertCell();
-                        cell.className = "px-6 py-4 font-medium text-gray-900 text-center";
-                        cell.textContent = index + 1;
-
-                        columns.forEach(col => {
-                            cell = row.insertCell();
-                            cell.className = `px-6 py-4 ${col.align === 'center' ? 'text-center' : ''}`;
-                             if (col.format === 'currency') {
-                                cell.textContent = `$${Number(item[col.key] || 0).toFixed(2)}`;
-                            } else {
-                                cell.textContent = item[col.key] || '';
-                            }
-                        });
-
-                        if (buttons.length > 0) {
-                            cell = row.insertCell();
-                            cell.className = 'px-6 py-4 text-center space-x-2'; // Reduced spacing
-                            buttons.forEach(btnInfo => {
-                                const button = document.createElement('button');
-                                button.dataset.id = item.id;
-                                button.className = btnInfo.className;
-                                button.innerHTML = btnInfo.label;
-                                if (btnInfo.title) {
-                                    button.title = btnInfo.title;
-                                }
-                                cell.appendChild(button);
-                            });
-                        }
-                    });
-                };
-                
                 const applyClientFilters = (clients, searchTerm, techFilter, dateFilter) => {
                     let filtered = clients;
 
@@ -884,21 +856,52 @@
                     });
                 };
                 
-                const applyEarningFilters = (earnings, techFilter, dateFilter) => {
+                const applyEarningFilters = (earnings, techFilter, dateFilter, rangeFilter) => {
                     let filtered = earnings;
+
+                    // Filter by technician
                     if (techFilter !== 'All') {
                         filtered = filtered.filter(e => e.staffName === techFilter);
                     }
-                    if (dateFilter) {
-                        filtered = filtered.filter(e => {
-                            const earningDate = new Date(e.date.seconds * 1000).toISOString().split('T')[0];
-                            return earningDate === dateFilter;
+
+                    // Filter by date/range
+                    const now = new Date(dateFilter + 'T12:00:00') || new Date();
+                    let startDate, endDate;
+
+                    switch(rangeFilter) {
+                        case 'weekly':
+                            const firstDayOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+                            startDate = new Date(firstDayOfWeek.setHours(0, 0, 0, 0));
+                            endDate = new Date(now.getFullYear(), now.getMonth(), startDate.getDate() + 6, 23, 59, 59, 999);
+                            break;
+                        case 'monthly':
+                            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                            endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+                            break;
+                        case 'yearly':
+                            startDate = new Date(now.getFullYear(), 0, 1);
+                            endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+                            break;
+                        case 'daily':
+                        default:
+                            if (dateFilter) {
+                                startDate = new Date(dateFilter + 'T00:00:00');
+                                endDate = new Date(dateFilter + 'T23:59:59');
+                            }
+                            break;
+                    }
+
+                    if (startDate && endDate) {
+                         filtered = filtered.filter(e => {
+                            const earningDate = new Date(e.date.seconds * 1000);
+                            return earningDate >= startDate && earningDate <= endDate;
                         });
                     }
+                    
                     return filtered;
                 };
 
-                const renderStaffEarnings = (earnings) => {
+                 const renderStaffEarnings = (earnings) => {
                     const tbody = document.querySelector('#staff-earning-table tbody');
                     if (!tbody) return;
                     tbody.innerHTML = '';
@@ -906,7 +909,7 @@
                     if (earnings.length === 0) {
                         tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-gray-400">No earnings found for the selected filters.</td></tr>`;
                     } else {
-                        earnings.forEach(earning => {
+                        earnings.sort((a, b) => b.date.seconds - a.date.seconds).forEach(earning => {
                             const row = tbody.insertRow();
                             row.className = 'bg-white border-b';
                             row.innerHTML = `
@@ -929,8 +932,8 @@
                     document.getElementById('total-tip').textContent = `$${totalTip.toFixed(2)}`;
                     
                     // Update filtered total
-                    const grandTotal = totalEarning + totalTip;
-                    filteredEarningTotalSpan.textContent = `Filtered Total: $${grandTotal.toFixed(2)}`;
+                    filteredEarningTotalMainSpan.textContent = `Total ($${totalEarning.toFixed(2)})`;
+                    filteredEarningTotalTipSpan.textContent = `Tip ($${totalTip.toFixed(2)})`;
                 };
 
                 // --- EVENT LISTENERS & LOGIC ---
@@ -1419,7 +1422,7 @@
                         id: doc.id,
                         ...doc.data()
                     }));
-                    renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter));
+                    renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter, currentEarningRangeFilter));
                 });
                 
                 // Search functionality
@@ -1601,11 +1604,21 @@
                 });
                 setupTechFilter('tech-filter-container-earning', (tech) => {
                     currentEarningTechFilter = tech;
-                    renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter));
+                    renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter, currentEarningRangeFilter));
                 });
                 document.getElementById('earning-date-filter').addEventListener('input', (e) => {
                     currentEarningDateFilter = e.target.value;
-                    renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter));
+                    renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter, currentEarningRangeFilter));
+                });
+                document.getElementById('earning-range-filter').addEventListener('change', (e) => {
+                    currentEarningRangeFilter = e.target.value;
+                    document.getElementById('earning-date-filter').style.display = currentEarningRangeFilter === 'daily' ? 'block' : 'none';
+                    if (currentEarningRangeFilter !== 'daily') {
+                        currentEarningDateFilter = ''; // Clear specific date when switching to a range
+                    } else {
+                        currentEarningDateFilter = document.getElementById('earning-date-filter').value;
+                    }
+                    renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter, currentEarningRangeFilter));
                 });
 
 
@@ -1885,7 +1898,7 @@
                 document.getElementById('staff-earning-date').value = todayString;
                 document.getElementById('earning-date-filter').value = todayString;
                 currentEarningDateFilter = todayString;
-                renderStaffEarnings(applyEarningFilters(allEarnings, 'All', currentEarningDateFilter));
+                renderStaffEarnings(applyEarningFilters(allEarnings, 'All', currentEarningDateFilter, 'daily'));
 
             };
 

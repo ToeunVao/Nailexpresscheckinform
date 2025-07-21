@@ -337,7 +337,7 @@
                 </div>
 
                 <div id="reports-content" class="tab-content hidden">
-                     <div id="staff-earning-section">
+                     <div id="staff-earning-section" class="hidden">
                         <h3 class="text-xl font-semibold text-gray-700 border-b pb-3 mb-6 flex justify-between items-center">
                             <span>Staff Earning Report</span>
                             <div class="flex gap-4">
@@ -418,7 +418,6 @@
                             </table>
                         </div>
                      </div>
-                     <hr class="my-12 border-t-2 border-gray-200">
                      <div id="salon-earning-section">
                         <h3 class="text-xl font-semibold text-gray-700 border-b pb-3 mb-6">Salon Earning Report</h3>
                         <form id="salon-earning-form" class="space-y-6 mb-8">
@@ -1115,22 +1114,35 @@
                     }
 
                     // Filter by date/range
-                    const now = new Date(dateFilter + 'T12:00:00') || new Date();
+                    const baseDate = dateFilter ? new Date(dateFilter + 'T12:00:00') : new Date();
+                     if (isNaN(baseDate.getTime())) { 
+                        baseDate = new Date();
+                    }
+                    
                     let startDate, endDate;
 
                     switch(rangeFilter) {
-                        case 'weekly':
-                            const firstDayOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
-                            startDate = new Date(firstDayOfWeek.setHours(0, 0, 0, 0));
-                            endDate = new Date(now.getFullYear(), now.getMonth(), startDate.getDate() + 6, 23, 59, 59, 999);
+                        case 'weekly': {
+                            const dayOfWeek = baseDate.getDay();
+                            const firstDayOfWeek = new Date(baseDate);
+                            firstDayOfWeek.setDate(baseDate.getDate() - dayOfWeek);
+                            firstDayOfWeek.setHours(0, 0, 0, 0);
+
+                            const lastDayOfWeek = new Date(firstDayOfWeek);
+                            lastDayOfWeek.setDate(firstDayOfWeek.getDate() + 6);
+                            lastDayOfWeek.setHours(23, 59, 59, 999);
+                            
+                            startDate = firstDayOfWeek;
+                            endDate = lastDayOfWeek;
                             break;
+                        }
                         case 'monthly':
-                            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-                            endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+                            startDate = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1, 0, 0, 0, 0);
+                            endDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0, 23, 59, 59, 999);
                             break;
                         case 'yearly':
-                            startDate = new Date(now.getFullYear(), 0, 1);
-                            endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+                            startDate = new Date(baseDate.getFullYear(), 0, 1, 0, 0, 0, 0);
+                            endDate = new Date(baseDate.getFullYear(), 11, 31, 23, 59, 59, 999);
                             break;
                         case 'daily':
                         default:
@@ -1189,22 +1201,35 @@
                 const applySalonEarningFilters = (earnings, dateFilter, rangeFilter) => {
                     let filtered = [...earnings];
 
-                    const now = new Date(dateFilter + 'T12:00:00') || new Date();
+                    const baseDate = dateFilter ? new Date(dateFilter + 'T12:00:00') : new Date();
+                    if (isNaN(baseDate.getTime())) { 
+                        baseDate = new Date();
+                    }
+
                     let startDate, endDate;
 
                     switch(rangeFilter) {
-                        case 'weekly':
-                            const firstDayOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
-                            startDate = new Date(firstDayOfWeek.setHours(0, 0, 0, 0));
-                            endDate = new Date(now.getFullYear(), now.getMonth(), startDate.getDate() + 6, 23, 59, 59, 999);
+                        case 'weekly': {
+                            const dayOfWeek = baseDate.getDay();
+                            const firstDayOfWeek = new Date(baseDate);
+                            firstDayOfWeek.setDate(baseDate.getDate() - dayOfWeek);
+                            firstDayOfWeek.setHours(0, 0, 0, 0);
+
+                            const lastDayOfWeek = new Date(firstDayOfWeek);
+                            lastDayOfWeek.setDate(firstDayOfWeek.getDate() + 6);
+                            lastDayOfWeek.setHours(23, 59, 59, 999);
+                            
+                            startDate = firstDayOfWeek;
+                            endDate = lastDayOfWeek;
                             break;
+                        }
                         case 'monthly':
-                            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-                            endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+                            startDate = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1, 0, 0, 0, 0);
+                            endDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0, 23, 59, 59, 999);
                             break;
                         case 'yearly':
-                            startDate = new Date(now.getFullYear(), 0, 1);
-                            endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+                            startDate = new Date(baseDate.getFullYear(), 0, 1, 0, 0, 0, 0);
+                            endDate = new Date(baseDate.getFullYear(), 11, 31, 23, 59, 59, 999);
                             break;
                         case 'daily':
                         default:
@@ -1993,12 +2018,11 @@
                 });
                 document.getElementById('earning-range-filter').addEventListener('change', (e) => {
                     currentEarningRangeFilter = e.target.value;
-                    document.getElementById('earning-date-filter').style.display = currentEarningRangeFilter === 'daily' ? 'block' : 'none';
-                    if (currentEarningRangeFilter !== 'daily') {
-                        currentEarningDateFilter = ''; // Clear specific date when switching to a range
-                    } else {
-                        currentEarningDateFilter = document.getElementById('earning-date-filter').value;
-                    }
+                    const dateFilterInput = document.getElementById('earning-date-filter');
+                    dateFilterInput.style.display = currentEarningRangeFilter === 'daily' ? 'block' : 'none';
+                    
+                    currentEarningDateFilter = dateFilterInput.value;
+
                     renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter, currentEarningRangeFilter));
                 });
 
@@ -2008,12 +2032,11 @@
                 });
                 document.getElementById('salon-earning-range-filter').addEventListener('change', (e) => {
                     currentSalonEarningRangeFilter = e.target.value;
-                    document.getElementById('salon-earning-date-filter').style.display = currentSalonEarningRangeFilter === 'daily' ? 'block' : 'none';
-                    if (currentSalonEarningRangeFilter !== 'daily') {
-                        currentSalonEarningDateFilter = ''; // Clear specific date when switching to a range
-                    } else {
-                        currentSalonEarningDateFilter = document.getElementById('salon-earning-date-filter').value;
-                    }
+                    const dateFilterInput = document.getElementById('salon-earning-date-filter');
+                    dateFilterInput.style.display = currentSalonEarningRangeFilter === 'daily' ? 'block' : 'none';
+                    
+                    currentSalonEarningDateFilter = dateFilterInput.value;
+
                     renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, currentSalonEarningDateFilter, currentSalonEarningRangeFilter));
                 });
 

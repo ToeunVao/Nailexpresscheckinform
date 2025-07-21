@@ -420,8 +420,128 @@
                      </div>
                      <hr class="my-12 border-t-2 border-gray-200">
                      <div id="salon-earning-section">
-                        <!-- Salon Earning Report will be injected here by JS -->
-                     </div>
+                        <h3 class="text-xl font-semibold text-gray-700 border-b pb-3 mb-6">Salon Earning Report</h3>
+                        <form id="salon-earning-form" class="space-y-6 mb-8">
+                            <input type="date" id="salon-earning-date" class="hidden" required>
+                            
+                            <!-- Staff Earnings Row -->
+                            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                                <div>
+                                    <label for="sokleng-earning" class="block text-sm font-medium text-gray-600">Sokleng</label>
+                                    <input type="number" step="0.01" id="sokleng-earning" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                                </div>
+                                <div>
+                                    <label for="toeun-earning" class="block text-sm font-medium text-gray-600">Toeun</label>
+                                    <input type="number" step="0.01" id="toeun-earning" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                                </div>
+                                <div>
+                                    <label for="mama-earning" class="block text-sm font-medium text-gray-600">Mama</label>
+                                    <input type="number" step="0.01" id="mama-earning" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                                </div>
+                                <div>
+                                    <label for="papa-earning" class="block text-sm font-medium text-gray-600">Papa</label>
+                                    <input type="number" step="0.01" id="papa-earning" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                                </div>
+                                <div>
+                                    <label for="linda-earning" class="block text-sm font-medium text-gray-600">Linda</label>
+                                    <input type="number" step="0.01" id="linda-earning" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                                </div>
+                            </div>
+
+                            <!-- Other Details Row -->
+                            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                                <div>
+                                    <label for="sell-gift-card" class="block text-sm font-medium text-gray-600">Sell Gift Card</label>
+                                    <input type="number" step="0.01" id="sell-gift-card" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                                </div>
+                                <div>
+                                    <label for="return-gift-card" class="block text-sm font-medium text-gray-600">Return Gift Card</label>
+                                    <input type="number" step="0.01" id="return-gift-card" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                                </div>
+                                <div>
+                                    <label for="check-payment" class="block text-sm font-medium text-gray-600">Check</label>
+                                    <input type="number" step="0.01" id="check-payment" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                                </div>
+                                <div>
+                                    <label for="no-of-credit" class="block text-sm font-medium text-gray-600">No. of Credit</label>
+                                    <input type="number" id="no-of-credit" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Count">
+                                </div>
+                                <div>
+                                    <label for="total-credit" class="block text-sm font-medium text-gray-600">Total Credit</label>
+                                    <input type="number" step="0.01" id="total-credit" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                                </div>
+                                <div>
+                                    <label for="venmo-payment" class="block text-sm font-medium text-gray-600">Venmo</label>
+                                    <input type="number" step="0.01" id="venmo-payment" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                                </div>
+                                 <div>
+                                    <label for="square-payment" class="block text-sm font-medium text-gray-600">Square</label>
+                                    <input type="number" step="0.01" id="square-payment" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                                </div>
+                            </div>
+                            <div class="text-center pt-4">
+                                <button type="submit" class="w-full md:w-auto bg-pink-600 text-white font-bold py-3 px-12 rounded-full hover:bg-pink-700 transition-all duration-300">
+                                    Add Salon Earning
+                                </button>
+                            </div>
+                        </form>
+                        <div class="flex justify-end items-center mb-4">
+                            <div class="flex items-center gap-2">
+                                <select id="salon-earning-range-filter" class="form-select p-2 border border-gray-300 rounded-lg">
+                                    <option value="daily">Daily</option>
+                                    <option value="weekly">This Week</option>
+                                    <option value="monthly">This Month</option>
+                                    <option value="yearly">This Year</option>
+                                </select>
+                                <input type="date" id="salon-earning-date-filter" class="p-2 border border-gray-300 rounded-lg">
+                           </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table id="salon-earning-table" class="w-full text-sm text-left text-gray-600">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3">Date</th>
+                                        <th scope="col" class="px-6 py-3">Sokleng</th>
+                                        <th scope="col" class="px-6 py-3">Toeun</th>
+                                        <th scope="col" class="px-6 py-3">Mama</th>
+                                        <th scope="col" class="px-6 py-3">Papa</th>
+                                        <th scope="col" class="px-6 py-3">Linda</th>
+                                        <th scope="col" class="px-6 py-3">Sell GC</th>
+                                        <th scope="col" class="px-6 py-3">Return GC</th>
+                                        <th scope="col" class="px-6 py-3">Check</th>
+                                        <th scope="col" class="px-6 py-3">No of Credit</th>
+                                        <th scope="col" class="px-6 py-3">Total Credit</th>
+                                        <th scope="col" class="px-6 py-3">Venmo</th>
+                                        <th scope="col" class="px-6 py-3">Square</th>
+                                        <th scope="col" class="px-6 py-3 font-bold">Total</th>
+                                        <th scope="col" class="px-6 py-3 font-bold">Cash</th>
+                                        <th scope="col" class="px-6 py-3 text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                                <tfoot class="bg-gray-100 font-semibold">
+                                    <tr>
+                                        <td class="px-6 py-3 text-right font-bold">Total:</td>
+                                        <td id="total-sokleng" class="px-6 py-3"></td>
+                                        <td id="total-toeun" class="px-6 py-3"></td>
+                                        <td id="total-mama" class="px-6 py-3"></td>
+                                        <td id="total-papa" class="px-6 py-3"></td>
+                                        <td id="total-linda" class="px-6 py-3"></td>
+                                        <td id="total-sell-gc" class="px-6 py-3"></td>
+                                        <td id="total-return-gc" class="px-6 py-3"></td>
+                                        <td id="total-check" class="px-6 py-3"></td>
+                                        <td id="total-no-credit" class="px-6 py-3"></td>
+                                        <td id="total-total-credit" class="px-6 py-3"></td>
+                                        <td id="total-venmo" class="px-6 py-3"></td>
+                                        <td id="total-square" class="px-6 py-3"></td>
+                                        <td id="total-total" class="px-6 py-3 font-bold"></td>
+                                        <td id="total-cash" class="px-6 py-3 font-bold"></td>
+                                        <td class="px-6 py-3"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
@@ -624,6 +744,91 @@
             </form>
         </div>
 
+        <div id="edit-salon-earning-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+            <div class="absolute inset-0 bg-black opacity-50 edit-salon-earning-modal-overlay"></div>
+            <form id="edit-salon-earning-form" class="relative bg-white w-full max-w-4xl p-6 rounded-2xl shadow-xl m-4">
+                <h3 class="text-2xl font-bold text-pink-700 mb-6">Edit Salon Earning</h3>
+                <input type="hidden" id="edit-salon-earning-id">
+                <div class="space-y-6">
+                    <div>
+                        <label for="edit-salon-earning-date" class="block text-sm font-medium text-gray-600 mb-1">Date</label>
+                        <input type="date" id="edit-salon-earning-date" class="form-input w-full p-3 border border-gray-300 rounded-lg" required>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-x-6 gap-y-4">
+                        <!-- Staff Earnings Column -->
+                        <div class="space-y-4 md:col-span-1">
+                            <h4 class="text-lg font-semibold text-gray-700">Staff Earnings</h4>
+                            <div>
+                                <label for="edit-sokleng-earning" class="block text-sm font-medium text-gray-600">Sokleng Earning</label>
+                                <input type="number" step="0.01" id="edit-sokleng-earning" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                            </div>
+                            <div>
+                                <label for="edit-toeun-earning" class="block text-sm font-medium text-gray-600">Toeun Earning</label>
+                                <input type="number" step="0.01" id="edit-toeun-earning" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                            </div>
+                            <div>
+                                <label for="edit-mama-earning" class="block text-sm font-medium text-gray-600">Mama Earning</label>
+                                <input type="number" step="0.01" id="edit-mama-earning" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                            </div>
+                            <div>
+                                <label for="edit-papa-earning" class="block text-sm font-medium text-gray-600">Papa Earning</label>
+                                <input type="number" step="0.01" id="edit-papa-earning" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                            </div>
+                             <div>
+                                <label for="edit-linda-earning" class="block text-sm font-medium text-gray-600">Linda Earning</label>
+                                <input type="number" step="0.01" id="edit-linda-earning" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                            </div>
+                        </div>
+                        
+                        <!-- Other Details Columns -->
+                        <div class="space-y-4 md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-x-6">
+                            <div class="space-y-4">
+                                <h4 class="text-lg font-semibold text-gray-700">Gift Cards & Checks</h4>
+                                <div>
+                                    <label for="edit-sell-gift-card" class="block text-sm font-medium text-gray-600 mb-1">Sell Gift Card</label>
+                                    <input type="number" step="0.01" id="edit-sell-gift-card" class="form-input w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                                </div>
+                                <div>
+                                    <label for="edit-return-gift-card" class="block text-sm font-medium text-gray-600 mb-1">Return Gift Card</label>
+                                    <input type="number" step="0.01" id="edit-return-gift-card" class="form-input w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                                </div>
+                                <div>
+                                    <label for="edit-check-payment" class="block text-sm font-medium text-gray-600 mb-1">Check</label>
+                                    <input type="number" step="0.01" id="edit-check-payment" class="form-input w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                                </div>
+                            </div>
+                            <div class="space-y-4">
+                                 <h4 class="text-lg font-semibold text-gray-700">Credit Card</h4>
+                                <div>
+                                    <label for="edit-no-of-credit" class="block text-sm font-medium text-gray-600 mb-1">No. of Transactions</label>
+                                    <input type="number" id="edit-no-of-credit" class="form-input w-full p-2 border border-gray-300 rounded-lg" placeholder="Count">
+                                </div>
+                                <div>
+                                    <label for="edit-total-credit" class="block text-sm font-medium text-gray-600 mb-1">Total Credit</label>
+                                    <input type="number" step="0.01" id="edit-total-credit" class="form-input w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                                </div>
+                            </div>
+                            <div class="space-y-4">
+                                <h4 class="text-lg font-semibold text-gray-700">Digital Payments</h4>
+                                <div>
+                                    <label for="edit-venmo-payment" class="block text-sm font-medium text-gray-600 mb-1">Venmo</label>
+                                    <input type="number" step="0.01" id="edit-venmo-payment" class="form-input w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                                </div>
+                                 <div>
+                                    <label for="edit-square-payment" class="block text-sm font-medium text-gray-600 mb-1">Square</label>
+                                    <input type="number" step="0.01" id="edit-square-payment" class="form-input w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" id="edit-salon-earning-cancel-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Cancel</button>
+                    <button type="submit" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Save Changes</button>
+                </div>
+            </form>
+        </div>
+
         <!-- Gemini API Modals -->
         <div id="follow-up-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
             <div class="absolute inset-0 bg-black opacity-50"></div>
@@ -685,6 +890,8 @@
                 const addAppointmentForm = document.getElementById('add-appointment-form');
                 const editEarningModal = document.getElementById('edit-earning-modal');
                 const editEarningForm = document.getElementById('edit-earning-form');
+                const editSalonEarningModal = document.getElementById('edit-salon-earning-modal');
+                const editSalonEarningForm = document.getElementById('edit-salon-earning-form');
                 const followUpModal = document.getElementById('follow-up-modal');
                 
                 const rebookOtherInput = document.getElementById('rebook-other-input');
@@ -716,6 +923,8 @@
                 let currentEarningTechFilter = 'All';
                 let currentEarningDateFilter = '';
                 let currentEarningRangeFilter = 'daily';
+                let currentSalonEarningDateFilter = '';
+                let currentSalonEarningRangeFilter = 'daily';
 
 
                 let allActiveClients = [];
@@ -723,6 +932,7 @@
                 let allAppointments = [];
                 let aggregatedClients = [];
                 let allEarnings = [];
+                let allSalonEarnings = [];
 
 
                 // --- DATA ---
@@ -738,7 +948,7 @@
                 // --- Gemini API Functions ---
                 async function callGeminiForText(prompt) {
                     const apiKey = ""; // Canvas will provide this
-                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
                     
                     const payload = {
                         contents: [{ role: "user", parts: [{ text: prompt }] }]
@@ -796,39 +1006,79 @@
                     return filtered;
                 };
 
-                const renderActiveClients = (clients) => renderTable(
-                    document.querySelector('#clients-table tbody'),
-                    [{key: 'name'}, {key: 'services'},],
-                    clients,
-                    "No clients in the queue.",
-                    [
-                        {label: '<i class="fas fa-arrow-right text-lg text-blue-500 hover:text-blue-700"></i>', className: 'move-to-processing-btn', title: 'Move to Processing'},
-                        {label: '<i class="fas fa-info-circle text-lg text-gray-500 hover:text-gray-700"></i>', className: 'detail-btn-active', title: 'View Details'}
-                    ]
-                );
+                const renderActiveClients = (clients) => {
+                    const tbody = document.querySelector('#clients-table tbody');
+                    if (!tbody) return;
+                    tbody.innerHTML = '';
+                    if (clients.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-gray-400">No clients in the queue.</td></tr>`;
+                        return;
+                    }
+                    clients.forEach((client, index) => {
+                        const row = tbody.insertRow();
+                        row.className = 'bg-white border-b';
+                        row.innerHTML = `
+                            <td class="px-6 py-4 text-center font-medium text-gray-900">${index + 1}</td>
+                            <td class="px-6 py-4">${client.name}</td>
+                            <td class="px-6 py-4">${client.services}</td>
+                            <td class="px-6 py-4 text-center space-x-4">
+                                <button data-id="${client.id}" class="move-to-processing-btn" title="Move to Processing"><i class="fas fa-arrow-right text-lg text-blue-500 hover:text-blue-700"></i></button>
+                                <button data-id="${client.id}" class="detail-btn-active" title="View Details"><i class="fas fa-info-circle text-lg text-gray-500 hover:text-gray-700"></i></button>
+                            </td>
+                        `;
+                    });
+                };
 
-                const renderProcessingClients = (clients) => renderTable(
-                    document.querySelector('#processing-table tbody'),
-                    [{key: 'name'}, {key: 'services'}, {key: 'technician'}, {key: 'checkInTime'}],
-                    clients,
-                    "No clients are being processed.",
-                    [
-                        {label: '<i class="fas fa-check-circle text-lg text-green-500 hover:text-green-700"></i>', className: 'check-out-btn-processing', title: 'Check Out'}
-                    ]
-                );
+                const renderProcessingClients = (clients) => {
+                    const tbody = document.querySelector('#processing-table tbody');
+                    if (!tbody) return;
+                    tbody.innerHTML = '';
+                    if (clients.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-gray-400">No clients are being processed.</td></tr>`;
+                        return;
+                    }
+                    clients.forEach((client, index) => {
+                        const row = tbody.insertRow();
+                        row.className = 'bg-white border-b';
+                        row.innerHTML = `
+                            <td class="px-6 py-4 text-center font-medium text-gray-900">${index + 1}</td>
+                            <td class="px-6 py-4">${client.name}</td>
+                            <td class="px-6 py-4">${client.services}</td>
+                            <td class="px-6 py-4">${client.technician}</td>
+                            <td class="px-6 py-4">${client.checkInTime}</td>
+                            <td class="px-6 py-4 text-center">
+                                <button data-id="${client.id}" class="check-out-btn-processing" title="Check Out"><i class="fas fa-check-circle text-lg text-green-500 hover:text-green-700"></i></button>
+                            </td>
+                        `;
+                    });
+                };
 
-                const renderFinishedClients = (clients) => renderTable(
-                    document.querySelector('#finished-clients-table tbody'),
-                    [{key: 'name'}, {key: 'people', align: 'center'}, {key: 'services'}, {key: 'checkInTime'}],
-                    clients,
-                    "No finished clients found.",
-                    [
-                         {label: '<i class="fas fa-comment text-lg text-green-500 hover:text-green-700"></i>', className: 'view-feedback-btn', title: 'View Feedback'},
-                         {label: '<i class="fas fa-sms text-lg text-teal-500 hover:text-teal-700"></i>', className: 'draft-sms-btn', title: 'Draft SMS ✨'},
-                         {label: '<i class="fas fa-copy text-lg text-blue-500 hover:text-blue-700"></i>', className: 'copy-follow-up-btn', title: 'Copy Follow-up ✨'},
-                         {label: '<i class="fas fa-trash-alt text-lg text-red-500 hover:text-red-700"></i>', className: 'delete-btn-finished', title: 'Delete'}
-                    ]
-                );
+                const renderFinishedClients = (clients) => {
+                    const tbody = document.querySelector('#finished-clients-table tbody');
+                    if (!tbody) return;
+                    tbody.innerHTML = '';
+                    if (clients.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-gray-400">No finished clients found.</td></tr>`;
+                        return;
+                    }
+                    clients.forEach((client, index) => {
+                        const row = tbody.insertRow();
+                        row.className = 'bg-white border-b';
+                        row.innerHTML = `
+                            <td class="px-6 py-4 text-center font-medium text-gray-900">${index + 1}</td>
+                            <td class="px-6 py-4">${client.name}</td>
+                            <td class="px-6 py-4 text-center">${client.people}</td>
+                            <td class="px-6 py-4">${client.services}</td>
+                            <td class="px-6 py-4">${client.checkInTime}</td>
+                            <td class="px-6 py-4 text-center space-x-2">
+                                <button data-id="${client.id}" class="view-feedback-btn" title="View Feedback"><i class="fas fa-comment text-lg text-green-500 hover:text-green-700"></i></button>
+                                <button data-id="${client.id}" class="draft-sms-btn" title="Draft SMS ✨"><i class="fas fa-sms text-lg text-teal-500 hover:text-teal-700"></i></button>
+                                <button data-id="${client.id}" class="copy-follow-up-btn" title="Copy Follow-up ✨"><i class="fas fa-copy text-lg text-blue-500 hover:text-blue-700"></i></button>
+                                <button data-id="${client.id}" class="delete-btn-finished" title="Delete"><i class="fas fa-trash-alt text-lg text-red-500 hover:text-red-700"></i></button>
+                            </td>
+                        `;
+                    });
+                };
 
                 const renderClientsList = (clients) => {
                     const tbody = document.querySelector('#clients-list-table tbody');
@@ -934,6 +1184,129 @@
                     // Update filtered total
                     filteredEarningTotalMainSpan.textContent = `Total ($${totalEarning.toFixed(2)})`;
                     filteredEarningTotalTipSpan.textContent = `Tip ($${totalTip.toFixed(2)})`;
+                };
+
+                const applySalonEarningFilters = (earnings, dateFilter, rangeFilter) => {
+                    let filtered = [...earnings];
+
+                    const now = new Date(dateFilter + 'T12:00:00') || new Date();
+                    let startDate, endDate;
+
+                    switch(rangeFilter) {
+                        case 'weekly':
+                            const firstDayOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+                            startDate = new Date(firstDayOfWeek.setHours(0, 0, 0, 0));
+                            endDate = new Date(now.getFullYear(), now.getMonth(), startDate.getDate() + 6, 23, 59, 59, 999);
+                            break;
+                        case 'monthly':
+                            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                            endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+                            break;
+                        case 'yearly':
+                            startDate = new Date(now.getFullYear(), 0, 1);
+                            endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+                            break;
+                        case 'daily':
+                        default:
+                            if (dateFilter) {
+                                startDate = new Date(dateFilter + 'T00:00:00');
+                                endDate = new Date(dateFilter + 'T23:59:59');
+                            }
+                            break;
+                    }
+
+                    if (startDate && endDate) {
+                         filtered = filtered.filter(e => {
+                            const earningDate = new Date(e.date.seconds * 1000);
+                            return earningDate >= startDate && earningDate <= endDate;
+                        });
+                    }
+                    
+                    return filtered;
+                };
+
+                const renderSalonEarnings = (earnings) => {
+                    const tbody = document.querySelector('#salon-earning-table tbody');
+                    const tfoot = document.querySelector('#salon-earning-table tfoot');
+                    if (!tbody || !tfoot) return;
+                    tbody.innerHTML = '';
+
+                    const footerIds = ['sokleng', 'toeun', 'mama', 'papa', 'linda', 'sell-gc', 'return-gc', 'check', 'no-credit', 'total-credit', 'venmo', 'square', 'total', 'cash'];
+                    
+                    if (earnings.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="15" class="py-6 text-center text-gray-400">No salon earnings found for the selected filters.</td></tr>`;
+                        footerIds.forEach(id => {
+                            const el = document.getElementById(`total-${id}`);
+                            if (el) el.textContent = id === 'no-credit' ? '0' : '$0.00';
+                        });
+                        return;
+                    }
+                    
+                    earnings.sort((a, b) => b.date.seconds - a.date.seconds).forEach(earning => {
+                        const row = tbody.insertRow();
+                        row.className = 'bg-white border-b';
+
+                        const total = (earning.soklengEarning || 0) + (earning.toeunEarning || 0) + (earning.mamaEarning || 0) + (earning.papaEarning || 0) + (earning.lindaEarning || 0) + (earning.sellGiftCard || 0) + ((earning.noOfCredit || 0) * 2);
+                        const cash = total - ((earning.totalCredit || 0) + (earning.check || 0) + (earning.returnGiftCard || 0) + (earning.venmo || 0) + (earning.square || 0));
+
+                        row.innerHTML = `
+                            <td class="px-6 py-4">${new Date(earning.date.seconds * 1000).toLocaleDateString()}</td>
+                            <td class="px-6 py-4">$${(earning.soklengEarning || 0).toFixed(2)}</td>
+                            <td class="px-6 py-4">$${(earning.toeunEarning || 0).toFixed(2)}</td>
+                            <td class="px-6 py-4">$${(earning.mamaEarning || 0).toFixed(2)}</td>
+                            <td class="px-6 py-4">$${(earning.papaEarning || 0).toFixed(2)}</td>
+                            <td class="px-6 py-4">$${(earning.lindaEarning || 0).toFixed(2)}</td>
+                            <td class="px-6 py-4">$${(earning.sellGiftCard || 0).toFixed(2)}</td>
+                            <td class="px-6 py-4">$${(earning.returnGiftCard || 0).toFixed(2)}</td>
+                            <td class="px-6 py-4">$${(earning.check || 0).toFixed(2)}</td>
+                            <td class="px-6 py-4">${earning.noOfCredit || 0}</td>
+                            <td class="px-6 py-4">$${(earning.totalCredit || 0).toFixed(2)}</td>
+                            <td class="px-6 py-4">$${(earning.venmo || 0).toFixed(2)}</td>
+                            <td class="px-6 py-4">$${(earning.square || 0).toFixed(2)}</td>
+                            <td class="px-6 py-4 font-bold">$${total.toFixed(2)}</td>
+                            <td class="px-6 py-4 font-bold">$${cash.toFixed(2)}</td>
+                            <td class="px-6 py-4 text-center space-x-2">
+                                <button data-id="${earning.id}" class="edit-salon-earning-btn text-blue-500 hover:text-blue-700" title="Edit Salon Earning"><i class="fas fa-edit text-lg"></i></button>
+                                <button data-id="${earning.id}" class="delete-salon-earning-btn text-red-500 hover:text-red-700" title="Delete Salon Earning"><i class="fas fa-trash-alt text-lg"></i></button>
+                            </td>
+                        `;
+                    });
+
+                    // Calculate and render totals
+                    const totals = {
+                        sokleng: earnings.reduce((sum, e) => sum + (e.soklengEarning || 0), 0),
+                        toeun: earnings.reduce((sum, e) => sum + (e.toeunEarning || 0), 0),
+                        mama: earnings.reduce((sum, e) => sum + (e.mamaEarning || 0), 0),
+                        papa: earnings.reduce((sum, e) => sum + (e.papaEarning || 0), 0),
+                        linda: earnings.reduce((sum, e) => sum + (e.lindaEarning || 0), 0),
+                        sellGc: earnings.reduce((sum, e) => sum + (e.sellGiftCard || 0), 0),
+                        returnGc: earnings.reduce((sum, e) => sum + (e.returnGiftCard || 0), 0),
+                        check: earnings.reduce((sum, e) => sum + (e.check || 0), 0),
+                        noCredit: earnings.reduce((sum, e) => sum + (e.noOfCredit || 0), 0),
+                        totalCredit: earnings.reduce((sum, e) => sum + (e.totalCredit || 0), 0),
+                        venmo: earnings.reduce((sum, e) => sum + (e.venmo || 0), 0),
+                        square: earnings.reduce((sum, e) => sum + (e.square || 0), 0),
+                        get total() {
+                            return this.sokleng + this.toeun + this.mama + this.papa + this.linda + this.sellGc + (this.noCredit * 2);
+                        },
+                        get cash() {
+                            return this.total - (this.totalCredit + this.check + this.returnGc + this.venmo + this.square);
+                        }
+                    };
+                    document.getElementById('total-sokleng').textContent = `$${totals.sokleng.toFixed(2)}`;
+                    document.getElementById('total-toeun').textContent = `$${totals.toeun.toFixed(2)}`;
+                    document.getElementById('total-mama').textContent = `$${totals.mama.toFixed(2)}`;
+                    document.getElementById('total-papa').textContent = `$${totals.papa.toFixed(2)}`;
+                    document.getElementById('total-linda').textContent = `$${totals.linda.toFixed(2)}`;
+                    document.getElementById('total-sell-gc').textContent = `$${totals.sellGc.toFixed(2)}`;
+                    document.getElementById('total-return-gc').textContent = `$${totals.returnGc.toFixed(2)}`;
+                    document.getElementById('total-check').textContent = `$${totals.check.toFixed(2)}`;
+                    document.getElementById('total-no-credit').textContent = totals.noCredit;
+                    document.getElementById('total-total-credit').textContent = `$${totals.totalCredit.toFixed(2)}`;
+                    document.getElementById('total-venmo').textContent = `$${totals.venmo.toFixed(2)}`;
+                    document.getElementById('total-square').textContent = `$${totals.square.toFixed(2)}`;
+                    document.getElementById('total-total').textContent = `$${totals.total.toFixed(2)}`;
+                    document.getElementById('total-cash').textContent = `$${totals.cash.toFixed(2)}`;
                 };
 
                 // --- EVENT LISTENERS & LOGIC ---
@@ -1424,6 +1797,14 @@
                     }));
                     renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter, currentEarningRangeFilter));
                 });
+
+                onSnapshot(query(collection(db, "salon_earnings"), orderBy("date", "desc")), (snapshot) => {
+                    allSalonEarnings = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, currentSalonEarningDateFilter, currentSalonEarningRangeFilter));
+                });
                 
                 // Search functionality
                 document.getElementById('search-active').addEventListener('input', (e) => {
@@ -1621,6 +2002,21 @@
                     renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter, currentEarningRangeFilter));
                 });
 
+                document.getElementById('salon-earning-date-filter').addEventListener('input', (e) => {
+                    currentSalonEarningDateFilter = e.target.value;
+                    renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, currentSalonEarningDateFilter, currentSalonEarningRangeFilter));
+                });
+                document.getElementById('salon-earning-range-filter').addEventListener('change', (e) => {
+                    currentSalonEarningRangeFilter = e.target.value;
+                    document.getElementById('salon-earning-date-filter').style.display = currentSalonEarningRangeFilter === 'daily' ? 'block' : 'none';
+                    if (currentSalonEarningRangeFilter !== 'daily') {
+                        currentSalonEarningDateFilter = ''; // Clear specific date when switching to a range
+                    } else {
+                        currentSalonEarningDateFilter = document.getElementById('salon-earning-date-filter').value;
+                    }
+                    renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, currentSalonEarningDateFilter, currentSalonEarningRangeFilter));
+                });
+
 
                 // --- ADD APPOINTMENT MODAL LOGIC ---
                 const openAddAppointmentModal = (date) => {
@@ -1738,6 +2134,58 @@
                     }
                 });
 
+                const salonEarningForm = document.getElementById('salon-earning-form');
+                salonEarningForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const date = document.getElementById('salon-earning-date').value;
+                    if (!date) {
+                        return alert('Please select a date.');
+                    }
+
+                    const salonEarningData = {
+                        date: Timestamp.fromDate(new Date(date + 'T12:00:00')),
+                        soklengEarning: parseFloat(document.getElementById('sokleng-earning').value) || 0,
+                        toeunEarning: parseFloat(document.getElementById('toeun-earning').value) || 0,
+                        mamaEarning: parseFloat(document.getElementById('mama-earning').value) || 0,
+                        papaEarning: parseFloat(document.getElementById('papa-earning').value) || 0,
+                        lindaEarning: parseFloat(document.getElementById('linda-earning').value) || 0,
+                        sellGiftCard: parseFloat(document.getElementById('sell-gift-card').value) || 0,
+                        returnGiftCard: parseFloat(document.getElementById('return-gift-card').value) || 0,
+                        check: parseFloat(document.getElementById('check-payment').value) || 0,
+                        noOfCredit: parseInt(document.getElementById('no-of-credit').value) || 0,
+                        totalCredit: parseFloat(document.getElementById('total-credit').value) || 0,
+                        venmo: parseFloat(document.getElementById('venmo-payment').value) || 0,
+                        square: parseFloat(document.getElementById('square-payment').value) || 0,
+                    };
+
+                    try {
+                        await addDoc(collection(db, "salon_earnings"), salonEarningData);
+                        salonEarningForm.reset();
+                        document.getElementById('salon-earning-date').value = new Date().toISOString().split('T')[0];
+                    } catch (err) {
+                        console.error("Error adding salon earning: ", err);
+                        alert("Could not add salon earning. Please try again.");
+                    }
+                });
+
+                document.getElementById('salon-earning-table').addEventListener('click', async (e) => {
+                    const deleteBtn = e.target.closest('.delete-salon-earning-btn');
+                    const editBtn = e.target.closest('.edit-salon-earning-btn');
+
+                    if(deleteBtn) {
+                        const earningId = deleteBtn.dataset.id;
+                        if(confirm('Are you sure you want to delete this salon earning entry?')) {
+                            await deleteDoc(doc(db, "salon_earnings", earningId));
+                        }
+                    } else if (editBtn) {
+                        const earningId = editBtn.dataset.id;
+                        const earning = allSalonEarnings.find(e => e.id === earningId);
+                        if (earning) {
+                            openEditSalonEarningModal(earning);
+                        }
+                    }
+                });
+
                 const openEditEarningModal = (earning) => {
                     editEarningForm.reset();
                     document.getElementById('edit-earning-id').value = earning.id;
@@ -1778,6 +2226,64 @@
                     } catch(err) {
                         console.error("Error updating earning:", err);
                         alert("Could not update earning. Please try again.");
+                    }
+                });
+                
+                const openEditSalonEarningModal = (earning) => {
+                    editSalonEarningForm.reset();
+                    document.getElementById('edit-salon-earning-id').value = earning.id;
+                    document.getElementById('edit-salon-earning-date').value = new Date(earning.date.seconds * 1000).toISOString().split('T')[0];
+                    document.getElementById('edit-sokleng-earning').value = earning.soklengEarning || 0;
+                    document.getElementById('edit-toeun-earning').value = earning.toeunEarning || 0;
+                    document.getElementById('edit-mama-earning').value = earning.mamaEarning || 0;
+                    document.getElementById('edit-papa-earning').value = earning.papaEarning || 0;
+                    document.getElementById('edit-linda-earning').value = earning.lindaEarning || 0;
+                    document.getElementById('edit-sell-gift-card').value = earning.sellGiftCard || 0;
+                    document.getElementById('edit-return-gift-card').value = earning.returnGiftCard || 0;
+                    document.getElementById('edit-check-payment').value = earning.check || 0;
+                    document.getElementById('edit-no-of-credit').value = earning.noOfCredit || 0;
+                    document.getElementById('edit-total-credit').value = earning.totalCredit || 0;
+                    document.getElementById('edit-venmo-payment').value = earning.venmo || 0;
+                    document.getElementById('edit-square-payment').value = earning.square || 0;
+                    editSalonEarningModal.classList.remove('hidden');
+                    editSalonEarningModal.classList.add('flex');
+                };
+                const closeEditSalonEarningModal = () => {
+                    editSalonEarningModal.classList.add('hidden');
+                    editSalonEarningModal.classList.remove('flex');
+                };
+                document.getElementById('edit-salon-earning-cancel-btn').addEventListener('click', closeEditSalonEarningModal);
+                document.querySelector('.edit-salon-earning-modal-overlay').addEventListener('click', closeEditSalonEarningModal);
+
+                editSalonEarningForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const earningId = document.getElementById('edit-salon-earning-id').value;
+                    if (!earningId) return;
+                    
+                    const date = document.getElementById('edit-salon-earning-date').value;
+                    const updatedData = {
+                        date: Timestamp.fromDate(new Date(date + 'T12:00:00')),
+                        soklengEarning: parseFloat(document.getElementById('edit-sokleng-earning').value) || 0,
+                        toeunEarning: parseFloat(document.getElementById('edit-toeun-earning').value) || 0,
+                        mamaEarning: parseFloat(document.getElementById('edit-mama-earning').value) || 0,
+                        papaEarning: parseFloat(document.getElementById('edit-papa-earning').value) || 0,
+                        lindaEarning: parseFloat(document.getElementById('edit-linda-earning').value) || 0,
+                        sellGiftCard: parseFloat(document.getElementById('edit-sell-gift-card').value) || 0,
+                        returnGiftCard: parseFloat(document.getElementById('edit-return-gift-card').value) || 0,
+                        check: parseFloat(document.getElementById('edit-check-payment').value) || 0,
+                        noOfCredit: parseInt(document.getElementById('edit-no-of-credit').value) || 0,
+                        totalCredit: parseFloat(document.getElementById('edit-total-credit').value) || 0,
+                        venmo: parseFloat(document.getElementById('edit-venmo-payment').value) || 0,
+                        square: parseFloat(document.getElementById('edit-square-payment').value) || 0,
+                    };
+
+                    try {
+                        const earningRef = doc(db, "salon_earnings", earningId);
+                        await updateDoc(earningRef, updatedData);
+                        closeEditSalonEarningModal();
+                    } catch(err) {
+                        console.error("Error updating salon earning:", err);
+                        alert("Could not update salon earning. Please try again.");
                     }
                 });
                 
@@ -1899,6 +2405,12 @@
                 document.getElementById('earning-date-filter').value = todayString;
                 currentEarningDateFilter = todayString;
                 renderStaffEarnings(applyEarningFilters(allEarnings, 'All', currentEarningDateFilter, 'daily'));
+
+                // Set default date for salon earning form and filter
+                document.getElementById('salon-earning-date').value = todayString;
+                document.getElementById('salon-earning-date-filter').value = todayString;
+                currentSalonEarningDateFilter = todayString;
+                renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, currentSalonEarningDateFilter, 'daily'));
 
             };
 

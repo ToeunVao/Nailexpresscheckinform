@@ -289,7 +289,7 @@
                             <button id="next-month-btn" class="px-4 py-2 bg-pink-600 text-white rounded-lg"><i class="fas fa-chevron-right"></i></button>
                         </div>
                      </div>
-                     <div id="today-view" class="hidden">
+                     <div id="list-view" class="hidden">
                          <div class="overflow-x-auto">
                             <table id="today-bookings-table" class="w-full text-sm text-left text-gray-600">
                                  <thead class="text-xs text-gray-700 uppercase bg-gray-50">
@@ -298,7 +298,7 @@
                                         <th scope="col" class="px-6 py-3">Services</th>
                                         <th scope="col" class="px-6 py-3">Technician</th>
                                         <th scope="col" class="px-6 py-3">Group</th>
-                                        <th scope="col" class="px-6 py-3">Booking Time</th>
+                                        <th scope="col" class="px-6 py-3">Date & Time</th>
                                         <th scope="col" class="px-6 py-3">Action</th>
                                     </tr>
                                 </thead>
@@ -749,7 +749,7 @@
                 <h3 class="text-2xl font-bold text-pink-700 mb-6">Edit Salon Earning</h3>
                 <input type="hidden" id="edit-salon-earning-id">
                 <div class="space-y-6">
-                    <div>
+                    <div class="hidden">
                         <label for="edit-salon-earning-date" class="block text-sm font-medium text-gray-600 mb-1">Date</label>
                         <input type="date" id="edit-salon-earning-date" class="form-input w-full p-3 border border-gray-300 rounded-lg" required>
                     </div>
@@ -886,7 +886,6 @@
                 const editSalonEarningForm = document.getElementById('edit-salon-earning-form');
                 const editClientModal = document.getElementById('edit-client-modal');
                 const editClientForm = document.getElementById('edit-client-form');
-                const followUpModal = document.getElementById('follow-up-modal');
                 
                 const rebookOtherInput = document.getElementById('rebook-other-input');
                 const rebookSelect = document.getElementById('rebook-select');
@@ -1409,38 +1408,62 @@
 
                 const openViewDetailModal = (client, title = "Client Details") => {
                     if (!client) return;
+                    document.getElementById('view-detail-title').textContent = title;
                     const content = document.getElementById('view-detail-content');
                     const actions = document.getElementById('view-detail-actions');
-                    document.getElementById('view-detail-title').textContent = title;
+
+                    // --- Details of the item that was clicked ---
+                    let appointmentDetailsHTML = '<div class="space-y-2">';
+                    appointmentDetailsHTML += '<h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Appointment Details</h4>';
                     
+                    let appointmentTime = 'N/A';
+                    if (client.appointmentTimestamp) {
+                        appointmentTime = new Date(client.appointmentTimestamp.seconds * 1000).toLocaleString();
+                    } else if (client.checkInTimestamp) {
+                        appointmentTime = new Date(client.checkInTimestamp.seconds * 1000).toLocaleString();
+                    }
+                    
+                    appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Date:</strong> ${appointmentTime}</div>`;
+                    appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Services:</strong> ${Array.isArray(client.services) ? client.services.join(', ') : client.services || 'N/A'}</div>`;
+                    appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Technician:</strong> ${client.technician || 'N/A'}</div>`;
+                    appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Booking Type:</strong> ${client.bookingType || 'N/A'}</div>`;
+                    if (client.colorCode) {
+                        appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Color Code:</strong> ${client.colorCode}</div>`;
+                    }
+                    appointmentDetailsHTML += '</div>';
+
+
+                    // --- Find Last Finished Appointment (for history) ---
                     const lastFinished = allFinishedClients
-                        .filter(c => c.name === client.name)
+                        .filter(c => c.name === client.name && c.id !== client.id) // Exclude the current one if it's already finished
                         .sort((a,b) => b.checkOutTimestamp.toMillis() - a.checkOutTimestamp.toMillis())[0];
 
-                    let lastAppointmentInfo = 'N/A';
-                    let lastServices = client.services;
-                    let lastColorCode = client.colorCode;
-                    let lastTechnician = client.technician;
-                    let lastBookingType = client.bookingType;
-
+                    let lastVisitHTML = '';
                     if (lastFinished) {
-                        lastAppointmentInfo = new Date(lastFinished.checkOutTimestamp.seconds * 1000).toLocaleString();
-                        lastServices = lastFinished.services;
-                        lastColorCode = lastFinished.colorCode;
-                        lastTechnician = lastFinished.technician;
-                        lastBookingType = lastFinished.bookingType;
-                    } else if (client.checkInTimestamp) {
-                        lastAppointmentInfo = new Date(client.checkInTimestamp.seconds * 1000).toLocaleString();
-                    } else if (client.appointmentTimestamp) {
-                        lastAppointmentInfo = new Date(client.appointmentTimestamp.seconds * 1000).toLocaleString();
+                        lastVisitHTML = `
+                            <div class="space-y-2">
+                                <h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Previous Visit</h4>
+                                <div><strong class="font-semibold text-gray-700">Date:</strong> ${new Date(lastFinished.checkOutTimestamp.seconds * 1000).toLocaleString()}</div>
+                                <div><strong class="font-semibold text-gray-700">Services:</strong> ${lastFinished.services || 'N/A'}</div>
+                                <div><strong class="font-semibold text-gray-700">Color Code:</strong> ${lastFinished.colorCode || 'N/A'}</div>
+                                <div><strong class="font-semibold text-gray-700">Technician:</strong> ${lastFinished.technician || 'N/A'}</div>
+                            </div>
+                        `;
                     }
 
-                    
+                    // --- Find Next Appointment ---
                     const nextAppointment = allAppointments
                         .filter(appt => appt.name === client.name && appt.appointmentTimestamp.toMillis() > Date.now())
                         .sort((a, b) => a.appointmentTimestamp.toMillis() - b.appointmentTimestamp.toMillis())[0];
+                    
+                    let nextAppointmentHTML = `
+                        <div class="space-y-2">
+                            <h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Next Appointment</h4>
+                            <div class="font-bold text-pink-600">${nextAppointment ? new Date(nextAppointment.appointmentTimestamp.seconds * 1000).toLocaleString() : 'Not scheduled'}</div>
+                        </div>
+                    `;
 
-
+                    // --- Assemble the modal content ---
                     content.innerHTML = `
                         <div class="space-y-2">
                             <h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Client Details</h4>
@@ -1448,22 +1471,12 @@
                             <div><strong class="font-semibold text-gray-700">Phone:</strong> ${client.phone || 'N/A'}</div>
                             <div><strong class="font-semibold text-gray-700">Group Size:</strong> ${client.people || '1'}</div>
                         </div>
-                         <div class="space-y-2">
-                            <h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Last Appointment</h4>
-                            <div><strong class="font-semibold text-gray-700">Date:</strong> ${lastAppointmentInfo}</div>
-                            <div><strong class="font-semibold text-gray-700">Services:</strong> ${Array.isArray(lastServices) ? lastServices.join(', ') : lastServices || 'N/A'}</div>
-                            <div><strong class="font-semibold text-gray-700">Color Code:</strong> ${lastColorCode || 'N/A'}</div>
-                            <div><strong class="font-semibold text-gray-700">Technician:</strong> ${lastTechnician || 'N/A'}</div>
-                            <div><strong class="font-semibold text-gray-700">Booking Type:</strong> ${lastBookingType || 'N/A'}</div>
-
-                        </div>
-                         <div class="space-y-2">
-                            <h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Next Appointment</h4>
-                            <div class="font-bold text-pink-600">${nextAppointment ? new Date(nextAppointment.appointmentTimestamp.seconds * 1000).toLocaleString() : 'Not requested'}</div>
-                        </div>
+                        ${appointmentDetailsHTML}
+                        ${lastVisitHTML}
+                        ${nextAppointmentHTML}
                     `;
 
-                    // Add action buttons for calendar bookings
+                    // --- Action Buttons ---
                     actions.innerHTML = '<button type="button" id="view-detail-close-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Close</button>';
                     if(client.appointmentTimestamp && client.status !== 'waiting' && client.status !== 'processing') { // It's a future appointment
                         actions.insertAdjacentHTML('afterbegin', `
@@ -1726,7 +1739,7 @@
                         ...doc.data()
                     }));
                     renderCalendar(currentYear, currentMonth, currentTechFilterCalendar);
-                    renderTodaysBookings();
+                    renderAllBookingsList();
                 });
                  
                 onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot) => {
@@ -1916,8 +1929,8 @@
                 });
                 setupTechFilter('tech-filter-container-calendar', (tech) => {
                     currentTechFilterCalendar = tech;
-                     if (!document.getElementById('today-view').classList.contains('hidden')) {
-                        renderTodaysBookings();
+                     if (!document.getElementById('list-view').classList.contains('hidden')) {
+                        renderAllBookingsList();
                     } else {
                         renderCalendar(currentYear, currentMonth, currentTechFilterCalendar);
                     }
@@ -2224,33 +2237,27 @@
                     }
                 });
                 
-                // --- TODAY'S BOOKING VIEW ---
-                const renderTodaysBookings = () => {
-                     const today = new Date();
-                    const startOfDay = new Date(today.setHours(0, 0, 0, 0));
-                    const endOfDay = new Date(today.setHours(23, 59, 59, 999));
-
-                    let todaysAppointments = allAppointments.filter(appt => {
-                        const apptDate = new Date(appt.appointmentTimestamp.seconds * 1000);
-                        return apptDate >= startOfDay && apptDate <= endOfDay;
-                    });
+                // --- ALL BOOKINGS LIST VIEW ---
+                const renderAllBookingsList = () => {
+                    let filteredAppointments = [...allAppointments];
                     
                     if (currentTechFilterCalendar !== 'All' && currentTechFilterCalendar !== 'Any Technician') {
-                        todaysAppointments = todaysAppointments.filter(appt => appt.technician === currentTechFilterCalendar);
+                        filteredAppointments = filteredAppointments.filter(appt => appt.technician === currentTechFilterCalendar);
                     } else if (currentTechFilterCalendar === 'Any Technician') {
-                        todaysAppointments = todaysAppointments.filter(appt => appt.technician === 'Any Technician');
+                        filteredAppointments = filteredAppointments.filter(appt => appt.technician === 'Any Technician');
                     }
 
+                    filteredAppointments.sort((a, b) => b.appointmentTimestamp.seconds - a.appointmentTimestamp.seconds);
                     
-                    todayCountSpan.textContent = todaysAppointments.length;
+                    todayCountSpan.textContent = filteredAppointments.length;
                     
                     const tbody = document.querySelector('#today-bookings-table tbody');
                     tbody.innerHTML = '';
-                     if (todaysAppointments.length === 0) {
-                        tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-gray-400">No bookings for today.</td></tr>`;
+                     if (filteredAppointments.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-gray-400">No bookings found.</td></tr>`;
                         return;
                     }
-                    todaysAppointments.forEach(appt => {
+                    filteredAppointments.forEach(appt => {
                         const row = tbody.insertRow();
                         row.className = 'bg-white border-b';
                         row.innerHTML = `
@@ -2258,7 +2265,7 @@
                             <td class="px-6 py-3">${Array.isArray(appt.services) ? appt.services.join(', ') : appt.services}</td>
                             <td class="px-6 py-3">${appt.technician}</td>
                             <td class="px-6 py-3 text-center">${appt.people || 1}</td>
-                            <td class="px-6 py-3">${new Date(appt.appointmentTimestamp.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                            <td class="px-6 py-3">${new Date(appt.appointmentTimestamp.seconds * 1000).toLocaleString([], {dateStyle: 'short', timeStyle: 'short'})}</td>
                             <td class="px-6 py-3 text-center">
                                 <button data-id="${appt.id}" class="checkin-today-btn text-blue-500 hover:underline">Check In</button>
                             </td>
@@ -2269,14 +2276,14 @@
                 document.getElementById('today-btn').addEventListener('click', () => {
                     document.getElementById('month-view').classList.add('hidden');
                     document.getElementById('month-nav').classList.add('hidden');
-                    document.getElementById('today-view').classList.remove('hidden');
+                    document.getElementById('list-view').classList.remove('hidden');
                     document.getElementById('today-btn').classList.add('hidden');
                     document.getElementById('month-view-btn').classList.remove('hidden');
-                    renderTodaysBookings();
+                    renderAllBookingsList();
                 });
 
                 document.getElementById('month-view-btn').addEventListener('click', () => {
-                    document.getElementById('today-view').classList.add('hidden');
+                    document.getElementById('list-view').classList.add('hidden');
                     document.getElementById('month-view-btn').classList.add('hidden');
                     document.getElementById('month-view').classList.remove('hidden');
                     document.getElementById('month-nav').classList.remove('hidden');

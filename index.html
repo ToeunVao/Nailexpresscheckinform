@@ -273,7 +273,7 @@
                 <div id="calendar-content" class="tab-content hidden">
                      <div class="flex justify-between items-center mb-4">
                         <div class="flex items-center gap-2">
-                             <button id="today-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg">Today's Bookings <span id="today-count" class="ml-2 bg-pink-100 text-pink-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">0</span></button>
+                             <button id="today-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg">List all Booking <span id="today-count" class="ml-2 bg-pink-100 text-pink-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">0</span></button>
                              <button id="month-view-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hidden">Month View</button>
                         </div>
                         <div id="tech-filter-container-calendar" class="flex gap-2">
@@ -753,71 +753,56 @@
                         <label for="edit-salon-earning-date" class="block text-sm font-medium text-gray-600 mb-1">Date</label>
                         <input type="date" id="edit-salon-earning-date" class="form-input w-full p-3 border border-gray-300 rounded-lg" required>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-x-6 gap-y-4">
-                        <!-- Staff Earnings Column -->
-                        <div class="space-y-4 md:col-span-1">
-                            <h4 class="text-lg font-semibold text-gray-700">Staff Earnings</h4>
-                            <div>
-                                <label for="edit-sokleng-earning" class="block text-sm font-medium text-gray-600">Sokleng Earning</label>
-                                <input type="number" step="0.01" id="edit-sokleng-earning" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
-                            </div>
-                            <div>
-                                <label for="edit-toeun-earning" class="block text-sm font-medium text-gray-600">Toeun Earning</label>
-                                <input type="number" step="0.01" id="edit-toeun-earning" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
-                            </div>
-                            <div>
-                                <label for="edit-mama-earning" class="block text-sm font-medium text-gray-600">Mama Earning</label>
-                                <input type="number" step="0.01" id="edit-mama-earning" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
-                            </div>
-                            <div>
-                                <label for="edit-papa-earning" class="block text-sm font-medium text-gray-600">Papa Earning</label>
-                                <input type="number" step="0.01" id="edit-papa-earning" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
-                            </div>
-                             <div>
-                                <label for="edit-linda-earning" class="block text-sm font-medium text-gray-600">Linda Earning</label>
-                                <input type="number" step="0.01" id="edit-linda-earning" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
-                            </div>
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                        <div>
+                            <label for="edit-sokleng-earning" class="block text-sm font-medium text-gray-600">Sokleng</label>
+                            <input type="number" step="0.01" id="edit-sokleng-earning" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
                         </div>
-                        
-                        <!-- Other Details Columns -->
-                        <div class="space-y-4 md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-x-6">
-                            <div class="space-y-4">
-                                <h4 class="text-lg font-semibold text-gray-700">Gift Cards & Checks</h4>
-                                <div>
-                                    <label for="edit-sell-gift-card" class="block text-sm font-medium text-gray-600 mb-1">Sell Gift Card</label>
-                                    <input type="number" step="0.01" id="edit-sell-gift-card" class="form-input w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
-                                </div>
-                                <div>
-                                    <label for="edit-return-gift-card" class="block text-sm font-medium text-gray-600 mb-1">Return Gift Card</label>
-                                    <input type="number" step="0.01" id="edit-return-gift-card" class="form-input w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
-                                </div>
-                                <div>
-                                    <label for="edit-check-payment" class="block text-sm font-medium text-gray-600 mb-1">Check</label>
-                                    <input type="number" step="0.01" id="edit-check-payment" class="form-input w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
-                                </div>
-                            </div>
-                            <div class="space-y-4">
-                                 <h4 class="text-lg font-semibold text-gray-700">Credit Card</h4>
-                                <div>
-                                    <label for="edit-no-of-credit" class="block text-sm font-medium text-gray-600 mb-1">No. of Transactions</label>
-                                    <input type="number" id="edit-no-of-credit" class="form-input w-full p-2 border border-gray-300 rounded-lg" placeholder="Count">
-                                </div>
-                                <div>
-                                    <label for="edit-total-credit" class="block text-sm font-medium text-gray-600 mb-1">Total Credit</label>
-                                    <input type="number" step="0.01" id="edit-total-credit" class="form-input w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
-                                </div>
-                            </div>
-                            <div class="space-y-4">
-                                <h4 class="text-lg font-semibold text-gray-700">Digital Payments</h4>
-                                <div>
-                                    <label for="edit-venmo-payment" class="block text-sm font-medium text-gray-600 mb-1">Venmo</label>
-                                    <input type="number" step="0.01" id="edit-venmo-payment" class="form-input w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
-                                </div>
-                                 <div>
-                                    <label for="edit-square-payment" class="block text-sm font-medium text-gray-600 mb-1">Square</label>
-                                    <input type="number" step="0.01" id="edit-square-payment" class="form-input w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
-                                </div>
-                            </div>
+                        <div>
+                            <label for="edit-toeun-earning" class="block text-sm font-medium text-gray-600">Toeun</label>
+                            <input type="number" step="0.01" id="edit-toeun-earning" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                        </div>
+                        <div>
+                            <label for="edit-mama-earning" class="block text-sm font-medium text-gray-600">Mama</label>
+                            <input type="number" step="0.01" id="edit-mama-earning" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                        </div>
+                        <div>
+                            <label for="edit-papa-earning" class="block text-sm font-medium text-gray-600">Papa</label>
+                            <input type="number" step="0.01" id="edit-papa-earning" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                        </div>
+                        <div>
+                            <label for="edit-linda-earning" class="block text-sm font-medium text-gray-600">Linda</label>
+                            <input type="number" step="0.01" id="edit-linda-earning" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                        <div>
+                            <label for="edit-sell-gift-card" class="block text-sm font-medium text-gray-600">Sell Gift Card</label>
+                            <input type="number" step="0.01" id="edit-sell-gift-card" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                        </div>
+                        <div>
+                            <label for="edit-return-gift-card" class="block text-sm font-medium text-gray-600">Return Gift Card</label>
+                            <input type="number" step="0.01" id="edit-return-gift-card" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                        </div>
+                        <div>
+                            <label for="edit-check-payment" class="block text-sm font-medium text-gray-600">Check</label>
+                            <input type="number" step="0.01" id="edit-check-payment" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                        </div>
+                        <div>
+                            <label for="edit-no-of-credit" class="block text-sm font-medium text-gray-600">No. of Credit</label>
+                            <input type="number" id="edit-no-of-credit" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Count">
+                        </div>
+                        <div>
+                            <label for="edit-total-credit" class="block text-sm font-medium text-gray-600">Total Credit</label>
+                            <input type="number" step="0.01" id="edit-total-credit" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                        </div>
+                        <div>
+                            <label for="edit-venmo-payment" class="block text-sm font-medium text-gray-600">Venmo</label>
+                            <input type="number" step="0.01" id="edit-venmo-payment" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
+                        </div>
+                         <div>
+                            <label for="edit-square-payment" class="block text-sm font-medium text-gray-600">Square</label>
+                            <input type="number" step="0.01" id="edit-square-payment" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount">
                         </div>
                     </div>
                 </div>
@@ -828,25 +813,33 @@
             </form>
         </div>
 
-        <!-- Gemini API Modals -->
-        <div id="follow-up-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
-            <div class="absolute inset-0 bg-black opacity-50"></div>
-            <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
-                <h3 id="follow-up-title" class="text-2xl font-bold text-teal-700 mb-6">✨ Draft Follow-up Message</h3>
-                <div id="follow-up-content" class="space-y-4">
-                    <textarea id="follow-up-textarea" rows="6" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg"></textarea>
+        <div id="edit-client-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+            <div class="absolute inset-0 bg-black opacity-50 edit-client-modal-overlay"></div>
+            <form id="edit-client-form" class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
+                <h3 class="text-2xl font-bold text-pink-700 mb-6">Edit Client Information</h3>
+                <input type="hidden" id="edit-client-original-name">
+                <div class="space-y-4">
+                    <div>
+                        <label for="edit-client-name" class="block text-sm font-medium text-gray-600 mb-1">Client Name</label>
+                        <input type="text" id="edit-client-name" class="form-input w-full p-3 border border-gray-300 rounded-lg" required>
+                    </div>
+                    <div>
+                        <label for="edit-client-phone" class="block text-sm font-medium text-gray-600 mb-1">Phone Number</label>
+                        <input type="tel" id="edit-client-phone" class="form-input w-full p-3 border border-gray-300 rounded-lg">
+                    </div>
                 </div>
-                <div id="follow-up-actions" class="mt-6 flex justify-end gap-3">
-                    <!-- Buttons will be injected here -->
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" id="edit-client-cancel-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Cancel</button>
+                    <button type="submit" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Save Changes</button>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, doc, deleteDoc, serverTimestamp, where, getDocs, orderBy, Timestamp, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, doc, deleteDoc, serverTimestamp, where, getDocs, orderBy, Timestamp, updateDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // This function will be called after a successful login.
         async function startApp() {
@@ -891,6 +884,8 @@
                 const editEarningForm = document.getElementById('edit-earning-form');
                 const editSalonEarningModal = document.getElementById('edit-salon-earning-modal');
                 const editSalonEarningForm = document.getElementById('edit-salon-earning-form');
+                const editClientModal = document.getElementById('edit-client-modal');
+                const editClientForm = document.getElementById('edit-client-form');
                 const followUpModal = document.getElementById('follow-up-modal');
                 
                 const rebookOtherInput = document.getElementById('rebook-other-input');
@@ -943,41 +938,6 @@
                     "Gel Polish": [{ name: "Nail", price: "$30", p: "Gel Polish - " }, { name: "Toe", price: "$30", p: "Gel Polish - " }],
                     "Nail Art & Extras": [{ name: "Design/Finger", price: "$5" }, { name: "Matt top coat", price: "$10" }, { name: "Diamond/finger", price: "$10" }, { name: "Chrome powder", price: "$10" }, { name: "Cat-eye Gel", price: "$10" }, { name: "Glow in the dark (top coat)", price: "$10" }, { name: "Repair - acrylic/finger", price: "$5" }, { name: "Repair - SNS/finger", price: "$5" }]
                 };
-
-                // --- Gemini API Functions ---
-                async function callGeminiForText(prompt) {
-                    const apiKey = ""; // Canvas will provide this
-                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
-                    
-                    const payload = {
-                        contents: [{ role: "user", parts: [{ text: prompt }] }]
-                    };
-
-                    try {
-                        const response = await fetch(apiUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-
-                        if (!response.ok) {
-                            throw new Error(`API call failed with status: ${response.status}`);
-                        }
-
-                        const result = await response.json();
-                        
-                        if (result.candidates && result.candidates.length > 0 &&
-                            result.candidates[0].content && result.candidates[0].content.parts &&
-                            result.candidates[0].content.parts.length > 0) {
-                            return result.candidates[0].content.parts[0].text;
-                        } else {
-                            return "Sorry, I couldn't generate a response. Please try again.";
-                        }
-                    } catch (error) {
-                        console.error("Error calling Gemini API:", error);
-                        return "An error occurred while contacting the AI. Please check the console for details.";
-                    }
-                }
                 
                 // --- RENDER FUNCTIONS ---
                 const applyClientFilters = (clients, searchTerm, techFilter, dateFilter) => {
@@ -1071,8 +1031,6 @@
                             <td class="px-6 py-4">${client.checkInTime}</td>
                             <td class="px-6 py-4 text-center space-x-2">
                                 <button data-id="${client.id}" class="view-feedback-btn" title="View Feedback"><i class="fas fa-comment text-lg text-green-500 hover:text-green-700"></i></button>
-                                <button data-id="${client.id}" class="draft-sms-btn" title="Draft SMS ✨"><i class="fas fa-sms text-lg text-teal-500 hover:text-teal-700"></i></button>
-                                <button data-id="${client.id}" class="copy-follow-up-btn" title="Copy Follow-up ✨"><i class="fas fa-copy text-lg text-blue-500 hover:text-blue-700"></i></button>
                                 <button data-id="${client.id}" class="delete-btn-finished" title="Delete"><i class="fas fa-trash-alt text-lg text-red-500 hover:text-red-700"></i></button>
                             </td>
                         `;
@@ -1097,7 +1055,6 @@
                             <td class="px-6 py-4">${client.favoriteColor}</td>
                             <td class="px-6 py-4">${new Date(client.lastVisit).toLocaleDateString()}</td>
                             <td class="px-6 py-4 text-center space-x-2">
-                                <button data-name="${client.name}" class="text-teal-500 hover:text-teal-700 draft-sms-btn-list" title="Draft SMS ✨"><i class="fas fa-sms text-lg"></i></button>
                                 <button data-name="${client.name}" class="text-blue-500 hover:text-blue-700 edit-client-btn" title="Edit Client"><i class="fas fa-edit text-lg"></i></button>
                                 <button data-name="${client.name}" class="text-red-500 hover:text-red-700 delete-client-btn" title="Delete Client"><i class="fas fa-trash-alt text-lg"></i></button>
                             </td>
@@ -1560,10 +1517,8 @@
                  document.getElementById('finished-content').addEventListener('click', async (e) => {
                     const deleteBtn = e.target.closest('.delete-btn-finished');
                     const feedbackBtn = e.target.closest('.view-feedback-btn');
-                    const draftSmsBtn = e.target.closest('.draft-sms-btn');
-                    const copyFollowUpBtn = e.target.closest('.copy-follow-up-btn');
                     
-                    const client = allFinishedClients.find(c => c.id === (deleteBtn?.dataset.id || feedbackBtn?.dataset.id || draftSmsBtn?.dataset.id || copyFollowUpBtn?.dataset.id));
+                    const client = allFinishedClients.find(c => c.id === (deleteBtn?.dataset.id || feedbackBtn?.dataset.id));
                     if (!client) return;
 
                     if (deleteBtn) {
@@ -1577,47 +1532,6 @@
                         }
                     } else if (feedbackBtn) {
                         openViewDetailModal(client, `Booking Detail`);
-                    } else if (draftSmsBtn || copyFollowUpBtn) {
-                        const followUpTitle = document.getElementById('follow-up-title');
-                        const followUpContent = document.getElementById('follow-up-content');
-                        const followUpActions = document.getElementById('follow-up-actions');
-                        const followUpTextarea = document.getElementById('follow-up-textarea');
-                        
-                        followUpTextarea.value = '';
-                        followUpContent.insertAdjacentHTML('afterbegin', '<p id="follow-up-loader" class="text-center text-teal-700">Generating message...</p>');
-                        followUpModal.classList.remove('hidden');
-                        followUpModal.classList.add('flex');
-                        
-                        const prompt = `Draft a friendly, short thank-you text message for a nail salon client. The client's name is ${client.name}. They received the following services: ${client.services}. The technician was ${client.technician}. Thank them for visiting and gently encourage them to rebook soon. Sign off as 'Nails Express'.`;
-                        const message = await callGeminiForText(prompt);
-                        
-                        document.getElementById('follow-up-loader')?.remove();
-                        followUpTextarea.value = message;
-
-                        if (draftSmsBtn) {
-                            followUpTitle.textContent = "✨ Draft SMS";
-                            followUpActions.innerHTML = `<a id="send-sms-link" href="#" class="bg-teal-600 text-white font-semibold py-2 px-6 rounded-lg">Open in Messages</a>
-                                                         <button type="button" id="follow-up-close-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Close</button>`;
-                            
-                            const sendSmsLink = document.getElementById('send-sms-link');
-                            if (client.phone && client.phone !== 'N/A') {
-                                sendSmsLink.href = `sms:${client.phone}?&body=${encodeURIComponent(message)}`;
-                            } else {
-                                sendSmsLink.href = `sms:?&body=${encodeURIComponent(message)}`;
-                                alert("Client phone number is not available.");
-                            }
-
-                        } else if (copyFollowUpBtn) {
-                            followUpTitle.textContent = "✨ Copy Follow-up";
-                            followUpActions.innerHTML = `<button type="button" id="copy-text-btn" class="bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg">Copy Text</button>
-                                                         <button type="button" id="follow-up-close-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Close</button>`;
-                            
-                            document.getElementById('copy-text-btn').addEventListener('click', () => {
-                                followUpTextarea.select();
-                                document.execCommand('copy');
-                                alert('Message copied to clipboard!');
-                            });
-                        }
                     }
                 });
                 
@@ -2393,15 +2307,6 @@
                         }
                     }
                 });
-
-                // --- Gemini Feature Listeners ---
-                document.getElementById('follow-up-modal').addEventListener('click', (e) => {
-                    if (e.target.closest('#follow-up-close-btn') || e.target.closest('#copy-text-btn') || e.target.closest('#send-sms-link') ) {
-                         followUpModal.classList.add('hidden');
-                         followUpModal.classList.remove('flex');
-                    }
-                });
-
 
                  // --- HEADER CLOCK & DATE ---
                 const clockEl = document.getElementById('live-clock');

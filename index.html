@@ -537,6 +537,33 @@
                                         <td id="total-cash" class="px-6 py-3 font-bold"></td>
                                         <td class="px-6 py-3"></td>
                                     </tr>
+                                    <tr class="text-center">
+                                        <td class="px-6 py-3 text-right font-bold border-t-2 border-gray-300">Commission 70%:</td>
+                                        <td id="commission-sokleng" class="px-6 py-3 border-t-2 border-gray-300"></td>
+                                        <td id="commission-toeun" class="px-6 py-3 border-t-2 border-gray-300"></td>
+                                        <td id="commission-mama" class="px-6 py-3 border-t-2 border-gray-300"></td>
+                                        <td id="commission-papa" class="px-6 py-3 border-t-2 border-gray-300"></td>
+                                        <td id="commission-linda" class="px-6 py-3 border-t-2 border-gray-300"></td>
+                                        <td class="border-t-2 border-gray-300" colspan="10"></td>
+                                    </tr>
+                                    <tr class="text-center">
+                                        <td class="px-6 py-3 text-right font-bold">70% of Check:</td>
+                                        <td id="check70-sokleng" class="px-6 py-3"></td>
+                                        <td id="check70-toeun" class="px-6 py-3"></td>
+                                        <td id="check70-mama" class="px-6 py-3"></td>
+                                        <td id="check70-papa" class="px-6 py-3"></td>
+                                        <td id="check70-linda" class="px-6 py-3"></td>
+                                        <td colspan="10"></td>
+                                    </tr>
+                                    <tr class="text-center">
+                                        <td class="px-6 py-3 text-right font-bold">30% of Cash:</td>
+                                        <td id="cash30-sokleng" class="px-6 py-3"></td>
+                                        <td id="cash30-toeun" class="px-6 py-3"></td>
+                                        <td id="cash30-mama" class="px-6 py-3"></td>
+                                        <td id="cash30-papa" class="px-6 py-3"></td>
+                                        <td id="cash30-linda" class="px-6 py-3"></td>
+                                        <td colspan="10"></td>
+                                    </tr>
                                 </tfoot>
                             </table>
                         </div>
@@ -1220,6 +1247,13 @@
                             const el = document.getElementById(`total-${id}`);
                             if (el) el.textContent = id === 'no-credit' ? '0' : '$0.00';
                         });
+                        const commissionFooterIds = ['sokleng', 'toeun', 'mama', 'papa', 'linda'];
+                        commissionFooterIds.forEach(name => {
+                             document.getElementById(`commission-${name}`).textContent = '$0.00';
+                             document.getElementById(`check70-${name}`).textContent = '$0.00';
+                             document.getElementById(`cash30-${name}`).textContent = '$0.00';
+                        });
+
                         return;
                     }
                     
@@ -1288,6 +1322,17 @@
                     document.getElementById('total-square').textContent = `$${totals.square.toFixed(2)}`;
                     document.getElementById('total-total').textContent = `$${totals.total.toFixed(2)}`;
                     document.getElementById('total-cash').textContent = `$${totals.cash.toFixed(2)}`;
+
+                    const staff = ['sokleng', 'toeun', 'mama', 'papa', 'linda'];
+                    staff.forEach(name => {
+                        const commission70 = (totals[name] || 0) * 0.70;
+                        const check70 = commission70 * 0.70;
+                        const cash30 = commission70 - check70;
+
+                        document.getElementById(`commission-${name}`).textContent = `$${commission70.toFixed(2)}`;
+                        document.getElementById(`check70-${name}`).textContent = `$${check70.toFixed(2)}`;
+                        document.getElementById(`cash30-${name}`).textContent = `$${cash30.toFixed(2)}`;
+                    });
                 };
 
                 // --- EVENT LISTENERS & LOGIC ---

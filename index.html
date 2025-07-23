@@ -4,19 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nail Salon Check-In & Reports</title>
-    
+
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#d63384">
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
-    
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
 
     <style>
         body { font-family: 'Poppins', sans-serif; background-color: #f8fafc; }
@@ -39,7 +41,7 @@
         .form-checkbox:checked::before { transform: scale(1); }
         .tab-btn.active { border-color: #d63384; color: #d63384; background-color: #fdf2f8; }
         .tab-btn { border-color: transparent; }
-        
+
         /* Calendar Styles */
         #calendar {
             display: grid;
@@ -116,7 +118,7 @@
         </header>
 
         <main class="container mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
-            
+
             <div class="mb-4 border-b border-gray-200 bg-white rounded-t-2xl shadow-md p-2">
                 <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="main-tabs">
                     <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg active" id="check-in-tab" type="button">Check In</button></li>
@@ -128,7 +130,7 @@
                     <li><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg" id="reports-tab" type="button">Reports</button></li>
                 </ul>
             </div>
-            
+
             <div class="bg-white p-6 sm:p-8 rounded-b-2xl shadow-xl">
                 <div id="check-in-content" class="tab-content">
                     <form id="check-in-form">
@@ -269,7 +271,7 @@
                         </table>
                     </div>
                 </div>
-                
+
                 <div id="calendar-content" class="tab-content hidden">
                      <div class="flex justify-between items-center mb-4">
                         <div class="flex items-center gap-2">
@@ -374,7 +376,7 @@
                                 </button>
                             </div>
                         </form>
-    
+
                         <div class="flex justify-between items-center mb-4">
                             <div id="tech-filter-container-earning" class="flex gap-2 flex-wrap">
                                  <button class="tech-filter-btn px-3 py-1 rounded-full text-sm active" data-tech="All">All</button>
@@ -419,10 +421,12 @@
                         </div>
                      </div>
                      <div id="salon-earning-section">
-                        <h3 class="text-xl font-semibold text-gray-700 border-b pb-3 mb-6">Salon Earning Report</h3>
+                        <div class="mb-6 border-b pb-3">
+                            <h3 class="text-xl font-semibold text-gray-700">Salon Earning Report</h3>
+                        </div>
                         <form id="salon-earning-form" class="space-y-6 mb-8">
                             <input type="date" id="salon-earning-date" class="hidden" required>
-                            
+
                             <!-- Staff Earnings Row -->
                             <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                                 <div>
@@ -484,17 +488,21 @@
                                 </button>
                             </div>
                         </form>
-                        <div class="flex justify-end items-center mb-4">
-                            <div class="flex items-center gap-2">
-                                <select id="salon-earning-range-filter" class="form-select p-2 border border-gray-300 rounded-lg">
-                                    <option value="daily">Daily</option>
-                                    <option value="weekly">This Week</option>
-                                    <option value="monthly">This Month</option>
-                                    <option value="yearly">This Year</option>
-                                </select>
-                                <input type="date" id="salon-earning-date-filter" class="p-2 border border-gray-300 rounded-lg">
-                           </div>
-                        </div>
+                        <div class="flex justify-end items-center mb-4 gap-2">
+                            <button id="export-salon-earnings-btn" class="bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors">
+                                <i class="fas fa-file-excel mr-2"></i>Export
+                            </button>
+                             <button id="print-salon-earnings-btn" class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors">
+                                <i class="fas fa-print mr-2"></i>Print
+                            </button>
+                            <select id="salon-earning-range-filter" class="form-select p-2 border border-gray-300 rounded-lg">
+                                <option value="daily">Daily</option>
+                                <option value="weekly">This Week</option>
+                                <option value="monthly">This Month</option>
+                                <option value="yearly">This Year</option>
+                            </select>
+                            <input type="date" id="salon-earning-date-filter" class="p-2 border border-gray-300 rounded-lg">
+                       </div>
                         <div class="overflow-x-auto">
                             <table id="salon-earning-table" class="w-full text-sm text-left text-gray-600">
                                 <thead class="text-xs text-gray-700 uppercase bg-gray-50">
@@ -571,14 +579,14 @@
                 </div>
             </div>
         </main>
-        
+
         <footer class="bg-white mt-8">
              <div class="container mx-auto max-w-7xl p-4 flex justify-between items-center text-sm text-gray-500">
                 <div>Design with ❤️ by Nails Express</div>
                 <div>&copy; <span id="copyright-year"></span> Nails Express. All rights reserved.</div>
              </div>
         </footer>
-        
+
         <div id="service-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
             <div class="absolute inset-0 bg-black opacity-50 modal-overlay"></div>
             <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
@@ -628,7 +636,7 @@
                 </div>
             </form>
         </div>
-        
+
         <div id="view-detail-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
             <div class="absolute inset-0 bg-black opacity-50 view-detail-modal-overlay"></div>
             <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
@@ -639,14 +647,14 @@
                 </div>
             </div>
         </div>
-        
+
         <div id="policy-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
             <div class="absolute inset-0 bg-black opacity-50 policy-modal-overlay"></div>
             <div class="relative bg-white w-full max-w-2xl p-6 rounded-2xl shadow-xl m-4">
                 <h3 class="text-2xl font-bold text-pink-700 mb-6">Salon Policy</h3>
                 <div class="prose max-w-none max-h-96 overflow-y-auto text-gray-600">
                     <p>To ensure a pleasant experience for all our clients, we kindly request your observance of the following policies:</p>
-                    
+
                     <h4>1. Appointments</h4>
                     <p>We encourage booking appointments in advance via phone or our online system to secure your preferred time and technician. Walk-ins are welcome but are subject to availability.</p>
 
@@ -655,7 +663,7 @@
 
                     <h4>3. Late Arrivals</h4>
                     <p>To ensure our technicians have enough time to provide high-quality service, we may need to shorten your service or reschedule your appointment if you arrive more than 15 minutes late.</p>
-                    
+
                     <h4>4. Technician Requests</h4>
                     <p>You may request a specific technician when booking your appointment. We will do our best to accommodate your request, but we cannot guarantee availability.</p>
 
@@ -667,7 +675,7 @@
 
                     <h4>7. Right to Refuse Service</h4>
                     <p>For the safety and well-being of our clients and staff, we reserve the right to refuse service to anyone with a nail condition we suspect may be contagious, or for any behavior we deem inappropriate.</p>
-                    
+
                     <p>Thank you for your understanding and cooperation!</p>
                 </div>
                 <div class="mt-6 text-right">
@@ -675,7 +683,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div id="add-appointment-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
             <div class="absolute inset-0 bg-black opacity-50 add-appointment-modal-overlay"></div>
             <form id="add-appointment-form" class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
@@ -861,8 +869,26 @@
                 </div>
             </form>
         </div>
+        
+        <!-- Gemini SMS Modal -->
+        <div id="gemini-sms-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+            <div class="absolute inset-0 bg-black opacity-50 gemini-sms-modal-overlay"></div>
+            <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
+                <h3 class="text-2xl font-bold text-pink-700 mb-6">Generated SMS Message</h3>
+                <div id="gemini-sms-content" class="space-y-4">
+                    <textarea id="gemini-sms-textarea" rows="5" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" placeholder="Generating message..."></textarea>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <a id="gemini-sms-send-link" href="#" target="_blank" class="bg-green-500 text-white font-semibold py-2 px-6 rounded-lg hover:bg-green-600">
+                        <i class="fas fa-paper-plane mr-2"></i>Open in Messages
+                    </a>
+                    <button type="button" id="gemini-sms-close-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Close</button>
+                </div>
+            </div>
+        </div>
+
     </div>
-    
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -872,7 +898,7 @@
         async function startApp() {
             const loginScreen = document.getElementById('login-screen');
             const appContent = document.getElementById('app-content');
-            
+
             loginScreen.style.display = 'none';
             appContent.style.display = 'block';
 
@@ -887,7 +913,7 @@
                 appId: "1:1015991996673:web:b6e8888abae83906d34b00",
                 measurementId: "G-22LFQVMGTV"
             };
-            
+
             // --- Main Application Logic ---
             const initApp = (db) => {
                 const checkInForm = document.getElementById('check-in-form');
@@ -899,7 +925,7 @@
                 const modalContent = document.getElementById('modal-content');
                 const modalDoneBtn = document.getElementById('modal-done-btn');
                 const modalOverlay = document.querySelector('.modal-overlay');
-                
+
                 // Modals
                 const checkoutModal = document.getElementById('checkout-modal');
                 const checkoutForm = document.getElementById('checkout-form');
@@ -913,7 +939,8 @@
                 const editSalonEarningForm = document.getElementById('edit-salon-earning-form');
                 const editClientModal = document.getElementById('edit-client-modal');
                 const editClientForm = document.getElementById('edit-client-form');
-                
+                const geminiSmsModal = document.getElementById('gemini-sms-modal');
+
                 const rebookOtherInput = document.getElementById('rebook-other-input');
                 const rebookSelect = document.getElementById('rebook-select');
 
@@ -927,13 +954,13 @@
                 const filteredEarningTotalMainSpan = document.getElementById('filtered-earning-total-main');
                 const filteredEarningTotalTipSpan = document.getElementById('filtered-earning-total-tip');
 
-                
+
                 // Calendar Elements
                 const calendarGrid = document.getElementById('calendar');
                 const monthYearDisplay = document.getElementById('month-year-display');
                 let currentMonth = new Date().getMonth();
                 let currentYear = new Date().getFullYear();
-                
+
                 // Filters
                 let currentTechFilterCalendar = 'All';
                 let currentTechFilterActive = 'All';
@@ -964,7 +991,7 @@
                     "Gel Polish": [{ name: "Nail", price: "$30", p: "Gel Polish - " }, { name: "Toe", price: "$30", p: "Gel Polish - " }],
                     "Nail Art & Extras": [{ name: "Design/Finger", price: "$5" }, { name: "Matt top coat", price: "$10" }, { name: "Diamond/finger", price: "$10" }, { name: "Chrome powder", price: "$10" }, { name: "Cat-eye Gel", price: "$10" }, { name: "Glow in the dark (top coat)", price: "$10" }, { name: "Repair - acrylic/finger", price: "$5" }, { name: "Repair - SNS/finger", price: "$5" }]
                 };
-                
+
                 // --- RENDER FUNCTIONS ---
                 const applyClientFilters = (clients, searchTerm, techFilter, dateFilter) => {
                     let filtered = clients;
@@ -987,7 +1014,7 @@
                             return clientDate === dateFilter;
                         });
                     }
-                    
+
                     return filtered;
                 };
 
@@ -1057,6 +1084,7 @@
                             <td class="px-6 py-4">${client.checkInTime}</td>
                             <td class="px-6 py-4 text-center space-x-2">
                                 <button data-id="${client.id}" class="view-feedback-btn" title="View Feedback"><i class="fas fa-comment text-lg text-green-500 hover:text-green-700"></i></button>
+                                <button data-id="${client.id}" class="draft-sms-btn" title="Draft SMS with Gemini"><i class="fas fa-sms text-lg text-purple-500 hover:text-purple-700"></i></button>
                                 <button data-id="${client.id}" class="delete-btn-finished" title="Delete"><i class="fas fa-trash-alt text-lg text-red-500 hover:text-red-700"></i></button>
                             </td>
                         `;
@@ -1081,13 +1109,14 @@
                             <td class="px-6 py-4">${client.favoriteColor}</td>
                             <td class="px-6 py-4">${new Date(client.lastVisit).toLocaleDateString()}</td>
                             <td class="px-6 py-4 text-center space-x-2">
+                                <button data-name="${client.name}" class="text-purple-500 hover:text-purple-700 draft-sms-btn" title="Draft SMS with Gemini"><i class="fas fa-sms text-lg"></i></button>
                                 <button data-name="${client.name}" class="text-blue-500 hover:text-blue-700 edit-client-btn" title="Edit Client"><i class="fas fa-edit text-lg"></i></button>
                                 <button data-name="${client.name}" class="text-red-500 hover:text-red-700 delete-client-btn" title="Delete Client"><i class="fas fa-trash-alt text-lg"></i></button>
                             </td>
                         `;
                     });
                 };
-                
+
                 const applyEarningFilters = (earnings, techFilter, dateFilter, rangeFilter) => {
                     let filtered = earnings;
 
@@ -1098,10 +1127,10 @@
 
                     // Filter by date/range
                     const baseDate = dateFilter ? new Date(dateFilter + 'T12:00:00') : new Date();
-                     if (isNaN(baseDate.getTime())) { 
+                     if (isNaN(baseDate.getTime())) {
                         baseDate = new Date();
                     }
-                    
+
                     let startDate, endDate;
 
                     switch(rangeFilter) {
@@ -1114,7 +1143,7 @@
                             const lastDayOfWeek = new Date(firstDayOfWeek);
                             lastDayOfWeek.setDate(firstDayOfWeek.getDate() + 6);
                             lastDayOfWeek.setHours(23, 59, 59, 999);
-                            
+
                             startDate = firstDayOfWeek;
                             endDate = lastDayOfWeek;
                             break;
@@ -1142,7 +1171,7 @@
                             return earningDate >= startDate && earningDate <= endDate;
                         });
                     }
-                    
+
                     return filtered;
                 };
 
@@ -1175,7 +1204,7 @@
                     const totalTip = earnings.reduce((sum, e) => sum + e.tip, 0);
                     document.getElementById('total-earning').textContent = `$${totalEarning.toFixed(2)}`;
                     document.getElementById('total-tip').textContent = `$${totalTip.toFixed(2)}`;
-                    
+
                     // Update filtered total
                     filteredEarningTotalMainSpan.textContent = `Total ($${totalEarning.toFixed(2)})`;
                     filteredEarningTotalTipSpan.textContent = `Tip ($${totalTip.toFixed(2)})`;
@@ -1185,7 +1214,7 @@
                     let filtered = [...earnings];
 
                     const baseDate = dateFilter ? new Date(dateFilter + 'T12:00:00') : new Date();
-                    if (isNaN(baseDate.getTime())) { 
+                    if (isNaN(baseDate.getTime())) {
                         baseDate = new Date();
                     }
 
@@ -1201,7 +1230,7 @@
                             const lastDayOfWeek = new Date(firstDayOfWeek);
                             lastDayOfWeek.setDate(firstDayOfWeek.getDate() + 6);
                             lastDayOfWeek.setHours(23, 59, 59, 999);
-                            
+
                             startDate = firstDayOfWeek;
                             endDate = lastDayOfWeek;
                             break;
@@ -1229,7 +1258,7 @@
                             return earningDate >= startDate && earningDate <= endDate;
                         });
                     }
-                    
+
                     return filtered;
                 };
 
@@ -1240,9 +1269,9 @@
                     tbody.innerHTML = '';
 
                     const footerIds = ['sokleng', 'toeun', 'mama', 'papa', 'linda', 'sell-gc', 'return-gc', 'check', 'no-credit', 'total-credit', 'venmo', 'square', 'total', 'cash'];
-                    
+
                     if (earnings.length === 0) {
-                        tbody.innerHTML = `<tr><td colspan="15" class="py-6 text-center text-gray-400">No salon earnings found for the selected filters.</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="16" class="py-6 text-center text-gray-400">No salon earnings found for the selected filters.</td></tr>`;
                         footerIds.forEach(id => {
                             const el = document.getElementById(`total-${id}`);
                             if (el) el.textContent = id === 'no-credit' ? '0' : '$0.00';
@@ -1256,7 +1285,7 @@
 
                         return;
                     }
-                    
+
                     earnings.sort((a, b) => b.date.seconds - a.date.seconds).forEach(earning => {
                         const row = tbody.insertRow();
                         row.className = 'bg-white border-b';
@@ -1388,7 +1417,7 @@
                     serviceModal.classList.add('hidden'); serviceModal.classList.remove('flex');
                     updateSelectionCounts();
                 };
-                
+
                 servicesContainer.addEventListener('click', (e) => {
                     const btn = e.target.closest('.category-button');
                     if (btn) openServiceModal(btn.dataset.category);
@@ -1426,7 +1455,7 @@
                 document.getElementById('queue-content').addEventListener('click', async (e) => {
                     const moveBtn = e.target.closest('.move-to-processing-btn');
                     const detailBtn = e.target.closest('.detail-btn-active');
-                    
+
                     if (moveBtn) {
                         const clientId = moveBtn.dataset.id;
                         const clientRef = doc(db, "active_queue", clientId);
@@ -1436,7 +1465,7 @@
                         openViewDetailModal(client, `Booking Detail`);
                     }
                 });
-                
+
                  document.getElementById('processing-content').addEventListener('click', async (e) => {
                     const checkOutBtn = e.target.closest('.check-out-btn-processing');
                     if (checkOutBtn) {
@@ -1460,14 +1489,14 @@
                     // --- Details of the item that was clicked ---
                     let appointmentDetailsHTML = '<div class="space-y-2">';
                     appointmentDetailsHTML += '<h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Appointment Details</h4>';
-                    
+
                     let appointmentTime = 'N/A';
                     if (client.appointmentTimestamp) {
                         appointmentTime = new Date(client.appointmentTimestamp.seconds * 1000).toLocaleString();
                     } else if (client.checkInTimestamp) {
                         appointmentTime = new Date(client.checkInTimestamp.seconds * 1000).toLocaleString();
                     }
-                    
+
                     appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Date:</strong> ${appointmentTime}</div>`;
                     appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Services:</strong> ${Array.isArray(client.services) ? client.services.join(', ') : client.services || 'N/A'}</div>`;
                     appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Technician:</strong> ${client.technician || 'N/A'}</div>`;
@@ -1500,7 +1529,7 @@
                     const nextAppointment = allAppointments
                         .filter(appt => appt.name === client.name && appt.appointmentTimestamp.toMillis() > Date.now())
                         .sort((a, b) => a.appointmentTimestamp.toMillis() - b.appointmentTimestamp.toMillis())[0];
-                    
+
                     let nextAppointmentHTML = `
                         <div class="space-y-2">
                             <h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Next Appointment</h4>
@@ -1541,13 +1570,13 @@
                 };
                 document.getElementById('view-detail-close-btn').addEventListener('click', closeViewDetailModal);
                 document.querySelector('.view-detail-modal-overlay').addEventListener('click', closeViewDetailModal);
-                
+
                 document.getElementById('view-detail-actions').addEventListener('click', async (e) => {
                      if (e.target.classList.contains('booking-action-btn')) {
                         const action = e.target.dataset.action;
                         const bookingId = e.target.dataset.id;
                         const appointment = allAppointments.find(a => a.id === bookingId);
-                        
+
                         if (!appointment) return;
 
                         if (action === 'cancel') {
@@ -1575,31 +1604,34 @@
                  document.getElementById('finished-content').addEventListener('click', async (e) => {
                     const deleteBtn = e.target.closest('.delete-btn-finished');
                     const feedbackBtn = e.target.closest('.view-feedback-btn');
-                    
-                    const client = allFinishedClients.find(c => c.id === (deleteBtn?.dataset.id || feedbackBtn?.dataset.id));
-                    if (!client) return;
+                    const draftSmsBtn = e.target.closest('.draft-sms-btn');
 
-                    if (deleteBtn) {
+                    if(deleteBtn) {
+                        const clientId = deleteBtn.dataset.id;
                         if(confirm('Are you sure you want to delete this client record?')) {
                             try {
-                                 await deleteDoc(doc(db, "finished_clients", deleteBtn.dataset.id));
+                                 await deleteDoc(doc(db, "finished_clients", clientId));
                             } catch (err) {
                                 console.error("Error deleting finished client: ", err);
                                 alert("Could not delete finished client. Please try again.");
                             }
                         }
                     } else if (feedbackBtn) {
-                        openViewDetailModal(client, `Booking Detail`);
+                        const client = allFinishedClients.find(c => c.id === feedbackBtn.dataset.id);
+                        if (client) openViewDetailModal(client, `Booking Detail`);
+                    } else if (draftSmsBtn) {
+                        const client = allFinishedClients.find(c => c.id === draftSmsBtn.dataset.id);
+                        if (client) generateSmsMessage(client);
                     }
                 });
-                
+
                 const closeCheckoutModal = () => {
                     checkoutForm.reset();
                     rebookOtherInput.classList.add('hidden');
                     checkoutModal.classList.add('hidden');
                     checkoutModal.classList.remove('flex');
                 };
-                
+
                 rebookSelect.addEventListener('change', (e) => {
                     if(e.target.value === 'other') {
                         rebookOtherInput.classList.remove('hidden');
@@ -1607,10 +1639,10 @@
                         rebookOtherInput.classList.add('hidden');
                     }
                 });
-                
+
                 const technicianNameSelect = document.getElementById('technician-name-select');
                 const technicianNameOther = document.getElementById('technician-name-other');
-                
+
                 technicianNameSelect.addEventListener('change', (e) => {
                     if (e.target.value === 'other') {
                         technicianNameOther.classList.remove('hidden');
@@ -1630,15 +1662,15 @@
                             delete finishedClientData.id;
                             finishedClientData.checkOutTimestamp = serverTimestamp();
                             finishedClientData.colorCode = document.getElementById('color-code').value || '';
-                            
+
                             let technicianValue = technicianNameSelect.value;
                             if(technicianValue === 'other') {
                                 technicianValue = technicianNameOther.value;
                             }
                             finishedClientData.technician = technicianValue;
-                            
+
                             let rebookInfo = rebookSelect.value;
-                            
+
                             if (rebookInfo === '2w' || rebookInfo === '3w') {
                                 const interval = (rebookInfo === '2w' ? 14 : 21);
                                  let nextAppointmentDate = new Date();
@@ -1654,7 +1686,7 @@
                                     technician: finishedClientData.technician,
                                     appointmentTimestamp: Timestamp.fromDate(nextAppointmentDate)
                                 });
-                                
+
                             } else if (rebookInfo === 'other') {
                                const otherDateValue = document.getElementById('rebook-other-input').value;
                                finishedClientData.rebook = otherDateValue ? new Date(otherDateValue).toLocaleString() : 'Other';
@@ -1755,11 +1787,11 @@
                             favoriteColor: findFavorite(client.colorCounts)
                         };
                     });
-                    
+
                     clientsListCountSpan.textContent = aggregatedClients.length;
                     renderFinishedClients(applyClientFilters(allFinishedClients, document.getElementById('search-finished').value.toLowerCase(), currentTechFilterFinished, currentFinishedDateFilter));
                     renderClientsList(aggregatedClients);
-                    
+
                      // Update client name datalists
                     const clientList = document.getElementById('client-names-list');
                     const checkinClientList = document.getElementById('checkin-client-names');
@@ -1768,7 +1800,7 @@
 
                     const uniqueNames = [...new Set(allFinishedClients.map(c => c.name))];
                     const uniquePhones = [...new Set(allFinishedClients.filter(c => c.phone && c.phone !== 'N/A').map(c => c.phone))];
-                    
+
                     const nameOptionsHtml = uniqueNames.map(name => `<option value="${name}"></option>`).join('');
                     const phoneOptionsHtml = uniquePhones.map(phone => `<option value="${phone}"></option>`).join('');
                     if(clientList) clientList.innerHTML = nameOptionsHtml;
@@ -1776,7 +1808,7 @@
                     if(appointmentPhoneList) appointmentPhoneList.innerHTML = phoneOptionsHtml;
                     if(checkinPhoneList) checkinPhoneList.innerHTML = phoneOptionsHtml;
                 });
-                
+
                  onSnapshot(query(collection(db, "appointments"), orderBy("appointmentTimestamp", "asc")), (snapshot) => {
                     allAppointments = snapshot.docs.map(doc => ({
                         id: doc.id,
@@ -1786,7 +1818,7 @@
                     renderCalendar(currentYear, currentMonth, currentTechFilterCalendar);
                     renderAllBookingsList();
                 });
-                 
+
                 onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot) => {
                     allEarnings = snapshot.docs.map(doc => ({
                         id: doc.id,
@@ -1802,7 +1834,7 @@
                     }));
                     renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, currentSalonEarningDateFilter, currentSalonEarningRangeFilter));
                 });
-                
+
                 // Search functionality
                 document.getElementById('search-active').addEventListener('input', (e) => {
                     const searchTerm = e.target.value.toLowerCase();
@@ -1831,7 +1863,7 @@
                 document.getElementById('export-clients-btn').addEventListener('click', () => {
                     let csvContent = "data:text/csv;charset=utf-8,";
                     csvContent += "Name,Phone,Favorite Tech,Favorite Color,Last Visit\r\n";
-                    
+
                     aggregatedClients.forEach(client => {
                         const row = [client.name, client.phone, client.favoriteTech, client.favoriteColor, new Date(client.lastVisit).toLocaleDateString()].join(",");
                         csvContent += row + "\r\n";
@@ -1845,7 +1877,6 @@
                     link.click();
                     document.body.removeChild(link);
                 });
-
 
                 // Autocomplete for check-in form
                 document.getElementById('full-name').addEventListener('input', (e) => {
@@ -1871,7 +1902,7 @@
                         btn.classList.remove('active');
                     });
                     clickedTab.classList.add('active');
-                    
+
                     // Hide all content panels
                     document.querySelectorAll('.tab-content').forEach(panel => {
                         panel.classList.add('hidden');
@@ -1884,12 +1915,12 @@
                         contentToShow.classList.remove('hidden');
                     }
                 });
-                
+
                 // --- CALENDAR LOGIC ---
                 function renderCalendar(year, month, technicianFilter = 'All') {
                     monthYearDisplay.textContent = `${new Date(year, month).toLocaleString('default', { month: 'long' })} ${year}`;
                     calendarGrid.innerHTML = '';
-                    
+
                     const firstDay = new Date(year, month, 1).getDay();
                     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
@@ -1904,7 +1935,7 @@
                         dayCell.innerHTML = `<div class="font-bold">${day}</div><div id="day-${day}" class="appointments"></div>`;
                         calendarGrid.appendChild(dayCell);
                     }
-                    
+
                     let filteredAppointments = allAppointments;
                     if (technicianFilter !== 'All' && technicianFilter !== 'Any Technician') {
                         filteredAppointments = allAppointments.filter(appt => appt.technician === technicianFilter);
@@ -1945,7 +1976,7 @@
                         openAddAppointmentModal(dayCell.dataset.date);
                     }
                 });
-                
+
                  // --- TECHNICIAN FILTER LOGIC ---
                 const setupTechFilter = (containerId, callback) => {
                      document.getElementById(containerId).addEventListener('click', (e) => {
@@ -1992,7 +2023,7 @@
                     currentEarningRangeFilter = e.target.value;
                     const dateFilterInput = document.getElementById('earning-date-filter');
                     dateFilterInput.style.display = currentEarningRangeFilter === 'daily' ? 'block' : 'none';
-                    
+
                     currentEarningDateFilter = dateFilterInput.value;
 
                     renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter, currentEarningRangeFilter));
@@ -2006,7 +2037,7 @@
                     currentSalonEarningRangeFilter = e.target.value;
                     const dateFilterInput = document.getElementById('salon-earning-date-filter');
                     dateFilterInput.style.display = currentSalonEarningRangeFilter === 'daily' ? 'block' : 'none';
-                    
+
                     currentSalonEarningDateFilter = dateFilterInput.value;
 
                     renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, currentSalonEarningDateFilter, currentSalonEarningRangeFilter));
@@ -2023,7 +2054,7 @@
                     const uniquePhones = [...new Set(allFinishedClients.filter(c => c.phone && c.phone !== 'N/A').map(c => c.phone))];
                     clientList.innerHTML = uniqueNames.map(name => `<option value="${name}"></option>`).join('');
                     appointmentPhoneList.innerHTML = uniquePhones.map(phone => `<option value="${phone}"></option>`).join('');
-                    
+
                     const mainServicesList = document.getElementById('main-services-list');
                     mainServicesList.innerHTML = Object.keys(servicesData).map(category => `<option value="${category}"></option>`).join('');
 
@@ -2037,7 +2068,7 @@
                 };
                 document.getElementById('add-appointment-cancel-btn').addEventListener('click', closeAddAppointmentModal);
                 document.querySelector('.add-appointment-modal-overlay').addEventListener('click', closeAddAppointmentModal);
-                
+
                 document.getElementById('appointment-client-name').addEventListener('input', (e) => {
                     const selectedClient = allFinishedClients.find(c => c.name === e.target.value);
                     if (selectedClient) {
@@ -2050,7 +2081,7 @@
                         document.getElementById('appointment-client-name').value = selectedClient.name;
                     }
                 });
-                
+
                 addAppointmentForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
                     const date = document.getElementById('appointment-date').value;
@@ -2060,7 +2091,7 @@
                         return;
                     }
                     const appointmentTimestamp = new Date(`${date}T${time}`);
-                    
+
                     try {
                          await addDoc(collection(db, "appointments"), {
                             name: document.getElementById('appointment-client-name').value,
@@ -2078,7 +2109,7 @@
                         alert("Could not save the appointment. Please try again.");
                     }
                 });
-                
+
                 // --- STAFF EARNING LOGIC ---
                 const staffEarningForm = document.getElementById('staff-earning-form');
                 staffEarningForm.addEventListener('submit', async (e) => {
@@ -2094,7 +2125,7 @@
                     if (!date) {
                         return alert('Please select a date.');
                     }
-                    
+
                     try {
                         const earningDate = new Date(date + 'T12:00:00'); // Use noon to avoid timezone issues
                         await addDoc(collection(db, "earnings"), {
@@ -2110,7 +2141,7 @@
                         alert("Could not add earning. Please try again.");
                     }
                 });
-                
+
                 document.getElementById('staff-earning-table').addEventListener('click', async (e) => {
                     const deleteBtn = e.target.closest('.delete-earning-btn');
                     const editBtn = e.target.closest('.edit-earning-btn');
@@ -2180,6 +2211,59 @@
                         }
                     }
                 });
+                
+                document.getElementById('export-salon-earnings-btn').addEventListener('click', () => {
+                    const filteredData = applySalonEarningFilters(allSalonEarnings, currentSalonEarningDateFilter, currentSalonEarningRangeFilter);
+                    const worksheet = XLSX.utils.json_to_sheet(filteredData.map(earning => {
+                         const total = (earning.soklengEarning || 0) + (earning.toeunEarning || 0) + (earning.mamaEarning || 0) + (earning.papaEarning || 0) + (earning.lindaEarning || 0) + (earning.sellGiftCard || 0) + ((earning.noOfCredit || 0) * 2);
+                        const cash = total - ((earning.totalCredit || 0) + (earning.check || 0) + (earning.returnGiftCard || 0) + (earning.venmo || 0) + (earning.square || 0));
+                        return {
+                            Date: new Date(earning.date.seconds * 1000).toLocaleDateString(),
+                            Sokleng: earning.soklengEarning || 0,
+                            Toeun: earning.toeunEarning || 0,
+                            Mama: earning.mamaEarning || 0,
+                            Papa: earning.papaEarning || 0,
+                            Linda: earning.lindaEarning || 0,
+                            "Sell GC": earning.sellGiftCard || 0,
+                            "Return GC": earning.returnGiftCard || 0,
+                            Check: earning.check || 0,
+                            "# Credit": earning.noOfCredit || 0,
+                            "Total Credit": earning.totalCredit || 0,
+                            Venmo: earning.venmo || 0,
+                            Square: earning.square || 0,
+                            Total: total,
+                            Cash: cash
+                        }
+                    }));
+                    const workbook = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(workbook, worksheet, "Salon Earnings");
+                    XLSX.writeFile(workbook, "Salon_Earning_Report.xlsx");
+                });
+                
+                document.getElementById('print-salon-earnings-btn').addEventListener('click', () => {
+                    const reportTitle = "Salon Earning Report";
+                    const table = document.getElementById('salon-earning-table');
+                    const tableHTML = table.outerHTML;
+                    
+                    const printWindow = window.open('', '_blank', 'height=600,width=800');
+                    
+                    printWindow.document.write('<html><head><title>' + reportTitle + '</title>');
+                    printWindow.document.write('<script src="https://cdn.tailwindcss.com"><\/script>'); // Tailwind for styling
+                    printWindow.document.write('<style> body { padding: 20px; font-family: "Poppins", sans-serif; } table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid #ddd; padding: 8px; text-align: left; } th { background-color: #f2f2f2; } </style>');
+                    printWindow.document.write('</head><body>');
+                    printWindow.document.write('<h1>' + reportTitle + '</h1>');
+                    printWindow.document.write(tableHTML);
+                    printWindow.document.write('</body></html>');
+                    
+                    printWindow.document.close();
+                    printWindow.focus(); 
+                    
+                    setTimeout(() => {
+                        printWindow.print();
+                        printWindow.close();
+                    }, 250);
+                });
+
 
                 const openEditEarningModal = (earning) => {
                     editEarningForm.reset();
@@ -2223,7 +2307,7 @@
                         alert("Could not update earning. Please try again.");
                     }
                 });
-                
+
                 const openEditSalonEarningModal = (earning) => {
                     editSalonEarningForm.reset();
                     document.getElementById('edit-salon-earning-id').value = earning.id;
@@ -2254,7 +2338,7 @@
                     e.preventDefault();
                     const earningId = document.getElementById('edit-salon-earning-id').value;
                     if (!earningId) return;
-                    
+
                     const date = document.getElementById('edit-salon-earning-date').value;
                     const updatedData = {
                         date: Timestamp.fromDate(new Date(date + 'T12:00:00')),
@@ -2281,11 +2365,11 @@
                         alert("Could not update salon earning. Please try again.");
                     }
                 });
-                
+
                 // --- ALL BOOKINGS LIST VIEW ---
                 const renderAllBookingsList = () => {
                     let filteredAppointments = [...allAppointments];
-                    
+
                     if (currentTechFilterCalendar !== 'All' && currentTechFilterCalendar !== 'Any Technician') {
                         filteredAppointments = filteredAppointments.filter(appt => appt.technician === currentTechFilterCalendar);
                     } else if (currentTechFilterCalendar === 'Any Technician') {
@@ -2293,9 +2377,9 @@
                     }
 
                     filteredAppointments.sort((a, b) => b.appointmentTimestamp.seconds - a.appointmentTimestamp.seconds);
-                    
+
                     todayCountSpan.textContent = filteredAppointments.length;
-                    
+
                     const tbody = document.querySelector('#today-bookings-table tbody');
                     tbody.innerHTML = '';
                      if (filteredAppointments.length === 0) {
@@ -2317,7 +2401,7 @@
                         `;
                     });
                 };
-                
+
                 document.getElementById('today-btn').addEventListener('click', () => {
                     document.getElementById('month-view').classList.add('hidden');
                     document.getElementById('month-nav').classList.add('hidden');
@@ -2334,13 +2418,13 @@
                     document.getElementById('month-nav').classList.remove('hidden');
                     document.getElementById('today-btn').classList.remove('hidden');
                 });
-                
+
                 document.getElementById('today-bookings-table').addEventListener('click', async (e) => {
                     if (e.target.classList.contains('checkin-today-btn')) {
                         const bookingId = e.target.dataset.id;
                         const appointment = allAppointments.find(a => a.id === bookingId);
                         if (!appointment) return;
-                        
+
                         try {
                             await addDoc(collection(db, "active_queue"), {
                                 name: appointment.name,
@@ -2373,13 +2457,154 @@
                 updateTime();
                 setInterval(updateTime, 60000); // Update every minute is sufficient
 
+                // --- GEMINI SMS ---
+                async function generateSmsMessage(client) {
+                    const smsTextarea = document.getElementById('gemini-sms-textarea');
+                    const sendLink = document.getElementById('gemini-sms-send-link');
+                    
+                    smsTextarea.value = '';
+                    smsTextarea.placeholder = 'Generating message...';
+                    sendLink.classList.add('pointer-events-none', 'opacity-50'); // Disable link while generating
+                    geminiSmsModal.classList.remove('hidden');
+                    geminiSmsModal.classList.add('flex');
+
+                    const prompt = `Write a single, friendly, and short SMS message to a nail salon client named ${client.name}. Thank them for their recent visit where they received the following services: ${client.services}. Mention that their technician was ${client.technician}. Ask them to come back soon. Keep it concise and professional.`;
+                    
+                    try {
+                        let chatHistory = [];
+                        chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                        const payload = { contents: chatHistory };
+                        const apiKey = ""; 
+                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                        const response = await fetch(apiUrl, {
+                                   method: 'POST',
+                                   headers: { 'Content-Type': 'application/json' },
+                                   body: JSON.stringify(payload)
+                               });
+                        const result = await response.json();
+                        
+                        let text = "Sorry, could not generate a message at this time.";
+                        if (result.candidates && result.candidates.length > 0 &&
+                            result.candidates[0].content && result.candidates[0].content.parts &&
+                            result.candidates[0].content.parts.length > 0) {
+                          text = result.candidates[0].content.parts[0].text;
+                        } 
+                        
+                        smsTextarea.value = text;
+                        const message = encodeURIComponent(text);
+                        const phone = client.phone;
+
+                        if (phone && phone !== 'N/A') {
+                            sendLink.href = `sms:${phone}?body=${message}`;
+                            sendLink.classList.remove('pointer-events-none', 'opacity-50');
+                        } else {
+                            sendLink.href = '#';
+                            sendLink.onclick = () => alert('Client phone number is not available.');
+                            sendLink.classList.remove('pointer-events-none', 'opacity-50');
+                        }
+
+                    } catch (error) {
+                        console.error("Error generating SMS message:", error);
+                        smsTextarea.value = "Sorry, there was an error connecting to the AI service.";
+                        sendLink.classList.remove('pointer-events-none', 'opacity-50');
+                    }
+                }
+
+                document.getElementById('clients-list-content').addEventListener('click', (e) => {
+                    const draftSmsBtn = e.target.closest('.draft-sms-btn');
+                    const editBtn = e.target.closest('.edit-client-btn');
+                    const deleteBtn = e.target.closest('.delete-client-btn');
+                    
+                    if (draftSmsBtn) {
+                        const clientName = draftSmsBtn.dataset.name;
+                        const client = aggregatedClients.find(c => c.name === clientName);
+                        if (client) {
+                            const lastFinishedClient = allFinishedClients
+                                .filter(c => c.name === clientName)
+                                .sort((a,b) => b.checkOutTimestamp.toMillis() - a.checkOutTimestamp.toMillis())[0];
+
+                            if (lastFinishedClient) {
+                                generateSmsMessage(lastFinishedClient);
+                            } else {
+                                alert("No recent service record found for this client to generate a message.");
+                            }
+                        }
+                    } else if (editBtn) {
+                        const clientName = editBtn.dataset.name;
+                        const client = aggregatedClients.find(c => c.name === clientName);
+                        if(client) {
+                            document.getElementById('edit-client-original-name').value = client.name;
+                            document.getElementById('edit-client-name').value = client.name;
+                            document.getElementById('edit-client-phone').value = client.phone;
+                            editClientModal.classList.remove('hidden');
+                            editClientModal.classList.add('flex');
+                        }
+                    } else if (deleteBtn) {
+                        const clientName = deleteBtn.dataset.name;
+                        if(confirm(`Are you sure you want to delete all records for ${clientName}? This cannot be undone.`)) {
+                           const clientsToDelete = allFinishedClients.filter(c => c.name === clientName);
+                           if (clientsToDelete.length > 0) {
+                                const batch = writeBatch(db);
+                                clientsToDelete.forEach(c => {
+                                    const docRef = doc(db, "finished_clients", c.id);
+                                    batch.delete(docRef);
+                                });
+                                batch.commit().then(() => {
+                                    console.log(`${clientName}'s records deleted.`);
+                                }).catch(err => {
+                                    console.error("Error deleting client records:", err);
+                                    alert("Could not delete client records.");
+                                });
+                           }
+                        }
+                    }
+                });
+
+                document.getElementById('gemini-sms-close-btn').addEventListener('click', () => {
+                    geminiSmsModal.classList.add('hidden');
+                    geminiSmsModal.classList.remove('flex');
+                });
+                document.querySelector('.gemini-sms-modal-overlay').addEventListener('click', () => {
+                    geminiSmsModal.classList.add('hidden');
+                    geminiSmsModal.classList.remove('flex');
+                });
+
+                document.getElementById('edit-client-cancel-btn').addEventListener('click', () => {
+                    editClientModal.classList.add('hidden');
+                    editClientModal.classList.remove('flex');
+                });
+                document.querySelector('.edit-client-modal-overlay').addEventListener('click', () => {
+                    editClientModal.classList.add('hidden');
+                    editClientModal.classList.remove('flex');
+                });
+
+                editClientForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const originalName = document.getElementById('edit-client-original-name').value;
+                    const newName = document.getElementById('edit-client-name').value;
+                    const newPhone = document.getElementById('edit-client-phone').value;
+
+                    const batch = writeBatch(db);
+                    const clientsToUpdate = allFinishedClients.filter(c => c.name === originalName);
+
+                    clientsToUpdate.forEach(c => {
+                        const docRef = doc(db, "finished_clients", c.id);
+                        batch.update(docRef, { name: newName, phone: newPhone });
+                    });
+                    
+                    await batch.commit();
+                    
+                    editClientModal.classList.add('hidden');
+                    editClientModal.classList.remove('flex');
+                });
+
                 // --- INITIALIZATION ---
                 const todayString = new Date().toISOString().split('T')[0];
                 // Set default date for finished clients filter
                 document.getElementById('finished-date-filter').value = todayString;
                 currentFinishedDateFilter = todayString;
                 renderFinishedClients(applyClientFilters(allFinishedClients, '', 'All', currentFinishedDateFilter));
-                
+
                 // Set default date for staff earning form and filter
                 document.getElementById('staff-earning-date').value = todayString;
                 document.getElementById('earning-date-filter').value = todayString;
@@ -2411,7 +2636,7 @@
                 }
             }
         }
-        
+
         document.addEventListener('DOMContentLoaded', () => {
             const loginForm = document.getElementById('login-form');
             if (sessionStorage.getItem('isLoggedIn') === 'true') {
@@ -2433,7 +2658,7 @@
         });
 
     </script>
-    
+
     <script>
         // Service worker registration
         if ('serviceWorker' in navigator) {

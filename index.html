@@ -125,7 +125,7 @@
                     <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg" id="queue-tab" type="button">Active Queue <span id="active-count" class="ml-2 bg-pink-100 text-pink-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">0</span></button></li>
                     <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg" id="processing-tab" type="button">Processing <span id="processing-count" class="ml-2 bg-gray-200 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">0</span></button></li>
                     <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg" id="finished-tab" type="button">Finished Clients <span id="finished-count" class="ml-2 bg-gray-200 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">0</span></button></li>
-                    <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg" id="calendar-tab" type="button">Booking Calendar <span id="calendar-count" class="ml-2 bg-gray-200 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">0</span></button></li>
+                    <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg" id="calendar-tab" type="button">Clients Booking <span id="calendar-count" class="ml-2 bg-gray-200 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">0</span></button></li>
                     <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg" id="clients-list-tab" type="button">Clients List <span id="clients-list-count" class="ml-2 bg-gray-200 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">0</span></button></li>
                     <li><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg" id="reports-tab" type="button">Reports</button></li>
                 </ul>
@@ -587,6 +587,10 @@
              </div>
         </footer>
 
+        <button id="floating-booking-btn" class="fixed bottom-6 right-6 bg-pink-600 text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center text-2xl hover:bg-pink-700 transition-colors z-40">
+            <i class="fas fa-plus"></i>
+        </button>
+
         <div id="service-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
             <div class="absolute inset-0 bg-black opacity-50 modal-overlay"></div>
             <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
@@ -688,7 +692,6 @@
             <div class="absolute inset-0 bg-black opacity-50 add-appointment-modal-overlay"></div>
             <form id="add-appointment-form" class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
                 <h3 class="text-2xl font-bold text-pink-700 mb-6">Add New Appointment</h3>
-                <input type="hidden" id="appointment-date">
                 <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
                     <div>
                         <label for="appointment-client-name" class="block text-sm font-medium text-gray-600">Client Name</label>
@@ -727,8 +730,8 @@
                         </select>
                     </div>
                      <div>
-                        <label for="appointment-time" class="block text-sm font-medium text-gray-600">Time</label>
-                        <input type="time" id="appointment-time" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" required>
+                        <label for="appointment-datetime" class="block text-sm font-medium text-gray-600">Date & Time</label>
+                        <input type="datetime-local" id="appointment-datetime" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" required>
                     </div>
                      <div>
                         <label for="appointment-notes" class="block text-sm font-medium text-gray-600">Notes</label>
@@ -2047,7 +2050,12 @@
                 // --- ADD APPOINTMENT MODAL LOGIC ---
                 const openAddAppointmentModal = (date) => {
                     addAppointmentForm.reset();
-                    document.getElementById('appointment-date').value = date;
+                    const now = new Date();
+                    const hours = String(now.getHours()).padStart(2, '0');
+                    const minutes = String(now.getMinutes()).padStart(2, '0');
+                    const defaultDateTime = `${date}T${hours}:${minutes}`;
+                    document.getElementById('appointment-datetime').value = defaultDateTime;
+
                     const clientList = document.getElementById('client-names-list');
                     const appointmentPhoneList = document.getElementById('appointment-client-phones');
                     const uniqueNames = [...new Set(allFinishedClients.map(c => c.name))];
@@ -2084,13 +2092,12 @@
 
                 addAppointmentForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    const date = document.getElementById('appointment-date').value;
-                    const time = document.getElementById('appointment-time').value;
-                    if(!time) {
-                        alert('Please select a time for the appointment.');
+                    const datetimeString = document.getElementById('appointment-datetime').value;
+                    if (!datetimeString) {
+                        alert('Please select a date and time for the appointment.');
                         return;
                     }
-                    const appointmentTimestamp = new Date(`${date}T${time}`);
+                    const appointmentTimestamp = new Date(datetimeString);
 
                     try {
                          await addDoc(collection(db, "appointments"), {
@@ -2596,6 +2603,13 @@
                     
                     editClientModal.classList.add('hidden');
                     editClientModal.classList.remove('flex');
+                });
+                
+                // Floating booking button
+                const floatingBookingBtn = document.getElementById('floating-booking-btn');
+                floatingBookingBtn.addEventListener('click', () => {
+                    const today = new Date().toISOString().split('T')[0];
+                    openAddAppointmentModal(today);
                 });
 
                 // --- INITIALIZATION ---

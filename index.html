@@ -2247,8 +2247,9 @@
                 
                 document.getElementById('export-salon-earnings-btn').addEventListener('click', () => {
                     const filteredData = applySalonEarningFilters(allSalonEarnings, currentSalonEarningDateFilter, currentSalonEarningRangeFilter);
-                    const worksheet = XLSX.utils.json_to_sheet(filteredData.map(earning => {
-                         const total = (earning.soklengEarning || 0) + (earning.toeunEarning || 0) + (earning.mamaEarning || 0) + (earning.papaEarning || 0) + (earning.lindaEarning || 0) + (earning.sellGiftCard || 0) + ((earning.noOfCredit || 0) * 2);
+                    
+                    const dataForExport = filteredData.map(earning => {
+                        const total = (earning.soklengEarning || 0) + (earning.toeunEarning || 0) + (earning.mamaEarning || 0) + (earning.papaEarning || 0) + (earning.lindaEarning || 0) + (earning.sellGiftCard || 0) + ((earning.noOfCredit || 0) * 2);
                         const cash = total - ((earning.totalCredit || 0) + (earning.check || 0) + (earning.returnGiftCard || 0) + (earning.venmo || 0) + (earning.square || 0));
                         return {
                             Date: new Date(earning.date.seconds * 1000).toLocaleDateString(),
@@ -2266,8 +2267,74 @@
                             Square: earning.square || 0,
                             Total: total,
                             Cash: cash
-                        }
-                    }));
+                        };
+                    });
+
+                    if (filteredData.length > 0) {
+                        const totals = {
+                            sokleng: filteredData.reduce((sum, e) => sum + (e.soklengEarning || 0), 0),
+                            toeun: filteredData.reduce((sum, e) => sum + (e.toeunEarning || 0), 0),
+                            mama: filteredData.reduce((sum, e) => sum + (e.mamaEarning || 0), 0),
+                            papa: filteredData.reduce((sum, e) => sum + (e.papaEarning || 0), 0),
+                            linda: filteredData.reduce((sum, e) => sum + (e.lindaEarning || 0), 0),
+                            sellGc: filteredData.reduce((sum, e) => sum + (e.sellGiftCard || 0), 0),
+                            returnGc: filteredData.reduce((sum, e) => sum + (e.returnGiftCard || 0), 0),
+                            check: filteredData.reduce((sum, e) => sum + (e.check || 0), 0),
+                            noCredit: filteredData.reduce((sum, e) => sum + (e.noOfCredit || 0), 0),
+                            totalCredit: filteredData.reduce((sum, e) => sum + (e.totalCredit || 0), 0),
+                            venmo: filteredData.reduce((sum, e) => sum + (e.venmo || 0), 0),
+                            square: filteredData.reduce((sum, e) => sum + (e.square || 0), 0),
+                            get total() {
+                                return this.sokleng + this.toeun + this.mama + this.papa + this.linda + this.sellGc + (this.noCredit * 2);
+                            },
+                            get cash() {
+                                return this.total - (this.totalCredit + this.check + this.returnGc + this.venmo + this.square);
+                            }
+                        };
+
+                        dataForExport.push({}); 
+                        
+                        dataForExport.push({
+                            Date: "Total:",
+                            Sokleng: totals.sokleng,
+                            Toeun: totals.toeun,
+                            Mama: totals.mama,
+                            Papa: totals.papa,
+                            Linda: totals.linda,
+                            "Sell GC": totals.sellGc,
+                            "Return GC": totals.returnGc,
+                            Check: totals.check,
+                            "# Credit": totals.noCredit,
+                            "Total Credit": totals.totalCredit,
+                            Venmo: totals.venmo,
+                            Square: totals.square,
+                            Total: totals.total,
+                            Cash: totals.cash
+                        });
+
+                        const staff = ['sokleng', 'toeun', 'mama', 'papa', 'linda'];
+                        const commissionRow = { Date: "Commission 70%:" };
+                        const check70Row = { Date: "70% of Check:" };
+                        const cash30Row = { Date: "30% of Cash:" };
+                        
+                        staff.forEach(name => {
+                            const commission70 = (totals[name.toLowerCase()] || 0) * 0.70;
+                            const check70 = commission70 * 0.70;
+                            const cash30 = commission70 - check70;
+                            
+                            const capitalizedName = name.charAt(0).toUpperCase() + name.slice(1);
+                            
+                            commissionRow[capitalizedName] = commission70;
+                            check70Row[capitalizedName] = check70;
+                            cash30Row[capitalizedName] = cash30;
+                        });
+                        
+                        dataForExport.push(commissionRow);
+                        dataForExport.push(check70Row);
+                        dataForExport.push(cash30Row);
+                    }
+
+                    const worksheet = XLSX.utils.json_to_sheet(dataForExport);
                     const workbook = XLSX.utils.book_new();
                     XLSX.utils.book_append_sheet(workbook, worksheet, "Salon Earnings");
                     XLSX.writeFile(workbook, "Salon_Earning_Report.xlsx");

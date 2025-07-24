@@ -173,7 +173,7 @@
                          <div class="mt-8 text-center">
                              <label class="flex items-center justify-center">
                                 <input type="checkbox" id="policy-agree" class="form-checkbox" checked required>
-                                <span class="ml-2 text-sm text-gray-600">I agree to the <button type="button" id="view-policy-btn" class="text-pink-600 hover:underline font-semibold">Salon Policy</button>.</span>
+                                <span class="ml-2 text-sm text-gray-600">I agree to the <button type="button" class="text-pink-600 hover:underline font-semibold view-policy-btn">Salon Policy</button>.</span>
                             </label>
                         </div>
                         <div class="mt-4 text-center">
@@ -652,7 +652,7 @@
             </div>
         </div>
 
-        <div id="policy-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+        <div id="policy-modal" class="fixed inset-0 z-[60] hidden items-center justify-center">
             <div class="absolute inset-0 bg-black opacity-50 policy-modal-overlay"></div>
             <div class="relative bg-white w-full max-w-2xl p-6 rounded-2xl shadow-xl m-4">
                 <h3 class="text-2xl font-bold text-pink-700 mb-6">Salon Policy</h3>
@@ -737,6 +737,12 @@
                         <label for="appointment-notes" class="block text-sm font-medium text-gray-600">Notes</label>
                         <textarea id="appointment-notes" rows="2" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg"></textarea>
                     </div>
+                </div>
+                <div class="mt-8 text-center">
+                    <label class="flex items-center justify-center">
+                        <input type="checkbox" id="appointment-policy-agree" class="form-checkbox" checked required>
+                        <span class="ml-2 text-sm text-gray-600">I agree to the <button type="button" class="text-pink-600 hover:underline font-semibold view-policy-btn">Salon Policy</button>.</span>
+                    </label>
                 </div>
                 <div class="mt-6 flex justify-end gap-3">
                     <button type="button" id="add-appointment-cancel-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Cancel</button>
@@ -994,6 +1000,15 @@
                     "Gel Polish": [{ name: "Nail", price: "$30", p: "Gel Polish - " }, { name: "Toe", price: "$30", p: "Gel Polish - " }],
                     "Nail Art & Extras": [{ name: "Design/Finger", price: "$5" }, { name: "Matt top coat", price: "$10" }, { name: "Diamond/finger", price: "$10" }, { name: "Chrome powder", price: "$10" }, { name: "Cat-eye Gel", price: "$10" }, { name: "Glow in the dark (top coat)", price: "$10" }, { name: "Repair - acrylic/finger", price: "$5" }, { name: "Repair - SNS/finger", price: "$5" }]
                 };
+                
+                // --- Helper Functions ---
+                const getLocalDateString = (date = new Date()) => {
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                };
+
 
                 // --- RENDER FUNCTIONS ---
                 const applyClientFilters = (clients, searchTerm, techFilter, dateFilter) => {
@@ -1013,7 +1028,7 @@
                     if (dateFilter) {
                         filtered = filtered.filter(c => {
                             if (!c.checkOutTimestamp) return false;
-                            const clientDate = new Date(c.checkOutTimestamp.seconds * 1000).toISOString().split('T')[0];
+                            const clientDate = getLocalDateString(new Date(c.checkOutTimestamp.seconds * 1000));
                             return clientDate === dateFilter;
                         });
                     }
@@ -1507,6 +1522,9 @@
                     if (client.colorCode) {
                         appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Color Code:</strong> ${client.colorCode}</div>`;
                     }
+                    if (client.notes) {
+                        appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Notes:</strong> ${client.notes}</div>`;
+                    }
                     appointmentDetailsHTML += '</div>';
 
 
@@ -1524,6 +1542,7 @@
                                 <div><strong class="font-semibold text-gray-700">Services:</strong> ${lastFinished.services || 'N/A'}</div>
                                 <div><strong class="font-semibold text-gray-700">Color Code:</strong> ${lastFinished.colorCode || 'N/A'}</div>
                                 <div><strong class="font-semibold text-gray-700">Technician:</strong> ${lastFinished.technician || 'N/A'}</div>
+                                ${lastFinished.notes ? `<div><strong class="font-semibold text-gray-700">Notes:</strong> ${lastFinished.notes}</div>` : ''}
                             </div>
                         `;
                     }
@@ -1594,6 +1613,7 @@
                                 bookingType: 'Booked - Calendar',
                                 services: Array.isArray(appointment.services) ? appointment.services : [appointment.services],
                                 technician: appointment.technician,
+                                notes: appointment.notes || '',
                                 checkInTimestamp: serverTimestamp(),
                                 status: 'waiting'
                             });
@@ -1724,7 +1744,13 @@
                 // Salon Policy Modal Logic
                 const openPolicyModal = () => { policyModal.classList.add('flex'); policyModal.classList.remove('hidden'); };
                 const closePolicyModal = () => { policyModal.classList.add('hidden'); policyModal.classList.remove('flex'); };
-                document.getElementById('view-policy-btn').addEventListener('click', openPolicyModal);
+                
+                document.body.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('view-policy-btn')) {
+                        openPolicyModal();
+                    }
+                });
+
                 document.getElementById('policy-close-btn').addEventListener('click', closePolicyModal);
                 document.querySelector('.policy-modal-overlay').addEventListener('click', closePolicyModal);
 
@@ -2142,7 +2168,7 @@
                             date: Timestamp.fromDate(earningDate)
                         });
                         staffEarningForm.reset();
-                        document.getElementById('staff-earning-date').value = new Date().toISOString().split('T')[0];
+                        document.getElementById('staff-earning-date').value = getLocalDateString();
                     } catch (err) {
                         console.error("Error adding earning: ", err);
                         alert("Could not add earning. Please try again.");
@@ -2194,7 +2220,7 @@
                     try {
                         await addDoc(collection(db, "salon_earnings"), salonEarningData);
                         salonEarningForm.reset();
-                        document.getElementById('salon-earning-date').value = new Date().toISOString().split('T')[0];
+                        document.getElementById('salon-earning-date').value = getLocalDateString();
                     } catch (err) {
                         console.error("Error adding salon earning: ", err);
                         alert("Could not add salon earning. Please try again.");
@@ -2440,6 +2466,7 @@
                                 bookingType: 'Booked - Calendar',
                                 services: Array.isArray(appointment.services) ? appointment.services : [appointment.services],
                                 technician: appointment.technician,
+                                notes: appointment.notes || '',
                                 checkInTimestamp: serverTimestamp(),
                                 status: 'waiting'
                             });
@@ -2608,12 +2635,12 @@
                 // Floating booking button
                 const floatingBookingBtn = document.getElementById('floating-booking-btn');
                 floatingBookingBtn.addEventListener('click', () => {
-                    const today = new Date().toISOString().split('T')[0];
+                    const today = getLocalDateString();
                     openAddAppointmentModal(today);
                 });
 
                 // --- INITIALIZATION ---
-                const todayString = new Date().toISOString().split('T')[0];
+                const todayString = getLocalDateString();
                 // Set default date for finished clients filter
                 document.getElementById('finished-date-filter').value = todayString;
                 currentFinishedDateFilter = todayString;

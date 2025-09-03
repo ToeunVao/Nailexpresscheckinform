@@ -1539,6 +1539,42 @@
             </div>
         </div>
     </div>
+    
+    <!-- Client Profile Modal -->
+    <div id="client-profile-modal" class="modal hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
+        <div class="relative bg-white w-full max-w-4xl p-6 rounded-2xl shadow-xl m-4 max-h-[90vh] overflow-y-auto">
+            <button id="close-client-profile-modal-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800"><i class="fas fa-times fa-lg"></i></button>
+            <div id="client-profile-header" class="text-center">
+                <h2 class="text-3xl font-bold text-pink-700" id="profile-client-name"></h2>
+                <p class="text-gray-500" id="profile-client-phone"></p>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 my-6 text-center">
+                <div class="bg-pink-50 p-3 rounded-lg"><p class="text-sm font-medium text-pink-700">Total Visits</p><p id="profile-total-visits" class="text-2xl font-bold"></p></div>
+                <div class="bg-green-50 p-3 rounded-lg"><p class="text-sm font-medium text-green-700">Total Spent</p><p id="profile-total-spent" class="text-2xl font-bold"></p></div>
+                <div class="bg-blue-50 p-3 rounded-lg"><p class="text-sm font-medium text-blue-700">Favorite Tech</p><p id="profile-fav-tech" class="text-xl font-bold"></p></div>
+                <div class="bg-yellow-50 p-3 rounded-lg"><p class="text-sm font-medium text-yellow-700">Favorite Color</p><p id="profile-fav-color" class="text-xl font-bold"></p></div>
+            </div>
+            <div>
+                 <h3 class="text-xl font-semibold text-gray-700 border-b pb-2">Visit History</h3>
+                 <div class="mt-2 max-h-64 overflow-y-auto">
+                     <table class="w-full text-sm text-left">
+                         <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                             <tr>
+                                 <th class="px-4 py-2">Date</th>
+                                 <th class="px-4 py-2">Services</th>
+                                 <th class="px-4 py-2">Technician</th>
+                                 <th class="px-4 py-2 text-right">Total</th>
+                             </tr>
+                         </thead>
+                         <tbody id="profile-history-table-body">
+                             <!-- History will be populated here -->
+                         </tbody>
+                     </table>
+                 </div>
+            </div>
+        </div>
+    </div>
 
 
  <script  type="module" src="script.js"></script>

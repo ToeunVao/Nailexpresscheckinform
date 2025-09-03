@@ -31,19 +31,18 @@ let landingPageInitialized = false;
 let anonymousUserId = null;
 let bookingSettings = { minBookingHours: 2 };
 let loginSecuritySettings = { maxAttempts: 5, lockoutMinutes: 15 };
-let salonHours = {};
+let salonHours = {}; // To store salon operating hours
 let bookingsChart, servicesChart, earningsChart;
 let notifications = [];
 let currentUserRole = null;
 let currentUserId = null;
-
-// --- Global Data Arrays & Loading State ---
+let initialAppointmentsLoaded = false;
+let initialInventoryLoaded = false;
 let allFinishedClients = [], allAppointments = [], allClients = [], allActiveClients = [], servicesData = {};
 let allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [];
 let allInventoryUsage = [], allGiftCards = [], allPromotions = [];
 let techniciansAndStaff = [], technicians = [];
 let allExpenseCategories = [], allPaymentAccounts = [], allSuppliers = [];
-let dataLoaded = { appointments: false, finishedClients: false, users: false, services: false, clients: false };
 
 const giftCardBackgrounds = {
     'General': [
@@ -629,6 +628,44 @@ function initLandingPage() {
             updateFeatureVisibility({ showClientLogin: true, showPromotions: true, showGiftCards: true, showNailArt: true });
         }
     });
+
+    const giftCardPreview = document.getElementById('gift-card-preview');
+    const giftCardBgSelect = document.getElementById('gift-card-bg-select');
+
+    const updateGiftCardPreview = () => {
+        const amount = giftCardAmountSelect.value === 'custom' ? customAmountInput.value : giftCardAmountSelect.value;
+        const to = document.getElementById('gift-card-recipient-name').value;
+        const from = document.getElementById('gift-card-sender-name').value;
+        const message = document.getElementById('gift-card-message').value;
+        const bg = giftCardBgSelect.value;
+
+        giftCardPreview.style.backgroundImage = `url('${bg}')`;
+        giftCardPreview.innerHTML = `
+            <div class="p-4 bg-black bg-opacity-40 rounded-lg text-white h-full flex flex-col justify-between">
+                <div>
+                    <h3 class="text-2xl font-bold text-right">$${amount || '0'}</h3>
+                </div>
+                <div class="text-left">
+                    <p class="text-sm">To: ${to || 'Recipient'}</p>
+                    <p class="text-sm">From: ${from || 'Sender'}</p>
+                     <p class="mt-2 italic text-sm">"${message || 'Your message here...'}"</p>
+                </div>
+            </div>
+        `;
+    };
+
+    Object.keys(giftCardBackgrounds).forEach(category => {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = category;
+        giftCardBackgrounds[category].forEach(url => {
+            const option = new Option(url.split('/').pop().split('?')[0], url);
+            optgroup.appendChild(option);
+        });
+        giftCardBgSelect.appendChild(optgroup);
+    });
+
+    giftCardForm.addEventListener('input', updateGiftCardPreview);
+    updateGiftCardPreview();
 }
 
 // --- CLIENT DASHBOARD SCRIPT ---
@@ -877,6 +914,7 @@ function initMainApp(userRole) {
     const editSalonEarningForm = document.getElementById('edit-salon-earning-form');
     const clientFormModal = document.getElementById('client-form-modal');
     const clientForm = document.getElementById('client-form');
+    const clientProfileModal = document.getElementById('client-profile-modal');
     const geminiSmsModal = document.getElementById('gemini-sms-modal');
     const confirmModal = document.getElementById('confirm-modal');
     const confirmModalMessage = document.getElementById('confirm-modal-message');
@@ -887,7 +925,6 @@ function initMainApp(userRole) {
     const shareModal = document.getElementById('share-modal');
     const giftCardDesignerModal = document.getElementById('gift-card-designer-modal');
     const editGiftCardModal = document.getElementById('edit-gift-card-modal');
-    const clientProfileModal = document.getElementById('client-profile-modal');
 
     const rebookOtherInput = document.getElementById('rebook-other-input');
     const rebookSelect = document.getElementById('rebook-select');
@@ -909,6 +946,9 @@ function initMainApp(userRole) {
     let currentTechFilterCalendar = 'All', currentTechFilterActive = 'All', currentTechFilterProcessing = 'All', currentTechFilterFinished = 'All';
     let currentFinishedDateFilter = '', currentEarningTechFilter = 'All', currentEarningDateFilter = '', currentEarningRangeFilter = 'daily';
     let currentSalonEarningDateFilter = '', currentSalonEarningRangeFilter = String(new Date().getMonth()), currentExpenseMonthFilter = '';
+
+    let aggregatedClients = [];
+
     
     let confirmCallback = null;
     const showConfirmModal = (message, onConfirm) => { confirmModalMessage.textContent = message; confirmCallback = onConfirm; confirmModal.classList.remove('hidden'); confirmModal.classList.add('flex'); };
@@ -1138,11 +1178,11 @@ function initMainApp(userRole) {
             return { ...client, favoriteTech: findFavorite(client.techCounts), favoriteColor: findFavorite(client.colorCounts) };
         });
     
-        const clientInfoMap = new Map(allClients.map(c => [c.name.toLowerCase(), { dob: c.dob, id: c.id, phone: c.phone }]));
+        const clientInfoMap = new Map(allClients.map(c => [c.name.toLowerCase(), { dob: c.dob, id: c.id, phone: c.phone, photoGallery: c.photoGallery }]));
         let finalClientList = processedClients.map(aggClient => {
             const key = aggClient.name.toLowerCase();
             const masterInfo = clientInfoMap.get(key);
-            return { ...aggClient, id: masterInfo ? masterInfo.id : null, dob: masterInfo ? masterInfo.dob : '', phone: masterInfo && masterInfo.phone ? masterInfo.phone : aggClient.phone };
+            return { ...aggClient, id: masterInfo ? masterInfo.id : null, dob: masterInfo ? masterInfo.dob : '', phone: masterInfo && masterInfo.phone ? masterInfo.phone : aggClient.phone, photoGallery: masterInfo ? masterInfo.photoGallery : [] };
         });
     
         allClients.forEach(masterClient => {
@@ -1485,7 +1525,7 @@ function initMainApp(userRole) {
 
      onSnapshot(query(collection(db, "appointments"), orderBy("appointmentTimestamp", "asc")), (snapshot) => {
         snapshot.docChanges().forEach((change) => {
-            if (change.type === "added" && dataLoaded.appointments) {
+            if (change.type === "added" && initialAppointmentsLoaded) {
                  const data = change.doc.data();
                  if (data.appointmentTimestamp.seconds > appLoadTimestamp.seconds) {
                     const apptTime = new Date(data.appointmentTimestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -1500,8 +1540,8 @@ function initMainApp(userRole) {
         updateDashboard();
         updateNavCounts();
 
-        if (!dataLoaded.appointments) {
-            dataLoaded.appointments = true;
+        if (!initialAppointmentsLoaded) {
+            initialAppointmentsLoaded = true;
         }
     });
 
@@ -1834,7 +1874,7 @@ function initMainApp(userRole) {
             else { sendLink.href = '#'; sendLink.onclick = () => alert('Client phone number is not available.'); sendLink.classList.remove('pointer-events-none', 'opacity-50'); }
         } catch (error) { console.error("Error generating SMS:", error); smsTextarea.value = "Error connecting to the AI service."; sendLink.classList.remove('pointer-events-none', 'opacity-50'); }
     }
-    
+
     document.getElementById('clients-list-report-content').addEventListener('click', (e) => {
         const viewProfileBtn = e.target.closest('.view-client-profile-btn');
         const editBtn = e.target.closest('.edit-client-btn');
@@ -1874,6 +1914,21 @@ function initMainApp(userRole) {
         document.getElementById('profile-total-spent').textContent = `$${totalSpent.toFixed(2)}`;
         document.getElementById('profile-fav-tech').textContent = client.favoriteTech || 'N/A';
         document.getElementById('profile-fav-color').textContent = client.favoriteColor || 'N/A';
+
+        const upcomingAppointmentsContainer = document.getElementById('profile-upcoming-appointments');
+        const clientUpcomingAppointments = allAppointments.filter(a => a.name === client.name && a.appointmentTimestamp.toDate() > new Date());
+        if (clientUpcomingAppointments.length > 0) {
+            upcomingAppointmentsContainer.innerHTML = '<ul>' + clientUpcomingAppointments.map(appt => `<li class="text-sm text-gray-600 mb-1">${new Date(appt.appointmentTimestamp.seconds * 1000).toLocaleString()}: ${appt.services.join(', ')}</li>`).join('') + '</ul>';
+        } else {
+            upcomingAppointmentsContainer.innerHTML = '<p class="text-sm text-gray-500">No upcoming appointments.</p>';
+        }
+
+        const galleryContainer = document.getElementById('profile-photo-gallery');
+        if (client.photoGallery && client.photoGallery.length > 0) {
+            galleryContainer.innerHTML = client.photoGallery.map(url => `<div class="w-24 h-24 flex-shrink-0"><img src="${url}" class="w-full h-full object-cover rounded-md shadow-md"></div>`).join('');
+        } else {
+            galleryContainer.innerHTML = '<p class="text-sm text-gray-500">No photos in gallery.</p>';
+        }
         
         clientProfileModal.classList.remove('hidden');
         clientProfileModal.classList.add('flex');
@@ -1883,7 +1938,6 @@ function initMainApp(userRole) {
         clientProfileModal.classList.add('hidden');
         clientProfileModal.classList.remove('flex');
     };
-    
     document.getElementById('close-client-profile-modal-btn').addEventListener('click', closeClientProfileModal);
     clientProfileModal.querySelector('.modal-overlay').addEventListener('click', closeClientProfileModal);
 
@@ -1891,6 +1945,1125 @@ function initMainApp(userRole) {
     document.querySelector('.gemini-sms-modal-overlay').addEventListener('click', () => { geminiSmsModal.classList.add('hidden'); geminiSmsModal.classList.remove('flex'); });
     
     document.getElementById('floating-booking-btn').addEventListener('click', () => { openAddAppointmentModal(getLocalDateString()); });
+
+    const addUserForm = document.getElementById('add-user-form');
+    const usersTableBody = document.querySelector('#users-table tbody');
+    const renderUsers = (users) => {
+        usersTableBody.innerHTML = '';
+        users.forEach(user => {
+            const row = usersTableBody.insertRow();
+            row.innerHTML = `<td class="px-6 py-4">${user.name}</td><td class="px-6 py-4">${user.email}</td><td class="px-6 py-4">${user.phone}</td><td class="px-6 py-4">${user.role}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${user.id}" class="edit-user-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${user.id}" class="delete-user-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
+        });
+    };
+    
+    const populateTechnicianFilters = () => {
+        const techContainers = document.querySelectorAll('.tech-filter-container');
+        const techSelects = document.querySelectorAll('#appointment-technician-select, #technician-name-select, #staff-name, #edit-staff-name, #checkin-technician-select');
+        techContainers.forEach(container => {
+            const userList = container.id.includes('earning') ? techniciansAndStaff : technicians;
+            container.querySelectorAll('.dynamic-tech-btn').forEach(btn => btn.remove());
+            userList.forEach(tech => { const btn = document.createElement('button'); btn.className = 'tech-filter-btn dynamic-tech-btn px-3 py-1 rounded-full text-sm'; btn.dataset.tech = tech.name; btn.textContent = tech.name; container.appendChild(btn); });
+        });
+        techSelects.forEach(select => {
+            const userList = (select.id === 'staff-name' || select.id === 'edit-staff-name') ? techniciansAndStaff : technicians;
+            const firstOption = select.options[0];
+            select.innerHTML = '';
+            if(firstOption && (firstOption.value === 'Any Technician' || firstOption.value === '')) { select.appendChild(firstOption); }
+            userList.forEach(tech => { select.appendChild(new Option(tech.name, tech.name)); });
+             if(select.id === 'technician-name-select') { select.appendChild(new Option("Other", "other")); }
+        });
+        const salonEarningInputs = document.getElementById('salon-earning-inputs');
+        const salonEarningTableHead = document.getElementById('salon-earning-table-head');
+        const salonEarningTableFoot = document.getElementById('salon-earning-table-foot');
+        salonEarningInputs.innerHTML = '';
+        let headHTML = '<tr><th scope="col" class="px-6 py-3">Date</th>';
+        let footHTML = `<tr><td class="px-6 py-3 text-right font-bold">Total:</td>`;
+        techniciansAndStaff.forEach(tech => {
+            const techNameLower = tech.name.toLowerCase();
+            salonEarningInputs.innerHTML += `<div><label for="salon-earning-${techNameLower}" class="block text-sm font-medium text-gray-600">${tech.name}</label><input type="number" step="0.01" id="salon-earning-${techNameLower}" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount"></div>`;
+            headHTML += `<th scope="col" class="px-6 py-3">${tech.name}</th>`;
+            footHTML += `<td id="total-${techNameLower}" class="px-6 py-3"></td>`;
+        });
+        headHTML += `<th scope="col" class="px-6 py-3">Sell GC</th><th scope="col" class="px-6 py-3">Return GC</th><th scope="col" class="px-6 py-3">Check</th><th scope="col" class="px-6 py-3">No of Credit</th><th scope="col" class="px-6 py-3">Total Credit</th><th scope="col" class="px-6 py-3">Venmo</th><th scope="col" class="px-6 py-3">Square</th><th scope="col" class="px-6 py-3 font-bold">Total</th><th scope="col" class="px-6 py-3 font-bold">Cash</th><th scope="col" class="px-6 py-3 text-center">Action</th></tr>`;
+        footHTML += `<td id="total-sell-gc" class="px-6 py-3"></td><td id="total-return-gc" class="px-6 py-3"></td><td id="total-check" class="px-6 py-3"></td><td id="total-no-credit" class="px-6 py-3"></td><td id="total-total-credit" class="px-6 py-3"></td><td id="total-venmo" class="px-6 py-3"></td><td id="total-square" class="px-6 py-3"></td><td id="total-total" class="px-6 py-3 font-bold"></td><td id="total-cash" class="px-6 py-3 font-bold"></td><td class="px-6 py-3"></td></tr>`;
+        let commissionHTML = `<tr class="text-center"><td class="px-6 py-3 text-right font-bold border-t-2 border-gray-300">Commission 70%:</td>`, check70HTML = `<tr class="text-center"><td class="px-6 py-3 text-right font-bold">70% of Check:</td>`, cash30HTML = `<tr class="text-center"><td class="px-6 py-3 text-right font-bold">30% of Cash:</td>`;
+        techniciansAndStaff.forEach(tech => {
+            const techNameLower = tech.name.toLowerCase();
+            commissionHTML += `<td id="commission-${techNameLower}" class="px-6 py-3 border-t-2 border-gray-300"></td>`;
+            check70HTML += `<td id="check70-${techNameLower}" class="px-6 py-3"></td>`;
+            cash30HTML += `<td id="cash30-${techNameLower}" class="px-6 py-3"></td>`;
+        });
+        commissionHTML += `<td class="border-t-2 border-gray-300" colspan="10"></td></tr>`;
+        check70HTML += `<td colspan="10"></td></tr>`;
+        cash30HTML += `<td colspan="10"></td></tr>`;
+        salonEarningTableHead.innerHTML = headHTML;
+        salonEarningTableFoot.innerHTML = footHTML + commissionHTML + check70HTML + cash30HTML;
+    };
+
+    onSnapshot(collection(db, "users"), (snapshot) => {
+        const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        techniciansAndStaff = users.filter(user => user.role === 'technician' || user.role === 'staff');
+        technicians = users.filter(user => user.role === 'technician');
+        renderUsers(users);
+        populateTechnicianFilters();
+    });
+
+    addUserForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const userId = document.getElementById('edit-user-id').value;
+        const name = document.getElementById('new-user-name').value, phone = document.getElementById('new-user-phone').value, email = document.getElementById('new-user-email').value, password = document.getElementById('new-user-password').value, role = document.getElementById('user-role').value;
+        if (userId) { await setDoc(doc(db, "users", userId), { name, phone, email, role }); alert("User updated."); } 
+        else {
+            if (!password || password.length < 6) { return alert("Password must be at least 6 characters."); }
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                await setDoc(doc(db, "users", userCredential.user.uid), { name, phone, email, role });
+                alert("User created!");
+            } catch (error) { console.error("Error creating user:", error); alert("Error creating user: " + error.message); }
+        }
+        addUserForm.reset();
+        document.getElementById('edit-user-id').value = '';
+        document.getElementById('new-user-email').disabled = false;
+        document.getElementById('new-user-password').required = true;
+    });
+
+    usersTableBody.addEventListener('click', async (e) => {
+        const editBtn = e.target.closest('.edit-user-btn');
+        const deleteBtn = e.target.closest('.delete-user-btn');
+        if (editBtn) {
+            const userDoc = await getDoc(doc(db, "users", editBtn.dataset.id));
+            if (userDoc.exists()) {
+                const user = userDoc.data();
+                document.getElementById('edit-user-id').value = editBtn.dataset.id;
+                document.getElementById('new-user-name').value = user.name;
+                document.getElementById('new-user-phone').value = user.phone;
+                document.getElementById('new-user-email').value = user.email;
+                document.getElementById('new-user-email').disabled = true;
+                document.getElementById('new-user-password').required = false;
+                document.getElementById('new-user-password').placeholder = "Leave blank to keep same password";
+                document.getElementById('user-role').value = user.role;
+            }
+        }
+        if (deleteBtn) { showConfirmModal("Delete this user?", async () => { await deleteDoc(doc(db, "users", deleteBtn.dataset.id)); alert("User role deleted. Login must be deleted from Firebase console."); }); }
+    });
+
+    const addProductForm = document.getElementById('add-product-form');
+    const inventoryTableBody = document.querySelector('#inventory-table tbody');
+    const productSupplierSelect = document.getElementById('product-supplier');
+    const inventoryReportTableBody = document.querySelector('#inventory-report-table tbody');
+
+    onSnapshot(query(collection(db, "inventory_usage"), orderBy("timestamp", "desc")), (snapshot) => {
+        allInventoryUsage = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    });
+
+
+    const renderInventoryReport = () => {
+        const lowStockItems = allInventory.filter(item => item.quantity <= item.lowStockAlert);
+        inventoryReportTableBody.innerHTML = '';
+
+        if(lowStockItems.length === 0) {
+            inventoryReportTableBody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-gray-400">No items are currently low on stock.</td></tr>`;
+            return;
+        }
+
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const thirtyDaysAgoTimestamp = Timestamp.fromDate(thirtyDaysAgo);
+
+        const recentUsage = allInventoryUsage.filter(usage => usage.timestamp >= thirtyDaysAgoTimestamp);
+
+        lowStockItems.forEach(item => {
+            const usageLast30d = recentUsage
+                .filter(usage => usage.productId === item.id)
+                .reduce((sum, usage) => sum + usage.quantityUsed, 0);
+            
+            const suggestedReorder = Math.max(0, usageLast30d - item.quantity);
+
+            const row = inventoryReportTableBody.insertRow();
+            row.className = 'bg-white border-b hover:bg-yellow-50';
+            row.innerHTML = `<td class="px-6 py-4 font-medium text-gray-900">${item.name}</td><td class="px-6 py-4 text-center text-red-600 font-bold">${item.quantity}</td><td class="px-6 py-4 text-center">${item.lowStockAlert}</td><td class="px-6 py-4 text-center">${usageLast30d}</td><td class="px-6 py-4 text-center font-bold text-blue-600">${suggestedReorder}</td>`;
+        });
+    };
+
+    document.getElementById('inventory-report-tab').addEventListener('click', renderInventoryReport);
+
+
+    const populateProductSupplierDropdown = () => {
+        const first = productSupplierSelect.options[0];
+        productSupplierSelect.innerHTML = '';
+        productSupplierSelect.appendChild(first);
+        allSuppliers.forEach(supplier => {
+            productSupplierSelect.appendChild(new Option(supplier.name, supplier.name));
+        });
+    };
+    
+    const renderInventory = () => {
+        inventoryTableBody.innerHTML = '';
+        allInventory.forEach(product => {
+            const row = inventoryTableBody.insertRow();
+            const isLowStock = product.quantity <= product.lowStockAlert;
+            row.className = isLowStock ? 'bg-yellow-100' : 'bg-white';
+            row.innerHTML = `<td class="px-6 py-4">${product.name} ${isLowStock ? '<span class="text-xs font-bold text-yellow-700 ml-2">LOW</span>' : ''}</td><td class="px-6 py-4">${product.category || ''}</td><td class="px-6 py-4">${product.supplier || ''}</td><td class="px-6 py-4 text-center">${product.quantity}</td><td class="px-6 py-4 text-right">$${product.price.toFixed(2)}</td><td class="px-6 py-4 text-right">$${(product.quantity * product.price).toFixed(2)}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${product.id}" class="edit-product-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${product.id}" class="delete-product-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
+        });
+        updateDashboard();
+    };
+
+
+    onSnapshot(query(collection(db, "inventory"), orderBy("name")), (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+            if ((change.type === "added" || change.type === "modified") && initialInventoryLoaded) {
+                const product = { id: change.doc.id, ...change.doc.data() };
+                if (currentUserRole === 'admin' && product.quantity <= product.lowStockAlert) {
+                     if (!notifications.some(n => n.itemId === product.id)) {
+                        addNotification('stock', `${product.name} is low in stock (${product.quantity} left).`, product.id);
+                    }
+                } else {
+                    const existingNotifIndex = notifications.findIndex(n => n.itemId === product.id);
+                    if (existingNotifIndex > -1) {
+                        notifications.splice(existingNotifIndex, 1);
+                        updateNotificationDisplay();
+                    }
+                }
+            }
+        });
+        initialInventoryLoaded = true;
+
+        allInventory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderInventory();
+    });
+
+    addProductForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const productId = document.getElementById('edit-product-id').value;
+        const productData = { name: document.getElementById('product-name').value, category: document.getElementById('product-category').value, supplier: document.getElementById('product-supplier').value, quantity: parseInt(document.getElementById('product-quantity').value, 10), price: parseFloat(document.getElementById('product-price').value), lowStockAlert: parseInt(document.getElementById('low-stock-alert').value, 10) };
+        try {
+            if (productId) { await updateDoc(doc(db, "inventory", productId), productData); } 
+            else { await addDoc(collection(db, "inventory"), productData); }
+            resetProductForm();
+        } catch (error) { console.error("Error saving product:", error); alert("Could not save product."); }
+    });
+
+    const resetProductForm = () => {
+        addProductForm.reset();
+        document.getElementById('edit-product-id').value = '';
+        document.getElementById('add-product-btn').textContent = 'Add Product';
+        document.getElementById('cancel-edit-product-btn').classList.add('hidden');
+    };
+    document.getElementById('cancel-edit-product-btn').addEventListener('click', resetProductForm);
+
+    inventoryTableBody.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-product-btn');
+        const deleteBtn = e.target.closest('.delete-product-btn');
+        if (editBtn) {
+            const product = allInventory.find(p => p.id === editBtn.dataset.id);
+            if (product) {
+                document.getElementById('edit-product-id').value = product.id;
+                document.getElementById('product-name').value = product.name;
+                document.getElementById('product-category').value = product.category || '';
+                document.getElementById('product-supplier').value = product.supplier || '';
+                document.getElementById('product-quantity').value = product.quantity;
+                document.getElementById('product-price').value = product.price;
+                document.getElementById('low-stock-alert').value = product.lowStockAlert || 10;
+                document.getElementById('add-product-btn').textContent = 'Update Product';
+                document.getElementById('cancel-edit-product-btn').classList.remove('hidden');
+            }
+        } else if (deleteBtn) {
+            showConfirmModal("Delete this product from inventory?", async () => {
+                await deleteDoc(doc(db, "inventory", deleteBtn.dataset.id));
+            });
+        }
+    });
+
+    const openLogUsageModal = () => {
+        const select = document.getElementById('log-usage-product-select');
+        select.innerHTML = '<option value="">Select a product...</option>';
+        allInventory.forEach(item => { select.appendChild(new Option(item.name, item.id)); });
+        logUsageModal.classList.remove('hidden'); logUsageModal.classList.add('flex');
+    };
+    const closeLogUsageModal = () => { logUsageForm.reset(); logUsageModal.classList.add('hidden'); logUsageModal.classList.remove('flex'); };
+    document.getElementById('log-usage-btn').addEventListener('click', openLogUsageModal);
+    document.getElementById('log-usage-cancel-btn').addEventListener('click', closeLogUsageModal);
+    document.querySelector('.log-usage-modal-overlay').addEventListener('click', closeLogUsageModal);
+
+    logUsageForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const productId = document.getElementById('log-usage-product-select').value;
+        const quantityUsed = parseInt(document.getElementById('log-usage-quantity').value, 10);
+        if (!productId || isNaN(quantityUsed) || quantityUsed <= 0) { alert('Please select a product and enter a valid quantity.'); return; }
+        const product = allInventory.find(p => p.id === productId);
+        if (!product) { alert('Product not found.'); return; }
+        if (product.quantity < quantityUsed) { alert(`Not enough stock. Only ${product.quantity} units available.`); return; }
+        try {
+            await addDoc(collection(db, "inventory_usage"), { productId: productId, productName: product.name, quantityUsed: quantityUsed, timestamp: serverTimestamp() });
+            const newQuantity = product.quantity - quantityUsed;
+            await updateDoc(doc(db, "inventory", productId), { quantity: newQuantity });
+            alert('Usage logged successfully.');
+            closeLogUsageModal();
+        } catch (error) { console.error("Error logging usage:", error); alert("Could not log usage."); }
+    });
+
+
+    const settingsForm = document.getElementById('settings-form');
+    const minBookingHoursInput = document.getElementById('min-booking-hours');
+    const maxLoginAttemptsInput = document.getElementById('max-login-attempts');
+    const loginLockoutMinutesInput = document.getElementById('login-lockout-minutes');
+    const featureTogglesForm = document.getElementById('feature-toggles-form');
+    const salonHoursForm = document.getElementById('salon-hours-form');
+
+    const loadAndRenderSalonHours = async () => {
+        const hoursContainer = document.getElementById('salon-hours-inputs');
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        let hoursData = {};
+        const docSnap = await getDoc(doc(db, "settings", "salonHours"));
+        if (docSnap.exists()) { hoursData = docSnap.data(); } 
+        else { days.forEach(day => { hoursData[day.toLowerCase()] = { isOpen: day !== 'Sunday', open: '09:00', close: '20:00' }; }); }
+        salonHours = hoursData;
+        hoursContainer.innerHTML = days.map(day => {
+            const dayLower = day.toLowerCase();
+            const dayData = hoursData[dayLower] || { isOpen: true, open: '09:00', close: '20:00' };
+            return `<div class="grid grid-cols-4 gap-2 items-center"><label class="font-semibold text-gray-700 col-span-1">${day}</label><div class="flex items-center gap-2"><input type="checkbox" id="is-open-${dayLower}" class="form-checkbox" ${dayData.isOpen ? 'checked' : ''}><label for="is-open-${dayLower}">Open</label></div><input type="time" value="${dayData.open}" class="form-input p-1 border rounded" ${!dayData.isOpen ? 'disabled' : ''}><input type="time" value="${dayData.close}" class="form-input p-1 border rounded" ${!dayData.isOpen ? 'disabled' : ''}></div>`;
+        }).join('');
+        days.forEach(day => {
+            const dayLower = day.toLowerCase();
+            const checkbox = document.getElementById(`is-open-${dayLower}`);
+            const timeInputs = checkbox.closest('.grid').querySelectorAll('input[type="time"]');
+            checkbox.addEventListener('change', () => { timeInputs.forEach(input => input.disabled = !checkbox.checked); });
+        });
+    };
+
+    salonHoursForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        const newHours = {};
+        days.forEach(day => {
+            const container = document.getElementById(`is-open-${day}`).closest('.grid');
+            const timeInputs = container.querySelectorAll('input[type="time"]');
+            newHours[day] = { isOpen: container.querySelector('input[type="checkbox"]').checked, open: timeInputs[0].value, close: timeInputs[1].value };
+        });
+        try { await setDoc(doc(db, "settings", "salonHours"), newHours); salonHours = newHours; alert("Salon hours saved!"); } 
+        catch (error) { console.error("Error saving salon hours:", error); alert("Could not save salon hours."); }
+    });
+
+
+    const loadFeatureToggles = async () => {
+        const settingsDoc = await getDoc(doc(db, "settings", "features"));
+        if (settingsDoc.exists()) {
+            const settings = settingsDoc.data();
+            document.getElementById('toggle-client-login').checked = settings.showClientLogin !== false;
+            document.getElementById('toggle-promotions').checked = settings.showPromotions !== false;
+            document.getElementById('toggle-gift-card').checked = settings.showGiftCards !== false;
+            document.getElementById('toggle-nails-idea').checked = settings.showNailArt !== false;
+        } else {
+            document.getElementById('toggle-client-login').checked = true;
+            document.getElementById('toggle-promotions').checked = true;
+            document.getElementById('toggle-gift-card').checked = true;
+            document.getElementById('toggle-nails-idea').checked = true;
+        }
+    };
+    
+    featureTogglesForm.addEventListener('change', async (e) => {
+        if (e.target.type === 'checkbox') {
+            const settings = { showClientLogin: document.getElementById('toggle-client-login').checked, showPromotions: document.getElementById('toggle-promotions').checked, showGiftCards: document.getElementById('toggle-gift-card').checked, showNailArt: document.getElementById('toggle-nails-idea').checked };
+            await setDoc(doc(db, "settings", "features"), settings, { merge: true });
+        }
+    });
+
+    const loadSettings = async () => { 
+        const bookingSnap = await getDoc(doc(db, "settings", "booking")); 
+        if (bookingSnap.exists()) { const data = bookingSnap.data(); minBookingHoursInput.value = data.minBookingHours || 2; } 
+        const securitySnap = await getDoc(doc(db, "settings", "security"));
+        if (securitySnap.exists()) { const data = securitySnap.data(); loginSecuritySettings = data; maxLoginAttemptsInput.value = data.maxAttempts || 5; loginLockoutMinutesInput.value = data.lockoutMinutes || 15; }
+    };
+    loadSettings();
+    loadFeatureToggles();
+    loadAndRenderSalonHours();
+
+    settingsForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const hours = parseInt(minBookingHoursInput.value, 10);
+        const maxAttempts = parseInt(maxLoginAttemptsInput.value, 10);
+        const lockoutMinutes = parseInt(loginLockoutMinutesInput.value, 10);
+        if (isNaN(hours) || hours < 0 || isNaN(maxAttempts) || maxAttempts < 1 || isNaN(lockoutMinutes) || lockoutMinutes < 1) { return alert("Please enter valid, positive numbers for all settings."); }
+        try { await setDoc(doc(db, "settings", "booking"), { minBookingHours: hours }); await setDoc(doc(db, "settings", "security"), { maxAttempts: maxAttempts, lockoutMinutes: lockoutMinutes }); loginSecuritySettings = { maxAttempts, lockoutMinutes }; alert("Settings saved!"); } 
+        catch (error) { console.error("Error saving settings: ", error); alert("Could not save settings."); }
+    });
+
+    const setupSimpleCrud = (collectionName, formId, inputId, listId) => {
+        const form = document.getElementById(formId);
+        const input = document.getElementById(inputId);
+        const listContainer = document.getElementById(listId);
+        onSnapshot(collection(db, collectionName), (snapshot) => {
+            const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            if (collectionName === 'expense_categories') allExpenseCategories = items;
+            else if (collectionName === 'payment_accounts') allPaymentAccounts = items;
+            else if (collectionName === 'suppliers') allSuppliers = items;
+            listContainer.innerHTML = items.map(item => `<div class="flex justify-between items-center p-1 hover:bg-gray-100"><span>${item.name}</span><button data-id="${item.id}" class="delete-item-btn text-red-400 hover:text-red-600"><i class="fas fa-times-circle"></i></button></div>`).join('');
+            populateExpenseDropdowns();
+        });
+        form.addEventListener('submit', async (e) => { e.preventDefault(); const name = input.value.trim(); if (name) { await addDoc(collection(db, collectionName), { name }); input.value = ''; } });
+        listContainer.addEventListener('click', (e) => { const deleteBtn = e.target.closest('.delete-item-btn'); if (deleteBtn) { showConfirmModal("Delete this item?", async () => { await deleteDoc(doc(db, collectionName, deleteBtn.dataset.id)); }); } });
+    };
+
+    setupSimpleCrud('expense_categories', 'add-expense-category-form', 'new-expense-category-name', 'expense-categories-list');
+    setupSimpleCrud('payment_accounts', 'add-payment-account-form', 'new-payment-account-name', 'payment-accounts-list');
+
+    const addSupplierForm = document.getElementById('add-supplier-form');
+    const suppliersTableBody = document.querySelector('#suppliers-table tbody');
+    onSnapshot(collection(db, "suppliers"), (snapshot) => {
+        allSuppliers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        suppliersTableBody.innerHTML = '';
+        allSuppliers.forEach(s => { const row = suppliersTableBody.insertRow(); row.innerHTML = `<td class="px-6 py-4">${s.name}</td><td class="px-6 py-4">${s.phone || ''}</td><td class="px-6 py-4">${s.email || ''}</td><td class="px-6 py-4">${s.website ? `<a href="${s.website}" target="_blank" class="text-blue-500">Link</a>` : ''}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${s.id}" class="edit-supplier-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${s.id}" class="delete-supplier-btn text-red-500"><i class="fas fa-trash"></i></button></td>`; });
+        populateExpenseDropdowns();
+        populateProductSupplierDropdown();
+    });
+
+    addSupplierForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const supplierId = document.getElementById('edit-supplier-id').value;
+        const data = { name: document.getElementById('supplier-name').value, phone: document.getElementById('supplier-phone').value, email: document.getElementById('supplier-email').value, website: document.getElementById('supplier-website').value };
+        if (supplierId) { await updateDoc(doc(db, "suppliers", supplierId), data); } 
+        else { await addDoc(collection(db, "suppliers"), data); }
+        resetSupplierForm();
+    });
+
+    const resetSupplierForm = () => { addSupplierForm.reset(); document.getElementById('edit-supplier-id').value = ''; document.getElementById('add-supplier-btn').textContent = 'Add Supplier'; document.getElementById('cancel-edit-supplier-btn').classList.add('hidden'); };
+    document.getElementById('cancel-edit-supplier-btn').addEventListener('click', resetSupplierForm);
+
+    suppliersTableBody.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-supplier-btn');
+        const deleteBtn = e.target.closest('.delete-supplier-btn');
+        if (editBtn) {
+            const supplier = allSuppliers.find(s => s.id === editBtn.dataset.id);
+            if (supplier) { document.getElementById('edit-supplier-id').value = supplier.id; document.getElementById('supplier-name').value = supplier.name; document.getElementById('supplier-phone').value = supplier.phone || ''; document.getElementById('supplier-email').value = supplier.email || ''; document.getElementById('supplier-website').value = supplier.website || ''; document.getElementById('add-supplier-btn').textContent = 'Update'; document.getElementById('cancel-edit-supplier-btn').classList.remove('hidden'); }
+        } else if (deleteBtn) { showConfirmModal("Delete this supplier?", async () => { await deleteDoc(doc(db, "suppliers", deleteBtn.dataset.id)); }); }
+    });
+
+    const addExpenseForm = document.getElementById('add-expense-form');
+    const expenseMonthFilter = document.getElementById('expense-month-filter');
+    const expenseTableBody = document.querySelector('#expense-table tbody');
+    const totalExpenseEl = document.getElementById('total-expense');
+
+    const populateExpenseDropdowns = () => {
+        const categorySelect = document.getElementById('expense-category');
+        const supplierSelect = document.getElementById('expense-supplier');
+        const paymentSelect = document.getElementById('expense-payment-account');
+        const populate = (select, data) => { const first = select.options[0]; select.innerHTML = ''; select.appendChild(first); data.forEach(item => select.appendChild(new Option(item.name, item.name))); };
+        populate(categorySelect, allExpenseCategories);
+        populate(supplierSelect, allSuppliers);
+        populate(paymentSelect, allPaymentAccounts);
+    };
+
+    const populateExpenseMonthFilter = () => {
+        const months = [...new Set(allExpenses.map(exp => { const d = new Date(exp.date.seconds * 1000); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }))].sort().reverse();
+        expenseMonthFilter.innerHTML = '<option value="all">All Months</option>';
+        months.forEach(monthYear => { const [year, month] = monthYear.split('-'); expenseMonthFilter.innerHTML += `<option value="${monthYear}">${new Date(year, month - 1, 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</option>`; });
+        expenseMonthFilter.value = currentExpenseMonthFilter || 'all';
+    };
+
+    const renderExpenses = () => {
+        let filtered = allExpenses;
+        if (currentExpenseMonthFilter && currentExpenseMonthFilter !== 'all') {
+            const [year, month] = currentExpenseMonthFilter.split('-').map(Number);
+            filtered = allExpenses.filter(exp => { const d = new Date(exp.date.seconds * 1000); return d.getFullYear() === year && d.getMonth() + 1 === month; });
+        }
+        expenseTableBody.innerHTML = filtered.length === 0 ? `<tr><td colspan="8" class="py-6 text-center text-gray-400">No expenses found.</td></tr>` : '';
+        filtered.forEach(exp => {
+            const row = expenseTableBody.insertRow();
+            row.className = 'bg-white border-b';
+            row.innerHTML = `<td class="px-6 py-4">${new Date(exp.date.seconds * 1000).toLocaleDateString()}</td><td class="px-6 py-4">${exp.name}</td><td class="px-6 py-4">${exp.category || ''}</td><td class="px-6 py-4">${exp.supplier || ''}</td><td class="px-6 py-4">${exp.paymentAccount || ''}</td><td class="px-6 py-4">${exp.attachmentURL ? `<a href="${exp.attachmentURL}" target="_blank" class="text-blue-500 hover:underline">View</a>` : 'N/A'}</td><td class="px-6 py-4 text-right">$${exp.amount.toFixed(2)}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${exp.id}" class="edit-expense-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${exp.id}" class="delete-expense-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
+        });
+        totalExpenseEl.textContent = `$${filtered.reduce((sum, exp) => sum + exp.amount, 0).toFixed(2)}`;
+    };
+
+    expenseMonthFilter.addEventListener('change', (e) => { currentExpenseMonthFilter = e.target.value; renderExpenses(); });
+
+    addExpenseForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const expenseId = document.getElementById('edit-expense-id').value;
+        const file = document.getElementById('expense-attachment').files[0];
+        let attachmentURL = document.getElementById('current-attachment-info').dataset.url || null;
+        if (file) {
+            const storageRef = ref(storage, `expenses/${Date.now()}_${file.name}`);
+            await uploadBytes(storageRef, file);
+            attachmentURL = await getDownloadURL(storageRef);
+        }
+        const expenseData = {
+            name: document.getElementById('expense-name').value, amount: parseFloat(document.getElementById('expense-amount').value), date: Timestamp.fromDate(new Date(document.getElementById('expense-date').value + 'T12:00:00')),
+            category: document.getElementById('expense-category').value, supplier: document.getElementById('expense-supplier').value, paymentAccount: document.getElementById('expense-payment-account').value, attachmentURL
+        };
+        try {
+            if (expenseId) { await updateDoc(doc(db, "expenses", expenseId), expenseData); } 
+            else { await addDoc(collection(db, "expenses"), expenseData); }
+            resetExpenseForm();
+        } catch (error) { console.error("Error saving expense:", error); alert("Could not save expense."); }
+    });
+
+    const resetExpenseForm = () => { addExpenseForm.reset(); document.getElementById('edit-expense-id').value = ''; document.getElementById('expense-date').value = getLocalDateString(); document.getElementById('add-expense-btn').textContent = 'Add Expense'; document.getElementById('cancel-edit-expense-btn').classList.add('hidden'); document.getElementById('current-attachment-info').textContent = ''; document.getElementById('current-attachment-info').dataset.url = ''; };
+    document.getElementById('cancel-edit-expense-btn').addEventListener('click', resetExpenseForm);
+
+    expenseTableBody.addEventListener('click', (e) => {
+        const deleteBtn = e.target.closest('.delete-expense-btn');
+        const editBtn = e.target.closest('.edit-expense-btn');
+        if (deleteBtn) { showConfirmModal("Delete this expense?", async () => { await deleteDoc(doc(db, "expenses", deleteBtn.dataset.id)); }); } 
+        else if (editBtn) {
+            const expense = allExpenses.find(exp => exp.id === editBtn.dataset.id);
+            if (expense) {
+                document.getElementById('edit-expense-id').value = expense.id;
+                document.getElementById('expense-name').value = expense.name;
+                document.getElementById('expense-amount').value = expense.amount;
+                document.getElementById('expense-date').value = new Date(expense.date.seconds * 1000).toISOString().split('T')[0];
+                document.getElementById('expense-category').value = expense.category || '';
+                document.getElementById('expense-supplier').value = expense.supplier || '';
+                document.getElementById('expense-payment-account').value = expense.paymentAccount || '';
+                const attachmentInfo = document.getElementById('current-attachment-info');
+                attachmentInfo.textContent = expense.attachmentURL ? 'Current attachment exists.' : '';
+                attachmentInfo.dataset.url = expense.attachmentURL || '';
+                document.getElementById('add-expense-btn').textContent = 'Update Expense';
+                document.getElementById('cancel-edit-expense-btn').classList.remove('hidden');
+            }
+        }
+    });
+
+    const serviceCategoriesAdminContainer = document.getElementById('service-categories-admin');
+    const addCategoryForm = document.getElementById('add-category-form');
+    const addServiceForm = document.getElementById('add-service-form');
+    const editServiceSection = document.getElementById('edit-service-section');
+    const renderServiceAdmin = (services) => {
+        serviceCategoriesAdminContainer.innerHTML = '';
+        Object.entries(services).forEach(([categoryName, items]) => {
+            const categoryDiv = document.createElement('div');
+            categoryDiv.className = 'p-3 border rounded-lg';
+            categoryDiv.innerHTML = `<div class="flex justify-between items-center mb-2"><h4 class="font-bold">${categoryName}</h4><div><button class="add-service-to-category-btn text-green-500 mr-2" data-category="${categoryName}"><i class="fas fa-plus-circle"></i></button><button class="edit-category-btn text-blue-500 mr-2" data-category="${categoryName}"><i class="fas fa-edit"></i></button><button class="delete-category-btn text-red-500" data-category="${categoryName}"><i class="fas fa-trash"></i></button></div></div><ul class="service-list space-y-1 pl-4">${items.map((item, index) => `<li class="flex justify-between items-center text-sm"><span>${item.name} - ${item.price}</span><div><button class="edit-service-btn text-blue-500 mr-2" data-category="${categoryName}" data-index="${index}"><i class="fas fa-edit"></i></button><button class="delete-service-btn text-red-500" data-category="${categoryName}" data-index="${index}"><i class="fas fa-times-circle"></i></button></div></li>`).join('')}</ul>`;
+            serviceCategoriesAdminContainer.appendChild(categoryDiv);
+        });
+    };
+    onSnapshot(collection(db, "services"), (snapshot) => { servicesData = {}; snapshot.forEach(doc => { servicesData[doc.id] = doc.data().items; }); renderServiceAdmin(servicesData); renderCheckInServices(); });
+    addCategoryForm.addEventListener('submit', async (e) => { e.preventDefault(); const categoryName = document.getElementById('new-category-name').value; if (categoryName) { await setDoc(doc(db, "services", categoryName), { items: [] }); addCategoryForm.reset(); } });
+    serviceCategoriesAdminContainer.addEventListener('click', async (e) => {
+        const delCatBtn = e.target.closest('.delete-category-btn'), editCatBtn = e.target.closest('.edit-category-btn'), addSvcBtn = e.target.closest('.add-service-to-category-btn'), editSvcBtn = e.target.closest('.edit-service-btn'), delSvcBtn = e.target.closest('.delete-service-btn');
+        if (delCatBtn) { showConfirmModal(`Delete category "${delCatBtn.dataset.category}"?`, async () => { await deleteDoc(doc(db, "services", delCatBtn.dataset.category)); }); }
+        if (editCatBtn) { const oldName = editCatBtn.dataset.category; const newName = prompt("New category name:", oldName); if (newName && newName !== oldName) { const docSnap = await getDoc(doc(db, "services", oldName)); if (docSnap.exists()) { await setDoc(doc(db, "services", newName), docSnap.data()); await deleteDoc(doc(db, "services", oldName)); } } }
+        if (addSvcBtn) { addServiceForm.reset(); document.getElementById('edit-category-id').value = addSvcBtn.dataset.category; document.getElementById('edit-service-index').value = ''; document.getElementById('edit-service-title').textContent = `Add Service to ${addSvcBtn.dataset.category}`; editServiceSection.classList.remove('hidden'); }
+        if (editSvcBtn) { const category = editSvcBtn.dataset.category, index = editSvcBtn.dataset.index, service = servicesData[category][index]; addServiceForm.reset(); document.getElementById('edit-category-id').value = category; document.getElementById('edit-service-index').value = index; document.getElementById('service-prefix').value = service.p || ''; document.getElementById('service-name').value = service.name; document.getElementById('service-price').value = service.price; document.getElementById('edit-service-title').textContent = `Edit Service in ${category}`; editServiceSection.classList.remove('hidden'); }
+        if (delSvcBtn) { const category = delSvcBtn.dataset.category, index = parseInt(delSvcBtn.dataset.index, 10); showConfirmModal('Delete this service?', async () => { const updatedItems = [...servicesData[category]]; updatedItems.splice(index, 1); await updateDoc(doc(db, "services", category), { items: updatedItems }); }); }
+    });
+    addServiceForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const category = document.getElementById('edit-category-id').value, index = document.getElementById('edit-service-index').value;
+        const newService = { p: document.getElementById('service-prefix').value, name: document.getElementById('service-name').value, price: document.getElementById('service-price').value };
+        const updatedItems = [...servicesData[category]];
+        if (index !== '') { updatedItems[parseInt(index, 10)] = newService; } else { updatedItems.push(newService); }
+        await updateDoc(doc(db, "services", category), { items: updatedItems });
+        addServiceForm.reset(); editServiceSection.classList.add('hidden');
+    });
+
+    const nailsIdeaGallery = document.getElementById('nails-idea-gallery');
+    const addNailIdeaForm = document.getElementById('add-nail-idea-form');
+    const nailIdeasTableBody = document.querySelector('#nail-ideas-table tbody');
+
+    const openShareModal = (idea) => {
+        const salonUrl = "http://www.nailsxpressky.com";
+        const shareText = `Check out this amazing nail design: ${idea.name}!`;
+        document.getElementById('share-facebook').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(salonUrl)}`;
+        document.getElementById('share-pinterest').href = `http://pinterest.com/pin/create/button/?url=${encodeURIComponent(salonUrl)}&media=${encodeURIComponent(idea.imageURL)}&description=${encodeURIComponent(shareText)}`;
+        document.getElementById('share-twitter').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(salonUrl)}`;
+        document.getElementById('share-copy-link').onclick = () => { navigator.clipboard.writeText(salonUrl).then(() => alert('Link copied to clipboard!')); };
+        shareModal.classList.remove('hidden');
+        shareModal.classList.add('flex');
+    };
+
+    const closeShareModal = () => { shareModal.classList.add('hidden'); shareModal.classList.remove('flex'); };
+    document.getElementById('share-close-btn').addEventListener('click', closeShareModal);
+    document.querySelector('.share-modal-overlay').addEventListener('click', closeShareModal);
+    
+    const galleryClickHandler = (e) => {
+        const shareBtn = e.target.closest('.share-nail-idea-btn');
+        if (shareBtn) { const ideaId = shareBtn.dataset.id; const idea = allNailIdeas.find(i => i.id === ideaId); if (idea) { openShareModal(idea); } }
+    };
+    
+    document.getElementById('nails-idea-gallery').addEventListener('click', galleryClickHandler);
+    document.getElementById('nails-idea-landing').addEventListener('click', galleryClickHandler);
+
+
+    const renderNailIdeasGallery = (ideas) => {
+        const landingGallery = document.querySelector('#nails-idea-landing .columns-2');
+        const appGallery = document.getElementById('nails-idea-gallery');
+        
+        const renderTo = (container, isLanding) => {
+            container.innerHTML = '';
+            if (ideas.length === 0) { container.innerHTML = '<p class="text-gray-500 col-span-full text-center">No nail ideas found. Check back later!</p>'; return; }
+            const ideasToRender = isLanding ? ideas.slice(0, 8) : ideas;
+            ideasToRender.forEach(idea => {
+                const ideaEl = document.createElement('div');
+                ideaEl.className = 'break-inside-avoid mb-4 relative gallery-item';
+                ideaEl.innerHTML = `<img class="w-full rounded-lg shadow-md" src="${idea.imageURL}" alt="${idea.name}"><div class="overlay absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center rounded-lg"><button data-id="${idea.id}" class="share-nail-idea-btn text-white text-3xl"><i class="fas fa-share-alt"></i></button></div>${!isLanding ? `<div class="p-2"><h5 class="font-bold text-sm">${idea.name}</h5><p class="text-xs text-gray-600">${idea.categories.join(', ')}</p></div>` : ''}`;
+                container.appendChild(ideaEl);
+            });
+        };
+
+        renderTo(landingGallery, true);
+        renderTo(appGallery, false);
+    };
+
+    const renderNailIdeasAdminTable = (ideas) => {
+        nailIdeasTableBody.innerHTML = '';
+        ideas.forEach(idea => {
+            const row = nailIdeasTableBody.insertRow();
+            row.innerHTML = `<td class="px-6 py-4"><img src="${idea.imageURL}" alt="${idea.name}" class="w-16 h-16 object-cover rounded"></td><td class="px-6 py-4">${idea.name}</td><td class="px-6 py-4">${idea.shape}</td><td class="px-6 py-4">${idea.categories.join(', ')}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${idea.id}" class="edit-nail-idea-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${idea.id}" class="delete-nail-idea-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
+        });
+    };
+
+    const applyNailIdeaFilters = () => {
+        const searchTerm = document.getElementById('nail-idea-search').value.toLowerCase();
+        const shapeFilter = document.getElementById('nail-idea-shape-filter').value;
+        const categoryFilter = document.getElementById('nail-idea-category-filter').value;
+        const filteredIdeas = allNailIdeas.filter(idea => { const matchesSearch = idea.name.toLowerCase().includes(searchTerm) || idea.categories.some(cat => cat.toLowerCase().includes(searchTerm)); const matchesShape = !shapeFilter || idea.shape === shapeFilter; const matchesCategory = !categoryFilter || idea.categories.includes(categoryFilter); return matchesSearch && matchesShape && matchesCategory; });
+        renderNailIdeasGallery(filteredIdeas);
+    };
+
+    onSnapshot(query(collection(db, "nail_ideas"), orderBy("createdAt", "desc")), (snapshot) => {
+        allNailIdeas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const shapes = [...new Set(allNailIdeas.map(i => i.shape).filter(Boolean))];
+        const categories = [...new Set(allNailIdeas.flatMap(i => i.categories).filter(Boolean))];
+        const shapeFilter = document.getElementById('nail-idea-shape-filter');
+        const categoryFilter = document.getElementById('nail-idea-category-filter');
+        shapeFilter.innerHTML = '<option value="">All Shapes</option>' + shapes.map(s => `<option value="${s}">${s}</option>`).join('');
+        categoryFilter.innerHTML = '<option value="">All Categories</option>' + categories.map(c => `<option value="${c}">${c}</option>`).join('');
+        applyNailIdeaFilters();
+        renderNailIdeasAdminTable(allNailIdeas);
+    });
+
+    document.getElementById('nail-idea-search').addEventListener('input', applyNailIdeaFilters);
+    document.getElementById('nail-idea-shape-filter').addEventListener('change', applyNailIdeaFilters);
+    document.getElementById('nail-idea-category-filter').addEventListener('change', applyNailIdeaFilters);
+
+    addNailIdeaForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const ideaId = document.getElementById('edit-nail-idea-id').value;
+        const file = document.getElementById('nail-idea-image').files[0];
+        if (!ideaId && !file) { alert('Please select an image to upload.'); return; }
+        const btn = document.getElementById('add-nail-idea-btn');
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+        try {
+            let imageURL = null;
+            if (file) {
+                const storageRef = ref(storage, `nail_ideas/${Date.now()}_${file.name}`);
+                await uploadBytes(storageRef, file);
+                imageURL = await getDownloadURL(storageRef);
+            }
+            const ideaData = { name: document.getElementById('nail-idea-name').value, color: document.getElementById('nail-idea-color').value, shape: document.getElementById('nail-idea-shape').value, categories: document.getElementById('nail-idea-categories').value.split(',').map(s => s.trim()).filter(Boolean), };
+            if (ideaId) {
+                const existingIdea = allNailIdeas.find(i => i.id === ideaId);
+                if (imageURL) {
+                    ideaData.imageURL = imageURL;
+                    if (existingIdea.imageURL) { try { const oldImageRef = ref(storage, existingIdea.imageURL); await deleteObject(oldImageRef); } catch (storageError) { console.warn("Could not delete old image, it might not exist:", storageError); } }
+                }
+                await updateDoc(doc(db, "nail_ideas", ideaId), ideaData);
+            } else { ideaData.imageURL = imageURL; ideaData.createdAt = serverTimestamp(); await addDoc(collection(db, "nail_ideas"), ideaData); }
+            resetNailIdeaForm();
+        } catch (error) { console.error("Error saving nail idea:", error); alert("Could not save nail idea."); } 
+        finally { btn.disabled = false; btn.textContent = 'Add Idea'; }
+    });
+
+    const resetNailIdeaForm = () => {
+        addNailIdeaForm.reset();
+        document.getElementById('edit-nail-idea-id').value = '';
+        document.getElementById('add-nail-idea-btn').textContent = 'Add Idea';
+        document.getElementById('cancel-edit-nail-idea-btn').classList.add('hidden');
+    };
+    document.getElementById('cancel-edit-nail-idea-btn').addEventListener('click', resetNailIdeaForm);
+
+    nailIdeasTableBody.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-nail-idea-btn');
+        const deleteBtn = e.target.closest('.delete-nail-idea-btn');
+        if (editBtn) {
+            const idea = allNailIdeas.find(i => i.id === editBtn.dataset.id);
+            if (idea) {
+                document.getElementById('edit-nail-idea-id').value = idea.id;
+                document.getElementById('nail-idea-name').value = idea.name;
+                document.getElementById('nail-idea-color').value = idea.color;
+                document.getElementById('nail-idea-shape').value = idea.shape;
+                document.getElementById('nail-idea-categories').value = idea.categories.join(', ');
+                document.getElementById('add-nail-idea-btn').textContent = 'Update Idea';
+                document.getElementById('cancel-edit-nail-idea-btn').classList.remove('hidden');
+            }
+        } else if (deleteBtn) {
+            const ideaId = deleteBtn.dataset.id;
+            showConfirmModal("Delete this nail idea? This will also delete the image.", async () => {
+                const ideaToDelete = allNailIdeas.find(i => i.id === ideaId);
+                if (ideaToDelete.imageURL) {
+                    const imageRef = ref(storage, ideaToDelete.imageURL);
+                    await deleteObject(imageRef).catch(err => console.error("Error deleting image from storage", err));
+                }
+                await deleteDoc(doc(db, "nail_ideas", ideaId));
+            });
+        }
+    });
+
+    const giftCardsTableBody = document.querySelector('#gift-cards-table tbody');
+
+    const renderGiftCardsAdminTable = (cards) => {
+        giftCardsTableBody.innerHTML = '';
+        if (cards.length === 0) {
+            giftCardsTableBody.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-gray-400">No gift cards have been sold.</td></tr>`;
+            return;
+        }
+        cards.forEach(card => {
+            const row = giftCardsTableBody.insertRow();
+            const balance = card.balance !== undefined ? card.balance : card.amount;
+            let status = card.status;
+            let statusColor = 'text-gray-500';
+            if (balance > 0) {
+                status = 'Active';
+                statusColor = 'text-green-600';
+            } else {
+                status = 'Depleted';
+            }
+
+            row.innerHTML = `<td class="px-6 py-4">${new Date(card.createdAt.seconds * 1000).toLocaleDateString()}</td><td class="px-6 py-4 font-mono text-xs">${card.code}</td><td class="px-6 py-4">$${card.amount.toFixed(2)}</td><td class="px-6 py-4 font-bold">$${balance.toFixed(2)}</td><td class="px-6 py-4">${card.recipientName}<br><span class="text-xs text-gray-500">${card.recipientEmail || 'Physical Card'}</span></td><td class="px-6 py-4">${card.senderName}</td><td class="px-6 py-4 font-bold ${statusColor}">${status}</td><td class="px-6 py-4 text-center"><button data-id="${card.id}" class="edit-gift-card-btn text-blue-500 hover:text-blue-700" title="Manage Card"><i class="fas fa-edit text-lg"></i></button></td>`;
+        });
+    };
+
+    const renderGiftCards = () => {
+        const searchTerm = document.getElementById('search-gift-cards').value.toLowerCase();
+        const filteredCards = allGiftCards.filter(card => 
+            card.recipientName.toLowerCase().includes(searchTerm) || 
+            card.code.toLowerCase().includes(searchTerm)
+        );
+
+        const tbody = document.querySelector('#gift-cards-report-table tbody');
+        tbody.innerHTML = '';
+        if (filteredCards.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-gray-400">No gift cards found.</td></tr>`;
+            return;
+        }
+
+        filteredCards.forEach(card => {
+            const row = tbody.insertRow();
+            row.className = 'bg-white border-b';
+            row.innerHTML = `
+                <td class="px-6 py-4 font-medium text-gray-900">${card.code}</td>
+                <td class="px-6 py-4">${card.recipientName}</td>
+                <td class="px-6 py-4">$${card.amount.toFixed(2)}</td>
+                <td class="px-6 py-4">$${card.balance.toFixed(2)}</td>
+                <td class="px-6 py-4">${card.status}</td>
+                <td class="px-6 py-4">${new Date(card.createdAt.seconds * 1000).toLocaleDateString()}</td>
+            `;
+        });
+    };
+    document.getElementById('search-gift-cards').addEventListener('input', renderGiftCards);
+
+
+    onSnapshot(query(collection(db, "gift_cards"), orderBy("createdAt", "desc")), (snapshot) => {
+        allGiftCards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderGiftCardsAdminTable(allGiftCards);
+        renderGiftCards();
+    });
+
+    const addPromotionForm = document.getElementById('add-promotion-form');
+    const promotionsTableBody = document.querySelector('#promotions-table tbody');
+    const promotionsContainerLanding = document.getElementById('promotions-container-landing');
+    
+    const renderPromotionsAdminTable = (promotions) => {
+        promotionsTableBody.innerHTML = '';
+        const now = new Date();
+        promotions.forEach(promo => {
+            const startDate = promo.startDate.toDate();
+            const endDate = promo.endDate.toDate();
+            let status, statusColor;
+            if (now < startDate) { status = 'Scheduled'; statusColor = 'text-blue-600'; } 
+            else if (now > endDate) { status = 'Expired'; statusColor = 'text-gray-500'; } 
+            else { status = 'Active'; statusColor = 'text-green-600'; }
+            const row = promotionsTableBody.insertRow();
+            row.innerHTML = `<td class="px-6 py-4">${promo.title}</td><td class="px-6 py-4">${promo.description}</td><td class="px-6 py-4">${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}</td><td class="px-6 py-4 font-bold ${statusColor}">${status}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${promo.id}" class="send-promo-notification-btn text-purple-500" title="Send Notification"><i class="fas fa-paper-plane"></i></button><button data-id="${promo.id}" class="edit-promotion-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${promo.id}" class="delete-promotion-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
+        });
+    };
+
+    const renderPromotionsLanding = (promotions) => {
+        promotionsContainerLanding.innerHTML = '';
+        const now = new Date();
+        const activePromos = promotions.filter(promo => {
+            const startDate = promo.startDate.toDate();
+            const endDate = promo.endDate.toDate();
+            return now >= startDate && now <= endDate;
+        });
+        if (activePromos.length === 0) { promotionsContainerLanding.innerHTML = '<p class="text-gray-600 col-span-full text-center">No active promotions right now. Check back soon!</p>'; return; }
+        activePromos.forEach(promo => { const promoEl = document.createElement('div'); promoEl.className = 'bg-white p-6 rounded-lg shadow-md text-center'; promoEl.innerHTML = `<h3 class="text-xl font-bold text-pink-700 mb-2">${promo.title}</h3><p class="text-gray-600">${promo.description}</p>`; promotionsContainerLanding.appendChild(promoEl); });
+    };
+
+    onSnapshot(query(collection(db, "promotions"), orderBy("startDate", "desc")), (snapshot) => {
+        allPromotions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderPromotionsAdminTable(allPromotions);
+        renderPromotionsLanding(allPromotions);
+    });
+
+    addPromotionForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const promoId = document.getElementById('edit-promotion-id').value;
+        const promoData = { title: document.getElementById('promotion-title').value, description: document.getElementById('promotion-description').value, startDate: Timestamp.fromDate(new Date(document.getElementById('promotion-start-date').value + 'T00:00:00')), endDate: Timestamp.fromDate(new Date(document.getElementById('promotion-end-date').value + 'T23:59:59')), };
+        try {
+            if (promoId) { await updateDoc(doc(db, "promotions", promoId), promoData); } 
+            else { promoData.createdAt = serverTimestamp(); await addDoc(collection(db, "promotions"), promoData); }
+            addPromotionForm.reset(); document.getElementById('edit-promotion-id').value = '';
+        } catch (error) { console.error("Error saving promotion:", error); alert("Could not save promotion."); }
+    });
+
+    promotionsTableBody.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-promotion-btn');
+        const deleteBtn = e.target.closest('.delete-promotion-btn');
+        const sendBtn = e.target.closest('.send-promo-notification-btn');
+        if (editBtn) {
+            const promo = allPromotions.find(p => p.id === editBtn.dataset.id);
+            if (promo) { document.getElementById('edit-promotion-id').value = promo.id; document.getElementById('promotion-title').value = promo.title; document.getElementById('promotion-description').value = promo.description; document.getElementById('promotion-start-date').value = promo.startDate.toDate().toISOString().split('T')[0]; document.getElementById('promotion-end-date').value = promo.endDate.toDate().toISOString().split('T')[0]; document.getElementById('add-promotion-btn').textContent = 'Update Promotion'; document.getElementById('cancel-edit-promotion-btn').classList.remove('hidden'); }
+        } else if (deleteBtn) { showConfirmModal("Are you sure you want to delete this promotion?", async () => { await deleteDoc(doc(db, "promotions", deleteBtn.dataset.id)); });
+        } else if (sendBtn) {
+            const promo = allPromotions.find(p => p.id === sendBtn.dataset.id);
+            if (promo) { showConfirmModal(`Send a notification for "${promo.title}" to all clients?`, () => { addNotification('promo', `New Promotion: ${promo.title}! ${promo.description}`); alert('Promotion notification sent!'); }); }
+        }
+    });
+
+    document.getElementById('cancel-edit-promotion-btn').addEventListener('click', () => {
+        addPromotionForm.reset();
+        document.getElementById('edit-promotion-id').value = '';
+        document.getElementById('add-promotion-btn').textContent = 'Add Promotion';
+        document.getElementById('cancel-edit-promotion-btn').classList.add('hidden');
+    });
+
+    const openClientModal = (client = null) => {
+        clientForm.reset();
+        const modalTitle = document.getElementById('client-form-title');
+        if (client) {
+            modalTitle.textContent = 'Edit Client Information';
+            document.getElementById('edit-client-id').value = client.id;
+            document.getElementById('client-form-name').value = client.name;
+            document.getElementById('client-form-phone').value = client.phone || '';
+            document.getElementById('client-form-dob').value = client.dob || '';
+        } else {
+            modalTitle.textContent = 'Create New Client';
+            document.getElementById('edit-client-id').value = '';
+        }
+        clientFormModal.classList.remove('hidden');
+        clientFormModal.classList.add('flex');
+    };
+
+    const closeClientModal = () => { clientFormModal.classList.add('hidden'); clientFormModal.classList.remove('flex'); };
+    document.getElementById('create-new-client-btn').addEventListener('click', () => openClientModal());
+    document.getElementById('client-form-cancel-btn').addEventListener('click', closeClientModal);
+    document.querySelector('.client-form-modal-overlay').addEventListener('click', closeClientModal);
+
+    clientForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const clientId = document.getElementById('edit-client-id').value;
+        const clientData = { name: document.getElementById('client-form-name').value, phone: document.getElementById('client-form-phone').value, dob: document.getElementById('client-form-dob').value, };
+        if (!clientData.name) { alert('Client name is required.'); return; }
+        try {
+            if (clientId) { await updateDoc(doc(db, "clients", clientId), clientData); } 
+            else { await addDoc(collection(db, "clients"), clientData); }
+            closeClientModal();
+        } catch (error) { console.error("Error saving client:", error); alert("Could not save client data."); }
+    });
+
+    const importClientsBtn = document.getElementById('import-clients-btn');
+    const importClientsInput = document.getElementById('import-clients-input');
+    importClientsBtn.addEventListener('click', () => importClientsInput.click());
+    importClientsInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            const data = new Uint8Array(event.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const clientsToImport = XLSX.utils.sheet_to_json(firstSheet);
+            if (clientsToImport.length === 0) { alert('No clients found in the file.'); return; }
+            const batch = writeBatch(db);
+            clientsToImport.forEach(client => { const newClientRef = doc(collection(db, "clients")); batch.set(newClientRef, { name: client.Name || 'N/A', phone: client.Phone || '', dob: client.DOB || '' }); });
+            try { await batch.commit(); alert(`${clientsToImport.length} clients imported successfully!`); } 
+            catch (error) { console.error("Error importing clients: ", error); alert("An error occurred during import."); }
+        };
+        reader.readAsArrayBuffer(file);
+        e.target.value = '';
+    });
+    
+    // --- Gift Card Designer & Management Logic ---
+    const createPrintableCardBtn = document.getElementById('create-printable-card-btn');
+    const closeDesignerModalBtn = document.getElementById('close-designer-modal-btn');
+    const designerForm = document.getElementById('physical-gift-card-form');
+    const designerBackgroundTabs = document.getElementById('designer-background-tabs');
+    const designerBackgroundOptions = document.getElementById('designer-background-options');
+    const printableCardArea = document.getElementById('printable-gift-card-area');
+    const printableCard = document.getElementById('printable-gift-card');
+    const saveAndPrintBtn = document.getElementById('save-and-print-btn');
+    const editGiftCardForm = document.getElementById('edit-gift-card-form');
+
+
+    const updateDesignerPreview = () => {
+        const showTo = document.getElementById('designer-show-to').checked;
+        const showFrom = document.getElementById('designer-show-from').checked;
+        const setExpiry = document.getElementById('designer-set-expiry').checked;
+        
+        document.getElementById('preview-to').parentElement.style.display = showTo ? '' : 'none';
+        document.getElementById('preview-from').parentElement.style.display = showFrom ? '' : 'none';
+        document.getElementById('designer-to-wrapper').style.display = showTo ? '' : 'none';
+        document.getElementById('designer-from-wrapper').style.display = showFrom ? '' : 'none';
+
+        document.getElementById('preview-to').textContent = document.getElementById('designer-to').value || 'Recipient';
+        document.getElementById('preview-from').textContent = document.getElementById('designer-from').value || 'Sender';
+        
+        const amount = parseFloat(document.getElementById('designer-amount').value) || 0;
+        document.getElementById('preview-amount').textContent = `$${amount.toFixed(2)}`;
+        
+        const expiryPreview = document.getElementById('preview-expiry');
+        if (setExpiry) {
+            const value = parseInt(document.getElementById('designer-expiry-value').value, 10);
+            const unit = document.getElementById('designer-expiry-unit').value;
+            if (value > 0) {
+                const expiryDate = new Date();
+                if (unit === 'months') {
+                    expiryDate.setMonth(expiryDate.getMonth() + value);
+                } else {
+                    expiryDate.setFullYear(expiryDate.getFullYear() + value);
+                }
+                expiryPreview.textContent = `Expires: ${expiryDate.toLocaleDateString()}`;
+                expiryPreview.style.display = 'block';
+            } else {
+                 expiryPreview.style.display = 'none';
+            }
+        } else {
+            expiryPreview.style.display = 'none';
+        }
+    };
+    
+    const populateBackgrounds = (category) => {
+        designerBackgroundOptions.innerHTML = giftCardBackgrounds[category].map(url => 
+            `<button type="button" data-bg="${url}" class="w-full h-16 bg-cover bg-center rounded-md border-2 border-transparent hover:border-pink-400" style="background-image: url('${url}')"></button>`
+        ).join('');
+        const firstBgBtn = designerBackgroundOptions.querySelector('button');
+        if (firstBgBtn) {
+            firstBgBtn.classList.add('ring-2', 'ring-pink-500');
+            printableCard.style.backgroundImage = `url('${firstBgBtn.dataset.bg}')`;
+        }
+    };
+    
+    const openDesignerModal = () => {
+        designerForm.reset();
+        document.getElementById('designer-quantity').value = 1;
+        document.getElementById('preview-code').textContent = `GC-${Date.now()}${[...Array(4)].map(() => Math.floor(Math.random() * 10)).join('')}`;
+        
+        designerBackgroundTabs.innerHTML = Object.keys(giftCardBackgrounds).map(cat => 
+            `<button type="button" data-category="${cat}" class="px-3 py-1 text-sm font-medium rounded-t-lg">${cat}</button>`
+        ).join('');
+        
+        const firstTab = designerBackgroundTabs.querySelector('button');
+        firstTab.classList.add('bg-gray-200');
+        populateBackgrounds(firstTab.dataset.category);
+
+        updateDesignerPreview();
+        giftCardDesignerModal.classList.remove('hidden');
+        giftCardDesignerModal.classList.add('flex');
+    };
+    
+    designerBackgroundTabs.addEventListener('click', e => {
+        const tab = e.target.closest('button');
+        if (tab) {
+            designerBackgroundTabs.querySelectorAll('button').forEach(t => t.classList.remove('bg-gray-200'));
+            tab.classList.add('bg-gray-200');
+            populateBackgrounds(tab.dataset.category);
+        }
+    });
+
+    const closeDesignerModal = () => {
+        giftCardDesignerModal.classList.add('hidden');
+        giftCardDesignerModal.classList.remove('flex');
+    };
+
+    designerBackgroundOptions.addEventListener('click', (e) => {
+        const target = e.target.closest('button');
+        if (target && target.dataset.bg) {
+            designerBackgroundOptions.querySelectorAll('button').forEach(btn => btn.classList.remove('ring-2', 'ring-pink-500'));
+            target.classList.add('ring-2', 'ring-pink-500');
+            printableCard.style.backgroundImage = `url('${target.dataset.bg}')`;
+        }
+    });
+
+    const handleSaveAndPrint = async () => {
+        const quantity = parseInt(document.getElementById('designer-quantity').value, 10);
+        if (isNaN(quantity) || quantity < 1) {
+            alert("Please enter a valid quantity.");
+            return;
+        }
+
+        const amount = parseFloat(document.getElementById('designer-amount').value);
+        if (isNaN(amount) || amount <= 0) {
+            alert("Please enter a valid amount.");
+            return;
+        }
+
+        const batch = writeBatch(db);
+        const cardsToPrint = [];
+
+        for (let i = 0; i < quantity; i++) {
+            const cardData = {
+                amount: amount,
+                balance: amount,
+                history: [],
+                recipientName: document.getElementById('designer-show-to').checked ? document.getElementById('designer-to').value : '',
+                senderName: document.getElementById('designer-show-from').checked ? document.getElementById('designer-from').value : '',
+                code: `GC-${Date.now()}-${i}`,
+                status: 'Active',
+                type: 'Physical',
+                createdAt: serverTimestamp()
+            };
+
+            if (document.getElementById('designer-set-expiry').checked) {
+                const value = parseInt(document.getElementById('designer-expiry-value').value, 10);
+                const unit = document.getElementById('designer-expiry-unit').value;
+                const expiryDate = new Date();
+                if (unit === 'months') expiryDate.setMonth(expiryDate.getMonth() + value);
+                else expiryDate.setFullYear(expiryDate.getFullYear() + value);
+                cardData.expiresAt = Timestamp.fromDate(expiryDate);
+            }
+
+            const newCardRef = doc(collection(db, "gift_cards"));
+            batch.set(newCardRef, cardData);
+            cardsToPrint.push(cardData);
+        }
+
+        try {
+            await batch.commit();
+            
+            printableCardArea.innerHTML = cardsToPrint.map(card => {
+                 const expiryText = card.expiresAt ? `Expires: ${card.expiresAt.toDate().toLocaleDateString()}` : '';
+                 return `
+                    <div class="printable-gift-card w-[400px] h-[228px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" style="background-image: url('${printableCard.style.backgroundImage.slice(5, -2)}');">
+                        <div class="flex justify-between items-start" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
+                            <img src="${document.getElementById('preview-logo').src}" class="w-12 h-12 rounded-full border-2 border-white"/>
+                            <div class="text-right">
+                                <p class="font-parisienne text-3xl">Gift Card</p>
+                                <p class="text-xs font-semibold tracking-wider">Nails Express</p>
+                            </div>
+                        </div>
+                        <div class="text-center" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.7);"><p class="text-5xl font-bold">$${card.amount.toFixed(2)}</p></div>
+                        <div class="text-xs" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
+                            <div class="flex justify-between font-semibold">
+                                <span style="display: ${card.recipientName ? 'inline' : 'none'}">FOR: <span class="font-normal">${card.recipientName}</span></span>
+                                <span style="display: ${card.senderName ? 'inline' : 'none'}">FROM: <span class="font-normal">${card.senderName}</span></span>
+                            </div>
+                            <p class="mt-2 text-center font-mono tracking-widest text-sm">${card.code}</p>
+                            <p class="mt-1 text-center text-[10px] opacity-80" style="display: ${expiryText ? 'block' : 'none'}">${expiryText}</p>
+                        </div>
+                    </div>`;
+            }).join('');
+
+            window.print();
+        } catch (error) {
+            console.error("Error saving physical gift cards:", error);
+            alert("Could not save the gift cards. Please try again.");
+        }
+    };
+    
+    document.getElementById('designer-show-to').addEventListener('change', updateDesignerPreview);
+    document.getElementById('designer-show-from').addEventListener('change', updateDesignerPreview);
+    document.getElementById('designer-set-expiry').addEventListener('change', (e) => {
+        document.getElementById('designer-expiry-inputs').classList.toggle('hidden', !e.target.checked);
+        updateDesignerPreview();
+    });
+
+    createPrintableCardBtn.addEventListener('click', openDesignerModal);
+    closeDesignerModalBtn.addEventListener('click', closeDesignerModal);
+    giftCardDesignerModal.querySelector('.modal-overlay').addEventListener('click', closeDesignerModal);
+    designerForm.addEventListener('input', updateDesignerPreview);
+    saveAndPrintBtn.addEventListener('click', handleSaveAndPrint);
+    
+    const openEditGiftCardModal = (card) => {
+        editGiftCardForm.reset();
+        document.getElementById('edit-gift-card-id').value = card.id;
+        document.getElementById('edit-gc-code').textContent = card.code;
+        document.getElementById('edit-gc-original-amount').textContent = `$${card.amount.toFixed(2)}`;
+        document.getElementById('edit-gc-current-balance').textContent = `$${card.balance.toFixed(2)}`;
+
+        const historyContainer = document.getElementById('edit-gc-history');
+        historyContainer.innerHTML = '';
+        if (card.history && card.history.length > 0) {
+            card.history.slice().reverse().forEach(entry => {
+                const isRedeem = entry.type === 'redeem';
+                const el = document.createElement('div');
+                el.className = 'text-sm p-2 rounded bg-gray-100 flex justify-between';
+                el.innerHTML = `
+                    <div>
+                        <p class="font-semibold ${isRedeem ? 'text-red-600' : 'text-green-600'}">${isRedeem ? 'Redeemed' : 'Added'} $${entry.amount.toFixed(2)}</p>
+                        <p class="text-xs text-gray-500">${entry.notes || ''}</p>
+                    </div>
+                    <div class="text-xs text-gray-500 text-right">
+                        ${new Date(entry.timestamp.seconds * 1000).toLocaleString()}
+                    </div>
+                `;
+                historyContainer.appendChild(el);
+            });
+        } else {
+            historyContainer.innerHTML = '<p class="text-sm text-gray-500 text-center">No transactions yet.</p>';
+        }
+
+        editGiftCardModal.classList.remove('hidden');
+        editGiftCardModal.classList.add('flex');
+    };
+
+    editGiftCardForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const cardId = document.getElementById('edit-gift-card-id').value;
+        const transactionAmount = parseFloat(document.getElementById('edit-gc-transaction-amount').value);
+        const transactionType = document.getElementById('edit-gc-transaction-type').value;
+        const currentCard = allGiftCards.find(c => c.id === cardId);
+
+        if (!currentCard || isNaN(transactionAmount) || transactionAmount <= 0) {
+            alert("Invalid amount.");
+            return;
+        }
+        
+        let newBalance = currentCard.balance;
+        if (transactionType === 'redeem') {
+            if (transactionAmount > currentCard.balance) {
+                alert("Cannot redeem more than the current balance.");
+                return;
+            }
+            newBalance -= transactionAmount;
+        } else {
+            newBalance += transactionAmount;
+        }
+
+        const newTransaction = {
+            type: transactionType,
+            amount: transactionAmount,
+            notes: document.getElementById('edit-gc-transaction-notes').value,
+            timestamp: Timestamp.now()
+        };
+
+        try {
+            await updateDoc(doc(db, "gift_cards", cardId), {
+                balance: newBalance,
+                history: arrayUnion(newTransaction),
+                status: newBalance > 0 ? 'Active' : 'Depleted'
+            });
+            editGiftCardForm.reset();
+            editGiftCardModal.classList.add('hidden');
+        } catch (error) {
+            console.error("Error updating gift card:", error);
+            alert("Could not update gift card.");
+        }
+    });
+
+    document.getElementById('gift-cards-table').addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-gift-card-btn');
+        if (editBtn) {
+            const card = allGiftCards.find(c => c.id === editBtn.dataset.id);
+            if(card) openEditGiftCardModal(card);
+        }
+    });
+
+    document.getElementById('close-edit-gift-card-modal-btn').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));
+    editGiftCardModal.querySelector('.modal-overlay').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));
+
 
     loadAndRenderServices();
     const todayString = getLocalDateString();
@@ -1912,5 +3085,6 @@ function initMainApp(userRole) {
     renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, currentSalonEarningDateFilter, currentSalonEarningRangeFilter));
     document.getElementById('expense-date').value = todayString;
     document.getElementById('sign-out-btn').addEventListener('click', () => { signOut(auth); });
+    document.getElementById('floating-booking-btn').addEventListener('click', () => { openAddAppointmentModal(getLocalDateString()); });
 }
 

@@ -14,7 +14,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;500;600&family=Parisienne&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -46,41 +46,6 @@
     }
     .ring-animation {
       animation: ring 1s ease-in-out;
-    }
-    
-    .font-parisienne {
-        font-family: 'Parisienne', cursive;
-    }
-
-    /* Print styles for Gift Card */
-    @media print {
-      body * {
-        visibility: hidden;
-      }
-      .printable-gift-card-area, .printable-gift-card-area * {
-        visibility: visible;
-      }
-      .printable-gift-card-area {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0;
-        page-break-after: always;
-      }
-      .printable-gift-card {
-        width: 100%;
-        height: auto;
-        aspect-ratio: 1.75 / 1;
-        border-radius: 0 !important;
-        box-shadow: none !important;
-        border: 1px solid #ccc !important;
-        -webkit-print-color-adjust: exact !important;
-        color-adjust: exact !important;
-      }
     }
   </style>
 </head>
@@ -246,8 +211,138 @@
                 </div>
             </div>
         </section>
+
+        <!-- Login/Signup Modal -->
+        <div id="signup-login-modal" class="modal hidden fixed inset-0 z-50 flex items-center justify-center">
+            <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
+            <div class="relative bg-white w-full max-w-md p-8 rounded-2xl shadow-xl m-4">
+                <button id="close-signup-login-modal-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800"><i class="fas fa-times fa-lg"></i></button>
+                <div class="mb-4 border-b border-gray-200">
+                    <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="auth-tabs">
+                        <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg active" id="login-tab-btn" type="button">Log In</button></li>
+                        <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg" id="signup-tab-btn" type="button">Sign Up</button></li>
+                    </ul>
+                </div>
+                
+                <!-- Login Form -->
+                <div id="login-form-container">
+                    <h2 class="text-3xl font-bold text-center text-pink-700 mb-6">Welcome Back!</h2>
+                    <form id="landing-login-form" class="space-y-6">
+                        <div id="login-lockout-message" class="hidden p-3 bg-red-100 text-red-700 rounded-lg text-center text-sm"></div>
+                        <div>
+                            <label for="landing-email" class="block text-sm font-medium text-gray-700">Email</label>
+                            <input type="email" id="landing-email" required class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg" placeholder="Enter your email">
+                        </div>
+                        <div>
+                            <label for="landing-password" class="block text-sm font-medium text-gray-700">Password</label>
+                            <input type="password" id="landing-password" required class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg" placeholder="Enter your password">
+                        </div>
+                        <div>
+                            <button type="submit" id="landing-login-btn" class="w-full bg-pink-600 text-white font-bold py-3 px-12 rounded-full hover:bg-pink-700 flex items-center justify-center">
+                                <span class="btn-text">Log In</span>
+                                <i class="fas fa-spinner fa-spin ml-2 hidden"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Signup Form -->
+                <div id="signup-form-container" class="hidden">
+                    <h2 class="text-3xl font-bold text-center text-pink-700 mb-6">Create Account</h2>
+                    <form id="landing-signup-form" class="space-y-6">
+                         <div>
+                            <label for="signup-name" class="block text-sm font-medium text-gray-700">Full Name</label>
+                            <input type="text" id="signup-name" required class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg" placeholder="Enter your full name">
+                        </div>
+                        <div>
+                            <label for="signup-email" class="block text-sm font-medium text-gray-700">Email</label>
+                            <input type="email" id="signup-email" required class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg" placeholder="Enter your email">
+                        </div>
+                        <div>
+                            <label for="signup-password" class="block text-sm font-medium text-gray-700">Password</label>
+                            <input type="password" id="signup-password" required class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg" placeholder="Create a password (min. 6 characters)">
+                        </div>
+                        <div>
+                            <button type="submit" id="landing-signup-btn" class="w-full bg-pink-600 text-white font-bold py-3 px-12 rounded-full hover:bg-pink-700 flex items-center justify-center">
+                                <span class="btn-text">Sign Up</span>
+                                <i class="fas fa-spinner fa-spin ml-2 hidden"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Landing Page Service Menu Modal -->
+        <div id="landing-service-modal" class="modal hidden fixed inset-0 z-50 items-center justify-center">
+            <div class="landing-service-modal-overlay absolute inset-0 bg-black opacity-50"></div>
+            <div class="relative bg-white w-full max-w-2xl p-6 rounded-2xl shadow-xl m-4">
+                <div class="flex justify-between items-center border-b pb-4 mb-4">
+                    <h3 id="landing-service-modal-title" class="text-2xl font-bold text-pink-700">Our Menu</h3>
+                    <button id="close-landing-service-modal-btn" class="text-gray-500 hover:text-gray-800"><i class="fas fa-times fa-lg"></i></button>
+                </div>
+                <div id="landing-service-modal-content" class="space-y-2 max-h-[70vh] overflow-y-auto pr-4">
+                    <!-- Dynamic service items will be inserted here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Landing Page Booking Service Modal -->
+        <div id="landing-booking-service-modal" class="modal hidden fixed inset-0 z-[60] items-center justify-center">
+            <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
+            <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
+                <h3 id="landing-booking-modal-title" class="text-2xl font-bold text-pink-700 mb-4">Select Services</h3>
+                <div id="landing-booking-service-modal-content" class="space-y-3 max-h-96 overflow-y-auto"></div>
+                <div class="mt-6 text-right">
+                    <button id="landing-booking-service-modal-done-btn" type="button" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Done</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gift Card Purchase Modal -->
+        <div id="gift-card-modal" class="modal hidden fixed inset-0 z-50 flex items-center justify-center">
+            <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
+            <div class="relative bg-white w-full max-w-lg p-8 rounded-2xl shadow-xl m-4">
+                <button id="close-gift-card-modal-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800"><i class="fas fa-times fa-lg"></i></button>
+                <h2 class="text-3xl font-bold text-center text-pink-700 mb-6">Purchase a Gift Card</h2>
+                <form id="gift-card-form" class="space-y-4">
+                    <div>
+                        <label for="gift-card-amount" class="block text-sm font-medium text-gray-700">Amount</label>
+                        <select id="gift-card-amount" class="form-select w-full p-3 mt-1 border border-gray-300 rounded-lg">
+                            <option value="25">$25</option>
+                            <option value="50">$50</option>
+                            <option value="75">$75</option>
+                            <option value="100">$100</option>
+                            <option value="custom">Custom Amount</option>
+                        </select>
+                        <input type="number" id="gift-card-custom-amount" class="form-input w-full p-3 mt-2 border border-gray-300 rounded-lg hidden" placeholder="Enter custom amount">
+                    </div>
+                    <div>
+                        <label for="gift-card-recipient-name" class="block text-sm font-medium text-gray-700">Recipient's Name</label>
+                        <input type="text" id="gift-card-recipient-name" required class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label for="gift-card-recipient-email" class="block text-sm font-medium text-gray-700">Recipient's Email</label>
+                        <input type="email" id="gift-card-recipient-email" required class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label for="gift-card-sender-name" class="block text-sm font-medium text-gray-700">Your Name</label>
+                        <input type="text" id="gift-card-sender-name" required class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg">
+                    </div>
+                     <div>
+                        <label for="gift-card-message" class="block text-sm font-medium text-gray-700">Message (optional)</label>
+                        <textarea id="gift-card-message" rows="2" class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg"></textarea>
+                    </div>
+                    <div>
+                        <button type="submit" class="w-full bg-pink-600 text-white font-bold py-3 px-12 rounded-full hover:bg-pink-700">
+                            Proceed to Payment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
-    
+
     <!-- Client Dashboard Content (Hidden initially) -->
     <div id="client-dashboard-content" style="display: none;">
         <header class="bg-white shadow-md">
@@ -952,24 +1047,17 @@
 
                         <!-- Gift Card Management Content -->
                         <div id="gift-card-management-content" class="sub-tab-content hidden">
-                           <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-xl font-semibold text-gray-700">Gift Card Sales</h3>
-                                <button id="create-printable-card-btn" class="bg-purple-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-purple-600">
-                                    <i class="fas fa-credit-card mr-2"></i>Create Printable Card
-                                </button>
-                            </div>
+                            <h3 class="text-xl font-semibold text-gray-700 mb-4">Gift Card Sales</h3>
                             <div class="overflow-x-auto">
                                 <table id="gift-cards-table" class="w-full text-sm text-left text-gray-600">
                                     <thead class="text-xs text-gray-700 uppercase bg-gray-50">
                                         <tr>
                                             <th scope="col" class="px-6 py-3">Date</th>
                                             <th scope="col" class="px-6 py-3">Code</th>
-                                            <th scope="col" class="px-6 py-3">Initial</th>
-                                            <th scope="col" class="px-6 py-3">Balance</th>
+                                            <th scope="col" class="px-6 py-3">Amount</th>
                                             <th scope="col" class="px-6 py-3">Recipient</th>
                                             <th scope="col" class="px-6 py-3">Sender</th>
                                             <th scope="col" class="px-6 py-3">Status</th>
-                                            <th scope="col" class="px-6 py-3 text-center">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1035,16 +1123,6 @@
                                             </div>
                                         </div>
                                         <div class="text-right"><button type="submit" class="bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">Save Settings</button></div>
-                                    </form>
-
-                                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Salon Hours</h3>
-                                    <form id="salon-hours-form" class="p-4 border rounded-lg bg-gray-50 mb-6 space-y-4">
-                                        <div id="salon-hours-inputs" class="space-y-3">
-                                            <!-- JS will populate this -->
-                                        </div>
-                                        <div class="text-right">
-                                            <button type="submit" class="bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">Save Hours</button>
-                                        </div>
                                     </form>
 
                                     <h3 class="text-xl font-semibold text-gray-700 mb-4">Frontend Feature Management</h3>
@@ -1159,48 +1237,6 @@
     </div>
 
     <!-- ========= MODALS (Moved to top level) ========= -->
-     <div id="gift-card-modal" class="modal hidden fixed inset-0 z-50 flex items-center justify-center">
-            <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
-            <div class="relative bg-white w-full max-w-lg p-8 rounded-2xl shadow-xl m-4">
-                <button id="close-gift-card-modal-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800"><i class="fas fa-times fa-lg"></i></button>
-                <h2 class="text-3xl font-bold text-center text-pink-700 mb-6">Purchase a Gift Card</h2>
-                <form id="gift-card-form" class="space-y-4">
-                    <div>
-                        <label for="gift-card-amount" class="block text-sm font-medium text-gray-700">Amount</label>
-                        <select id="gift-card-amount" class="form-select w-full p-3 mt-1 border border-gray-300 rounded-lg">
-                            <option value="25">$25</option>
-                            <option value="50">$50</option>
-                            <option value="75">$75</option>
-                            <option value="100">$100</option>
-                            <option value="custom">Custom Amount</option>
-                        </select>
-                        <input type="number" id="gift-card-custom-amount" class="form-input w-full p-3 mt-2 border border-gray-300 rounded-lg hidden" placeholder="Enter custom amount">
-                    </div>
-                    <div>
-                        <label for="gift-card-recipient-name" class="block text-sm font-medium text-gray-700">Recipient's Name</label>
-                        <input type="text" id="gift-card-recipient-name" required class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg">
-                    </div>
-                    <div>
-                        <label for="gift-card-recipient-email" class="block text-sm font-medium text-gray-700">Recipient's Email</label>
-                        <input type="email" id="gift-card-recipient-email" required class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg">
-                    </div>
-                    <div>
-                        <label for="gift-card-sender-name" class="block text-sm font-medium text-gray-700">Your Name</label>
-                        <input type="text" id="gift-card-sender-name" required class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg">
-                    </div>
-                     <div>
-                        <label for="gift-card-message" class="block text-sm font-medium text-gray-700">Message (optional)</label>
-                        <textarea id="gift-card-message" rows="2" class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg"></textarea>
-                    </div>
-                    <div>
-                        <button type="submit" class="w-full bg-pink-600 text-white font-bold py-3 px-12 rounded-full hover:bg-pink-700">
-                            Proceed to Payment
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
     <div id="service-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
         <div class="absolute inset-0 bg-black opacity-50 modal-overlay"></div>
         <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
@@ -1414,168 +1450,6 @@
             </div>
         </div>
     </div>
-    
-    <!-- Gift Card Designer Modal -->
-    <div id="gift-card-designer-modal" class="modal hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
-        <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
-        <div class="relative bg-gray-100 w-full max-w-5xl p-6 rounded-2xl shadow-xl m-4 max-h-[90vh] overflow-y-auto">
-            <button id="close-designer-modal-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 z-10"><i class="fas fa-times fa-lg"></i></button>
-            <h2 class="text-3xl font-bold text-center text-pink-700 mb-6">Gift Card Designer</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6">
-                <!-- Controls Panel -->
-                <div id="designer-controls" class="space-y-4">
-                    <h3 class="text-xl font-semibold text-gray-700 border-b pb-2">Card Details</h3>
-                    <form id="physical-gift-card-form" class="space-y-4">
-                        <div class="flex items-center gap-4">
-                            <input type="checkbox" id="designer-show-to" class="form-checkbox" checked> <label for="designer-show-to">Show 'To' Field</label>
-                            <input type="checkbox" id="designer-show-from" class="form-checkbox" checked> <label for="designer-show-from">Show 'From' Field</label>
-                        </div>
-                        <div id="designer-to-wrapper"><label for="designer-to" class="block text-sm font-medium text-gray-600">To</label><input type="text" id="designer-to" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg"></div>
-                        <div id="designer-from-wrapper"><label for="designer-from" class="block text-sm font-medium text-gray-600">From</label><input type="text" id="designer-from" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg"></div>
-                        <div><label for="designer-amount" class="block text-sm font-medium text-gray-600">Amount ($)</label><input type="number" id="designer-amount" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg" required></div>
-                        <div class="border-t pt-4">
-                            <label for="designer-set-expiry" class="flex items-center gap-2"><input type="checkbox" id="designer-set-expiry" class="form-checkbox"> Set Expiration Date</label>
-                            <div id="designer-expiry-inputs" class="flex items-center gap-2 mt-2 hidden">
-                                <input type="number" id="designer-expiry-value" class="form-input w-24 p-2 border-gray-300 rounded-lg" min="1" value="12">
-                                <select id="designer-expiry-unit" class="form-select p-2 border-gray-300 rounded-lg">
-                                    <option value="months">Months</option>
-                                    <option value="years">Years</option>
-                                </select>
-                            </div>
-                        </div>
-                         <div class="border-t pt-4">
-                            <label for="designer-quantity" class="block text-sm font-medium text-gray-600">Quantity to Generate</label>
-                            <input type="number" id="designer-quantity" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg" min="1" value="1">
-                         </div>
-                    </form>
-                    <div>
-                        <h3 class="text-xl font-semibold text-gray-700 border-b pb-2 mt-6">Background Style</h3>
-                        <div id="designer-background-tabs" class="flex flex-wrap gap-2 mt-2 border-b"></div>
-                        <div id="designer-background-options" class="grid grid-cols-3 gap-2 mt-2">
-                           <!-- JS will populate this -->
-                        </div>
-                    </div>
-                     <div class="mt-6 text-center">
-                        <button id="save-and-print-btn" class="w-full bg-green-500 text-white font-bold py-3 px-12 rounded-full hover:bg-green-600"><i class="fas fa-print mr-2"></i>Save & Print</button>
-                    </div>
-                </div>
-                <!-- Preview Panel -->
-                <div class="flex items-center justify-center">
-                    <div id="printable-gift-card-area">
-                         <div id="printable-gift-card" class="w-[400px] h-[228px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white transition-all duration-300 printable-gift-card" style="background-image: url('https://images.unsplash.com/photo-1596048135132-911961bd4350?q=80&w=1887&auto=format&fit=crop');">
-                            <div class="flex justify-between items-start" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
-                                <img id="preview-logo" src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white"/>
-                                <div class="text-right">
-                                    <p class="font-parisienne text-3xl">Gift Card</p>
-                                    <p class="text-xs font-semibold tracking-wider">Nails Express</p>
-                                </div>
-                            </div>
-                            <div class="text-center" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.7);">
-                                <p id="preview-amount" class="text-5xl font-bold">$0.00</p>
-                            </div>
-                            <div class="text-xs" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
-                                <div id="preview-to-from-wrapper" class="flex justify-between font-semibold">
-                                    <span>FOR: <span id="preview-to" class="font-normal"></span></span>
-                                    <span>FROM: <span id="preview-from" class="font-normal"></span></span>
-                                </div>
-                                <p class="mt-2 text-center font-mono tracking-widest text-sm" id="preview-code">CODE-HERE</p>
-                                <p class="mt-1 text-center text-[10px] opacity-80" id="preview-expiry">Expires: --/--/----</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Edit Gift Card Modal -->
-    <div id="edit-gift-card-modal" class="modal hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
-        <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
-        <div class="relative bg-white w-full max-w-2xl p-6 rounded-2xl shadow-xl m-4 max-h-[90vh] overflow-y-auto">
-            <button id="close-edit-gift-card-modal-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800"><i class="fas fa-times fa-lg"></i></button>
-            <h2 class="text-3xl font-bold text-center text-pink-700 mb-6">Manage Gift Card</h2>
-            <div class="text-center mb-4">
-                <p class="font-mono text-lg" id="edit-gc-code"></p>
-            </div>
-            <div class="grid grid-cols-2 gap-4 mb-6 text-center">
-                <div>
-                    <p class="text-sm font-medium text-gray-500">Original Amount</p>
-                    <p id="edit-gc-original-amount" class="text-2xl font-bold text-gray-800"></p>
-                </div>
-                <div>
-                    <p class="text-sm font-medium text-gray-500">Current Balance</p>
-                    <p id="edit-gc-current-balance" class="text-2xl font-bold text-green-600"></p>
-                </div>
-            </div>
-
-            <form id="edit-gift-card-form">
-                <input type="hidden" id="edit-gift-card-id">
-                <h3 class="text-lg font-semibold text-gray-700 border-b pb-2">New Transaction</h3>
-                <div class="grid grid-cols-3 gap-4 mt-4 items-end">
-                    <div>
-                        <label for="edit-gc-transaction-type" class="block text-sm font-medium text-gray-600">Type</label>
-                        <select id="edit-gc-transaction-type" class="form-select w-full p-2 mt-1 border-gray-300 rounded-lg">
-                            <option value="redeem">Redeem</option>
-                            <option value="add">Add Value</option>
-                        </select>
-                    </div>
-                     <div>
-                        <label for="edit-gc-transaction-amount" class="block text-sm font-medium text-gray-600">Amount ($)</label>
-                        <input type="number" step="0.01" min="0.01" id="edit-gc-transaction-amount" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg" required>
-                    </div>
-                    <button type="submit" class="bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">Apply Transaction</button>
-                </div>
-                 <div class="mt-2">
-                    <label for="edit-gc-transaction-notes" class="block text-sm font-medium text-gray-600">Notes (Optional)</label>
-                    <input type="text" id="edit-gc-transaction-notes" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg" placeholder="e.g., Manicure service">
-                </div>
-            </form>
-
-            <div class="mt-6">
-                 <h3 class="text-lg font-semibold text-gray-700 border-b pb-2">Transaction History</h3>
-                 <div id="edit-gc-history" class="mt-2 space-y-2 max-h-48 overflow-y-auto">
-                    <!-- History will be populated here -->
-                 </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Client Profile Modal -->
-    <div id="client-profile-modal" class="modal hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
-        <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
-        <div class="relative bg-white w-full max-w-4xl p-6 rounded-2xl shadow-xl m-4 max-h-[90vh] overflow-y-auto">
-            <button id="close-client-profile-modal-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800"><i class="fas fa-times fa-lg"></i></button>
-            <div id="client-profile-header" class="text-center">
-                <h2 class="text-3xl font-bold text-pink-700" id="profile-client-name"></h2>
-                <p class="text-gray-500" id="profile-client-phone"></p>
-            </div>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 my-6 text-center">
-                <div class="bg-pink-50 p-3 rounded-lg"><p class="text-sm font-medium text-pink-700">Total Visits</p><p id="profile-total-visits" class="text-2xl font-bold"></p></div>
-                <div class="bg-green-50 p-3 rounded-lg"><p class="text-sm font-medium text-green-700">Total Spent</p><p id="profile-total-spent" class="text-2xl font-bold"></p></div>
-                <div class="bg-blue-50 p-3 rounded-lg"><p class="text-sm font-medium text-blue-700">Favorite Tech</p><p id="profile-fav-tech" class="text-xl font-bold"></p></div>
-                <div class="bg-yellow-50 p-3 rounded-lg"><p class="text-sm font-medium text-yellow-700">Favorite Color</p><p id="profile-fav-color" class="text-xl font-bold"></p></div>
-            </div>
-            <div>
-                 <h3 class="text-xl font-semibold text-gray-700 border-b pb-2">Visit History</h3>
-                 <div class="mt-2 max-h-64 overflow-y-auto">
-                     <table class="w-full text-sm text-left">
-                         <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                             <tr>
-                                 <th class="px-4 py-2">Date</th>
-                                 <th class="px-4 py-2">Services</th>
-                                 <th class="px-4 py-2">Technician</th>
-                                 <th class="px-4 py-2 text-right">Total</th>
-                             </tr>
-                         </thead>
-                         <tbody id="profile-history-table-body">
-                             <!-- History will be populated here -->
-                         </tbody>
-                     </table>
-                 </div>
-            </div>
-        </div>
-    </div>
-
 
  <script  type="module" src="script.js"></script>
 </body>

@@ -23,35 +23,62 @@ const landingPageContent = document.getElementById('landing-page-content');
 const appContent = document.getElementById('app-content');
 const clientDashboardContent = document.getElementById('client-dashboard-content');
 const policyModal = document.getElementById('policy-modal');
+const addAppointmentModal = document.getElementById('add-appointment-modal');
+const addAppointmentForm = document.getElementById('add-appointment-form');
 let mainAppInitialized = false;
 let clientDashboardInitialized = false;
 let landingPageInitialized = false;
 let anonymousUserId = null;
 let bookingSettings = { minBookingHours: 2 };
 let loginSecuritySettings = { maxAttempts: 5, lockoutMinutes: 15 };
+let salonHours = {};
 let bookingsChart, servicesChart, earningsChart;
 let notifications = [];
 let currentUserRole = null;
 let currentUserId = null;
-let initialAppointmentsLoaded = false;
-let initialInventoryLoaded = false;
 
+// --- Global Data Arrays & Loading State ---
+let allFinishedClients = [], allAppointments = [], allClients = [], allActiveClients = [], servicesData = {};
+let allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [];
+let allInventoryUsage = [], allGiftCards = [], allPromotions = [];
+let techniciansAndStaff = [], technicians = [];
+let allExpenseCategories = [], allPaymentAccounts = [], allSuppliers = [];
+let dataLoaded = { appointments: false, finishedClients: false, users: false, services: false, clients: false };
+
+const giftCardBackgrounds = {
+    'General': [
+        'https://images.unsplash.com/photo-1596048135132-911961bd4350?q=80&w=1887&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1519638831568-d9897f54ed69?q=80&w=2070&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1558081236-5415b3c5a7a5?q=80&w=1887&auto=format&fit=crop'
+    ],
+    'Holidays': [
+        'https://images.unsplash.com/photo-1513297887119-d46091b24bfa?q=80&w=2070&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1541142762-9f70343a4b08?q=80&w=1964&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1577991395684-245a6a5839a8?q=80&w=1887&auto=format&fit=crop'
+    ],
+    'Birthday': [
+        'https://images.unsplash.com/photo-1509281373149-e957c6296406?q=80&w=1928&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=2070&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1560240643-6d27e85c251e?q=80&w=1887&auto=format&fit=crop'
+    ]
+};
+
+
+// --- Global Helper Functions ---
+const getLocalDateString = (date = new Date()) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
 
 // --- Email Notification Logic ---
-/**
- * Queues booking notification emails for admins and the assigned technician.
- * This function works with the "Trigger Email" Firebase Extension by adding
- * documents to a "mail" collection.
- * @param {object} appointmentData The data for the new appointment.
- */
 async function sendBookingNotificationEmail(appointmentData) {
     try {
-        // 1. Get all admin emails
         const adminsQuery = query(collection(db, "users"), where("role", "==", "admin"));
         const adminSnapshot = await getDocs(adminsQuery);
-        const adminEmails = adminSnapshot.docs.map(doc => doc.data().email).filter(Boolean); // Filter out users without emails
+        const adminEmails = adminSnapshot.docs.map(doc => doc.data().email).filter(Boolean);
 
-        // 2. Get technician email
         let technicianEmail = null;
         if (appointmentData.technician && appointmentData.technician !== 'Any Technician') {
             const techQuery = query(collection(db, "users"), where("name", "==", appointmentData.technician));
@@ -64,7 +91,6 @@ async function sendBookingNotificationEmail(appointmentData) {
             }
         }
 
-        // 3. Combine recipients, ensuring no duplicates and filtering out nulls
         const recipients = [...new Set([...adminEmails, technicianEmail].filter(Boolean))];
 
         if (recipients.length === 0) {
@@ -72,52 +98,16 @@ async function sendBookingNotificationEmail(appointmentData) {
             return;
         }
 
-        // 4. Create email content
         const appointmentTime = appointmentData.appointmentTimestamp.toDate().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
         const subject = `New Booking: ${appointmentData.name} @ ${appointmentTime}`;
         const servicesList = Array.isArray(appointmentData.services) ? appointmentData.services.join(', ') : appointmentData.services;
         
-        const html = `
-            <div style="font-family: Arial, sans-serif; color: #333;">
-                <h2 style="color: #d63384;">New Appointment Booked</h2>
-                <p>A new appointment has been scheduled for <strong>${appointmentData.name}</strong>.</p>
-                <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-                    <tr style="border-bottom: 1px solid #ddd;">
-                        <td style="padding: 8px; width: 120px;"><strong>Client:</strong></td>
-                        <td style="padding: 8px;">${appointmentData.name}</td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #ddd;">
-                        <td style="padding: 8px;"><strong>Phone:</strong></td>
-                        <td style="padding: 8px;">${appointmentData.phone || 'N/A'}</td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #ddd;">
-                        <td style="padding: 8px;"><strong>Time:</strong></td>
-                        <td style="padding: 8px;">${appointmentTime}</td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #ddd;">
-                        <td style="padding: 8px;"><strong>Technician:</strong></td>
-                        <td style="padding: 8px;">${appointmentData.technician}</td>
-                    </tr>
-                     <tr style="border-bottom: 1px solid #ddd;">
-                        <td style="padding: 8px;"><strong>Services:</strong></td>
-                        <td style="padding: 8px;">${servicesList}</td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #ddd;">
-                        <td style="padding: 8px;"><strong>Notes:</strong></td>
-                        <td style="padding: 8px;">${appointmentData.notes || 'None'}</td>
-                    </tr>
-                </table>
-            </div>
-        `;
+        const html = `<div style="font-family: Arial, sans-serif; color: #333;"><h2 style="color: #d63384;">New Appointment Booked</h2><p>A new appointment has been scheduled for <strong>${appointmentData.name}</strong>.</p><table style="width: 100%; border-collapse: collapse; margin-top: 15px;"><tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px; width: 120px;"><strong>Client:</strong></td><td style="padding: 8px;">${appointmentData.name}</td></tr><tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px;"><strong>Phone:</strong></td><td style="padding: 8px;">${appointmentData.phone || 'N/A'}</td></tr><tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px;"><strong>Time:</strong></td><td style="padding: 8px;">${appointmentTime}</td></tr><tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px;"><strong>Technician:</strong></td><td style="padding: 8px;">${appointmentData.technician}</td></tr><tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px;"><strong>Services:</strong></td><td style="padding: 8px;">${servicesList}</td></tr><tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px;"><strong>Notes:</strong></td><td style="padding: 8px;">${appointmentData.notes || 'None'}</td></tr></table></div>`;
 
-        // 5. Add documents to the 'mail' collection for the Firebase Extension to process
         const mailPromises = recipients.map(email => {
             return addDoc(collection(db, "mail"), {
                 to: email,
-                message: {
-                    subject: subject,
-                    html: html,
-                },
+                message: { subject: subject, html: html },
             });
         });
 
@@ -126,8 +116,34 @@ async function sendBookingNotificationEmail(appointmentData) {
 
     } catch (error) {
         console.error("Error queuing booking notification email:", error);
-        // Don't block the user flow, just log the error. This is a background task.
     }
+}
+
+// --- Booking Validation Logic ---
+function isBookingTimeValid(bookingDate) {
+    const dayOfWeek = bookingDate.getDay(); 
+    const dayName = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][dayOfWeek];
+
+    const dayHours = salonHours[dayName];
+
+    if (!dayHours || !dayHours.isOpen) {
+        return { valid: false, message: `Sorry, the salon is closed on ${dayName.charAt(0).toUpperCase() + dayName.slice(1)}s.` };
+    }
+
+    const bookingTime = bookingDate.getHours() * 60 + bookingDate.getMinutes();
+    
+    const [openHour, openMinute] = dayHours.open.split(':').map(Number);
+    const openTime = openHour * 60 + openMinute;
+    
+    const [closeHour, closeMinute] = dayHours.close.split(':').map(Number);
+    const closeTime = closeHour * 60 + closeMinute;
+
+    if (bookingTime < openTime || bookingTime > closeTime) {
+         const formatTime = (timeStr) => new Date(`1970-01-01T${timeStr}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        return { valid: false, message: `Sorry, our hours on ${dayName.charAt(0).toUpperCase() + dayName.slice(1)}s are from ${formatTime(dayHours.open)} to ${formatTime(dayHours.close)}.` };
+    }
+
+    return { valid: true };
 }
 
 
@@ -138,9 +154,92 @@ document.addEventListener('click', (e) => { if (e.target.closest('.view-policy-b
 document.getElementById('policy-close-btn').addEventListener('click', closePolicyModal);
 document.querySelector('#policy-modal .policy-modal-overlay').addEventListener('click', closePolicyModal);
 
+// --- Shared Appointment Modal Logic ---
+const openAddAppointmentModal = (date, clientData = null) => {
+    addAppointmentForm.reset();
+    const now = new Date();
+    const defaultDateTime = `${date}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    document.getElementById('appointment-datetime').value = defaultDateTime;
+
+    if (clientData) {
+        document.getElementById('appointment-client-name').value = clientData.name || '';
+        document.getElementById('appointment-phone').value = clientData.phone || '';
+    }
+
+    const clientList = document.getElementById('client-names-list');
+    const appointmentPhoneList = document.getElementById('appointment-client-phones');
+    const uniqueNames = [...new Set(allFinishedClients.map(c => c.name))];
+    const uniquePhones = [...new Set(allFinishedClients.filter(c => c.phone && c.phone !== 'N/A').map(c => c.phone))];
+    clientList.innerHTML = uniqueNames.map(name => `<option value="${name}"></option>`).join('');
+    appointmentPhoneList.innerHTML = uniquePhones.map(phone => `<option value="${phone}"></option>`).join('');
+    
+    const mainServicesList = document.getElementById('main-services-list');
+    mainServicesList.innerHTML = Object.keys(servicesData).flatMap(category => 
+        servicesData[category].map(service => `<option value="${service.p || ''}${service.name}${service.price ? ' ' + service.price : ''}"></option>`)
+    ).join('');
+
+    addAppointmentModal.classList.remove('hidden'); 
+    addAppointmentModal.classList.add('flex');
+};
+
+const closeAddAppointmentModal = () => { 
+    addAppointmentModal.classList.add('hidden'); 
+    addAppointmentModal.classList.remove('flex'); 
+};
+
+document.getElementById('add-appointment-cancel-btn').addEventListener('click', closeAddAppointmentModal);
+document.querySelector('.add-appointment-modal-overlay').addEventListener('click', closeAddAppointmentModal);
+document.getElementById('appointment-client-name').addEventListener('input', (e) => { 
+    const client = allFinishedClients.find(c => c.name === e.target.value); 
+    if (client) { document.getElementById('appointment-phone').value = client.phone; } 
+});
+document.getElementById('appointment-phone').addEventListener('input', (e) => { 
+    const client = allFinishedClients.find(c => c.phone === e.target.value); 
+    if (client) { document.getElementById('appointment-client-name').value = client.name; } 
+});
+
+addAppointmentForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const datetimeString = document.getElementById('appointment-datetime').value;
+    if (!datetimeString) { return alert('Please select a date and time.'); }
+    
+    const bookingDate = new Date(datetimeString);
+    const validation = isBookingTimeValid(bookingDate);
+    if (!validation.valid) {
+        alert(validation.message);
+        return;
+    }
+    
+    const appointmentData = {
+        name: document.getElementById('appointment-client-name').value,
+        phone: document.getElementById('appointment-phone').value,
+        people: document.getElementById('appointment-people').value,
+        bookingType: document.getElementById('appointment-booking-type').value,
+        services: [document.getElementById('appointment-services').value],
+        technician: document.getElementById('appointment-technician-select').value,
+        notes: document.getElementById('appointment-notes').value,
+        appointmentTimestamp: Timestamp.fromDate(bookingDate)
+    };
+    
+    try {
+        await addDoc(collection(db, "appointments"), appointmentData);
+        await sendBookingNotificationEmail(appointmentData);
+        closeAddAppointmentModal();
+    } catch (err) {
+        console.error("Error adding appointment:", err);
+        alert("Could not save appointment.");
+    }
+});
+
+
 
 // --- Primary Authentication Router ---
 onAuthStateChanged(auth, async (user) => {
+    const hoursDoc = await getDoc(doc(db, "settings", "salonHours"));
+    if (hoursDoc.exists()) {
+        salonHours = hoursDoc.data();
+    }
+
     if (user) {
         currentUserId = user.uid;
         if (user.isAnonymous) {
@@ -157,7 +256,7 @@ onAuthStateChanged(auth, async (user) => {
             const userDocRef = doc(db, "users", user.uid);
             const userDoc = await getDoc(userDocRef);
             
-            if (userDoc.exists()) { // This is a staff/admin user
+            if (userDoc.exists()) { 
                 currentUserRole = userDoc.data().role;
                 loadingScreen.style.display = 'none';
                 landingPageContent.style.display = 'none';
@@ -167,11 +266,11 @@ onAuthStateChanged(auth, async (user) => {
                     initMainApp(currentUserRole);
                     mainAppInitialized = true;
                 }
-            } else { // Check if it's a client
+            } else { 
                 const clientDocRef = doc(db, "clients", user.uid);
                 const clientDoc = await getDoc(clientDocRef);
                 if (clientDoc.exists()) {
-                    currentUserRole = clientDoc.data().role; // Should be 'client'
+                    currentUserRole = clientDoc.data().role; 
                     loadingScreen.style.display = 'none';
                     landingPageContent.style.display = 'none';
                     appContent.style.display = 'none';
@@ -212,21 +311,18 @@ function initLandingPage() {
     const giftCardForm = document.getElementById('gift-card-form');
     const lockoutMessageDiv = document.getElementById('login-lockout-message');
 
-    // Fetch security settings for the login form
     getDoc(doc(db, "settings", "security")).then(docSnap => {
         if (docSnap.exists()) {
             loginSecuritySettings = docSnap.data();
         }
     });
 
-    // Auth Modal handling
     const openAuthModal = () => { signupLoginModal.classList.remove('hidden'); signupLoginModal.classList.add('flex'); };
     const closeAuthModal = () => { signupLoginModal.classList.add('hidden'); signupLoginModal.classList.remove('flex'); };
     userIcon.addEventListener('click', openAuthModal);
     closeSignupLoginModalBtn.addEventListener('click', closeAuthModal);
     signupLoginModal.querySelector('.modal-overlay').addEventListener('click', closeAuthModal);
 
-    // Auth tabs
     const loginTabBtn = document.getElementById('login-tab-btn');
     const signupTabBtn = document.getElementById('signup-tab-btn');
     const loginFormContainer = document.getElementById('login-form-container');
@@ -246,8 +342,6 @@ function initLandingPage() {
         loginFormContainer.classList.add('hidden');
     });
 
-
-    // Gift Card Modal Handling
     const openGiftCardModal = () => { giftCardModal.classList.remove('hidden'); giftCardModal.classList.add('flex'); };
     const closeGiftCardModal = () => { giftCardModal.classList.add('hidden'); giftCardModal.classList.remove('flex'); };
     buyGiftCardBtn.addEventListener('click', openGiftCardModal);
@@ -277,24 +371,11 @@ function initLandingPage() {
             return;
         }
 
-        const giftCardData = {
-            amount: amount,
-            recipientName: document.getElementById('gift-card-recipient-name').value,
-            recipientEmail: document.getElementById('gift-card-recipient-email').value,
-            senderName: document.getElementById('gift-card-sender-name').value,
-            message: document.getElementById('gift-card-message').value,
-            code: `GC-${Date.now()}${[...Array(4)].map(() => Math.floor(Math.random() * 10)).join('')}`,
-            status: 'Active',
-            createdAt: serverTimestamp()
-        };
+        const giftCardData = { amount: amount, balance: amount, history: [], recipientName: document.getElementById('gift-card-recipient-name').value, recipientEmail: document.getElementById('gift-card-recipient-email').value, senderName: document.getElementById('gift-card-sender-name').value, message: document.getElementById('gift-card-message').value, code: `GC-${Date.now()}${[...Array(4)].map(() => Math.floor(Math.random() * 10)).join('')}`, status: 'Active', createdAt: serverTimestamp() };
 
         try {
-            // In a real app, you would integrate a payment gateway here.
-            // For now, we'll simulate a successful payment and save to Firestore.
             alert('Redirecting to a secure payment page...');
-            
             await addDoc(collection(db, "gift_cards"), giftCardData);
-            
             alert(`Success! Gift card for $${amount} has been sent to ${giftCardData.recipientEmail}.`);
             giftCardForm.reset();
             closeGiftCardModal();
@@ -305,7 +386,6 @@ function initLandingPage() {
         }
     });
 
-    // Login form submission with security checks
     landingLoginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('landing-email').value;
@@ -316,7 +396,6 @@ function initLandingPage() {
         const emailKey = 'loginAttempts_' + email.toLowerCase();
         const lockoutKey = 'lockoutUntil_' + email.toLowerCase();
 
-        // Check for lockout
         const lockoutUntil = localStorage.getItem(lockoutKey);
         if (lockoutUntil && Date.now() < parseInt(lockoutUntil)) {
             const remainingTime = Math.ceil((parseInt(lockoutUntil) - Date.now()) / (1000 * 60));
@@ -324,7 +403,6 @@ function initLandingPage() {
             lockoutMessageDiv.classList.remove('hidden');
             return;
         } else if (lockoutUntil) {
-            // Clear expired lockout
             localStorage.removeItem(lockoutKey);
         }
         lockoutMessageDiv.classList.add('hidden');
@@ -335,8 +413,7 @@ function initLandingPage() {
 
         try {
             await signInWithEmailAndPassword(auth, email, password);
-            // onAuthStateChanged will handle the redirect
-            localStorage.removeItem(emailKey); // Clear attempts on success
+            localStorage.removeItem(emailKey); 
             localStorage.removeItem(lockoutKey);
         } catch (error) {
             let attempts = (parseInt(localStorage.getItem(emailKey)) || 0) + 1;
@@ -357,8 +434,6 @@ function initLandingPage() {
         }
     });
 
-
-    // Signup form submission
     landingSignupForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const name = document.getElementById('signup-name').value;
@@ -374,15 +449,7 @@ function initLandingPage() {
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
-
-            // Create a client document in Firestore
-            await setDoc(doc(db, "clients", user.uid), {
-                name: name,
-                email: email,
-                role: 'client',
-                createdAt: serverTimestamp()
-            });
-            // onAuthStateChanged will handle the redirect
+            await setDoc(doc(db, "clients", user.uid), { name: name, email: email, role: 'client', createdAt: serverTimestamp() });
         } catch (error) {
             alert(`Sign Up Failed: ${error.message}`);
         } finally {
@@ -391,8 +458,6 @@ function initLandingPage() {
         }
     });
 
-
-    // Populate booking form dropdowns
     const peopleSelect = document.getElementById('appointment-people-landing');
     for (let i = 1; i <= 20; i++) {
         peopleSelect.appendChild(new Option(i, i));
@@ -408,7 +473,6 @@ function initLandingPage() {
         });
     });
     
-    // Booking form multi-step logic
     const step1 = document.getElementById('booking-step-1');
     const step2 = document.getElementById('booking-step-2');
     document.getElementById('booking-next-btn').addEventListener('click', () => {
@@ -420,14 +484,17 @@ function initLandingPage() {
         step1.classList.remove('hidden');
     });
 
-    // Load and render services for booking form
     const servicesContainerLanding = document.getElementById('services-container-landing');
     const hiddenCheckboxContainerLanding = document.getElementById('hidden-checkbox-container-landing');
     let landingServicesData = {};
     
     getDocs(collection(db, "services")).then(servicesSnapshot => {
+        servicesData = {}; 
         landingServicesData = {};
-        servicesSnapshot.forEach(doc => { landingServicesData[doc.id] = doc.data().items; });
+        servicesSnapshot.forEach(doc => { 
+            servicesData[doc.id] = doc.data().items;
+            landingServicesData[doc.id] = doc.data().items; 
+        });
         
         servicesContainerLanding.innerHTML = '';
         hiddenCheckboxContainerLanding.innerHTML = '';
@@ -447,7 +514,6 @@ function initLandingPage() {
         });
     });
 
-    // Service selection modal for landing page
     const serviceModalLanding = document.getElementById('landing-booking-service-modal');
     const serviceModalContentLanding = document.getElementById('landing-booking-service-modal-content');
     
@@ -491,12 +557,18 @@ function initLandingPage() {
         });
     });
 
-    // Final booking submission on landing page
     addAppointmentFormLanding.addEventListener('submit', async (e) => {
         e.preventDefault();
         const services = Array.from(document.querySelectorAll('input[name="service-landing"]:checked')).map(el => el.value);
         if (services.length === 0) {
             alert('Please select at least one service.');
+            return;
+        }
+        
+        const bookingDate = new Date(document.getElementById('appointment-datetime-landing').value);
+        const validation = isBookingTimeValid(bookingDate);
+        if (!validation.valid) {
+            alert(validation.message);
             return;
         }
 
@@ -505,7 +577,7 @@ function initLandingPage() {
             phone: document.getElementById('appointment-phone-landing').value,
             people: document.getElementById('appointment-people-landing').value,
             technician: document.getElementById('appointment-technician-select-landing').value,
-            appointmentTimestamp: Timestamp.fromDate(new Date(document.getElementById('appointment-datetime-landing').value)),
+            appointmentTimestamp: Timestamp.fromDate(bookingDate),
             notes: document.getElementById('appointment-notes-landing').value,
             services: services,
             bookingType: 'Online'
@@ -513,8 +585,6 @@ function initLandingPage() {
 
         try {
             await addDoc(collection(db, "appointments"), appointmentData);
-            
-            // Send email notification
             await sendBookingNotificationEmail(appointmentData);
 
             alert('Appointment booked successfully!');
@@ -522,7 +592,6 @@ function initLandingPage() {
             step2.classList.add('hidden');
             step1.classList.remove('hidden');
 
-            // Reset service selection display
             document.querySelectorAll('#services-container-landing .selection-count').forEach(badge => badge.classList.add('hidden'));
             hiddenCheckboxContainerLanding.querySelectorAll('input').forEach(cb => cb.checked = false);
 
@@ -532,7 +601,6 @@ function initLandingPage() {
         }
     });
 
-     // --- Feature Toggle Visibility ---
     const updateFeatureVisibility = (settings) => {
         const showClientRegistration = settings.showClientLogin !== false;
         const showPromos = settings.showPromotions !== false;
@@ -558,7 +626,6 @@ function initLandingPage() {
         if (docSnap.exists()) {
             updateFeatureVisibility(docSnap.data());
         } else {
-            // Default settings if nothing is in the database
             updateFeatureVisibility({ showClientLogin: true, showPromotions: true, showGiftCards: true, showNailArt: true });
         }
     });
@@ -592,11 +659,7 @@ function initClientDashboard(clientId, clientData) {
         upcoming.forEach(appt => {
             const el = document.createElement('div');
             el.className = 'bg-white p-4 rounded-lg shadow';
-            el.innerHTML = `
-                <p class="font-bold">${new Date(appt.appointmentTimestamp.seconds * 1000).toLocaleString()}</p>
-                <p>${appt.services.join(', ')}</p>
-                <p class="text-sm text-gray-600">With: ${appt.technician}</p>
-            `;
+            el.innerHTML = `<p class="font-bold">${new Date(appt.appointmentTimestamp.seconds * 1000).toLocaleString()}</p><p>${appt.services.join(', ')}</p><p class="text-sm text-gray-600">With: ${appt.technician}</p>`;
             container.appendChild(el);
         });
     };
@@ -611,12 +674,7 @@ function initClientDashboard(clientId, clientData) {
         history.forEach(visit => {
             const el = document.createElement('div');
             el.className = 'bg-white p-4 rounded-lg shadow';
-            el.innerHTML = `
-                <p class="font-bold">${new Date(visit.checkOutTimestamp.seconds * 1000).toLocaleDateString()}</p>
-                <p>${visit.services}</p>
-                <p class="text-sm text-gray-600">With: ${visit.technician}</p>
-                ${visit.colorCode ? `<p class="text-sm text-gray-600">Color: ${visit.colorCode}</p>` : ''}
-            `;
+            el.innerHTML = `<p class="font-bold">${new Date(visit.checkOutTimestamp.seconds * 1000).toLocaleDateString()}</p><p>${visit.services}</p><p class="text-sm text-gray-600">With: ${visit.technician}</p>${visit.colorCode ? `<p class="text-sm text-gray-600">Color: ${visit.colorCode}</p>` : ''}`;
             container.appendChild(el);
         });
     };
@@ -654,25 +712,23 @@ function initClientDashboard(clientId, clientData) {
         });
     };
 
-    // Listen to client's data for gallery updates
     onSnapshot(doc(db, "clients", clientId), (docSnap) => {
         if (docSnap.exists()) {
             renderClientGallery(docSnap.data().photoGallery);
         }
     });
 
-    // Listen to appointments and history
     onSnapshot(query(collection(db, "appointments"), where("name", "==", clientData.name)), (snapshot) => {
-        const appointments = snapshot.docs.map(doc => doc.data());
+        const appointments = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
         renderClientAppointments(appointments);
     });
      onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientData.name), orderBy("checkOutTimestamp", "desc")), (snapshot) => {
-        const history = snapshot.docs.map(doc => doc.data());
+        const history = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
+        allFinishedClients = history; 
         renderClientHistory(history);
         calculateAndRenderFavorites(history);
     });
 
-    // Handle photo upload
     document.getElementById('client-photo-upload').addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -689,18 +745,11 @@ function initClientDashboard(clientId, clientData) {
             console.error("Error uploading photo:", error);
             alert("Could not upload photo.");
         }
-        e.target.value = ''; // Reset file input
+        e.target.value = '';
     });
 
-    // Handle "Book New Appointment" button
     document.getElementById('client-book-new-btn').addEventListener('click', () => {
-        const addAppointmentModal = document.getElementById('add-appointment-modal');
-        const appointmentForm = document.getElementById('add-appointment-form');
-        appointmentForm.reset();
-        document.getElementById('appointment-client-name').value = clientData.name;
-        document.getElementById('appointment-phone').value = clientData.phone || '';
-        addAppointmentModal.classList.remove('hidden');
-        addAppointmentModal.classList.add('flex');
+        openAddAppointmentModal(getLocalDateString(), clientData);
     });
 
     setupClientTabs();
@@ -721,7 +770,6 @@ function initMainApp(userRole) {
     const bookingNavCount = document.getElementById('booking-nav-count');
     const appLoadTimestamp = Timestamp.now();
 
-    // --- NOTIFICATION & LIVE COUNT LOGIC ---
     const updateNavCounts = () => {
         const checkInCount = allActiveClients.length;
         if (checkInCount > 0) {
@@ -758,29 +806,19 @@ function initMainApp(userRole) {
     };
 
     const addNotification = (type, message, itemId = null) => {
-        const newNotification = {
-            id: Date.now() + Math.random(),
-            type: type,
-            message: message,
-            timestamp: new Date(),
-            read: false,
-            itemId: itemId
-        };
+        const newNotification = { id: Date.now() + Math.random(), type: type, message: message, timestamp: new Date(), read: false, itemId: itemId };
         notifications.unshift(newNotification);
         updateNotificationDisplay();
 
-        // Trigger bell animation
         const bellIcon = notificationBell.querySelector('i');
-        bellIcon.classList.remove('ring-animation'); // Remove first to reset
-        void bellIcon.offsetWidth; // Trigger reflow
+        bellIcon.classList.remove('ring-animation');
+        void bellIcon.offsetWidth;
         bellIcon.classList.add('ring-animation');
     };
     
-    // --- Initial View Setup ---
     dashboardContent.classList.remove('hidden');
     mainAppContainer.classList.add('hidden');
 
-    // --- Navigation Logic ---
     logoLink.addEventListener('click', () => {
         dashboardContent.classList.remove('hidden');
         mainAppContainer.classList.add('hidden');
@@ -790,36 +828,18 @@ function initMainApp(userRole) {
     topNav.addEventListener('click', (e) => {
         const button = e.target.closest('.top-nav-btn');
         if (!button) return;
-
         const target = button.dataset.target;
-
         topNav.querySelectorAll('.top-nav-btn').forEach(btn => btn.classList.remove('active'));
         button.classList.add('active');
-
         dashboardContent.classList.add('hidden');
         mainAppContainer.classList.remove('hidden');
-        
         allMainSections.forEach(section => section.classList.add('hidden'));
-
         switch (target) {
-            case 'check-in':
-                document.getElementById('check-in-section').classList.remove('hidden');
-                document.getElementById('check-in-tab').click();
-                break;
-            case 'booking':
-                document.getElementById('calendar-content').classList.remove('hidden');
-                break;
-            case 'nails-idea':
-                document.getElementById('nails-idea-content').classList.remove('hidden');
-                break;
-            case 'report':
-                document.getElementById('reports-content').classList.remove('hidden');
-                document.getElementById('salon-earning-report-tab').click();
-                break;
-            case 'setting':
-                document.getElementById('admin-content').classList.remove('hidden');
-                document.getElementById('user-management-tab').click();
-                break;
+            case 'check-in': document.getElementById('check-in-section').classList.remove('hidden'); document.getElementById('check-in-tab').click(); break;
+            case 'booking': document.getElementById('calendar-content').classList.remove('hidden'); break;
+            case 'nails-idea': document.getElementById('nails-idea-content').classList.remove('hidden'); break;
+            case 'report': document.getElementById('reports-content').classList.remove('hidden'); document.getElementById('salon-earning-report-tab').click(); break;
+            case 'setting': document.getElementById('admin-content').classList.remove('hidden'); document.getElementById('user-management-tab').click(); break;
         }
     });
     
@@ -827,7 +847,6 @@ function initMainApp(userRole) {
         notificationDropdown.classList.toggle('hidden');
         if (!notificationDropdown.classList.contains('hidden')) {
             notifications.forEach(n => n.read = true);
-            // Delay update to allow user to see read status change
             setTimeout(updateNotificationDisplay, 300);
         }
     });
@@ -851,8 +870,7 @@ function initMainApp(userRole) {
     const checkoutModal = document.getElementById('checkout-modal');
     const checkoutForm = document.getElementById('checkout-form');
     const viewDetailModal = document.getElementById('view-detail-modal');
-    const addAppointmentModal = document.getElementById('add-appointment-modal');
-    const addAppointmentForm = document.getElementById('add-appointment-form');
+    
     const editEarningModal = document.getElementById('edit-earning-modal');
     const editEarningForm = document.getElementById('edit-earning-form');
     const editSalonEarningModal = document.getElementById('edit-salon-earning-modal');
@@ -867,6 +885,9 @@ function initMainApp(userRole) {
     const logUsageModal = document.getElementById('log-usage-modal');
     const logUsageForm = document.getElementById('log-usage-form');
     const shareModal = document.getElementById('share-modal');
+    const giftCardDesignerModal = document.getElementById('gift-card-designer-modal');
+    const editGiftCardModal = document.getElementById('edit-gift-card-modal');
+    const clientProfileModal = document.getElementById('client-profile-modal');
 
     const rebookOtherInput = document.getElementById('rebook-other-input');
     const rebookSelect = document.getElementById('rebook-select');
@@ -888,17 +909,6 @@ function initMainApp(userRole) {
     let currentTechFilterCalendar = 'All', currentTechFilterActive = 'All', currentTechFilterProcessing = 'All', currentTechFilterFinished = 'All';
     let currentFinishedDateFilter = '', currentEarningTechFilter = 'All', currentEarningDateFilter = '', currentEarningRangeFilter = 'daily';
     let currentSalonEarningDateFilter = '', currentSalonEarningRangeFilter = String(new Date().getMonth()), currentExpenseMonthFilter = '';
-
-    let allActiveClients = [], allFinishedClients = [], allAppointments = [], allClients = [], aggregatedClients = [], allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [], allInventoryUsage = [], allGiftCards = [], allPromotions = [];
-    let servicesData = {}, techniciansAndStaff = [], technicians = [];
-    let allExpenseCategories = [], allPaymentAccounts = [], allSuppliers = [];
-
-    const getLocalDateString = (date = new Date()) => {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
     
     let confirmCallback = null;
     const showConfirmModal = (message, onConfirm) => { confirmModalMessage.textContent = message; confirmCallback = onConfirm; confirmModal.classList.remove('hidden'); confirmModal.classList.add('flex'); };
@@ -907,168 +917,68 @@ function initMainApp(userRole) {
     confirmCancelBtn.addEventListener('click', closeConfirmModal);
     document.querySelector('.confirm-modal-overlay').addEventListener('click', closeConfirmModal);
 
-    // --- DASHBOARD LOGIC ---
     const dashboardDateFilter = document.getElementById('dashboard-date-filter');
 
     const updateDashboard = () => {
         const filter = dashboardDateFilter.value;
         const now = new Date();
         let startDate, endDate;
-
-        // 1. Set Date Range based on filter
         switch (filter) {
-            case 'today':
-                startDate = new Date(now.setHours(0, 0, 0, 0));
-                endDate = new Date(now.setHours(23, 59, 59, 999));
-                break;
-            case 'this_week':
-                const firstDayOfWeek = now.getDate() - now.getDay();
-                startDate = new Date(now.setDate(firstDayOfWeek));
-                startDate.setHours(0, 0, 0, 0);
-                endDate = new Date(startDate);
-                endDate.setDate(startDate.getDate() + 6);
-                endDate.setHours(23, 59, 59, 999);
-                break;
-            case 'this_month':
-                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-                endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-                break;
-            case 'this_year':
-                startDate = new Date(now.getFullYear(), 0, 1);
-                endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
-                break;
+            case 'today': startDate = new Date(now.setHours(0, 0, 0, 0)); endDate = new Date(now.setHours(23, 59, 59, 999)); break;
+            case 'this_week': const firstDayOfWeek = now.getDate() - now.getDay(); startDate = new Date(now.setDate(firstDayOfWeek)); startDate.setHours(0, 0, 0, 0); endDate = new Date(startDate); endDate.setDate(startDate.getDate() + 6); endDate.setHours(23, 59, 59, 999); break;
+            case 'this_month': startDate = new Date(now.getFullYear(), now.getMonth(), 1); endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999); break;
+            case 'this_year': startDate = new Date(now.getFullYear(), 0, 1); endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999); break;
         }
-
-        // 2. Filter Data
-        const filteredBookings = allAppointments.filter(a => {
-            const apptDate = a.appointmentTimestamp.toDate();
-            return apptDate >= startDate && apptDate <= endDate;
-        });
-        const filteredFinished = allFinishedClients.filter(f => {
-            const finDate = f.checkOutTimestamp.toDate();
-            return finDate >= startDate && finDate <= endDate;
-        });
-        const filteredEarnings = allEarnings.filter(e => {
-            const earnDate = e.date.toDate();
-            return earnDate >= startDate && earnDate <= endDate;
-        });
-
-        // 3. Update Summary Cards
+        const filteredBookings = allAppointments.filter(a => { const apptDate = a.appointmentTimestamp.toDate(); return apptDate >= startDate && apptDate <= endDate; });
+        const filteredFinished = allFinishedClients.filter(f => { const finDate = f.checkOutTimestamp.toDate(); return finDate >= startDate && finDate <= endDate; });
+        const filteredEarnings = allEarnings.filter(e => { const earnDate = e.date.toDate(); return earnDate >= startDate && earnDate <= endDate; });
         document.getElementById('total-bookings-card').textContent = filteredBookings.length + filteredFinished.length;
-        
         const totalRevenue = filteredEarnings.reduce((sum, e) => sum + e.earning, 0);
         document.getElementById('total-revenue-card').textContent = `$${totalRevenue.toFixed(2)}`;
-
         const lowStockItems = allInventory.filter(item => item.quantity <= item.lowStockAlert).length;
         document.getElementById('low-stock-card').textContent = lowStockItems;
-
-        const techEarnings = filteredEarnings.reduce((acc, curr) => {
-            acc[curr.staffName] = (acc[curr.staffName] || 0) + curr.earning;
-            return acc;
-        }, {});
+        const techEarnings = filteredEarnings.reduce((acc, curr) => { acc[curr.staffName] = (acc[curr.staffName] || 0) + curr.earning; return acc; }, {});
         const topTechnician = Object.keys(techEarnings).reduce((a, b) => techEarnings[a] > techEarnings[b] ? a : b, '-');
         document.getElementById('top-technician-card').textContent = topTechnician;
-
-        // 4. Update Charts
         updateBookingsChart(filteredBookings.concat(filteredFinished), filter);
         updateServicesChart(filteredFinished);
         updateEarningsChart(techEarnings);
     };
 
     const initializeChart = (chartInstance, ctx, type, data, options) => {
-        if (chartInstance) {
-            chartInstance.data = data;
-            chartInstance.options = options;
-            chartInstance.update();
-        } else {
-            chartInstance = new Chart(ctx, { type, data, options });
-        }
+        if (chartInstance) { chartInstance.data = data; chartInstance.options = options; chartInstance.update(); } 
+        else { chartInstance = new Chart(ctx, { type, data, options }); }
         return chartInstance;
     };
     
     const updateBookingsChart = (data, filter) => {
         const ctx = document.getElementById('bookings-chart').getContext('2d');
-        let labels = [];
-        let chartData = [];
-        const counts = {};
-
+        let labels = [], chartData = [], counts = {};
         if (filter === 'today') {
-            labels = Array.from({ length: 12 }, (_, i) => `${i * 2}:00`); // 2-hour intervals
+            labels = Array.from({ length: 12 }, (_, i) => `${i * 2}:00`);
             chartData = Array(12).fill(0);
-            data.forEach(item => {
-                const date = item.appointmentTimestamp?.toDate() || item.checkOutTimestamp?.toDate();
-                if (date) {
-                    const hour = Math.floor(date.getHours() / 2);
-                    chartData[hour]++;
-                }
-            });
+            data.forEach(item => { const date = item.appointmentTimestamp?.toDate() || item.checkOutTimestamp?.toDate(); if (date) { const hour = Math.floor(date.getHours() / 2); chartData[hour]++; } });
         } else if (filter === 'this_week') {
             labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             chartData = Array(7).fill(0);
-            data.forEach(item => {
-                const date = item.appointmentTimestamp?.toDate() || item.checkOutTimestamp?.toDate();
-                if (date) {
-                    chartData[date.getDay()]++;
-                }
-            });
-        } else { // Month or Year
+            data.forEach(item => { const date = item.appointmentTimestamp?.toDate() || item.checkOutTimestamp?.toDate(); if (date) { chartData[date.getDay()]++; } });
+        } else {
             const format = filter === 'this_month' ? 'numeric' : 'short';
-            data.forEach(item => {
-                const date = item.appointmentTimestamp?.toDate() || item.checkOutTimestamp?.toDate();
-                if (date) {
-                    const key = filter === 'this_month' ? date.getDate() : date.toLocaleString('default', { month: format });
-                    counts[key] = (counts[key] || 0) + 1;
-                }
-            });
+            data.forEach(item => { const date = item.appointmentTimestamp?.toDate() || item.checkOutTimestamp?.toDate(); if (date) { const key = filter === 'this_month' ? date.getDate() : date.toLocaleString('default', { month: format }); counts[key] = (counts[key] || 0) + 1; } });
             labels = Object.keys(counts).sort((a,b) => (filter === 'this_month' ? a-b : new Date(a + ' 1, 2000') - new Date(b + ' 1, 2000')) );
             chartData = labels.map(label => counts[label]);
         }
-
-        const chartConfig = {
-            labels: labels,
-            datasets: [{
-                label: 'Bookings',
-                data: chartData,
-                backgroundColor: 'rgba(219, 39, 119, 0.5)',
-                borderColor: 'rgba(219, 39, 119, 1)',
-                borderWidth: 1,
-                tension: 0.1
-            }]
-        };
+        const chartConfig = { labels: labels, datasets: [{ label: 'Bookings', data: chartData, backgroundColor: 'rgba(219, 39, 119, 0.5)', borderColor: 'rgba(219, 39, 119, 1)', borderWidth: 1, tension: 0.1 }] };
         bookingsChart = initializeChart(bookingsChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
     };
 
     const updateServicesChart = (data) => {
         const ctx = document.getElementById('services-chart').getContext('2d');
-        const serviceCounts = data.reduce((acc, client) => {
-            const services = typeof client.services === 'string' ? client.services.split(', ') : (client.services || []);
-            services.forEach(service => {
-                const serviceName = service.split(' $')[0].replace(/Gel Polish - /g, '').trim();
-                acc[serviceName] = (acc[serviceName] || 0) + 1;
-            });
-            return acc;
-        }, {});
-
+        const serviceCounts = data.reduce((acc, client) => { const services = typeof client.services === 'string' ? client.services.split(', ') : (client.services || []); services.forEach(service => { const serviceName = service.split(' $')[0].replace(/Gel Polish - /g, '').trim(); acc[serviceName] = (acc[serviceName] || 0) + 1; }); return acc; }, {});
         const sortedServices = Object.entries(serviceCounts).sort(([, a], [, b]) => b - a).slice(0, 5);
         const labels = sortedServices.map(item => item[0]);
         const chartData = sortedServices.map(item => item[1]);
-
-        const chartConfig = {
-            labels: labels,
-            datasets: [{
-                label: 'Top Services',
-                data: chartData,
-                backgroundColor: [
-                    'rgba(255, 99, 132, 0.5)', 'rgba(54, 162, 235, 0.5)', 'rgba(255, 206, 86, 0.5)',
-                    'rgba(75, 192, 192, 0.5)', 'rgba(153, 102, 255, 0.5)'
-                ],
-                borderColor: [
-                    'rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)', 'rgba(255, 206, 86, 1)',
-                    'rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)'
-                ],
-                borderWidth: 1
-            }]
-        };
+        const chartConfig = { labels: labels, datasets: [{ label: 'Top Services', data: chartData, backgroundColor: ['rgba(255, 99, 132, 0.5)', 'rgba(54, 162, 235, 0.5)', 'rgba(255, 206, 86, 0.5)', 'rgba(75, 192, 192, 0.5)', 'rgba(153, 102, 255, 0.5)'], borderColor: ['rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)', 'rgba(255, 206, 86, 1)', 'rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)'], borderWidth: 1 }] };
         servicesChart = initializeChart(servicesChart, ctx, 'doughnut', chartConfig, { responsive: true, maintainAspectRatio: false });
     };
 
@@ -1076,24 +986,11 @@ function initMainApp(userRole) {
         const ctx = document.getElementById('earnings-chart').getContext('2d');
         const labels = Object.keys(techEarnings);
         const chartData = Object.values(techEarnings);
-
-        const chartConfig = {
-            labels: labels,
-            datasets: [{
-                label: 'Technician Earnings',
-                data: chartData,
-                backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                borderColor: 'rgba(54, 162, 235, 1)',
-                borderWidth: 1
-            }]
-        };
+        const chartConfig = { labels: labels, datasets: [{ label: 'Technician Earnings', data: chartData, backgroundColor: 'rgba(54, 162, 235, 0.5)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 1 }] };
         earningsChart = initializeChart(earningsChart, ctx, 'bar', chartConfig, { responsive: true, maintainAspectRatio: false, indexAxis: 'y' });
     };
 
     dashboardDateFilter.addEventListener('change', updateDashboard);
-    // --- END DASHBOARD LOGIC ---
-
-    // --- DAILY NOTES LOGIC ---
     const dailyNotesForm = document.getElementById('daily-notes-form');
     const dailyNoteInput = document.getElementById('daily-note-input');
     const dailyNotesContainer = document.getElementById('daily-notes-container');
@@ -1104,51 +1001,25 @@ function initMainApp(userRole) {
             dailyNotesContainer.innerHTML = '<p class="text-gray-500">No notes for today.</p>';
             return;
         }
-        // Sort by creation time, newest first
         notes.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
-
-        notes.forEach(note => {
-            const noteEl = document.createElement('div');
-            noteEl.className = 'bg-pink-50 p-3 rounded-lg flex justify-between items-center';
-            noteEl.innerHTML = `
-                <p class="text-gray-800">${note.text}</p>
-                <button data-id="${note.id}" class="delete-note-btn text-red-400 hover:text-red-600">
-                    <i class="fas fa-times-circle"></i>
-                </button>
-            `;
-            dailyNotesContainer.appendChild(noteEl);
-        });
+        notes.forEach(note => { const noteEl = document.createElement('div'); noteEl.className = 'bg-pink-50 p-3 rounded-lg flex justify-between items-center'; noteEl.innerHTML = `<p class="text-gray-800">${note.text}</p><button data-id="${note.id}" class="delete-note-btn text-red-400 hover:text-red-600"><i class="fas fa-times-circle"></i></button>`; dailyNotesContainer.appendChild(noteEl); });
     };
 
     const todayStringForNotes = getLocalDateString();
     const noteDocRef = doc(db, "daily_notes", todayStringForNotes);
 
     onSnapshot(noteDocRef, (docSnap) => {
-        if (docSnap.exists()) {
-            renderDailyNotes(docSnap.data().notes);
-        } else {
-            renderDailyNotes([]); // No notes for today
-        }
+        if (docSnap.exists()) { renderDailyNotes(docSnap.data().notes); } 
+        else { renderDailyNotes([]); }
     });
 
     dailyNotesForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const noteText = dailyNoteInput.value.trim();
         if (!noteText) return;
-
-        const newNote = {
-            text: noteText,
-            createdAt: Timestamp.now(),
-            id: crypto.randomUUID()
-        };
-
-        try {
-            await setDoc(noteDocRef, { notes: arrayUnion(newNote) }, { merge: true });
-            dailyNoteInput.value = '';
-        } catch (error) {
-            console.error("Error adding note: ", error);
-            alert("Could not save the note.");
-        }
+        const newNote = { text: noteText, createdAt: Timestamp.now(), id: crypto.randomUUID() };
+        try { await setDoc(noteDocRef, { notes: arrayUnion(newNote) }, { merge: true }); dailyNoteInput.value = ''; } 
+        catch (error) { console.error("Error adding note: ", error); alert("Could not save the note."); }
     });
 
     dailyNotesContainer.addEventListener('click', async (e) => {
@@ -1160,19 +1031,11 @@ function initMainApp(userRole) {
                 if (docSnap.exists()) {
                     const existingNotes = docSnap.data().notes || [];
                     const noteToRemove = existingNotes.find(note => note.id === noteIdToDelete);
-                    if (noteToRemove) {
-                        await updateDoc(noteDocRef, {
-                            notes: arrayRemove(noteToRemove)
-                        });
-                    }
+                    if (noteToRemove) { await updateDoc(noteDocRef, { notes: arrayRemove(noteToRemove) }); }
                 }
-            } catch (error) {
-                console.error("Error deleting note: ", error);
-                alert("Could not delete the note.");
-            }
+            } catch (error) { console.error("Error deleting note: ", error); alert("Could not delete the note."); }
         }
     });
-    // --- END DAILY NOTES LOGIC ---
 
     const loadAndRenderServices = async () => {
         const servicesSnapshot = await getDocs(collection(db, "services"));
@@ -1255,76 +1118,41 @@ function initMainApp(userRole) {
         }
     
         const clientsMap = new Map();
-    
-        // 1. Aggregate data from service history (finished_clients)
         allFinishedClients.forEach(visit => {
             if (!visit.name) return;
             const clientKey = visit.name.toLowerCase();
-            
             if (!clientsMap.has(clientKey)) {
-                clientsMap.set(clientKey, {
-                    name: visit.name,
-                    phone: visit.phone || '',
-                    lastVisit: visit.checkOutTimestamp.toMillis(),
-                    techCounts: {},
-                    colorCounts: {}
-                });
+                clientsMap.set(clientKey, { name: visit.name, phone: visit.phone || '', lastVisit: visit.checkOutTimestamp.toMillis(), techCounts: {}, colorCounts: {} });
             }
-    
             const clientData = clientsMap.get(clientKey);
-    
             if (visit.checkOutTimestamp.toMillis() > clientData.lastVisit) {
                 clientData.lastVisit = visit.checkOutTimestamp.toMillis();
                 clientData.phone = visit.phone || clientData.phone;
             }
-    
-            if (visit.technician) {
-                clientData.techCounts[visit.technician] = (clientData.techCounts[visit.technician] || 0) + 1;
-            }
-            if (visit.colorCode) {
-                clientData.colorCounts[visit.colorCode] = (clientData.colorCounts[visit.colorCode] || 0) + 1;
-            }
+            if (visit.technician) { clientData.techCounts[visit.technician] = (clientData.techCounts[visit.technician] || 0) + 1; }
+            if (visit.colorCode) { clientData.colorCounts[visit.colorCode] = (clientData.colorCounts[visit.colorCode] || 0) + 1; }
         });
     
-        // 2. Process the aggregated data
         let processedClients = Array.from(clientsMap.values()).map(client => {
             const findFavorite = (counts) => Object.keys(counts).length > 0 ? Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b) : 'N/A';
-            return {
-                ...client,
-                favoriteTech: findFavorite(client.techCounts),
-                favoriteColor: findFavorite(client.colorCounts)
-            };
+            return { ...client, favoriteTech: findFavorite(client.techCounts), favoriteColor: findFavorite(client.colorCounts) };
         });
     
-        // 3. Merge DOB and ID from the master 'clients' collection
         const clientInfoMap = new Map(allClients.map(c => [c.name.toLowerCase(), { dob: c.dob, id: c.id, phone: c.phone }]));
-    
         let finalClientList = processedClients.map(aggClient => {
             const key = aggClient.name.toLowerCase();
             const masterInfo = clientInfoMap.get(key);
-            return {
-                ...aggClient,
-                id: masterInfo ? masterInfo.id : null, 
-                dob: masterInfo ? masterInfo.dob : '',
-                phone: masterInfo && masterInfo.phone ? masterInfo.phone : aggClient.phone
-            };
+            return { ...aggClient, id: masterInfo ? masterInfo.id : null, dob: masterInfo ? masterInfo.dob : '', phone: masterInfo && masterInfo.phone ? masterInfo.phone : aggClient.phone };
         });
     
-        // 4. Add clients from master list who have NO visit history
         allClients.forEach(masterClient => {
             if (!clientsMap.has(masterClient.name.toLowerCase())) {
-                finalClientList.push({
-                    ...masterClient,
-                    lastVisit: null,
-                    favoriteTech: 'N/A',
-                    favoriteColor: 'N/A'
-                });
+                finalClientList.push({ ...masterClient, lastVisit: null, favoriteTech: 'N/A', favoriteColor: 'N/A' });
             }
         });
         
         aggregatedClients = finalClientList;
     
-        // 5. Render the table
         const searchTerm = document.getElementById('search-clients-list').value.toLowerCase();
         const filteredClients = aggregatedClients.filter(c => c.name.toLowerCase().includes(searchTerm));
     
@@ -1339,14 +1167,7 @@ function initMainApp(userRole) {
         filteredClients.forEach(client => {
             const row = tbody.insertRow();
             row.className = 'bg-white border-b';
-            row.innerHTML = `<td class="px-6 py-4 font-medium text-gray-900">${client.name}</td>
-                             <td class="px-6 py-4">${client.phone || 'N/A'}</td>
-                             <td class="px-6 py-4">${client.lastVisit ? new Date(client.lastVisit).toLocaleDateString() : 'N/A'}</td>
-                             <td class="px-6 py-4 text-center space-x-2">
-                                <button data-id="${client.id}" class="text-indigo-500 hover:text-indigo-700 view-client-profile-btn" title="View Profile"><i class="fas fa-user-circle text-lg"></i></button>
-                                <button data-id="${client.id}" class="text-blue-500 hover:text-blue-700 edit-client-btn" title="Edit Client"><i class="fas fa-edit text-lg"></i></button>
-                                <button data-id="${client.id}" class="text-red-500 hover:text-red-700 delete-client-btn" title="Delete Client"><i class="fas fa-trash-alt text-lg"></i></button>
-                             </td>`;
+            row.innerHTML = `<td class="px-6 py-4 font-medium text-gray-900">${client.name}</td><td class="px-6 py-4">${client.phone || 'N/A'}</td><td class="px-6 py-4">${client.lastVisit ? new Date(client.lastVisit).toLocaleDateString() : 'N/A'}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${client.id}" class="text-indigo-500 hover:text-indigo-700 view-client-profile-btn" title="View Profile"><i class="fas fa-user-circle text-lg"></i></button><button data-id="${client.id}" class="text-blue-500 hover:text-blue-700 edit-client-btn" title="Edit Client"><i class="fas fa-edit text-lg"></i></button><button data-id="${client.id}" class="text-red-500 hover:text-red-700 delete-client-btn" title="Delete Client"><i class="fas fa-trash-alt text-lg"></i></button></td>`;
         });
     };
 
@@ -1600,18 +1421,11 @@ function initMainApp(userRole) {
         const client = allActiveClients.find(c => c.id === clientId);
         if (client) {
              try {
-                // Ensure client exists in the main 'clients' collection
                 const clientNameLower = client.name.toLowerCase();
                 const existingClient = allClients.find(c => c.name.toLowerCase() === clientNameLower);
-
                 if (!existingClient) {
-                    await addDoc(collection(db, "clients"), { 
-                        name: client.name, 
-                        phone: client.phone || '', 
-                        dob: '' 
-                    });
+                    await addDoc(collection(db, "clients"), { name: client.name, phone: client.phone || '', dob: '' });
                 }
-
                 const finishedClientData = { ...client };
                 delete finishedClientData.id;
                 finishedClientData.checkOutTimestamp = serverTimestamp();
@@ -1654,10 +1468,8 @@ function initMainApp(userRole) {
     onSnapshot(query(collection(db, "finished_clients"), orderBy("checkOutTimestamp", "desc")), (snapshot) => {
         allFinishedClients = snapshot.docs.map(doc => ({ id: doc.id, checkInTime: doc.data().checkInTimestamp ? new Date(doc.data().checkInTimestamp.seconds * 1000).toLocaleString() : 'N/A', checkOutTimestamp: doc.data().checkOutTimestamp, services: (doc.data().services || []).join(', '), ...doc.data() }));
         finishedCountSpan.textContent = allFinishedClients.length;
-        
         renderFinishedClients(applyClientFilters(allFinishedClients, document.getElementById('search-finished').value.toLowerCase(), currentTechFilterFinished, currentFinishedDateFilter));
         renderClientsList();
-        
         const clientList = document.getElementById('client-names-list'), checkinClientList = document.getElementById('checkin-client-names');
         const appointmentPhoneList = document.getElementById('appointment-client-phones'), checkinPhoneList = document.getElementById('checkin-client-phones');
         const uniqueNames = [...new Set(allFinishedClients.map(c => c.name))];
@@ -1668,16 +1480,13 @@ function initMainApp(userRole) {
         if(checkinClientList) checkinClientList.innerHTML = nameOptionsHtml;
         if(appointmentPhoneList) appointmentPhoneList.innerHTML = phoneOptionsHtml;
         if(checkinPhoneList) checkinPhoneList.innerHTML = phoneOptionsHtml;
-        
-        updateDashboard(); // Update dashboard when finished clients data changes
+        updateDashboard();
     });
 
      onSnapshot(query(collection(db, "appointments"), orderBy("appointmentTimestamp", "asc")), (snapshot) => {
-        // This part handles the notifications for REAL-TIME additions
         snapshot.docChanges().forEach((change) => {
-            if (change.type === "added" && initialAppointmentsLoaded) {
+            if (change.type === "added" && dataLoaded.appointments) {
                  const data = change.doc.data();
-                 // Check if the appointment was created after the app loaded to avoid old notifications
                  if (data.appointmentTimestamp.seconds > appLoadTimestamp.seconds) {
                     const apptTime = new Date(data.appointmentTimestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                     addNotification('booking', `New booking for ${data.name} at ${apptTime}`);
@@ -1685,23 +1494,21 @@ function initMainApp(userRole) {
             }
         });
         
-        // This part handles the data for rendering
         allAppointments = snapshot.docs.map(doc => ({ id: doc.id, appointmentTime: doc.data().appointmentTimestamp ? new Date(doc.data().appointmentTimestamp.seconds * 1000).toLocaleString() : 'N/A', ...doc.data() }));
         renderCalendar(currentYear, currentMonth, currentTechFilterCalendar);
         renderAllBookingsList();
-        updateDashboard(); // Update dashboard when appointments data changes
-        updateNavCounts(); // Update the nav count
+        updateDashboard();
+        updateNavCounts();
 
-        // Set the flag after the first full snapshot is processed
-        if (!initialAppointmentsLoaded) {
-            initialAppointmentsLoaded = true;
+        if (!dataLoaded.appointments) {
+            dataLoaded.appointments = true;
         }
     });
 
     onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot) => {
         allEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter, currentEarningRangeFilter));
-        updateDashboard(); // Update dashboard when earnings data changes
+        updateDashboard();
     });
 
     onSnapshot(query(collection(db, "salon_earnings"), orderBy("date", "desc")), (snapshot) => {
@@ -1715,7 +1522,6 @@ function initMainApp(userRole) {
         renderExpenses();
     });
 
-    // --- CLIENTS LIST LOGIC ---
     onSnapshot(query(collection(db, "clients"), orderBy("name")), (snapshot) => {
         allClients = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderClientsList();
@@ -1728,14 +1534,7 @@ function initMainApp(userRole) {
     document.getElementById('search-clients-list').addEventListener('input', () => renderClientsList());
     
     document.getElementById('export-clients-btn').addEventListener('click', () => {
-        const dataToExport = aggregatedClients.map(c => ({
-            Name: c.name,
-            Phone: c.phone || '',
-            DOB: c.dob || '',
-            'Favorite Tech': c.favoriteTech || '',
-            'Favorite Color': c.favoriteColor || '',
-            'Last Visit': c.lastVisit ? new Date(c.lastVisit).toLocaleDateString() : ''
-        }));
+        const dataToExport = aggregatedClients.map(c => ({ Name: c.name, Phone: c.phone || '', DOB: c.dob || '', 'Favorite Tech': c.favoriteTech || '', 'Favorite Color': c.favoriteColor || '', 'Last Visit': c.lastVisit ? new Date(c.lastVisit).toLocaleDateString() : '' }));
         const worksheet = XLSX.utils.json_to_sheet(dataToExport);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Clients");
@@ -1754,7 +1553,6 @@ function initMainApp(userRole) {
         document.getElementById(button.id.replace('-tab', '-content')).classList.remove('hidden');
     });
 
-    // NEW: Sub-tab logic
     const setupSubTabs = (tabsId, contentClass) => {
         document.getElementById(tabsId).addEventListener('click', (e) => {
             const button = e.target.closest('button');
@@ -1836,57 +1634,7 @@ function initMainApp(userRole) {
     setupReportDateFilters('earning-range-filter', 'earning-date-filter', (date, range) => { currentEarningDateFilter = date; currentEarningRangeFilter = range; renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, date, range)); });
     setupReportDateFilters('salon-earning-range-filter', 'salon-earning-date-filter', (date, range) => { currentSalonEarningDateFilter = date; currentSalonEarningRangeFilter = range; renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, date, range)); });
 
-    const openAddAppointmentModal = (date) => {
-        addAppointmentForm.reset();
-        const now = new Date();
-        const defaultDateTime = `${date}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-        document.getElementById('appointment-datetime').value = defaultDateTime;
-        const clientList = document.getElementById('client-names-list');
-        const appointmentPhoneList = document.getElementById('appointment-client-phones');
-        const uniqueNames = [...new Set(allFinishedClients.map(c => c.name))];
-        const uniquePhones = [...new Set(allFinishedClients.filter(c => c.phone && c.phone !== 'N/A').map(c => c.phone))];
-        clientList.innerHTML = uniqueNames.map(name => `<option value="${name}"></option>`).join('');
-        appointmentPhoneList.innerHTML = uniquePhones.map(phone => `<option value="${phone}"></option>`).join('');
-        const mainServicesList = document.getElementById('main-services-list');
-        mainServicesList.innerHTML = Object.keys(servicesData).map(category => `<option value="${category}"></option>`).join('');
-        addAppointmentModal.classList.remove('hidden'); addAppointmentModal.classList.add('flex');
-    };
-
-    const closeAddAppointmentModal = () => { addAppointmentModal.classList.add('hidden'); addAppointmentModal.classList.remove('flex'); };
-    document.getElementById('add-appointment-cancel-btn').addEventListener('click', closeAddAppointmentModal);
-    document.querySelector('.add-appointment-modal-overlay').addEventListener('click', closeAddAppointmentModal);
-    document.getElementById('appointment-client-name').addEventListener('input', (e) => { const client = allFinishedClients.find(c => c.name === e.target.value); if (client) { document.getElementById('appointment-phone').value = client.phone; } });
-    document.getElementById('appointment-phone').addEventListener('input', (e) => { const client = allFinishedClients.find(c => c.phone === e.target.value); if (client) { document.getElementById('appointment-client-name').value = client.name; } });
-
-    addAppointmentForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const datetimeString = document.getElementById('appointment-datetime').value;
-        if (!datetimeString) { return alert('Please select a date and time.'); }
-        
-        const appointmentData = {
-            name: document.getElementById('appointment-client-name').value,
-            phone: document.getElementById('appointment-phone').value,
-            people: document.getElementById('appointment-people').value,
-            bookingType: document.getElementById('appointment-booking-type').value,
-            services: [document.getElementById('appointment-services').value],
-            technician: document.getElementById('appointment-technician-select').value,
-            notes: document.getElementById('appointment-notes').value,
-            appointmentTimestamp: Timestamp.fromDate(new Date(datetimeString))
-        };
-        
-        try {
-            await addDoc(collection(db, "appointments"), appointmentData);
-            
-            // Send email notification
-            await sendBookingNotificationEmail(appointmentData);
-
-            closeAddAppointmentModal();
-        } catch (err) {
-            console.error("Error adding appointment:", err);
-            alert("Could not save appointment.");
-        }
-    });
-
+    
     document.getElementById('staff-earning-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const staffName = document.getElementById('staff-name').value;
@@ -2086,1120 +1834,64 @@ function initMainApp(userRole) {
             else { sendLink.href = '#'; sendLink.onclick = () => alert('Client phone number is not available.'); sendLink.classList.remove('pointer-events-none', 'opacity-50'); }
         } catch (error) { console.error("Error generating SMS:", error); smsTextarea.value = "Error connecting to the AI service."; sendLink.classList.remove('pointer-events-none', 'opacity-50'); }
     }
-
+    
     document.getElementById('clients-list-report-content').addEventListener('click', (e) => {
         const viewProfileBtn = e.target.closest('.view-client-profile-btn');
         const editBtn = e.target.closest('.edit-client-btn');
         const deleteBtn = e.target.closest('.delete-client-btn');
-        if (viewProfileBtn) {
-            const client = aggregatedClients.find(c => c.id === viewProfileBtn.dataset.id);
-            if(client) {
-                // This is where you would open a detailed client profile view for the admin
-                alert(`Viewing profile for ${client.name}. (Admin view to be implemented)`);
-            }
-        } else if (editBtn) {
-            const client = aggregatedClients.find(c => c.id === editBtn.dataset.id);
-            if(client) {
-                openClientModal(client);
-            }
-        } else if (deleteBtn) {
-            const clientId = deleteBtn.dataset.id;
-            const client = aggregatedClients.find(c => c.id === clientId);
-            if (client) {
-                showConfirmModal(`Delete all records for ${client.name}? This cannot be undone.`, async () => {
-                   await deleteDoc(doc(db, "clients", clientId));
-                   // Optional: clean up finished_clients as well, though it might be better to keep history
-                });
-            }
-        }
+        if (viewProfileBtn) { const client = aggregatedClients.find(c => c.id === viewProfileBtn.dataset.id); if(client) { openClientProfileModal(client); } } 
+        else if (editBtn) { const client = aggregatedClients.find(c => c.id === editBtn.dataset.id); if(client) { openClientModal(client); } } 
+        else if (deleteBtn) { const clientId = deleteBtn.dataset.id; const client = aggregatedClients.find(c => c.id === clientId); if (client) { showConfirmModal(`Delete all records for ${client.name}? This cannot be undone.`, async () => { await deleteDoc(doc(db, "clients", clientId)); }); } }
     });
+    
+    const openClientProfileModal = async (client) => {
+        if (!client) return;
+        document.getElementById('profile-client-name').textContent = client.name;
+        document.getElementById('profile-client-phone').textContent = client.phone || 'No phone number';
+       
+        const historyQuery = query(collection(db, "finished_clients"), where("name", "==", client.name), orderBy("checkOutTimestamp", "desc"));
+        const historySnapshot = await getDocs(historyQuery);
+        const history = historySnapshot.docs.map(doc => doc.data());
+        
+        let totalSpent = 0;
+        const historyBody = document.getElementById('profile-history-table-body');
+        
+        if (history.length === 0) {
+            historyBody.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-gray-500">No visit history found.</td></tr>';
+        } else {
+            historyBody.innerHTML = history.map(visit => {
+                let visitTotal = 0;
+                if (typeof visit.services === 'string') {
+                    const prices = visit.services.match(/\$\d+(\.\d{2})?/g) || [];
+                    visitTotal = prices.reduce((sum, price) => sum + parseFloat(price.substring(1)), 0);
+                    totalSpent += visitTotal;
+                }
+                return `<tr class="border-b"><td class="px-4 py-2">${new Date(visit.checkOutTimestamp.seconds * 1000).toLocaleDateString()}</td><td class="px-4 py-2">${visit.services}</td><td class="px-4 py-2">${visit.technician}</td><td class="px-4 py-2 text-right font-medium">$${visitTotal.toFixed(2)}</td></tr>`;
+            }).join('');
+        }
+        
+        document.getElementById('profile-total-visits').textContent = history.length;
+        document.getElementById('profile-total-spent').textContent = `$${totalSpent.toFixed(2)}`;
+        document.getElementById('profile-fav-tech').textContent = client.favoriteTech || 'N/A';
+        document.getElementById('profile-fav-color').textContent = client.favoriteColor || 'N/A';
+        
+        clientProfileModal.classList.remove('hidden');
+        clientProfileModal.classList.add('flex');
+    };
+
+    const closeClientProfileModal = () => {
+        clientProfileModal.classList.add('hidden');
+        clientProfileModal.classList.remove('flex');
+    };
+    
+    document.getElementById('close-client-profile-modal-btn').addEventListener('click', closeClientProfileModal);
+    clientProfileModal.querySelector('.modal-overlay').addEventListener('click', closeClientProfileModal);
 
     document.getElementById('gemini-sms-close-btn').addEventListener('click', () => { geminiSmsModal.classList.add('hidden'); geminiSmsModal.classList.remove('flex'); });
     document.querySelector('.gemini-sms-modal-overlay').addEventListener('click', () => { geminiSmsModal.classList.add('hidden'); geminiSmsModal.classList.remove('flex'); });
     
     document.getElementById('floating-booking-btn').addEventListener('click', () => { openAddAppointmentModal(getLocalDateString()); });
 
-    const addUserForm = document.getElementById('add-user-form');
-    const usersTableBody = document.querySelector('#users-table tbody');
-    const renderUsers = (users) => {
-        usersTableBody.innerHTML = '';
-        users.forEach(user => {
-            const row = usersTableBody.insertRow();
-            row.innerHTML = `<td class="px-6 py-4">${user.name}</td><td class="px-6 py-4">${user.email}</td><td class="px-6 py-4">${user.phone}</td><td class="px-6 py-4">${user.role}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${user.id}" class="edit-user-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${user.id}" class="delete-user-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
-        });
-    };
-    
-    const populateTechnicianFilters = () => {
-        const techContainers = document.querySelectorAll('.tech-filter-container');
-        const techSelects = document.querySelectorAll('#appointment-technician-select, #technician-name-select, #staff-name, #edit-staff-name, #checkin-technician-select');
-        techContainers.forEach(container => {
-            const userList = container.id.includes('earning') ? techniciansAndStaff : technicians;
-            container.querySelectorAll('.dynamic-tech-btn').forEach(btn => btn.remove());
-            userList.forEach(tech => { const btn = document.createElement('button'); btn.className = 'tech-filter-btn dynamic-tech-btn px-3 py-1 rounded-full text-sm'; btn.dataset.tech = tech.name; btn.textContent = tech.name; container.appendChild(btn); });
-        });
-        techSelects.forEach(select => {
-            const userList = (select.id === 'staff-name' || select.id === 'edit-staff-name') ? techniciansAndStaff : technicians;
-            const firstOption = select.options[0];
-            select.innerHTML = '';
-            if(firstOption && (firstOption.value === 'Any Technician' || firstOption.value === '')) { select.appendChild(firstOption); }
-            userList.forEach(tech => { select.appendChild(new Option(tech.name, tech.name)); });
-             if(select.id === 'technician-name-select') { select.appendChild(new Option("Other", "other")); }
-        });
-        const salonEarningInputs = document.getElementById('salon-earning-inputs');
-        const salonEarningTableHead = document.getElementById('salon-earning-table-head');
-        const salonEarningTableFoot = document.getElementById('salon-earning-table-foot');
-        salonEarningInputs.innerHTML = '';
-        let headHTML = '<tr><th scope="col" class="px-6 py-3">Date</th>';
-        let footHTML = `<tr><td class="px-6 py-3 text-right font-bold">Total:</td>`;
-        techniciansAndStaff.forEach(tech => {
-            const techNameLower = tech.name.toLowerCase();
-            salonEarningInputs.innerHTML += `<div><label for="salon-earning-${techNameLower}" class="block text-sm font-medium text-gray-600">${tech.name}</label><input type="number" step="0.01" id="salon-earning-${techNameLower}" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount"></div>`;
-            headHTML += `<th scope="col" class="px-6 py-3">${tech.name}</th>`;
-            footHTML += `<td id="total-${techNameLower}" class="px-6 py-3"></td>`;
-        });
-        headHTML += `<th scope="col" class="px-6 py-3">Sell GC</th><th scope="col" class="px-6 py-3">Return GC</th><th scope="col" class="px-6 py-3">Check</th><th scope="col" class="px-6 py-3">No of Credit</th><th scope="col" class="px-6 py-3">Total Credit</th><th scope="col" class="px-6 py-3">Venmo</th><th scope="col" class="px-6 py-3">Square</th><th scope="col" class="px-6 py-3 font-bold">Total</th><th scope="col" class="px-6 py-3 font-bold">Cash</th><th scope="col" class="px-6 py-3 text-center">Action</th></tr>`;
-        footHTML += `<td id="total-sell-gc" class="px-6 py-3"></td><td id="total-return-gc" class="px-6 py-3"></td><td id="total-check" class="px-6 py-3"></td><td id="total-no-credit" class="px-6 py-3"></td><td id="total-total-credit" class="px-6 py-3"></td><td id="total-venmo" class="px-6 py-3"></td><td id="total-square" class="px-6 py-3"></td><td id="total-total" class="px-6 py-3 font-bold"></td><td id="total-cash" class="px-6 py-3 font-bold"></td><td class="px-6 py-3"></td></tr>`;
-        let commissionHTML = `<tr class="text-center"><td class="px-6 py-3 text-right font-bold border-t-2 border-gray-300">Commission 70%:</td>`, check70HTML = `<tr class="text-center"><td class="px-6 py-3 text-right font-bold">70% of Check:</td>`, cash30HTML = `<tr class="text-center"><td class="px-6 py-3 text-right font-bold">30% of Cash:</td>`;
-        techniciansAndStaff.forEach(tech => {
-            const techNameLower = tech.name.toLowerCase();
-            commissionHTML += `<td id="commission-${techNameLower}" class="px-6 py-3 border-t-2 border-gray-300"></td>`;
-            check70HTML += `<td id="check70-${techNameLower}" class="px-6 py-3"></td>`;
-            cash30HTML += `<td id="cash30-${techNameLower}" class="px-6 py-3"></td>`;
-        });
-        commissionHTML += `<td class="border-t-2 border-gray-300" colspan="10"></td></tr>`;
-        check70HTML += `<td colspan="10"></td></tr>`;
-        cash30HTML += `<td colspan="10"></td></tr>`;
-        salonEarningTableHead.innerHTML = headHTML;
-        salonEarningTableFoot.innerHTML = footHTML + commissionHTML + check70HTML + cash30HTML;
-    };
-
-    onSnapshot(collection(db, "users"), (snapshot) => {
-        const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        techniciansAndStaff = users.filter(user => user.role === 'technician' || user.role === 'staff');
-        technicians = users.filter(user => user.role === 'technician');
-        renderUsers(users);
-        populateTechnicianFilters();
-    });
-
-    addUserForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const userId = document.getElementById('edit-user-id').value;
-        const name = document.getElementById('new-user-name').value, phone = document.getElementById('new-user-phone').value, email = document.getElementById('new-user-email').value, password = document.getElementById('new-user-password').value, role = document.getElementById('user-role').value;
-        if (userId) { await setDoc(doc(db, "users", userId), { name, phone, email, role }); alert("User updated."); } 
-        else {
-            if (!password || password.length < 6) { return alert("Password must be at least 6 characters."); }
-            try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                await setDoc(doc(db, "users", userCredential.user.uid), { name, phone, email, role });
-                alert("User created!");
-            } catch (error) { console.error("Error creating user:", error); alert("Error creating user: " + error.message); }
-        }
-        addUserForm.reset();
-        document.getElementById('edit-user-id').value = '';
-        document.getElementById('new-user-email').disabled = false;
-        document.getElementById('new-user-password').required = true;
-    });
-
-    usersTableBody.addEventListener('click', async (e) => {
-        const editBtn = e.target.closest('.edit-user-btn');
-        const deleteBtn = e.target.closest('.delete-user-btn');
-        if (editBtn) {
-            const userDoc = await getDoc(doc(db, "users", editBtn.dataset.id));
-            if (userDoc.exists()) {
-                const user = userDoc.data();
-                document.getElementById('edit-user-id').value = editBtn.dataset.id;
-                document.getElementById('new-user-name').value = user.name;
-                document.getElementById('new-user-phone').value = user.phone;
-                document.getElementById('new-user-email').value = user.email;
-                document.getElementById('new-user-email').disabled = true;
-                document.getElementById('new-user-password').required = false;
-                document.getElementById('new-user-password').placeholder = "Leave blank to keep same password";
-                document.getElementById('user-role').value = user.role;
-            }
-        }
-        if (deleteBtn) { showConfirmModal("Delete this user?", async () => { await deleteDoc(doc(db, "users", deleteBtn.dataset.id)); alert("User role deleted. Login must be deleted from Firebase console."); }); }
-    });
-
-    // --- Inventory Management & Reporting ---
-    const addProductForm = document.getElementById('add-product-form');
-    const inventoryTableBody = document.querySelector('#inventory-table tbody');
-    const productSupplierSelect = document.getElementById('product-supplier');
-    const inventoryReportTableBody = document.querySelector('#inventory-report-table tbody');
-
-    // Listen for inventory usage changes
-    onSnapshot(query(collection(db, "inventory_usage"), orderBy("timestamp", "desc")), (snapshot) => {
-        allInventoryUsage = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        // We might not need to do anything here immediately, but it keeps the data fresh
-        // The report is generated on demand when the tab is clicked.
-    });
-
-
-    const renderInventoryReport = () => {
-        const lowStockItems = allInventory.filter(item => item.quantity <= item.lowStockAlert);
-        inventoryReportTableBody.innerHTML = '';
-
-        if(lowStockItems.length === 0) {
-            inventoryReportTableBody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-gray-400">No items are currently low on stock.</td></tr>`;
-            return;
-        }
-
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        const thirtyDaysAgoTimestamp = Timestamp.fromDate(thirtyDaysAgo);
-
-        const recentUsage = allInventoryUsage.filter(usage => usage.timestamp >= thirtyDaysAgoTimestamp);
-
-        lowStockItems.forEach(item => {
-            const usageLast30d = recentUsage
-                .filter(usage => usage.productId === item.id)
-                .reduce((sum, usage) => sum + usage.quantityUsed, 0);
-            
-            const suggestedReorder = Math.max(0, usageLast30d - item.quantity);
-
-            const row = inventoryReportTableBody.insertRow();
-            row.className = 'bg-white border-b hover:bg-yellow-50';
-            row.innerHTML = `
-                <td class="px-6 py-4 font-medium text-gray-900">${item.name}</td>
-                <td class="px-6 py-4 text-center text-red-600 font-bold">${item.quantity}</td>
-                <td class="px-6 py-4 text-center">${item.lowStockAlert}</td>
-                <td class="px-6 py-4 text-center">${usageLast30d}</td>
-                <td class="px-6 py-4 text-center font-bold text-blue-600">${suggestedReorder}</td>
-            `;
-        });
-    };
-
-    // Add event listener for the new report tab
-    document.getElementById('inventory-report-tab').addEventListener('click', renderInventoryReport);
-
-
-    const populateProductSupplierDropdown = () => {
-        const first = productSupplierSelect.options[0];
-        productSupplierSelect.innerHTML = '';
-        productSupplierSelect.appendChild(first);
-        allSuppliers.forEach(supplier => {
-            productSupplierSelect.appendChild(new Option(supplier.name, supplier.name));
-        });
-    };
-    
-    const renderInventory = () => {
-        inventoryTableBody.innerHTML = '';
-        allInventory.forEach(product => {
-            const row = inventoryTableBody.insertRow();
-            const isLowStock = product.quantity <= product.lowStockAlert;
-            row.className = isLowStock ? 'bg-yellow-100' : 'bg-white';
-            row.innerHTML = `
-                <td class="px-6 py-4">${product.name} ${isLowStock ? '<span class="text-xs font-bold text-yellow-700 ml-2">LOW</span>' : ''}</td>
-                <td class="px-6 py-4">${product.category || ''}</td>
-                <td class="px-6 py-4">${product.supplier || ''}</td>
-                <td class="px-6 py-4 text-center">${product.quantity}</td>
-                <td class="px-6 py-4 text-right">$${product.price.toFixed(2)}</td>
-                <td class="px-6 py-4 text-right">$${(product.quantity * product.price).toFixed(2)}</td>
-                <td class="px-6 py-4 text-center space-x-2">
-                    <button data-id="${product.id}" class="edit-product-btn text-blue-500"><i class="fas fa-edit"></i></button>
-                    <button data-id="${product.id}" class="delete-product-btn text-red-500"><i class="fas fa-trash"></i></button>
-                </td>
-            `;
-        });
-        updateDashboard(); // Update dashboard when inventory changes
-    };
-
-
-    onSnapshot(query(collection(db, "inventory"), orderBy("name")), (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-            if ((change.type === "added" || change.type === "modified") && initialInventoryLoaded) {
-                const product = { id: change.doc.id, ...change.doc.data() };
-                if (currentUserRole === 'admin' && product.quantity <= product.lowStockAlert) {
-                     if (!notifications.some(n => n.itemId === product.id)) {
-                        addNotification('stock', `${product.name} is low in stock (${product.quantity} left).`, product.id);
-                    }
-                } else {
-                    // Remove notification if stock is replenished
-                    const existingNotifIndex = notifications.findIndex(n => n.itemId === product.id);
-                    if (existingNotifIndex > -1) {
-                        notifications.splice(existingNotifIndex, 1);
-                        updateNotificationDisplay();
-                    }
-                }
-            }
-        });
-        initialInventoryLoaded = true;
-
-        allInventory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        renderInventory();
-    });
-
-    addProductForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const productId = document.getElementById('edit-product-id').value;
-        const productData = {
-            name: document.getElementById('product-name').value,
-            category: document.getElementById('product-category').value,
-            supplier: document.getElementById('product-supplier').value,
-            quantity: parseInt(document.getElementById('product-quantity').value, 10),
-            price: parseFloat(document.getElementById('product-price').value),
-            lowStockAlert: parseInt(document.getElementById('low-stock-alert').value, 10)
-        };
-
-        try {
-            if (productId) {
-                await updateDoc(doc(db, "inventory", productId), productData);
-            } else {
-                await addDoc(collection(db, "inventory"), productData);
-            }
-            resetProductForm();
-        } catch (error) {
-            console.error("Error saving product:", error);
-            alert("Could not save product.");
-        }
-    });
-
-    const resetProductForm = () => {
-        addProductForm.reset();
-        document.getElementById('edit-product-id').value = '';
-        document.getElementById('add-product-btn').textContent = 'Add Product';
-        document.getElementById('cancel-edit-product-btn').classList.add('hidden');
-    };
-    document.getElementById('cancel-edit-product-btn').addEventListener('click', resetProductForm);
-
-    inventoryTableBody.addEventListener('click', (e) => {
-        const editBtn = e.target.closest('.edit-product-btn');
-        const deleteBtn = e.target.closest('.delete-product-btn');
-
-        if (editBtn) {
-            const product = allInventory.find(p => p.id === editBtn.dataset.id);
-            if (product) {
-                document.getElementById('edit-product-id').value = product.id;
-                document.getElementById('product-name').value = product.name;
-                document.getElementById('product-category').value = product.category || '';
-                document.getElementById('product-supplier').value = product.supplier || '';
-                document.getElementById('product-quantity').value = product.quantity;
-                document.getElementById('product-price').value = product.price;
-                document.getElementById('low-stock-alert').value = product.lowStockAlert || 10;
-                document.getElementById('add-product-btn').textContent = 'Update Product';
-                document.getElementById('cancel-edit-product-btn').classList.remove('hidden');
-            }
-        } else if (deleteBtn) {
-            showConfirmModal("Delete this product from inventory?", async () => {
-                await deleteDoc(doc(db, "inventory", deleteBtn.dataset.id));
-            });
-        }
-    });
-
-    // --- Log Usage Modal Logic ---
-    const openLogUsageModal = () => {
-        const select = document.getElementById('log-usage-product-select');
-        select.innerHTML = '<option value="">Select a product...</option>';
-        allInventory.forEach(item => {
-            select.appendChild(new Option(item.name, item.id));
-        });
-        logUsageModal.classList.remove('hidden');
-        logUsageModal.classList.add('flex');
-    };
-    const closeLogUsageModal = () => {
-        logUsageForm.reset();
-        logUsageModal.classList.add('hidden');
-        logUsageModal.classList.remove('flex');
-    };
-
-    document.getElementById('log-usage-btn').addEventListener('click', openLogUsageModal);
-    document.getElementById('log-usage-cancel-btn').addEventListener('click', closeLogUsageModal);
-    document.querySelector('.log-usage-modal-overlay').addEventListener('click', closeLogUsageModal);
-
-    logUsageForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const productId = document.getElementById('log-usage-product-select').value;
-        const quantityUsed = parseInt(document.getElementById('log-usage-quantity').value, 10);
-
-        if (!productId || isNaN(quantityUsed) || quantityUsed <= 0) {
-            alert('Please select a product and enter a valid quantity.');
-            return;
-        }
-
-        const product = allInventory.find(p => p.id === productId);
-        if (!product) {
-            alert('Product not found.');
-            return;
-        }
-
-        if (product.quantity < quantityUsed) {
-            alert(`Not enough stock. Only ${product.quantity} units available.`);
-            return;
-        }
-
-        try {
-            // Log the usage
-            await addDoc(collection(db, "inventory_usage"), {
-                productId: productId,
-                productName: product.name,
-                quantityUsed: quantityUsed,
-                timestamp: serverTimestamp()
-            });
-
-            // Decrement the inventory count
-            const newQuantity = product.quantity - quantityUsed;
-            await updateDoc(doc(db, "inventory", productId), {
-                quantity: newQuantity
-            });
-
-            alert('Usage logged successfully.');
-            closeLogUsageModal();
-
-        } catch (error) {
-            console.error("Error logging usage:", error);
-            alert("Could not log usage.");
-        }
-    });
-
-
-    // --- Settings, Toggles & Expense Management ---
-    const settingsForm = document.getElementById('settings-form');
-    const minBookingHoursInput = document.getElementById('min-booking-hours');
-    const maxLoginAttemptsInput = document.getElementById('max-login-attempts');
-    const loginLockoutMinutesInput = document.getElementById('login-lockout-minutes');
-    const featureTogglesForm = document.getElementById('feature-toggles-form');
-
-    const loadFeatureToggles = async () => {
-        const settingsDoc = await getDoc(doc(db, "settings", "features"));
-        if (settingsDoc.exists()) {
-            const settings = settingsDoc.data();
-            document.getElementById('toggle-client-login').checked = settings.showClientLogin !== false;
-            document.getElementById('toggle-promotions').checked = settings.showPromotions !== false;
-            document.getElementById('toggle-gift-card').checked = settings.showGiftCards !== false;
-            document.getElementById('toggle-nails-idea').checked = settings.showNailArt !== false;
-        } else {
-             // Default to on if not set
-            document.getElementById('toggle-client-login').checked = true;
-            document.getElementById('toggle-promotions').checked = true;
-            document.getElementById('toggle-gift-card').checked = true;
-            document.getElementById('toggle-nails-idea').checked = true;
-        }
-    };
-    
-    featureTogglesForm.addEventListener('change', async (e) => {
-        if (e.target.type === 'checkbox') {
-            const settings = {
-                showClientLogin: document.getElementById('toggle-client-login').checked,
-                showPromotions: document.getElementById('toggle-promotions').checked,
-                showGiftCards: document.getElementById('toggle-gift-card').checked,
-                showNailArt: document.getElementById('toggle-nails-idea').checked
-            };
-            await setDoc(doc(db, "settings", "features"), settings, { merge: true });
-        }
-    });
-
-    const loadSettings = async () => { 
-        const bookingSnap = await getDoc(doc(db, "settings", "booking")); 
-        if (bookingSnap.exists()) { 
-            const data = bookingSnap.data();
-            minBookingHoursInput.value = data.minBookingHours || 2; 
-        } 
-        const securitySnap = await getDoc(doc(db, "settings", "security"));
-        if (securitySnap.exists()) {
-            const data = securitySnap.data();
-            loginSecuritySettings = data; // Update global settings
-            maxLoginAttemptsInput.value = data.maxAttempts || 5;
-            loginLockoutMinutesInput.value = data.lockoutMinutes || 15;
-        }
-    };
-    loadSettings();
-    loadFeatureToggles();
-
-    settingsForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const hours = parseInt(minBookingHoursInput.value, 10);
-        const maxAttempts = parseInt(maxLoginAttemptsInput.value, 10);
-        const lockoutMinutes = parseInt(loginLockoutMinutesInput.value, 10);
-        
-        if (isNaN(hours) || hours < 0 || isNaN(maxAttempts) || maxAttempts < 1 || isNaN(lockoutMinutes) || lockoutMinutes < 1) { 
-            return alert("Please enter valid, positive numbers for all settings."); 
-        }
-
-        try { 
-            await setDoc(doc(db, "settings", "booking"), { minBookingHours: hours }); 
-            await setDoc(doc(db, "settings", "security"), { maxAttempts: maxAttempts, lockoutMinutes: lockoutMinutes });
-            loginSecuritySettings = { maxAttempts, lockoutMinutes }; // Update global settings immediately
-            alert("Settings saved!"); 
-        } catch (error) { 
-            console.error("Error saving settings: ", error); 
-            alert("Could not save settings."); 
-        }
-    });
-
-    // --- Generic CRUD for Expense Settings ---
-    const setupSimpleCrud = (collectionName, formId, inputId, listId) => {
-        const form = document.getElementById(formId);
-        const input = document.getElementById(inputId);
-        const listContainer = document.getElementById(listId);
-
-        onSnapshot(collection(db, collectionName), (snapshot) => {
-            const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            if (collectionName === 'expense_categories') allExpenseCategories = items;
-            else if (collectionName === 'payment_accounts') allPaymentAccounts = items;
-            else if (collectionName === 'suppliers') allSuppliers = items;
-            
-            listContainer.innerHTML = items.map(item => `<div class="flex justify-between items-center p-1 hover:bg-gray-100"><span>${item.name}</span><button data-id="${item.id}" class="delete-item-btn text-red-400 hover:text-red-600"><i class="fas fa-times-circle"></i></button></div>`).join('');
-            populateExpenseDropdowns();
-        });
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const name = input.value.trim();
-            if (name) { await addDoc(collection(db, collectionName), { name }); input.value = ''; }
-        });
-
-        listContainer.addEventListener('click', (e) => {
-            const deleteBtn = e.target.closest('.delete-item-btn');
-            if (deleteBtn) { showConfirmModal("Delete this item?", async () => { await deleteDoc(doc(db, collectionName, deleteBtn.dataset.id)); }); }
-        });
-    };
-
-    setupSimpleCrud('expense_categories', 'add-expense-category-form', 'new-expense-category-name', 'expense-categories-list');
-    setupSimpleCrud('payment_accounts', 'add-payment-account-form', 'new-payment-account-name', 'payment-accounts-list');
-
-    // --- Supplier CRUD ---
-    const addSupplierForm = document.getElementById('add-supplier-form');
-    const suppliersTableBody = document.querySelector('#suppliers-table tbody');
-    onSnapshot(collection(db, "suppliers"), (snapshot) => {
-        allSuppliers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        suppliersTableBody.innerHTML = '';
-        allSuppliers.forEach(s => {
-            const row = suppliersTableBody.insertRow();
-            row.innerHTML = `<td class="px-6 py-4">${s.name}</td><td class="px-6 py-4">${s.phone || ''}</td><td class="px-6 py-4">${s.email || ''}</td><td class="px-6 py-4">${s.website ? `<a href="${s.website}" target="_blank" class="text-blue-500">Link</a>` : ''}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${s.id}" class="edit-supplier-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${s.id}" class="delete-supplier-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
-        });
-        populateExpenseDropdowns();
-        populateProductSupplierDropdown();
-    });
-
-    addSupplierForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const supplierId = document.getElementById('edit-supplier-id').value;
-        const data = { name: document.getElementById('supplier-name').value, phone: document.getElementById('supplier-phone').value, email: document.getElementById('supplier-email').value, website: document.getElementById('supplier-website').value };
-        if (supplierId) { await updateDoc(doc(db, "suppliers", supplierId), data); } 
-        else { await addDoc(collection(db, "suppliers"), data); }
-        resetSupplierForm();
-    });
-
-    const resetSupplierForm = () => { addSupplierForm.reset(); document.getElementById('edit-supplier-id').value = ''; document.getElementById('add-supplier-btn').textContent = 'Add Supplier'; document.getElementById('cancel-edit-supplier-btn').classList.add('hidden'); };
-    document.getElementById('cancel-edit-supplier-btn').addEventListener('click', resetSupplierForm);
-
-    suppliersTableBody.addEventListener('click', (e) => {
-        const editBtn = e.target.closest('.edit-supplier-btn');
-        const deleteBtn = e.target.closest('.delete-supplier-btn');
-        if (editBtn) {
-            const supplier = allSuppliers.find(s => s.id === editBtn.dataset.id);
-            if (supplier) {
-                document.getElementById('edit-supplier-id').value = supplier.id;
-                document.getElementById('supplier-name').value = supplier.name;
-                document.getElementById('supplier-phone').value = supplier.phone || '';
-                document.getElementById('supplier-email').value = supplier.email || '';
-                document.getElementById('supplier-website').value = supplier.website || '';
-                document.getElementById('add-supplier-btn').textContent = 'Update';
-                document.getElementById('cancel-edit-supplier-btn').classList.remove('hidden');
-            }
-        } else if (deleteBtn) { showConfirmModal("Delete this supplier?", async () => { await deleteDoc(doc(db, "suppliers", deleteBtn.dataset.id)); }); }
-    });
-
-    // --- Expense Report Logic ---
-    const addExpenseForm = document.getElementById('add-expense-form');
-    const expenseMonthFilter = document.getElementById('expense-month-filter');
-    const expenseTableBody = document.querySelector('#expense-table tbody');
-    const totalExpenseEl = document.getElementById('total-expense');
-
-    const populateExpenseDropdowns = () => {
-        const categorySelect = document.getElementById('expense-category');
-        const supplierSelect = document.getElementById('expense-supplier');
-        const paymentSelect = document.getElementById('expense-payment-account');
-        const populate = (select, data) => { const first = select.options[0]; select.innerHTML = ''; select.appendChild(first); data.forEach(item => select.appendChild(new Option(item.name, item.name))); };
-        populate(categorySelect, allExpenseCategories);
-        populate(supplierSelect, allSuppliers);
-        populate(paymentSelect, allPaymentAccounts);
-    };
-
-    const populateExpenseMonthFilter = () => {
-        const months = [...new Set(allExpenses.map(exp => { const d = new Date(exp.date.seconds * 1000); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }))].sort().reverse();
-        expenseMonthFilter.innerHTML = '<option value="all">All Months</option>';
-        months.forEach(monthYear => { const [year, month] = monthYear.split('-'); expenseMonthFilter.innerHTML += `<option value="${monthYear}">${new Date(year, month - 1, 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</option>`; });
-        expenseMonthFilter.value = currentExpenseMonthFilter || 'all';
-    };
-
-    const renderExpenses = () => {
-        let filtered = allExpenses;
-        if (currentExpenseMonthFilter && currentExpenseMonthFilter !== 'all') {
-            const [year, month] = currentExpenseMonthFilter.split('-').map(Number);
-            filtered = allExpenses.filter(exp => { const d = new Date(exp.date.seconds * 1000); return d.getFullYear() === year && d.getMonth() + 1 === month; });
-        }
-        expenseTableBody.innerHTML = filtered.length === 0 ? `<tr><td colspan="8" class="py-6 text-center text-gray-400">No expenses found.</td></tr>` : '';
-        filtered.forEach(exp => {
-            const row = expenseTableBody.insertRow();
-            row.className = 'bg-white border-b';
-            row.innerHTML = `<td class="px-6 py-4">${new Date(exp.date.seconds * 1000).toLocaleDateString()}</td><td class="px-6 py-4">${exp.name}</td><td class="px-6 py-4">${exp.category || ''}</td><td class="px-6 py-4">${exp.supplier || ''}</td><td class="px-6 py-4">${exp.paymentAccount || ''}</td><td class="px-6 py-4">${exp.attachmentURL ? `<a href="${exp.attachmentURL}" target="_blank" class="text-blue-500 hover:underline">View</a>` : 'N/A'}</td><td class="px-6 py-4 text-right">$${exp.amount.toFixed(2)}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${exp.id}" class="edit-expense-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${exp.id}" class="delete-expense-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
-        });
-        totalExpenseEl.textContent = `$${filtered.reduce((sum, exp) => sum + exp.amount, 0).toFixed(2)}`;
-    };
-
-    expenseMonthFilter.addEventListener('change', (e) => { currentExpenseMonthFilter = e.target.value; renderExpenses(); });
-
-    addExpenseForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const expenseId = document.getElementById('edit-expense-id').value;
-        const file = document.getElementById('expense-attachment').files[0];
-        let attachmentURL = document.getElementById('current-attachment-info').dataset.url || null;
-        if (file) {
-            const storageRef = ref(storage, `expenses/${Date.now()}_${file.name}`);
-            await uploadBytes(storageRef, file);
-            attachmentURL = await getDownloadURL(storageRef);
-        }
-        const expenseData = {
-            name: document.getElementById('expense-name').value, amount: parseFloat(document.getElementById('expense-amount').value), date: Timestamp.fromDate(new Date(document.getElementById('expense-date').value + 'T12:00:00')),
-            category: document.getElementById('expense-category').value, supplier: document.getElementById('expense-supplier').value, paymentAccount: document.getElementById('expense-payment-account').value, attachmentURL
-        };
-        try {
-            if (expenseId) { await updateDoc(doc(db, "expenses", expenseId), expenseData); } 
-            else { await addDoc(collection(db, "expenses"), expenseData); }
-            resetExpenseForm();
-        } catch (error) { console.error("Error saving expense:", error); alert("Could not save expense."); }
-    });
-
-    const resetExpenseForm = () => { addExpenseForm.reset(); document.getElementById('edit-expense-id').value = ''; document.getElementById('expense-date').value = getLocalDateString(); document.getElementById('add-expense-btn').textContent = 'Add Expense'; document.getElementById('cancel-edit-expense-btn').classList.add('hidden'); document.getElementById('current-attachment-info').textContent = ''; document.getElementById('current-attachment-info').dataset.url = ''; };
-    document.getElementById('cancel-edit-expense-btn').addEventListener('click', resetExpenseForm);
-
-    expenseTableBody.addEventListener('click', (e) => {
-        const deleteBtn = e.target.closest('.delete-expense-btn');
-        const editBtn = e.target.closest('.edit-expense-btn');
-        if (deleteBtn) { showConfirmModal("Delete this expense?", async () => { await deleteDoc(doc(db, "expenses", deleteBtn.dataset.id)); }); } 
-        else if (editBtn) {
-            const expense = allExpenses.find(exp => exp.id === editBtn.dataset.id);
-            if (expense) {
-                document.getElementById('edit-expense-id').value = expense.id;
-                document.getElementById('expense-name').value = expense.name;
-                document.getElementById('expense-amount').value = expense.amount;
-                document.getElementById('expense-date').value = new Date(expense.date.seconds * 1000).toISOString().split('T')[0];
-                document.getElementById('expense-category').value = expense.category || '';
-                document.getElementById('expense-supplier').value = expense.supplier || '';
-                document.getElementById('expense-payment-account').value = expense.paymentAccount || '';
-                const attachmentInfo = document.getElementById('current-attachment-info');
-                attachmentInfo.textContent = expense.attachmentURL ? 'Current attachment exists.' : '';
-                attachmentInfo.dataset.url = expense.attachmentURL || '';
-                document.getElementById('add-expense-btn').textContent = 'Update Expense';
-                document.getElementById('cancel-edit-expense-btn').classList.remove('hidden');
-            }
-        }
-    });
-
-    // --- Service Management ---
-    const serviceCategoriesAdminContainer = document.getElementById('service-categories-admin');
-    const addCategoryForm = document.getElementById('add-category-form');
-    const addServiceForm = document.getElementById('add-service-form');
-    const editServiceSection = document.getElementById('edit-service-section');
-    const renderServiceAdmin = (services) => {
-        serviceCategoriesAdminContainer.innerHTML = '';
-        Object.entries(services).forEach(([categoryName, items]) => {
-            const categoryDiv = document.createElement('div');
-            categoryDiv.className = 'p-3 border rounded-lg';
-            categoryDiv.innerHTML = `<div class="flex justify-between items-center mb-2"><h4 class="font-bold">${categoryName}</h4><div><button class="add-service-to-category-btn text-green-500 mr-2" data-category="${categoryName}"><i class="fas fa-plus-circle"></i></button><button class="edit-category-btn text-blue-500 mr-2" data-category="${categoryName}"><i class="fas fa-edit"></i></button><button class="delete-category-btn text-red-500" data-category="${categoryName}"><i class="fas fa-trash"></i></button></div></div><ul class="service-list space-y-1 pl-4">${items.map((item, index) => `<li class="flex justify-between items-center text-sm"><span>${item.name} - ${item.price}</span><div><button class="edit-service-btn text-blue-500 mr-2" data-category="${categoryName}" data-index="${index}"><i class="fas fa-edit"></i></button><button class="delete-service-btn text-red-500" data-category="${categoryName}" data-index="${index}"><i class="fas fa-times-circle"></i></button></div></li>`).join('')}</ul>`;
-            serviceCategoriesAdminContainer.appendChild(categoryDiv);
-        });
-    };
-    onSnapshot(collection(db, "services"), (snapshot) => { servicesData = {}; snapshot.forEach(doc => { servicesData[doc.id] = doc.data().items; }); renderServiceAdmin(servicesData); renderCheckInServices(); });
-    addCategoryForm.addEventListener('submit', async (e) => { e.preventDefault(); const categoryName = document.getElementById('new-category-name').value; if (categoryName) { await setDoc(doc(db, "services", categoryName), { items: [] }); addCategoryForm.reset(); } });
-    serviceCategoriesAdminContainer.addEventListener('click', async (e) => {
-        const delCatBtn = e.target.closest('.delete-category-btn'), editCatBtn = e.target.closest('.edit-category-btn'), addSvcBtn = e.target.closest('.add-service-to-category-btn'), editSvcBtn = e.target.closest('.edit-service-btn'), delSvcBtn = e.target.closest('.delete-service-btn');
-        if (delCatBtn) { showConfirmModal(`Delete category "${delCatBtn.dataset.category}"?`, async () => { await deleteDoc(doc(db, "services", delCatBtn.dataset.category)); }); }
-        if (editCatBtn) { const oldName = editCatBtn.dataset.category; const newName = prompt("New category name:", oldName); if (newName && newName !== oldName) { const docSnap = await getDoc(doc(db, "services", oldName)); if (docSnap.exists()) { await setDoc(doc(db, "services", newName), docSnap.data()); await deleteDoc(doc(db, "services", oldName)); } } }
-        if (addSvcBtn) { addServiceForm.reset(); document.getElementById('edit-category-id').value = addSvcBtn.dataset.category; document.getElementById('edit-service-index').value = ''; document.getElementById('edit-service-title').textContent = `Add Service to ${addSvcBtn.dataset.category}`; editServiceSection.classList.remove('hidden'); }
-        if (editSvcBtn) { const category = editSvcBtn.dataset.category, index = editSvcBtn.dataset.index, service = servicesData[category][index]; addServiceForm.reset(); document.getElementById('edit-category-id').value = category; document.getElementById('edit-service-index').value = index; document.getElementById('service-prefix').value = service.p || ''; document.getElementById('service-name').value = service.name; document.getElementById('service-price').value = service.price; document.getElementById('edit-service-title').textContent = `Edit Service in ${category}`; editServiceSection.classList.remove('hidden'); }
-        if (delSvcBtn) { const category = delSvcBtn.dataset.category, index = parseInt(delSvcBtn.dataset.index, 10); showConfirmModal('Delete this service?', async () => { const updatedItems = [...servicesData[category]]; updatedItems.splice(index, 1); await updateDoc(doc(db, "services", category), { items: updatedItems }); }); }
-    });
-    addServiceForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const category = document.getElementById('edit-category-id').value, index = document.getElementById('edit-service-index').value;
-        const newService = { p: document.getElementById('service-prefix').value, name: document.getElementById('service-name').value, price: document.getElementById('service-price').value };
-        const updatedItems = [...servicesData[category]];
-        if (index !== '') { updatedItems[parseInt(index, 10)] = newService; } else { updatedItems.push(newService); }
-        await updateDoc(doc(db, "services", category), { items: updatedItems });
-        addServiceForm.reset(); editServiceSection.classList.add('hidden');
-    });
-
-    // --- NAIL IDEAS & SHARING LOGIC ---
-    const nailsIdeaGallery = document.getElementById('nails-idea-gallery');
-    const addNailIdeaForm = document.getElementById('add-nail-idea-form');
-    const nailIdeasTableBody = document.querySelector('#nail-ideas-table tbody');
-
-    const openShareModal = (idea) => {
-        const salonUrl = "http://www.nailsxpressky.com";
-        const shareText = `Check out this amazing nail design: ${idea.name}!`;
-        document.getElementById('share-facebook').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(salonUrl)}`;
-        document.getElementById('share-pinterest').href = `http://pinterest.com/pin/create/button/?url=${encodeURIComponent(salonUrl)}&media=${encodeURIComponent(idea.imageURL)}&description=${encodeURIComponent(shareText)}`;
-        document.getElementById('share-twitter').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(salonUrl)}`;
-        document.getElementById('share-copy-link').onclick = () => {
-            navigator.clipboard.writeText(salonUrl).then(() => alert('Link copied to clipboard!'));
-        };
-        shareModal.classList.remove('hidden');
-        shareModal.classList.add('flex');
-    };
-
-    const closeShareModal = () => {
-        shareModal.classList.add('hidden');
-        shareModal.classList.remove('flex');
-    };
-    document.getElementById('share-close-btn').addEventListener('click', closeShareModal);
-    document.querySelector('.share-modal-overlay').addEventListener('click', closeShareModal);
-    
-    const galleryClickHandler = (e) => {
-        const shareBtn = e.target.closest('.share-nail-idea-btn');
-        if (shareBtn) {
-            const ideaId = shareBtn.dataset.id;
-            const idea = allNailIdeas.find(i => i.id === ideaId);
-            if (idea) {
-                openShareModal(idea);
-            }
-        }
-    };
-    
-    document.getElementById('nails-idea-gallery').addEventListener('click', galleryClickHandler);
-    document.getElementById('nails-idea-landing').addEventListener('click', galleryClickHandler);
-
-
-    const renderNailIdeasGallery = (ideas) => {
-        const landingGallery = document.querySelector('#nails-idea-landing .columns-2');
-        const appGallery = document.getElementById('nails-idea-gallery');
-        
-        const renderTo = (container, isLanding) => {
-            container.innerHTML = '';
-            if (ideas.length === 0) {
-                container.innerHTML = '<p class="text-gray-500 col-span-full text-center">No nail ideas found. Check back later!</p>';
-                return;
-            }
-            const ideasToRender = isLanding ? ideas.slice(0, 8) : ideas;
-            ideasToRender.forEach(idea => {
-                const ideaEl = document.createElement('div');
-                ideaEl.className = 'break-inside-avoid mb-4 relative gallery-item';
-                ideaEl.innerHTML = `
-                    <img class="w-full rounded-lg shadow-md" src="${idea.imageURL}" alt="${idea.name}">
-                    <div class="overlay absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center rounded-lg">
-                        <button data-id="${idea.id}" class="share-nail-idea-btn text-white text-3xl"><i class="fas fa-share-alt"></i></button>
-                    </div>
-                    ${!isLanding ? `<div class="p-2">
-                        <h5 class="font-bold text-sm">${idea.name}</h5>
-                        <p class="text-xs text-gray-600">${idea.categories.join(', ')}</p>
-                    </div>` : ''}
-                `;
-                container.appendChild(ideaEl);
-            });
-        };
-
-        renderTo(landingGallery, true);
-        renderTo(appGallery, false);
-    };
-
-    const renderNailIdeasAdminTable = (ideas) => {
-        nailIdeasTableBody.innerHTML = '';
-        ideas.forEach(idea => {
-            const row = nailIdeasTableBody.insertRow();
-            row.innerHTML = `
-                <td class="px-6 py-4"><img src="${idea.imageURL}" alt="${idea.name}" class="w-16 h-16 object-cover rounded"></td>
-                <td class="px-6 py-4">${idea.name}</td>
-                <td class="px-6 py-4">${idea.shape}</td>
-                <td class="px-6 py-4">${idea.categories.join(', ')}</td>
-                <td class="px-6 py-4 text-center space-x-2">
-                    <button data-id="${idea.id}" class="edit-nail-idea-btn text-blue-500"><i class="fas fa-edit"></i></button>
-                    <button data-id="${idea.id}" class="delete-nail-idea-btn text-red-500"><i class="fas fa-trash"></i></button>
-                </td>
-            `;
-        });
-    };
-
-    const applyNailIdeaFilters = () => {
-        const searchTerm = document.getElementById('nail-idea-search').value.toLowerCase();
-        const shapeFilter = document.getElementById('nail-idea-shape-filter').value;
-        const categoryFilter = document.getElementById('nail-idea-category-filter').value;
-
-        const filteredIdeas = allNailIdeas.filter(idea => {
-            const matchesSearch = idea.name.toLowerCase().includes(searchTerm) || idea.categories.some(cat => cat.toLowerCase().includes(searchTerm));
-            const matchesShape = !shapeFilter || idea.shape === shapeFilter;
-            const matchesCategory = !categoryFilter || idea.categories.includes(categoryFilter);
-            return matchesSearch && matchesShape && matchesCategory;
-        });
-        renderNailIdeasGallery(filteredIdeas);
-    };
-
-    onSnapshot(query(collection(db, "nail_ideas"), orderBy("createdAt", "desc")), (snapshot) => {
-        allNailIdeas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        // Populate filters
-        const shapes = [...new Set(allNailIdeas.map(i => i.shape).filter(Boolean))];
-        const categories = [...new Set(allNailIdeas.flatMap(i => i.categories).filter(Boolean))];
-        const shapeFilter = document.getElementById('nail-idea-shape-filter');
-        const categoryFilter = document.getElementById('nail-idea-category-filter');
-        shapeFilter.innerHTML = '<option value="">All Shapes</option>' + shapes.map(s => `<option value="${s}">${s}</option>`).join('');
-        categoryFilter.innerHTML = '<option value="">All Categories</option>' + categories.map(c => `<option value="${c}">${c}</option>`).join('');
-
-        // Render views
-        applyNailIdeaFilters(); // For the public gallery
-        renderNailIdeasAdminTable(allNailIdeas); // For the admin table
-    });
-
-    document.getElementById('nail-idea-search').addEventListener('input', applyNailIdeaFilters);
-    document.getElementById('nail-idea-shape-filter').addEventListener('change', applyNailIdeaFilters);
-    document.getElementById('nail-idea-category-filter').addEventListener('change', applyNailIdeaFilters);
-
-    addNailIdeaForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const ideaId = document.getElementById('edit-nail-idea-id').value;
-        const file = document.getElementById('nail-idea-image').files[0];
-
-        if (!ideaId && !file) {
-            alert('Please select an image to upload.');
-            return;
-        }
-
-        const btn = document.getElementById('add-nail-idea-btn');
-        btn.disabled = true;
-        btn.textContent = 'Saving...';
-
-        try {
-            let imageURL = null;
-            if (file) {
-                const storageRef = ref(storage, `nail_ideas/${Date.now()}_${file.name}`);
-                await uploadBytes(storageRef, file);
-                imageURL = await getDownloadURL(storageRef);
-            }
-
-            const ideaData = {
-                name: document.getElementById('nail-idea-name').value,
-                color: document.getElementById('nail-idea-color').value,
-                shape: document.getElementById('nail-idea-shape').value,
-                categories: document.getElementById('nail-idea-categories').value.split(',').map(s => s.trim()).filter(Boolean),
-            };
-
-            if (ideaId) { // Update existing
-                const existingIdea = allNailIdeas.find(i => i.id === ideaId);
-                if (imageURL) {
-                    ideaData.imageURL = imageURL;
-                    // Optional: Delete old image from storage if it exists
-                    if (existingIdea.imageURL) {
-                        try {
-                            const oldImageRef = ref(storage, existingIdea.imageURL);
-                            await deleteObject(oldImageRef);
-                        } catch (storageError) {
-                            console.warn("Could not delete old image, it might not exist:", storageError);
-                        }
-                    }
-                }
-                await updateDoc(doc(db, "nail_ideas", ideaId), ideaData);
-            } else { // Create new
-                ideaData.imageURL = imageURL;
-                ideaData.createdAt = serverTimestamp();
-                await addDoc(collection(db, "nail_ideas"), ideaData);
-            }
-            resetNailIdeaForm();
-        } catch (error) {
-            console.error("Error saving nail idea:", error);
-            alert("Could not save nail idea.");
-        } finally {
-            btn.disabled = false;
-            btn.textContent = 'Add Idea';
-        }
-    });
-
-    const resetNailIdeaForm = () => {
-        addNailIdeaForm.reset();
-        document.getElementById('edit-nail-idea-id').value = '';
-        document.getElementById('add-nail-idea-btn').textContent = 'Add Idea';
-        document.getElementById('cancel-edit-nail-idea-btn').classList.add('hidden');
-    };
-    document.getElementById('cancel-edit-nail-idea-btn').addEventListener('click', resetNailIdeaForm);
-
-    nailIdeasTableBody.addEventListener('click', (e) => {
-        const editBtn = e.target.closest('.edit-nail-idea-btn');
-        const deleteBtn = e.target.closest('.delete-nail-idea-btn');
-
-        if (editBtn) {
-            const idea = allNailIdeas.find(i => i.id === editBtn.dataset.id);
-            if (idea) {
-                document.getElementById('edit-nail-idea-id').value = idea.id;
-                document.getElementById('nail-idea-name').value = idea.name;
-                document.getElementById('nail-idea-color').value = idea.color;
-                document.getElementById('nail-idea-shape').value = idea.shape;
-                document.getElementById('nail-idea-categories').value = idea.categories.join(', ');
-                document.getElementById('add-nail-idea-btn').textContent = 'Update Idea';
-                document.getElementById('cancel-edit-nail-idea-btn').classList.remove('hidden');
-            }
-        } else if (deleteBtn) {
-            const ideaId = deleteBtn.dataset.id;
-            showConfirmModal("Delete this nail idea? This will also delete the image.", async () => {
-                const ideaToDelete = allNailIdeas.find(i => i.id === ideaId);
-                if (ideaToDelete.imageURL) {
-                    const imageRef = ref(storage, ideaToDelete.imageURL);
-                    await deleteObject(imageRef).catch(err => console.error("Error deleting image from storage", err));
-                }
-                await deleteDoc(doc(db, "nail_ideas", ideaId));
-            });
-        }
-    });
-
-    // --- Gift Card Management ---
-    const giftCardsTableBody = document.querySelector('#gift-cards-table tbody');
-
-    const renderGiftCardsAdminTable = (cards) => {
-        giftCardsTableBody.innerHTML = '';
-        if (cards.length === 0) {
-            giftCardsTableBody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-gray-400">No gift cards have been sold.</td></tr>`;
-            return;
-        }
-        cards.forEach(card => {
-            const row = giftCardsTableBody.insertRow();
-            const statusColor = card.status === 'Active' ? 'text-green-600' : 'text-gray-500';
-            row.innerHTML = `
-                <td class="px-6 py-4">${new Date(card.createdAt.seconds * 1000).toLocaleDateString()}</td>
-                <td class="px-6 py-4 font-mono text-xs">${card.code}</td>
-                <td class="px-6 py-4">$${card.amount.toFixed(2)}</td>
-                <td class="px-6 py-4">${card.recipientName}<br><span class="text-xs text-gray-500">${card.recipientEmail}</span></td>
-                <td class="px-6 py-4">${card.senderName}</td>
-                <td class="px-6 py-4 font-bold ${statusColor}">${card.status}</td>
-            `;
-        });
-    };
-
-    onSnapshot(query(collection(db, "gift_cards"), orderBy("createdAt", "desc")), (snapshot) => {
-        allGiftCards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        renderGiftCardsAdminTable(allGiftCards);
-    });
-
-    // --- Promotions Management ---
-    const addPromotionForm = document.getElementById('add-promotion-form');
-    const promotionsTableBody = document.querySelector('#promotions-table tbody');
-    const promotionsContainerLanding = document.getElementById('promotions-container-landing');
-    
-    const renderPromotionsAdminTable = (promotions) => {
-        promotionsTableBody.innerHTML = '';
-        const now = new Date();
-        promotions.forEach(promo => {
-            const startDate = promo.startDate.toDate();
-            const endDate = promo.endDate.toDate();
-            let status, statusColor;
-
-            if (now < startDate) {
-                status = 'Scheduled';
-                statusColor = 'text-blue-600';
-            } else if (now > endDate) {
-                status = 'Expired';
-                statusColor = 'text-gray-500';
-            } else {
-                status = 'Active';
-                statusColor = 'text-green-600';
-            }
-
-            const row = promotionsTableBody.insertRow();
-            row.innerHTML = `
-                <td class="px-6 py-4">${promo.title}</td>
-                <td class="px-6 py-4">${promo.description}</td>
-                <td class="px-6 py-4">${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}</td>
-                <td class="px-6 py-4 font-bold ${statusColor}">${status}</td>
-                <td class="px-6 py-4 text-center space-x-2">
-                    <button data-id="${promo.id}" class="send-promo-notification-btn text-purple-500" title="Send Notification"><i class="fas fa-paper-plane"></i></button>
-                    <button data-id="${promo.id}" class="edit-promotion-btn text-blue-500"><i class="fas fa-edit"></i></button>
-                    <button data-id="${promo.id}" class="delete-promotion-btn text-red-500"><i class="fas fa-trash"></i></button>
-                </td>
-            `;
-        });
-    };
-
-    const renderPromotionsLanding = (promotions) => {
-        promotionsContainerLanding.innerHTML = '';
-        const now = new Date();
-        const activePromos = promotions.filter(promo => {
-            const startDate = promo.startDate.toDate();
-            const endDate = promo.endDate.toDate();
-            return now >= startDate && now <= endDate;
-        });
-
-        if (activePromos.length === 0) {
-            promotionsContainerLanding.innerHTML = '<p class="text-gray-600 col-span-full text-center">No active promotions right now. Check back soon!</p>';
-            return;
-        }
-
-        activePromos.forEach(promo => {
-            const promoEl = document.createElement('div');
-            promoEl.className = 'bg-white p-6 rounded-lg shadow-md text-center';
-            promoEl.innerHTML = `
-                <h3 class="text-xl font-bold text-pink-700 mb-2">${promo.title}</h3>
-                <p class="text-gray-600">${promo.description}</p>
-            `;
-            promotionsContainerLanding.appendChild(promoEl);
-        });
-    };
-
-    onSnapshot(query(collection(db, "promotions"), orderBy("startDate", "desc")), (snapshot) => {
-        allPromotions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        renderPromotionsAdminTable(allPromotions);
-        renderPromotionsLanding(allPromotions);
-    });
-
-    addPromotionForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const promoId = document.getElementById('edit-promotion-id').value;
-        const promoData = {
-            title: document.getElementById('promotion-title').value,
-            description: document.getElementById('promotion-description').value,
-            startDate: Timestamp.fromDate(new Date(document.getElementById('promotion-start-date').value + 'T00:00:00')),
-            endDate: Timestamp.fromDate(new Date(document.getElementById('promotion-end-date').value + 'T23:59:59')),
-        };
-
-        try {
-            if (promoId) {
-                await updateDoc(doc(db, "promotions", promoId), promoData);
-            } else {
-                promoData.createdAt = serverTimestamp();
-                await addDoc(collection(db, "promotions"), promoData);
-            }
-            addPromotionForm.reset();
-            document.getElementById('edit-promotion-id').value = '';
-        } catch (error) {
-            console.error("Error saving promotion:", error);
-            alert("Could not save promotion.");
-        }
-    });
-
-    promotionsTableBody.addEventListener('click', (e) => {
-        const editBtn = e.target.closest('.edit-promotion-btn');
-        const deleteBtn = e.target.closest('.delete-promotion-btn');
-        const sendBtn = e.target.closest('.send-promo-notification-btn');
-
-        if (editBtn) {
-            const promo = allPromotions.find(p => p.id === editBtn.dataset.id);
-            if (promo) {
-                document.getElementById('edit-promotion-id').value = promo.id;
-                document.getElementById('promotion-title').value = promo.title;
-                document.getElementById('promotion-description').value = promo.description;
-                document.getElementById('promotion-start-date').value = promo.startDate.toDate().toISOString().split('T')[0];
-                document.getElementById('promotion-end-date').value = promo.endDate.toDate().toISOString().split('T')[0];
-                document.getElementById('add-promotion-btn').textContent = 'Update Promotion';
-                document.getElementById('cancel-edit-promotion-btn').classList.remove('hidden');
-            }
-        } else if (deleteBtn) {
-            showConfirmModal("Are you sure you want to delete this promotion?", async () => {
-                await deleteDoc(doc(db, "promotions", deleteBtn.dataset.id));
-            });
-        } else if (sendBtn) {
-            const promo = allPromotions.find(p => p.id === sendBtn.dataset.id);
-            if (promo) {
-                 showConfirmModal(`Send a notification for "${promo.title}" to all clients?`, () => {
-                    // This is a simulation. A real push notification system (like FCM) would be needed here.
-                    addNotification('promo', `New Promotion: ${promo.title}! ${promo.description}`);
-                    alert('Promotion notification sent!');
-                });
-            }
-        }
-    });
-
-    document.getElementById('cancel-edit-promotion-btn').addEventListener('click', () => {
-        addPromotionForm.reset();
-        document.getElementById('edit-promotion-id').value = '';
-        document.getElementById('add-promotion-btn').textContent = 'Add Promotion';
-        document.getElementById('cancel-edit-promotion-btn').classList.add('hidden');
-    });
-
-    // --- CLIENT FORM MODAL LOGIC ---
-    const openClientModal = (client = null) => {
-        clientForm.reset();
-        const modalTitle = document.getElementById('client-form-title');
-        if (client) {
-            modalTitle.textContent = 'Edit Client Information';
-            document.getElementById('edit-client-id').value = client.id;
-            document.getElementById('client-form-name').value = client.name;
-            document.getElementById('client-form-phone').value = client.phone || '';
-            document.getElementById('client-form-dob').value = client.dob || '';
-        } else {
-            modalTitle.textContent = 'Create New Client';
-            document.getElementById('edit-client-id').value = '';
-        }
-        clientFormModal.classList.remove('hidden');
-        clientFormModal.classList.add('flex');
-    };
-
-    const closeClientModal = () => {
-        clientFormModal.classList.add('hidden');
-        clientFormModal.classList.remove('flex');
-    };
-
-    document.getElementById('create-new-client-btn').addEventListener('click', () => openClientModal());
-    document.getElementById('client-form-cancel-btn').addEventListener('click', closeClientModal);
-    document.querySelector('.client-form-modal-overlay').addEventListener('click', closeClientModal);
-
-    clientForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const clientId = document.getElementById('edit-client-id').value;
-        const clientData = {
-            name: document.getElementById('client-form-name').value,
-            phone: document.getElementById('client-form-phone').value,
-            dob: document.getElementById('client-form-dob').value,
-        };
-
-        if (!clientData.name) {
-            alert('Client name is required.');
-            return;
-        }
-
-        try {
-            if (clientId) {
-                await updateDoc(doc(db, "clients", clientId), clientData);
-            } else {
-                await addDoc(collection(db, "clients"), clientData);
-            }
-            closeClientModal();
-        } catch (error) {
-            console.error("Error saving client:", error);
-            alert("Could not save client data.");
-        }
-    });
-
-    // --- CLIENT IMPORT LOGIC ---
-    const importClientsBtn = document.getElementById('import-clients-btn');
-    const importClientsInput = document.getElementById('import-clients-input');
-
-    importClientsBtn.addEventListener('click', () => importClientsInput.click());
-
-    importClientsInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = async (event) => {
-            const data = new Uint8Array(event.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            const clientsToImport = XLSX.utils.sheet_to_json(firstSheet);
-
-            if (clientsToImport.length === 0) {
-                alert('No clients found in the file.');
-                return;
-            }
-
-            const batch = writeBatch(db);
-            clientsToImport.forEach(client => {
-                const newClientRef = doc(collection(db, "clients"));
-                batch.set(newClientRef, {
-                    name: client.Name || 'N/A',
-                    phone: client.Phone || '',
-                    dob: client.DOB || ''
-                });
-            });
-
-            try {
-                await batch.commit();
-                alert(`${clientsToImport.length} clients imported successfully!`);
-            } catch (error) {
-                console.error("Error importing clients: ", error);
-                alert("An error occurred during import.");
-            }
-        };
-        reader.readAsArrayBuffer(file);
-        e.target.value = ''; // Reset file input
-    });
-
-
-    // --- INITIALIZATION ---
     loadAndRenderServices();
     const todayString = getLocalDateString();
     const currentMonthIndex = new Date().getMonth();
@@ -3221,3 +1913,4 @@ function initMainApp(userRole) {
     document.getElementById('expense-date').value = todayString;
     document.getElementById('sign-out-btn').addEventListener('click', () => { signOut(auth); });
 }
+

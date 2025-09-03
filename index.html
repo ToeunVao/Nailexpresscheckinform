@@ -48,7 +48,7 @@
       animation: ring 1s ease-in-out;
     }
   </style>
-</head>
+</head>o
 <body class="bg-gray-100">
 
     <!-- Loading Screen (Visible initially) -->
@@ -343,7 +343,7 @@
         </div>
     </div>
 
-    <!-- Client Dashboard Content (Hidden initially) -->
+    <!-- NEW: Client Dashboard Content (Hidden initially) -->
     <div id="client-dashboard-content" style="display: none;">
         <header class="bg-white shadow-md">
             <div class="container mx-auto max-w-5xl p-4 flex justify-between items-center">
@@ -1234,223 +1234,222 @@
         <button id="floating-booking-btn" class="fixed bottom-6 right-6 bg-pink-600 text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center text-2xl hover:bg-pink-700 transition-colors z-40">
             <i class="fas fa-plus"></i>
         </button>
-    </div>
 
-    <!-- ========= MODALS (Moved to top level) ========= -->
-    <div id="service-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
-        <div class="absolute inset-0 bg-black opacity-50 modal-overlay"></div>
-        <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
-            <h3 id="modal-title" class="text-2xl font-bold text-pink-700 mb-4">Select Services</h3>
-            <div id="modal-content" class="space-y-3 max-h-96 overflow-y-auto"></div>
-            <div class="mt-6 text-right">
-                <button id="modal-done-btn" type="button" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Done</button>
+        <div id="service-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+            <div class="absolute inset-0 bg-black opacity-50 modal-overlay"></div>
+            <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
+                <h3 id="modal-title" class="text-2xl font-bold text-pink-700 mb-4">Select Services</h3>
+                <div id="modal-content" class="space-y-3 max-h-96 overflow-y-auto"></div>
+                <div class="mt-6 text-right">
+                    <button id="modal-done-btn" type="button" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Done</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div id="checkout-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
-        <div class="absolute inset-0 bg-black opacity-50 checkout-modal-overlay"></div>
-        <form id="checkout-form" class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
-            <h3 class="text-2xl font-bold text-pink-700 mb-6">Client Feedback</h3>
-            <input type="hidden" id="checkout-client-id">
-            <div class="space-y-4">
-                 <div>
-                    <label for="color-code" class="block text-sm font-medium text-gray-600">What color code did you choose today?</label>
-                    <input type="text" id="color-code" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg">
+        <div id="checkout-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+            <div class="absolute inset-0 bg-black opacity-50 checkout-modal-overlay"></div>
+            <form id="checkout-form" class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
+                <h3 class="text-2xl font-bold text-pink-700 mb-6">Client Feedback</h3>
+                <input type="hidden" id="checkout-client-id">
+                <div class="space-y-4">
+                     <div>
+                        <label for="color-code" class="block text-sm font-medium text-gray-600">What color code did you choose today?</label>
+                        <input type="text" id="color-code" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg">
+                    </div>
+                     <div>
+                        <label for="technician-name-select" class="block text-sm font-medium text-gray-600">Who provided your service today?</label>
+                        <select id="technician-name-select" class="form-select w-full p-2 mt-1 border border-gray-300 rounded-lg">
+                            <option>Any Technician</option>
+                        </select>
+                         <input type="text" id="technician-name-other" class="form-input w-full p-2 mt-2 border border-gray-300 rounded-lg hidden" placeholder="Enter technician name">
+                    </div>
+                     <div>
+                        <label for="rebook-select" class="block text-sm font-medium text-gray-600">Next Appointment?</label>
+                        <select id="rebook-select" class="form-select w-full p-2 mt-1 border border-gray-300 rounded-lg">
+                            <option value="no">No, thanks</option>
+                            <option value="2w">2 Weeks</option>
+                            <option value="3w">3 Weeks</option>
+                            <option value="other">Pick date</option>
+                        </select>
+                        <input type="datetime-local" id="rebook-other-input" class="form-input w-full p-2 mt-2 border border-gray-300 rounded-lg hidden">
+                    </div>
                 </div>
-                 <div>
-                    <label for="technician-name-select" class="block text-sm font-medium text-gray-600">Who provided your service today?</label>
-                    <select id="technician-name-select" class="form-select w-full p-2 mt-1 border border-gray-300 rounded-lg">
-                        <option>Any Technician</option>
-                    </select>
-                     <input type="text" id="technician-name-other" class="form-input w-full p-2 mt-2 border border-gray-300 rounded-lg hidden" placeholder="Enter technician name">
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" id="checkout-cancel-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Cancel</button>
+                    <button type="submit" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Submit & Check Out</button>
                 </div>
-                 <div>
-                    <label for="rebook-select" class="block text-sm font-medium text-gray-600">Next Appointment?</label>
-                    <select id="rebook-select" class="form-select w-full p-2 mt-1 border border-gray-300 rounded-lg">
-                        <option value="no">No, thanks</option>
-                        <option value="2w">2 Weeks</option>
-                        <option value="3w">3 Weeks</option>
-                        <option value="other">Pick date</option>
-                    </select>
-                    <input type="datetime-local" id="rebook-other-input" class="form-input w-full p-2 mt-2 border border-gray-300 rounded-lg hidden">
-                </div>
-            </div>
-            <div class="mt-6 flex justify-end gap-3">
-                <button type="button" id="checkout-cancel-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Cancel</button>
-                <button type="submit" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Submit & Check Out</button>
-            </div>
-        </form>
-    </div>
+            </form>
+        </div>
 
-    <div id="view-detail-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
-        <div class="absolute inset-0 bg-black opacity-50 view-detail-modal-overlay"></div>
-        <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
-            <h3 id="view-detail-title" class="text-2xl font-bold text-pink-700 mb-6"></h3>
-            <div id="view-detail-content" class="space-y-4"></div>
-            <div id="view-detail-actions" class="mt-6 flex justify-end gap-3">
-                <button type="button" id="view-detail-close-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Close</button>
+        <div id="view-detail-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+            <div class="absolute inset-0 bg-black opacity-50 view-detail-modal-overlay"></div>
+            <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
+                <h3 id="view-detail-title" class="text-2xl font-bold text-pink-700 mb-6"></h3>
+                <div id="view-detail-content" class="space-y-4"></div>
+                <div id="view-detail-actions" class="mt-6 flex justify-end gap-3">
+                    <button type="button" id="view-detail-close-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Close</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div id="policy-modal" class="fixed inset-0 z-[70] hidden items-center justify-center">
-        <div class="absolute inset-0 bg-black opacity-50 policy-modal-overlay"></div>
-        <div class="relative bg-white w-full max-w-2xl p-6 rounded-2xl shadow-xl m-4">
-            <h3 class="text-2xl font-bold text-pink-700 mb-6">Salon Policy</h3>
-            <div class="prose max-w-none max-h-96 overflow-y-auto text-gray-600">
-                <p>To ensure a pleasant experience for all our clients, we kindly request your observance of the following policies:</p>
-                <h4>1. Appointments</h4><p>We encourage booking appointments in advance via phone or our online system to secure your preferred time and technician. Walk-ins are welcome but are subject to availability.</p>
-                <h4>2. Cancellations & No-Shows</h4><p>We understand that schedules can change. Please provide at least 24 hours' notice for any cancellations. Cancellations with less than 24 hours' notice or no-shows may be subject to a fee on your next visit.</p>
-                <h4>3. Late Arrivals</h4><p>To ensure our technicians have enough time to provide high-quality service, we may need to shorten your service or reschedule your appointment if you arrive more than 15 minutes late.</p>
-                <h4>4. Technician Requests</h4><p>You may request a specific technician when booking your appointment. We will do our best to accommodate your request, but we cannot guarantee availability.</p>
-                <h4>5. Pricing and Service Adjustments</h4><p>Prices for services are based on standard nail length and condition. Prices may be adjusted for extra-long nails, complex designs, or additional preparation work required. Your technician will consult with you before any price changes are made.</p>
-                <h4>6. Refunds & Service Guarantee</h4><p>We take pride in our work. If you are not satisfied with your service, please let us know before you leave the salon. We offer a 7-day guarantee for gel polish and acrylic services and will happily fix any issues within this period. We do not offer monetary refunds for services rendered.</p>
-                <h4>7. Right to Refuse Service</h4><p>For the safety and well-being of our clients and staff, we reserve the right to refuse service to anyone with a nail condition we suspect may be contagious, or for any behavior we deem inappropriate.</p>
-                <p>Thank you for your understanding and cooperation!</p>
-            </div>
-            <div class="mt-6 text-right"><button type="button" id="policy-close-btn" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Close</button></div>
-        </div>
-    </div>
-
-    <div id="add-appointment-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
-        <div class="absolute inset-0 bg-black opacity-50 add-appointment-modal-overlay"></div>
-        <form id="add-appointment-form" class="relative bg-white w-full max-w-2xl p-6 rounded-2xl shadow-xl m-4">
-            <h3 class="text-2xl font-bold text-pink-700 mb-6">Add New Appointment</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto pr-2">
-                <div><label for="appointment-client-name" class="block text-sm font-medium text-gray-600">Client Name</label><input type="text" id="appointment-client-name" list="client-names-list" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" required><datalist id="client-names-list"></datalist></div>
-                <div><label for="appointment-phone" class="block text-sm font-medium text-gray-600">Phone</label><input type="tel" id="appointment-phone" list="appointment-client-phones" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg"><datalist id="appointment-client-phones"></datalist></div>
-                <div><label for="appointment-people" class="block text-sm font-medium text-gray-600">Group Size</label><select id="appointment-people" class="form-select w-full p-2 mt-1 border border-gray-300 rounded-lg"></select></div>
-                <div><label for="appointment-booking-type" class="block text-sm font-medium text-gray-600">Booking Type</label><select id="appointment-booking-type" class="form-select w-full p-2 mt-1 border border-gray-300 rounded-lg"><option>Booked - Calendar</option><option value="Phone">Phone</option><option value="Online">Online</option></select></div>
-                <div><label for="appointment-services" class="block text-sm font-medium text-gray-600">Services</label><input type="text" id="appointment-services" list="main-services-list" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" placeholder="Select or type a service..."><datalist id="main-services-list"></datalist></div>
-                <div><label for="appointment-technician-select" class="block text-sm font-medium text-gray-600">Technician Request</label><select id="appointment-technician-select" class="form-select w-full p-2 mt-1 border border-gray-300 rounded-lg"><option>Any Technician</option></select></div>
-                <div class="md:col-span-2"><label for="appointment-datetime" class="block text-sm font-medium text-gray-600">Date & Time</label><input type="datetime-local" id="appointment-datetime" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" required></div>
-                <div class="md:col-span-2"><label for="appointment-notes" class="block text-sm font-medium text-gray-600">Notes</label><textarea id="appointment-notes" rows="2" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg"></textarea></div>
-            </div>
-            <div class="mt-8 text-center"><label class="flex items-center justify-center"><input type="checkbox" id="appointment-policy-agree" class="form-checkbox" checked required><span class="ml-2 text-sm text-gray-600">I agree to the <button type="button" class="text-pink-600 hover:underline font-semibold view-policy-btn">Salon Policy</button>.</span></label></div>
-            <div class="mt-6 flex justify-end gap-3"><button type="button" id="add-appointment-cancel-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Cancel</button><button type="submit" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Save Appointment</button></div>
-        </form>
-    </div>
-
-    <div id="edit-earning-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
-        <div class="absolute inset-0 bg-black opacity-50 edit-earning-modal-overlay"></div>
-        <form id="edit-earning-form" class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
-            <h3 class="text-2xl font-bold text-pink-700 mb-6">Edit Earning</h3><input type="hidden" id="edit-earning-id">
-            <div class="space-y-4">
-                <div><label for="edit-staff-earning-date" class="block text-sm font-medium text-gray-600 mb-1">Date</label><input type="date" id="edit-staff-earning-date" class="form-input w-full p-3 border border-gray-300 rounded-lg" required></div>
-                <div><label for="edit-staff-name" class="block text-sm font-medium text-gray-600 mb-1">Staff Name</label><select id="edit-staff-name" class="form-select w-full p-3 border border-gray-300 rounded-lg" required></select></div>
-                <div><label for="edit-staff-earning" class="block text-sm font-medium text-gray-600 mb-1">Earning</label><input type="number" step="0.01" id="edit-staff-earning" class="form-input w-full p-3 border border-gray-300 rounded-lg" required></div>
-                <div><label for="edit-staff-tip" class="block text-sm font-medium text-gray-600 mb-1">Tip</label><input type="number" step="0.01" id="edit-staff-tip" class="form-input w-full p-3 border border-gray-300 rounded-lg" required></div>
-            </div>
-            <div class="mt-6 flex justify-end gap-3"><button type="button" id="edit-earning-cancel-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Cancel</button><button type="submit" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Save Changes</button></div>
-        </form>
-    </div>
-
-    <div id="edit-salon-earning-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
-        <div class="absolute inset-0 bg-black opacity-50 edit-salon-earning-modal-overlay"></div>
-        <form id="edit-salon-earning-form" class="relative bg-white w-full max-w-4xl p-6 rounded-2xl shadow-xl m-4">
-            <h3 class="text-2xl font-bold text-pink-700 mb-6">Edit Salon Earning</h3><input type="hidden" id="edit-salon-earning-id">
-            <div class="space-y-6">
-                <div><label for="edit-salon-earning-date" class="block text-sm font-medium text-gray-600 mb-1">Date</label><input type="date" id="edit-salon-earning-date" class="form-input w-full p-3 border border-gray-300 rounded-lg" required></div>
-                <div id="edit-salon-earning-inputs" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end"></div>
-                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-                    <div><label for="edit-sell-gift-card" class="block text-sm font-medium text-gray-600">Sell Gift Card</label><input type="number" step="0.01" id="edit-sell-gift-card" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount"></div>
-                    <div><label for="edit-return-gift-card" class="block text-sm font-medium text-gray-600">Return Gift Card</label><input type="number" step="0.01" id="edit-return-gift-card" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount"></div>
-                    <div><label for="edit-check-payment" class="block text-sm font-medium text-gray-600">Check</label><input type="number" step="0.01" id="edit-check-payment" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount"></div>
-                    <div><label for="edit-no-of-credit" class="block text-sm font-medium text-gray-600">No. of Credit</label><input type="number" id="edit-no-of-credit" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Count"></div>
-                    <div><label for="edit-total-credit" class="block text-sm font-medium text-gray-600">Total Credit</label><input type="number" step="0.01" id="edit-total-credit" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount"></div>
-                    <div><label for="edit-venmo-payment" class="block text-sm font-medium text-gray-600">Venmo</label><input type="number" step="0.01" id="edit-venmo-payment" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount"></div>
-                    <div><label for="edit-square-payment" class="block text-sm font-medium text-gray-600">Square</label><input type="number" step="0.01" id="edit-square-payment" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount"></div>
+        <div id="policy-modal" class="fixed inset-0 z-[70] hidden items-center justify-center">
+            <div class="absolute inset-0 bg-black opacity-50 policy-modal-overlay"></div>
+            <div class="relative bg-white w-full max-w-2xl p-6 rounded-2xl shadow-xl m-4">
+                <h3 class="text-2xl font-bold text-pink-700 mb-6">Salon Policy</h3>
+                <div class="prose max-w-none max-h-96 overflow-y-auto text-gray-600">
+                    <p>To ensure a pleasant experience for all our clients, we kindly request your observance of the following policies:</p>
+                    <h4>1. Appointments</h4><p>We encourage booking appointments in advance via phone or our online system to secure your preferred time and technician. Walk-ins are welcome but are subject to availability.</p>
+                    <h4>2. Cancellations & No-Shows</h4><p>We understand that schedules can change. Please provide at least 24 hours' notice for any cancellations. Cancellations with less than 24 hours' notice or no-shows may be subject to a fee on your next visit.</p>
+                    <h4>3. Late Arrivals</h4><p>To ensure our technicians have enough time to provide high-quality service, we may need to shorten your service or reschedule your appointment if you arrive more than 15 minutes late.</p>
+                    <h4>4. Technician Requests</h4><p>You may request a specific technician when booking your appointment. We will do our best to accommodate your request, but we cannot guarantee availability.</p>
+                    <h4>5. Pricing and Service Adjustments</h4><p>Prices for services are based on standard nail length and condition. Prices may be adjusted for extra-long nails, complex designs, or additional preparation work required. Your technician will consult with you before any price changes are made.</p>
+                    <h4>6. Refunds & Service Guarantee</h4><p>We take pride in our work. If you are not satisfied with your service, please let us know before you leave the salon. We offer a 7-day guarantee for gel polish and acrylic services and will happily fix any issues within this period. We do not offer monetary refunds for services rendered.</p>
+                    <h4>7. Right to Refuse Service</h4><p>For the safety and well-being of our clients and staff, we reserve the right to refuse service to anyone with a nail condition we suspect may be contagious, or for any behavior we deem inappropriate.</p>
+                    <p>Thank you for your understanding and cooperation!</p>
                 </div>
-            </div>
-            <div class="mt-6 flex justify-end gap-3"><button type="button" id="edit-salon-earning-cancel-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Cancel</button><button type="submit" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Save Changes</button></div>
-        </form>
-    </div>
-
-    <div id="client-form-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
-        <div class="absolute inset-0 bg-black opacity-50 client-form-modal-overlay"></div>
-        <form id="client-form" class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
-            <h3 id="client-form-title" class="text-2xl font-bold text-pink-700 mb-6">Client Information</h3>
-            <input type="hidden" id="edit-client-id">
-            <div class="space-y-4">
-                <div>
-                    <label for="client-form-name" class="block text-sm font-medium text-gray-600 mb-1">Client Name</label>
-                    <input type="text" id="client-form-name" class="form-input w-full p-3 border border-gray-300 rounded-lg" required>
-                </div>
-                <div>
-                    <label for="client-form-phone" class="block text-sm font-medium text-gray-600 mb-1">Phone Number</label>
-                    <input type="tel" id="client-form-phone" class="form-input w-full p-3 border border-gray-300 rounded-lg">
-                </div>
-                <div>
-                    <label for="client-form-dob" class="block text-sm font-medium text-gray-600 mb-1">Date of Birth</label>
-                    <input type="date" id="client-form-dob" class="form-input w-full p-3 border border-gray-300 rounded-lg">
-                </div>
-            </div>
-            <div class="mt-6 flex justify-end gap-3">
-                <button type="button" id="client-form-cancel-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Cancel</button>
-                <button type="submit" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Save Client</button>
-            </div>
-        </form>
-    </div>
-    
-    <div id="gemini-sms-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
-        <div class="absolute inset-0 bg-black opacity-50 gemini-sms-modal-overlay"></div>
-        <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
-            <h3 class="text-2xl font-bold text-pink-700 mb-6">Generated SMS Message</h3>
-            <div id="gemini-sms-content" class="space-y-4"><textarea id="gemini-sms-textarea" rows="5" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" placeholder="Generating message..."></textarea></div>
-            <div class="mt-6 flex justify-end gap-3">
-                <a id="gemini-sms-send-link" href="#" target="_blank" class="bg-green-500 text-white font-semibold py-2 px-6 rounded-lg hover:bg-green-600"><i class="fas fa-paper-plane mr-2"></i>Open in Messages</a>
-                <button type="button" id="gemini-sms-close-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Close</button>
+                <div class="mt-6 text-right"><button type="button" id="policy-close-btn" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Close</button></div>
             </div>
         </div>
-    </div>
-    
-    <div id="confirm-modal" class="fixed inset-0 z-[70] hidden items-center justify-center">
-        <div class="absolute inset-0 bg-black opacity-50 confirm-modal-overlay"></div>
-        <div class="relative bg-white w-full max-w-sm p-6 rounded-2xl shadow-xl m-4">
-            <h3 class="text-lg font-bold text-gray-800 mb-4">Are you sure?</h3>
-            <p id="confirm-modal-message" class="text-gray-600 mb-6"></p>
-            <div class="flex justify-end gap-3"><button type="button" id="confirm-cancel-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Cancel</button><button type="button" id="confirm-confirm-btn" class="bg-red-600 text-white font-semibold py-2 px-6 rounded-lg">Delete</button></div>
-        </div>
-    </div>
 
-    <div id="log-usage-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
-        <div class="absolute inset-0 bg-black opacity-50 log-usage-modal-overlay"></div>
-        <form id="log-usage-form" class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
-            <h3 class="text-2xl font-bold text-pink-700 mb-6">Log Inventory Usage</h3>
-            <div class="space-y-4">
-                <div>
-                    <label for="log-usage-product-select" class="block text-sm font-medium text-gray-600 mb-1">Product</label>
-                    <select id="log-usage-product-select" class="form-select w-full p-3 border border-gray-300 rounded-lg" required></select>
+        <div id="add-appointment-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+            <div class="absolute inset-0 bg-black opacity-50 add-appointment-modal-overlay"></div>
+            <form id="add-appointment-form" class="relative bg-white w-full max-w-2xl p-6 rounded-2xl shadow-xl m-4">
+                <h3 class="text-2xl font-bold text-pink-700 mb-6">Add New Appointment</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto pr-2">
+                    <div><label for="appointment-client-name" class="block text-sm font-medium text-gray-600">Client Name</label><input type="text" id="appointment-client-name" list="client-names-list" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" required><datalist id="client-names-list"></datalist></div>
+                    <div><label for="appointment-phone" class="block text-sm font-medium text-gray-600">Phone</label><input type="tel" id="appointment-phone" list="appointment-client-phones" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg"><datalist id="appointment-client-phones"></datalist></div>
+                    <div><label for="appointment-people" class="block text-sm font-medium text-gray-600">Group Size</label><select id="appointment-people" class="form-select w-full p-2 mt-1 border border-gray-300 rounded-lg"></select></div>
+                    <div><label for="appointment-booking-type" class="block text-sm font-medium text-gray-600">Booking Type</label><select id="appointment-booking-type" class="form-select w-full p-2 mt-1 border border-gray-300 rounded-lg"><option>Booked - Calendar</option><option value="Phone">Phone</option><option value="Online">Online</option></select></div>
+                    <div><label for="appointment-services" class="block text-sm font-medium text-gray-600">Services</label><input type="text" id="appointment-services" list="main-services-list" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" placeholder="Select or type a service..."><datalist id="main-services-list"></datalist></div>
+                    <div><label for="appointment-technician-select" class="block text-sm font-medium text-gray-600">Technician Request</label><select id="appointment-technician-select" class="form-select w-full p-2 mt-1 border border-gray-300 rounded-lg"><option>Any Technician</option></select></div>
+                    <div class="md:col-span-2"><label for="appointment-datetime" class="block text-sm font-medium text-gray-600">Date & Time</label><input type="datetime-local" id="appointment-datetime" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" required></div>
+                    <div class="md:col-span-2"><label for="appointment-notes" class="block text-sm font-medium text-gray-600">Notes</label><textarea id="appointment-notes" rows="2" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg"></textarea></div>
                 </div>
-                <div>
-                    <label for="log-usage-quantity" class="block text-sm font-medium text-gray-600 mb-1">Quantity Used</label>
-                    <input type="number" id="log-usage-quantity" class="form-input w-full p-3 border border-gray-300 rounded-lg" min="1" required>
+                <div class="mt-8 text-center"><label class="flex items-center justify-center"><input type="checkbox" id="appointment-policy-agree" class="form-checkbox" checked required><span class="ml-2 text-sm text-gray-600">I agree to the <button type="button" class="text-pink-600 hover:underline font-semibold view-policy-btn">Salon Policy</button>.</span></label></div>
+                <div class="mt-6 flex justify-end gap-3"><button type="button" id="add-appointment-cancel-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Cancel</button><button type="submit" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Save Appointment</button></div>
+            </form>
+        </div>
+
+        <div id="edit-earning-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+            <div class="absolute inset-0 bg-black opacity-50 edit-earning-modal-overlay"></div>
+            <form id="edit-earning-form" class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
+                <h3 class="text-2xl font-bold text-pink-700 mb-6">Edit Earning</h3><input type="hidden" id="edit-earning-id">
+                <div class="space-y-4">
+                    <div><label for="edit-staff-earning-date" class="block text-sm font-medium text-gray-600 mb-1">Date</label><input type="date" id="edit-staff-earning-date" class="form-input w-full p-3 border border-gray-300 rounded-lg" required></div>
+                    <div><label for="edit-staff-name" class="block text-sm font-medium text-gray-600 mb-1">Staff Name</label><select id="edit-staff-name" class="form-select w-full p-3 border border-gray-300 rounded-lg" required></select></div>
+                    <div><label for="edit-staff-earning" class="block text-sm font-medium text-gray-600 mb-1">Earning</label><input type="number" step="0.01" id="edit-staff-earning" class="form-input w-full p-3 border border-gray-300 rounded-lg" required></div>
+                    <div><label for="edit-staff-tip" class="block text-sm font-medium text-gray-600 mb-1">Tip</label><input type="number" step="0.01" id="edit-staff-tip" class="form-input w-full p-3 border border-gray-300 rounded-lg" required></div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3"><button type="button" id="edit-earning-cancel-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Cancel</button><button type="submit" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Save Changes</button></div>
+            </form>
+        </div>
+
+        <div id="edit-salon-earning-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+            <div class="absolute inset-0 bg-black opacity-50 edit-salon-earning-modal-overlay"></div>
+            <form id="edit-salon-earning-form" class="relative bg-white w-full max-w-4xl p-6 rounded-2xl shadow-xl m-4">
+                <h3 class="text-2xl font-bold text-pink-700 mb-6">Edit Salon Earning</h3><input type="hidden" id="edit-salon-earning-id">
+                <div class="space-y-6">
+                    <div><label for="edit-salon-earning-date" class="block text-sm font-medium text-gray-600 mb-1">Date</label><input type="date" id="edit-salon-earning-date" class="form-input w-full p-3 border border-gray-300 rounded-lg" required></div>
+                    <div id="edit-salon-earning-inputs" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                        <div><label for="edit-sell-gift-card" class="block text-sm font-medium text-gray-600">Sell Gift Card</label><input type="number" step="0.01" id="edit-sell-gift-card" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount"></div>
+                        <div><label for="edit-return-gift-card" class="block text-sm font-medium text-gray-600">Return Gift Card</label><input type="number" step="0.01" id="edit-return-gift-card" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount"></div>
+                        <div><label for="edit-check-payment" class="block text-sm font-medium text-gray-600">Check</label><input type="number" step="0.01" id="edit-check-payment" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount"></div>
+                        <div><label for="edit-no-of-credit" class="block text-sm font-medium text-gray-600">No. of Credit</label><input type="number" id="edit-no-of-credit" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Count"></div>
+                        <div><label for="edit-total-credit" class="block text-sm font-medium text-gray-600">Total Credit</label><input type="number" step="0.01" id="edit-total-credit" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount"></div>
+                        <div><label for="edit-venmo-payment" class="block text-sm font-medium text-gray-600">Venmo</label><input type="number" step="0.01" id="edit-venmo-payment" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount"></div>
+                        <div><label for="edit-square-payment" class="block text-sm font-medium text-gray-600">Square</label><input type="number" step="0.01" id="edit-square-payment" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount"></div>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3"><button type="button" id="edit-salon-earning-cancel-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Cancel</button><button type="submit" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Save Changes</button></div>
+            </form>
+        </div>
+
+        <div id="client-form-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+            <div class="absolute inset-0 bg-black opacity-50 client-form-modal-overlay"></div>
+            <form id="client-form" class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
+                <h3 id="client-form-title" class="text-2xl font-bold text-pink-700 mb-6">Client Information</h3>
+                <input type="hidden" id="edit-client-id">
+                <div class="space-y-4">
+                    <div>
+                        <label for="client-form-name" class="block text-sm font-medium text-gray-600 mb-1">Client Name</label>
+                        <input type="text" id="client-form-name" class="form-input w-full p-3 border border-gray-300 rounded-lg" required>
+                    </div>
+                    <div>
+                        <label for="client-form-phone" class="block text-sm font-medium text-gray-600 mb-1">Phone Number</label>
+                        <input type="tel" id="client-form-phone" class="form-input w-full p-3 border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label for="client-form-dob" class="block text-sm font-medium text-gray-600 mb-1">Date of Birth</label>
+                        <input type="date" id="client-form-dob" class="form-input w-full p-3 border border-gray-300 rounded-lg">
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" id="client-form-cancel-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Cancel</button>
+                    <button type="submit" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Save Client</button>
+                </div>
+            </form>
+        </div>
+        
+        <div id="gemini-sms-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+            <div class="absolute inset-0 bg-black opacity-50 gemini-sms-modal-overlay"></div>
+            <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
+                <h3 class="text-2xl font-bold text-pink-700 mb-6">Generated SMS Message</h3>
+                <div id="gemini-sms-content" class="space-y-4"><textarea id="gemini-sms-textarea" rows="5" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" placeholder="Generating message..."></textarea></div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <a id="gemini-sms-send-link" href="#" target="_blank" class="bg-green-500 text-white font-semibold py-2 px-6 rounded-lg hover:bg-green-600"><i class="fas fa-paper-plane mr-2"></i>Open in Messages</a>
+                    <button type="button" id="gemini-sms-close-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Close</button>
                 </div>
             </div>
-            <div class="mt-6 flex justify-end gap-3">
-                <button type="button" id="log-usage-cancel-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Cancel</button>
-                <button type="submit" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Log Usage</button>
-            </div>
-        </form>
-    </div>
-
-    <div id="share-modal" class="fixed inset-0 z-[70] hidden items-center justify-center">
-        <div class="absolute inset-0 bg-black opacity-50 share-modal-overlay"></div>
-        <div class="relative bg-white w-full max-w-sm p-6 rounded-2xl shadow-xl m-4 text-center">
-            <h3 class="text-2xl font-bold text-pink-700 mb-6">Share this Design</h3>
-            <div class="flex justify-center gap-4 text-4xl">
-                <a href="#" id="share-facebook" target="_blank" class="text-blue-600 hover:text-blue-800"><i class="fab fa-facebook-square"></i></a>
-                <a href="#" id="share-pinterest" target="_blank" class="text-red-600 hover:text-red-800"><i class="fab fa-pinterest-square"></i></a>
-                <a href="#" id="share-twitter" target="_blank" class="text-blue-400 hover:text-blue-600"><i class="fab fa-twitter-square"></i></a>
-                <button id="share-copy-link" class="text-gray-600 hover:text-gray-800"><i class="fas fa-link"></i></button>
-            </div>
-            <div class="mt-6">
-                <button type="button" id="share-close-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Close</button>
+        </div>
+        
+        <div id="confirm-modal" class="fixed inset-0 z-[70] hidden items-center justify-center">
+            <div class="absolute inset-0 bg-black opacity-50 confirm-modal-overlay"></div>
+            <div class="relative bg-white w-full max-w-sm p-6 rounded-2xl shadow-xl m-4">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">Are you sure?</h3>
+                <p id="confirm-modal-message" class="text-gray-600 mb-6"></p>
+                <div class="flex justify-end gap-3"><button type="button" id="confirm-cancel-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Cancel</button><button type="button" id="confirm-confirm-btn" class="bg-red-600 text-white font-semibold py-2 px-6 rounded-lg">Delete</button></div>
             </div>
         </div>
-    </div>
 
+        <div id="log-usage-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+            <div class="absolute inset-0 bg-black opacity-50 log-usage-modal-overlay"></div>
+            <form id="log-usage-form" class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
+                <h3 class="text-2xl font-bold text-pink-700 mb-6">Log Inventory Usage</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label for="log-usage-product-select" class="block text-sm font-medium text-gray-600 mb-1">Product</label>
+                        <select id="log-usage-product-select" class="form-select w-full p-3 border border-gray-300 rounded-lg" required></select>
+                    </div>
+                    <div>
+                        <label for="log-usage-quantity" class="block text-sm font-medium text-gray-600 mb-1">Quantity Used</label>
+                        <input type="number" id="log-usage-quantity" class="form-input w-full p-3 border border-gray-300 rounded-lg" min="1" required>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" id="log-usage-cancel-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Cancel</button>
+                    <button type="submit" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Log Usage</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="share-modal" class="fixed inset-0 z-[70] hidden items-center justify-center">
+            <div class="absolute inset-0 bg-black opacity-50 share-modal-overlay"></div>
+            <div class="relative bg-white w-full max-w-sm p-6 rounded-2xl shadow-xl m-4 text-center">
+                <h3 class="text-2xl font-bold text-pink-700 mb-6">Share this Design</h3>
+                <div class="flex justify-center gap-4 text-4xl">
+                    <a href="#" id="share-facebook" target="_blank" class="text-blue-600 hover:text-blue-800"><i class="fab fa-facebook-square"></i></a>
+                    <a href="#" id="share-pinterest" target="_blank" class="text-red-600 hover:text-red-800"><i class="fab fa-pinterest-square"></i></a>
+                    <a href="#" id="share-twitter" target="_blank" class="text-blue-400 hover:text-blue-600"><i class="fab fa-twitter-square"></i></a>
+                    <button id="share-copy-link" class="text-gray-600 hover:text-gray-800"><i class="fas fa-link"></i></button>
+                </div>
+                <div class="mt-6">
+                    <button type="button" id="share-close-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Close</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
  <script  type="module" src="script.js"></script>
 </body>
 </html>

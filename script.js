@@ -1949,7 +1949,6 @@ function initMainApp(userRole) {
         if (deleteBtn) { showConfirmModal("Delete this user?", async () => { await deleteDoc(doc(db, "users", deleteBtn.dataset.id)); alert("User role deleted. Login must be deleted from Firebase console."); }); }
     });
 
-    // --- Inventory Management & Reporting ---
     const addProductForm = document.getElementById('add-product-form');
     const inventoryTableBody = document.querySelector('#inventory-table tbody');
     const productSupplierSelect = document.getElementById('product-supplier');
@@ -2077,6 +2076,587 @@ function initMainApp(userRole) {
         }
     });
 
+    const openLogUsageModal = () => {
+        const select = document.getElementById('log-usage-product-select');
+        select.innerHTML = '<option value="">Select a product...</option>';
+        allInventory.forEach(item => { select.appendChild(new Option(item.name, item.id)); });
+        logUsageModal.classList.remove('hidden'); logUsageModal.classList.add('flex');
+    };
+    const closeLogUsageModal = () => { logUsageForm.reset(); logUsageModal.classList.add('hidden'); logUsageModal.classList.remove('flex'); };
+    document.getElementById('log-usage-btn').addEventListener('click', openLogUsageModal);
+    document.getElementById('log-usage-cancel-btn').addEventListener('click', closeLogUsageModal);
+    document.querySelector('.log-usage-modal-overlay').addEventListener('click', closeLogUsageModal);
+
+    logUsageForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const productId = document.getElementById('log-usage-product-select').value;
+        const quantityUsed = parseInt(document.getElementById('log-usage-quantity').value, 10);
+        if (!productId || isNaN(quantityUsed) || quantityUsed <= 0) { alert('Please select a product and enter a valid quantity.'); return; }
+        const product = allInventory.find(p => p.id === productId);
+        if (!product) { alert('Product not found.'); return; }
+        if (product.quantity < quantityUsed) { alert(`Not enough stock. Only ${product.quantity} units available.`); return; }
+        try {
+            await addDoc(collection(db, "inventory_usage"), { productId: productId, productName: product.name, quantityUsed: quantityUsed, timestamp: serverTimestamp() });
+            const newQuantity = product.quantity - quantityUsed;
+            await updateDoc(doc(db, "inventory", productId), { quantity: newQuantity });
+            alert('Usage logged successfully.');
+            closeLogUsageModal();
+        } catch (error) { console.error("Error logging usage:", error); alert("Could not log usage."); }
+    });
+
+
+    const settingsForm = document.getElementById('settings-form');
+    const minBookingHoursInput = document.getElementById('min-booking-hours');
+    const maxLoginAttemptsInput = document.getElementById('max-login-attempts');
+    const loginLockoutMinutesInput = document.getElementById('login-lockout-minutes');
+    const featureTogglesForm = document.getElementById('feature-toggles-form');
+    const salonHoursForm = document.getElementById('salon-hours-form');
+
+    const loadAndRenderSalonHours = async () => {
+        const hoursContainer = document.getElementById('salon-hours-inputs');
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        let hoursData = {};
+        const docSnap = await getDoc(doc(db, "settings", "salonHours"));
+        if (docSnap.exists()) { hoursData = docSnap.data(); } 
+        else { days.forEach(day => { hoursData[day.toLowerCase()] = { isOpen: day !== 'Sunday', open: '09:00', close: '20:00' }; }); }
+        salonHours = hoursData;
+        hoursContainer.innerHTML = days.map(day => {
+            const dayLower = day.toLowerCase();
+            const dayData = hoursData[dayLower] || { isOpen: true, open: '09:00', close: '20:00' };
+            return `<div class="grid grid-cols-4 gap-2 items-center"><label class="font-semibold text-gray-700 col-span-1">${day}</label><div class="flex items-center gap-2"><input type="checkbox" id="is-open-${dayLower}" class="form-checkbox" ${dayData.isOpen ? 'checked' : ''}><label for="is-open-${dayLower}">Open</label></div><input type="time" value="${dayData.open}" class="form-input p-1 border rounded" ${!dayData.isOpen ? 'disabled' : ''}><input type="time" value="${dayData.close}" class="form-input p-1 border rounded" ${!dayData.isOpen ? 'disabled' : ''}></div>`;
+        }).join('');
+        days.forEach(day => {
+            const dayLower = day.toLowerCase();
+            const checkbox = document.getElementById(`is-open-${dayLower}`);
+            const timeInputs = checkbox.closest('.grid').querySelectorAll('input[type="time"]');
+            checkbox.addEventListener('change', () => { timeInputs.forEach(input => input.disabled = !checkbox.checked); });
+        });
+    };
+
+    salonHoursForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        const newHours = {};
+        days.forEach(day => {
+            const container = document.getElementById(`is-open-${day}`).closest('.grid');
+            const timeInputs = container.querySelectorAll('input[type="time"]');
+            newHours[day] = { isOpen: container.querySelector('input[type="checkbox"]').checked, open: timeInputs[0].value, close: timeInputs[1].value };
+        });
+        try { await setDoc(doc(db, "settings", "salonHours"), newHours); salonHours = newHours; alert("Salon hours saved!"); } 
+        catch (error) { console.error("Error saving salon hours:", error); alert("Could not save salon hours."); }
+    });
+
+
+    const loadFeatureToggles = async () => {
+        const settingsDoc = await getDoc(doc(db, "settings", "features"));
+        if (settingsDoc.exists()) {
+            const settings = settingsDoc.data();
+            document.getElementById('toggle-client-login').checked = settings.showClientLogin !== false;
+            document.getElementById('toggle-promotions').checked = settings.showPromotions !== false;
+            document.getElementById('toggle-gift-card').checked = settings.showGiftCards !== false;
+            document.getElementById('toggle-nails-idea').checked = settings.showNailArt !== false;
+        } else {
+            document.getElementById('toggle-client-login').checked = true;
+            document.getElementById('toggle-promotions').checked = true;
+            document.getElementById('toggle-gift-card').checked = true;
+            document.getElementById('toggle-nails-idea').checked = true;
+        }
+    };
+    
+    featureTogglesForm.addEventListener('change', async (e) => {
+        if (e.target.type === 'checkbox') {
+            const settings = { showClientLogin: document.getElementById('toggle-client-login').checked, showPromotions: document.getElementById('toggle-promotions').checked, showGiftCards: document.getElementById('toggle-gift-card').checked, showNailArt: document.getElementById('toggle-nails-idea').checked };
+            await setDoc(doc(db, "settings", "features"), settings, { merge: true });
+        }
+    });
+
+    const loadSettings = async () => { 
+        const bookingSnap = await getDoc(doc(db, "settings", "booking")); 
+        if (bookingSnap.exists()) { const data = bookingSnap.data(); minBookingHoursInput.value = data.minBookingHours || 2; } 
+        const securitySnap = await getDoc(doc(db, "settings", "security"));
+        if (securitySnap.exists()) { const data = securitySnap.data(); loginSecuritySettings = data; maxLoginAttemptsInput.value = data.maxAttempts || 5; loginLockoutMinutesInput.value = data.lockoutMinutes || 15; }
+    };
+    loadSettings();
+    loadFeatureToggles();
+    loadAndRenderSalonHours();
+
+    settingsForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const hours = parseInt(minBookingHoursInput.value, 10);
+        const maxAttempts = parseInt(maxLoginAttemptsInput.value, 10);
+        const lockoutMinutes = parseInt(loginLockoutMinutesInput.value, 10);
+        if (isNaN(hours) || hours < 0 || isNaN(maxAttempts) || maxAttempts < 1 || isNaN(lockoutMinutes) || lockoutMinutes < 1) { return alert("Please enter valid, positive numbers for all settings."); }
+        try { await setDoc(doc(db, "settings", "booking"), { minBookingHours: hours }); await setDoc(doc(db, "settings", "security"), { maxAttempts: maxAttempts, lockoutMinutes: lockoutMinutes }); loginSecuritySettings = { maxAttempts, lockoutMinutes }; alert("Settings saved!"); } 
+        catch (error) { console.error("Error saving settings: ", error); alert("Could not save settings."); }
+    });
+
+    const setupSimpleCrud = (collectionName, formId, inputId, listId) => {
+        const form = document.getElementById(formId);
+        const input = document.getElementById(inputId);
+        const listContainer = document.getElementById(listId);
+        onSnapshot(collection(db, collectionName), (snapshot) => {
+            const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            if (collectionName === 'expense_categories') allExpenseCategories = items;
+            else if (collectionName === 'payment_accounts') allPaymentAccounts = items;
+            else if (collectionName === 'suppliers') allSuppliers = items;
+            listContainer.innerHTML = items.map(item => `<div class="flex justify-between items-center p-1 hover:bg-gray-100"><span>${item.name}</span><button data-id="${item.id}" class="delete-item-btn text-red-400 hover:text-red-600"><i class="fas fa-times-circle"></i></button></div>`).join('');
+            populateExpenseDropdowns();
+        });
+        form.addEventListener('submit', async (e) => { e.preventDefault(); const name = input.value.trim(); if (name) { await addDoc(collection(db, collectionName), { name }); input.value = ''; } });
+        listContainer.addEventListener('click', (e) => { const deleteBtn = e.target.closest('.delete-item-btn'); if (deleteBtn) { showConfirmModal("Delete this item?", async () => { await deleteDoc(doc(db, collectionName, deleteBtn.dataset.id)); }); } });
+    };
+
+    setupSimpleCrud('expense_categories', 'add-expense-category-form', 'new-expense-category-name', 'expense-categories-list');
+    setupSimpleCrud('payment_accounts', 'add-payment-account-form', 'new-payment-account-name', 'payment-accounts-list');
+
+    const addSupplierForm = document.getElementById('add-supplier-form');
+    const suppliersTableBody = document.querySelector('#suppliers-table tbody');
+    onSnapshot(collection(db, "suppliers"), (snapshot) => {
+        allSuppliers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        suppliersTableBody.innerHTML = '';
+        allSuppliers.forEach(s => { const row = suppliersTableBody.insertRow(); row.innerHTML = `<td class="px-6 py-4">${s.name}</td><td class="px-6 py-4">${s.phone || ''}</td><td class="px-6 py-4">${s.email || ''}</td><td class="px-6 py-4">${s.website ? `<a href="${s.website}" target="_blank" class="text-blue-500">Link</a>` : ''}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${s.id}" class="edit-supplier-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${s.id}" class="delete-supplier-btn text-red-500"><i class="fas fa-trash"></i></button></td>`; });
+        populateExpenseDropdowns();
+        populateProductSupplierDropdown();
+    });
+
+    addSupplierForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const supplierId = document.getElementById('edit-supplier-id').value;
+        const data = { name: document.getElementById('supplier-name').value, phone: document.getElementById('supplier-phone').value, email: document.getElementById('supplier-email').value, website: document.getElementById('supplier-website').value };
+        if (supplierId) { await updateDoc(doc(db, "suppliers", supplierId), data); } 
+        else { await addDoc(collection(db, "suppliers"), data); }
+        resetSupplierForm();
+    });
+
+    const resetSupplierForm = () => { addSupplierForm.reset(); document.getElementById('edit-supplier-id').value = ''; document.getElementById('add-supplier-btn').textContent = 'Add Supplier'; document.getElementById('cancel-edit-supplier-btn').classList.add('hidden'); };
+    document.getElementById('cancel-edit-supplier-btn').addEventListener('click', resetSupplierForm);
+
+    suppliersTableBody.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-supplier-btn');
+        const deleteBtn = e.target.closest('.delete-supplier-btn');
+        if (editBtn) {
+            const supplier = allSuppliers.find(s => s.id === editBtn.dataset.id);
+            if (supplier) { document.getElementById('edit-supplier-id').value = supplier.id; document.getElementById('supplier-name').value = supplier.name; document.getElementById('supplier-phone').value = supplier.phone || ''; document.getElementById('supplier-email').value = supplier.email || ''; document.getElementById('supplier-website').value = supplier.website || ''; document.getElementById('add-supplier-btn').textContent = 'Update'; document.getElementById('cancel-edit-supplier-btn').classList.remove('hidden'); }
+        } else if (deleteBtn) { showConfirmModal("Delete this supplier?", async () => { await deleteDoc(doc(db, "suppliers", deleteBtn.dataset.id)); }); }
+    });
+
+    const addExpenseForm = document.getElementById('add-expense-form');
+    const expenseMonthFilter = document.getElementById('expense-month-filter');
+    const expenseTableBody = document.querySelector('#expense-table tbody');
+    const totalExpenseEl = document.getElementById('total-expense');
+
+    const populateExpenseDropdowns = () => {
+        const categorySelect = document.getElementById('expense-category');
+        const supplierSelect = document.getElementById('expense-supplier');
+        const paymentSelect = document.getElementById('expense-payment-account');
+        const populate = (select, data) => { const first = select.options[0]; select.innerHTML = ''; select.appendChild(first); data.forEach(item => select.appendChild(new Option(item.name, item.name))); };
+        populate(categorySelect, allExpenseCategories);
+        populate(supplierSelect, allSuppliers);
+        populate(paymentSelect, allPaymentAccounts);
+    };
+
+    const populateExpenseMonthFilter = () => {
+        const months = [...new Set(allExpenses.map(exp => { const d = new Date(exp.date.seconds * 1000); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }))].sort().reverse();
+        expenseMonthFilter.innerHTML = '<option value="all">All Months</option>';
+        months.forEach(monthYear => { const [year, month] = monthYear.split('-'); expenseMonthFilter.innerHTML += `<option value="${monthYear}">${new Date(year, month - 1, 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</option>`; });
+        expenseMonthFilter.value = currentExpenseMonthFilter || 'all';
+    };
+
+    const renderExpenses = () => {
+        let filtered = allExpenses;
+        if (currentExpenseMonthFilter && currentExpenseMonthFilter !== 'all') {
+            const [year, month] = currentExpenseMonthFilter.split('-').map(Number);
+            filtered = allExpenses.filter(exp => { const d = new Date(exp.date.seconds * 1000); return d.getFullYear() === year && d.getMonth() + 1 === month; });
+        }
+        expenseTableBody.innerHTML = filtered.length === 0 ? `<tr><td colspan="8" class="py-6 text-center text-gray-400">No expenses found.</td></tr>` : '';
+        filtered.forEach(exp => {
+            const row = expenseTableBody.insertRow();
+            row.className = 'bg-white border-b';
+            row.innerHTML = `<td class="px-6 py-4">${new Date(exp.date.seconds * 1000).toLocaleDateString()}</td><td class="px-6 py-4">${exp.name}</td><td class="px-6 py-4">${exp.category || ''}</td><td class="px-6 py-4">${exp.supplier || ''}</td><td class="px-6 py-4">${exp.paymentAccount || ''}</td><td class="px-6 py-4">${exp.attachmentURL ? `<a href="${exp.attachmentURL}" target="_blank" class="text-blue-500 hover:underline">View</a>` : 'N/A'}</td><td class="px-6 py-4 text-right">$${exp.amount.toFixed(2)}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${exp.id}" class="edit-expense-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${exp.id}" class="delete-expense-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
+        });
+        totalExpenseEl.textContent = `$${filtered.reduce((sum, exp) => sum + exp.amount, 0).toFixed(2)}`;
+    };
+
+    expenseMonthFilter.addEventListener('change', (e) => { currentExpenseMonthFilter = e.target.value; renderExpenses(); });
+
+    addExpenseForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const expenseId = document.getElementById('edit-expense-id').value;
+        const file = document.getElementById('expense-attachment').files[0];
+        let attachmentURL = document.getElementById('current-attachment-info').dataset.url || null;
+        if (file) {
+            const storageRef = ref(storage, `expenses/${Date.now()}_${file.name}`);
+            await uploadBytes(storageRef, file);
+            attachmentURL = await getDownloadURL(storageRef);
+        }
+        const expenseData = {
+            name: document.getElementById('expense-name').value, amount: parseFloat(document.getElementById('expense-amount').value), date: Timestamp.fromDate(new Date(document.getElementById('expense-date').value + 'T12:00:00')),
+            category: document.getElementById('expense-category').value, supplier: document.getElementById('expense-supplier').value, paymentAccount: document.getElementById('expense-payment-account').value, attachmentURL
+        };
+        try {
+            if (expenseId) { await updateDoc(doc(db, "expenses", expenseId), expenseData); } 
+            else { await addDoc(collection(db, "expenses"), expenseData); }
+            resetExpenseForm();
+        } catch (error) { console.error("Error saving expense:", error); alert("Could not save expense."); }
+    });
+
+    const resetExpenseForm = () => { addExpenseForm.reset(); document.getElementById('edit-expense-id').value = ''; document.getElementById('expense-date').value = getLocalDateString(); document.getElementById('add-expense-btn').textContent = 'Add Expense'; document.getElementById('cancel-edit-expense-btn').classList.add('hidden'); document.getElementById('current-attachment-info').textContent = ''; document.getElementById('current-attachment-info').dataset.url = ''; };
+    document.getElementById('cancel-edit-expense-btn').addEventListener('click', resetExpenseForm);
+
+    expenseTableBody.addEventListener('click', (e) => {
+        const deleteBtn = e.target.closest('.delete-expense-btn');
+        const editBtn = e.target.closest('.edit-expense-btn');
+        if (deleteBtn) { showConfirmModal("Delete this expense?", async () => { await deleteDoc(doc(db, "expenses", deleteBtn.dataset.id)); }); } 
+        else if (editBtn) {
+            const expense = allExpenses.find(exp => exp.id === editBtn.dataset.id);
+            if (expense) {
+                document.getElementById('edit-expense-id').value = expense.id;
+                document.getElementById('expense-name').value = expense.name;
+                document.getElementById('expense-amount').value = expense.amount;
+                document.getElementById('expense-date').value = new Date(expense.date.seconds * 1000).toISOString().split('T')[0];
+                document.getElementById('expense-category').value = expense.category || '';
+                document.getElementById('expense-supplier').value = expense.supplier || '';
+                document.getElementById('expense-payment-account').value = expense.paymentAccount || '';
+                const attachmentInfo = document.getElementById('current-attachment-info');
+                attachmentInfo.textContent = expense.attachmentURL ? 'Current attachment exists.' : '';
+                attachmentInfo.dataset.url = expense.attachmentURL || '';
+                document.getElementById('add-expense-btn').textContent = 'Update Expense';
+                document.getElementById('cancel-edit-expense-btn').classList.remove('hidden');
+            }
+        }
+    });
+
+    const serviceCategoriesAdminContainer = document.getElementById('service-categories-admin');
+    const addCategoryForm = document.getElementById('add-category-form');
+    const addServiceForm = document.getElementById('add-service-form');
+    const editServiceSection = document.getElementById('edit-service-section');
+    const renderServiceAdmin = (services) => {
+        serviceCategoriesAdminContainer.innerHTML = '';
+        Object.entries(services).forEach(([categoryName, items]) => {
+            const categoryDiv = document.createElement('div');
+            categoryDiv.className = 'p-3 border rounded-lg';
+            categoryDiv.innerHTML = `<div class="flex justify-between items-center mb-2"><h4 class="font-bold">${categoryName}</h4><div><button class="add-service-to-category-btn text-green-500 mr-2" data-category="${categoryName}"><i class="fas fa-plus-circle"></i></button><button class="edit-category-btn text-blue-500 mr-2" data-category="${categoryName}"><i class="fas fa-edit"></i></button><button class="delete-category-btn text-red-500" data-category="${categoryName}"><i class="fas fa-trash"></i></button></div></div><ul class="service-list space-y-1 pl-4">${items.map((item, index) => `<li class="flex justify-between items-center text-sm"><span>${item.name} - ${item.price}</span><div><button class="edit-service-btn text-blue-500 mr-2" data-category="${categoryName}" data-index="${index}"><i class="fas fa-edit"></i></button><button class="delete-service-btn text-red-500" data-category="${categoryName}" data-index="${index}"><i class="fas fa-times-circle"></i></button></div></li>`).join('')}</ul>`;
+            serviceCategoriesAdminContainer.appendChild(categoryDiv);
+        });
+    };
+    onSnapshot(collection(db, "services"), (snapshot) => { servicesData = {}; snapshot.forEach(doc => { servicesData[doc.id] = doc.data().items; }); renderServiceAdmin(servicesData); renderCheckInServices(); });
+    addCategoryForm.addEventListener('submit', async (e) => { e.preventDefault(); const categoryName = document.getElementById('new-category-name').value; if (categoryName) { await setDoc(doc(db, "services", categoryName), { items: [] }); addCategoryForm.reset(); } });
+    serviceCategoriesAdminContainer.addEventListener('click', async (e) => {
+        const delCatBtn = e.target.closest('.delete-category-btn'), editCatBtn = e.target.closest('.edit-category-btn'), addSvcBtn = e.target.closest('.add-service-to-category-btn'), editSvcBtn = e.target.closest('.edit-service-btn'), delSvcBtn = e.target.closest('.delete-service-btn');
+        if (delCatBtn) { showConfirmModal(`Delete category "${delCatBtn.dataset.category}"?`, async () => { await deleteDoc(doc(db, "services", delCatBtn.dataset.category)); }); }
+        if (editCatBtn) { const oldName = editCatBtn.dataset.category; const newName = prompt("New category name:", oldName); if (newName && newName !== oldName) { const docSnap = await getDoc(doc(db, "services", oldName)); if (docSnap.exists()) { await setDoc(doc(db, "services", newName), docSnap.data()); await deleteDoc(doc(db, "services", oldName)); } } }
+        if (addSvcBtn) { addServiceForm.reset(); document.getElementById('edit-category-id').value = addSvcBtn.dataset.category; document.getElementById('edit-service-index').value = ''; document.getElementById('edit-service-title').textContent = `Add Service to ${addSvcBtn.dataset.category}`; editServiceSection.classList.remove('hidden'); }
+        if (editSvcBtn) { const category = editSvcBtn.dataset.category, index = editSvcBtn.dataset.index, service = servicesData[category][index]; addServiceForm.reset(); document.getElementById('edit-category-id').value = category; document.getElementById('edit-service-index').value = index; document.getElementById('service-prefix').value = service.p || ''; document.getElementById('service-name').value = service.name; document.getElementById('service-price').value = service.price; document.getElementById('edit-service-title').textContent = `Edit Service in ${category}`; editServiceSection.classList.remove('hidden'); }
+        if (delSvcBtn) { const category = delSvcBtn.dataset.category, index = parseInt(delSvcBtn.dataset.index, 10); showConfirmModal('Delete this service?', async () => { const updatedItems = [...servicesData[category]]; updatedItems.splice(index, 1); await updateDoc(doc(db, "services", category), { items: updatedItems }); }); }
+    });
+    addServiceForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const category = document.getElementById('edit-category-id').value, index = document.getElementById('edit-service-index').value;
+        const newService = { p: document.getElementById('service-prefix').value, name: document.getElementById('service-name').value, price: document.getElementById('service-price').value };
+        const updatedItems = [...servicesData[category]];
+        if (index !== '') { updatedItems[parseInt(index, 10)] = newService; } else { updatedItems.push(newService); }
+        await updateDoc(doc(db, "services", category), { items: updatedItems });
+        addServiceForm.reset(); editServiceSection.classList.add('hidden');
+    });
+
+    const nailsIdeaGallery = document.getElementById('nails-idea-gallery');
+    const addNailIdeaForm = document.getElementById('add-nail-idea-form');
+    const nailIdeasTableBody = document.querySelector('#nail-ideas-table tbody');
+
+    const openShareModal = (idea) => {
+        const salonUrl = "http://www.nailsxpressky.com";
+        const shareText = `Check out this amazing nail design: ${idea.name}!`;
+        document.getElementById('share-facebook').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(salonUrl)}`;
+        document.getElementById('share-pinterest').href = `http://pinterest.com/pin/create/button/?url=${encodeURIComponent(salonUrl)}&media=${encodeURIComponent(idea.imageURL)}&description=${encodeURIComponent(shareText)}`;
+        document.getElementById('share-twitter').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(salonUrl)}`;
+        document.getElementById('share-copy-link').onclick = () => { navigator.clipboard.writeText(salonUrl).then(() => alert('Link copied to clipboard!')); };
+        shareModal.classList.remove('hidden');
+        shareModal.classList.add('flex');
+    };
+
+    const closeShareModal = () => { shareModal.classList.add('hidden'); shareModal.classList.remove('flex'); };
+    document.getElementById('share-close-btn').addEventListener('click', closeShareModal);
+    document.querySelector('.share-modal-overlay').addEventListener('click', closeShareModal);
+    
+    const galleryClickHandler = (e) => {
+        const shareBtn = e.target.closest('.share-nail-idea-btn');
+        if (shareBtn) { const ideaId = shareBtn.dataset.id; const idea = allNailIdeas.find(i => i.id === ideaId); if (idea) { openShareModal(idea); } }
+    };
+    
+    document.getElementById('nails-idea-gallery').addEventListener('click', galleryClickHandler);
+    document.getElementById('nails-idea-landing').addEventListener('click', galleryClickHandler);
+
+
+    const renderNailIdeasGallery = (ideas) => {
+        const landingGallery = document.querySelector('#nails-idea-landing .columns-2');
+        const appGallery = document.getElementById('nails-idea-gallery');
+        
+        const renderTo = (container, isLanding) => {
+            container.innerHTML = '';
+            if (ideas.length === 0) { container.innerHTML = '<p class="text-gray-500 col-span-full text-center">No nail ideas found. Check back later!</p>'; return; }
+            const ideasToRender = isLanding ? ideas.slice(0, 8) : ideas;
+            ideasToRender.forEach(idea => {
+                const ideaEl = document.createElement('div');
+                ideaEl.className = 'break-inside-avoid mb-4 relative gallery-item';
+                ideaEl.innerHTML = `<img class="w-full rounded-lg shadow-md" src="${idea.imageURL}" alt="${idea.name}"><div class="overlay absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center rounded-lg"><button data-id="${idea.id}" class="share-nail-idea-btn text-white text-3xl"><i class="fas fa-share-alt"></i></button></div>${!isLanding ? `<div class="p-2"><h5 class="font-bold text-sm">${idea.name}</h5><p class="text-xs text-gray-600">${idea.categories.join(', ')}</p></div>` : ''}`;
+                container.appendChild(ideaEl);
+            });
+        };
+
+        renderTo(landingGallery, true);
+        renderTo(appGallery, false);
+    };
+
+    const renderNailIdeasAdminTable = (ideas) => {
+        nailIdeasTableBody.innerHTML = '';
+        ideas.forEach(idea => {
+            const row = nailIdeasTableBody.insertRow();
+            row.innerHTML = `<td class="px-6 py-4"><img src="${idea.imageURL}" alt="${idea.name}" class="w-16 h-16 object-cover rounded"></td><td class="px-6 py-4">${idea.name}</td><td class="px-6 py-4">${idea.shape}</td><td class="px-6 py-4">${idea.categories.join(', ')}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${idea.id}" class="edit-nail-idea-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${idea.id}" class="delete-nail-idea-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
+        });
+    };
+
+    const applyNailIdeaFilters = () => {
+        const searchTerm = document.getElementById('nail-idea-search').value.toLowerCase();
+        const shapeFilter = document.getElementById('nail-idea-shape-filter').value;
+        const categoryFilter = document.getElementById('nail-idea-category-filter').value;
+        const filteredIdeas = allNailIdeas.filter(idea => { const matchesSearch = idea.name.toLowerCase().includes(searchTerm) || idea.categories.some(cat => cat.toLowerCase().includes(searchTerm)); const matchesShape = !shapeFilter || idea.shape === shapeFilter; const matchesCategory = !categoryFilter || idea.categories.includes(categoryFilter); return matchesSearch && matchesShape && matchesCategory; });
+        renderNailIdeasGallery(filteredIdeas);
+    };
+
+    onSnapshot(query(collection(db, "nail_ideas"), orderBy("createdAt", "desc")), (snapshot) => {
+        allNailIdeas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const shapes = [...new Set(allNailIdeas.map(i => i.shape).filter(Boolean))];
+        const categories = [...new Set(allNailIdeas.flatMap(i => i.categories).filter(Boolean))];
+        const shapeFilter = document.getElementById('nail-idea-shape-filter');
+        const categoryFilter = document.getElementById('nail-idea-category-filter');
+        shapeFilter.innerHTML = '<option value="">All Shapes</option>' + shapes.map(s => `<option value="${s}">${s}</option>`).join('');
+        categoryFilter.innerHTML = '<option value="">All Categories</option>' + categories.map(c => `<option value="${c}">${c}</option>`).join('');
+        applyNailIdeaFilters();
+        renderNailIdeasAdminTable(allNailIdeas);
+    });
+
+    document.getElementById('nail-idea-search').addEventListener('input', applyNailIdeaFilters);
+    document.getElementById('nail-idea-shape-filter').addEventListener('change', applyNailIdeaFilters);
+    document.getElementById('nail-idea-category-filter').addEventListener('change', applyNailIdeaFilters);
+
+    addNailIdeaForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const ideaId = document.getElementById('edit-nail-idea-id').value;
+        const file = document.getElementById('nail-idea-image').files[0];
+        if (!ideaId && !file) { alert('Please select an image to upload.'); return; }
+        const btn = document.getElementById('add-nail-idea-btn');
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+        try {
+            let imageURL = null;
+            if (file) {
+                const storageRef = ref(storage, `nail_ideas/${Date.now()}_${file.name}`);
+                await uploadBytes(storageRef, file);
+                imageURL = await getDownloadURL(storageRef);
+            }
+            const ideaData = { name: document.getElementById('nail-idea-name').value, color: document.getElementById('nail-idea-color').value, shape: document.getElementById('nail-idea-shape').value, categories: document.getElementById('nail-idea-categories').value.split(',').map(s => s.trim()).filter(Boolean), };
+            if (ideaId) {
+                const existingIdea = allNailIdeas.find(i => i.id === ideaId);
+                if (imageURL) {
+                    ideaData.imageURL = imageURL;
+                    if (existingIdea.imageURL) { try { const oldImageRef = ref(storage, existingIdea.imageURL); await deleteObject(oldImageRef); } catch (storageError) { console.warn("Could not delete old image, it might not exist:", storageError); } }
+                }
+                await updateDoc(doc(db, "nail_ideas", ideaId), ideaData);
+            } else { ideaData.imageURL = imageURL; ideaData.createdAt = serverTimestamp(); await addDoc(collection(db, "nail_ideas"), ideaData); }
+            resetNailIdeaForm();
+        } catch (error) { console.error("Error saving nail idea:", error); alert("Could not save nail idea."); } 
+        finally { btn.disabled = false; btn.textContent = 'Add Idea'; }
+    });
+
+    const resetNailIdeaForm = () => {
+        addNailIdeaForm.reset();
+        document.getElementById('edit-nail-idea-id').value = '';
+        document.getElementById('add-nail-idea-btn').textContent = 'Add Idea';
+        document.getElementById('cancel-edit-nail-idea-btn').classList.add('hidden');
+    };
+    document.getElementById('cancel-edit-nail-idea-btn').addEventListener('click', resetNailIdeaForm);
+
+    nailIdeasTableBody.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-nail-idea-btn');
+        const deleteBtn = e.target.closest('.delete-nail-idea-btn');
+        if (editBtn) {
+            const idea = allNailIdeas.find(i => i.id === editBtn.dataset.id);
+            if (idea) {
+                document.getElementById('edit-nail-idea-id').value = idea.id;
+                document.getElementById('nail-idea-name').value = idea.name;
+                document.getElementById('nail-idea-color').value = idea.color;
+                document.getElementById('nail-idea-shape').value = idea.shape;
+                document.getElementById('nail-idea-categories').value = idea.categories.join(', ');
+                document.getElementById('add-nail-idea-btn').textContent = 'Update Idea';
+                document.getElementById('cancel-edit-nail-idea-btn').classList.remove('hidden');
+            }
+        } else if (deleteBtn) {
+            const ideaId = deleteBtn.dataset.id;
+            showConfirmModal("Delete this nail idea? This will also delete the image.", async () => {
+                const ideaToDelete = allNailIdeas.find(i => i.id === ideaId);
+                if (ideaToDelete.imageURL) {
+                    const imageRef = ref(storage, ideaToDelete.imageURL);
+                    await deleteObject(imageRef).catch(err => console.error("Error deleting image from storage", err));
+                }
+                await deleteDoc(doc(db, "nail_ideas", ideaId));
+            });
+        }
+    });
+
+    const giftCardsTableBody = document.querySelector('#gift-cards-table tbody');
+
+    const renderGiftCardsAdminTable = (cards) => {
+        giftCardsTableBody.innerHTML = '';
+        if (cards.length === 0) {
+            giftCardsTableBody.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-gray-400">No gift cards have been sold.</td></tr>`;
+            return;
+        }
+        cards.forEach(card => {
+            const row = giftCardsTableBody.insertRow();
+            const balance = card.balance !== undefined ? card.balance : card.amount;
+            let status = card.status;
+            let statusColor = 'text-gray-500';
+            if (balance > 0) {
+                status = 'Active';
+                statusColor = 'text-green-600';
+            } else {
+                status = 'Depleted';
+            }
+
+            row.innerHTML = `<td class="px-6 py-4">${new Date(card.createdAt.seconds * 1000).toLocaleDateString()}</td><td class="px-6 py-4 font-mono text-xs">${card.code}</td><td class="px-6 py-4">$${card.amount.toFixed(2)}</td><td class="px-6 py-4 font-bold">$${balance.toFixed(2)}</td><td class="px-6 py-4">${card.recipientName}<br><span class="text-xs text-gray-500">${card.recipientEmail || 'Physical Card'}</span></td><td class="px-6 py-4">${card.senderName}</td><td class="px-6 py-4 font-bold ${statusColor}">${status}</td><td class="px-6 py-4 text-center"><button data-id="${card.id}" class="edit-gift-card-btn text-blue-500 hover:text-blue-700" title="Manage Card"><i class="fas fa-edit text-lg"></i></button></td>`;
+        });
+    };
+
+    onSnapshot(query(collection(db, "gift_cards"), orderBy("createdAt", "desc")), (snapshot) => {
+        allGiftCards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderGiftCardsAdminTable(allGiftCards);
+    });
+
+    const addPromotionForm = document.getElementById('add-promotion-form');
+    const promotionsTableBody = document.querySelector('#promotions-table tbody');
+    const promotionsContainerLanding = document.getElementById('promotions-container-landing');
+    
+    const renderPromotionsAdminTable = (promotions) => {
+        promotionsTableBody.innerHTML = '';
+        const now = new Date();
+        promotions.forEach(promo => {
+            const startDate = promo.startDate.toDate();
+            const endDate = promo.endDate.toDate();
+            let status, statusColor;
+            if (now < startDate) { status = 'Scheduled'; statusColor = 'text-blue-600'; } 
+            else if (now > endDate) { status = 'Expired'; statusColor = 'text-gray-500'; } 
+            else { status = 'Active'; statusColor = 'text-green-600'; }
+            const row = promotionsTableBody.insertRow();
+            row.innerHTML = `<td class="px-6 py-4">${promo.title}</td><td class="px-6 py-4">${promo.description}</td><td class="px-6 py-4">${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}</td><td class="px-6 py-4 font-bold ${statusColor}">${status}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${promo.id}" class="send-promo-notification-btn text-purple-500" title="Send Notification"><i class="fas fa-paper-plane"></i></button><button data-id="${promo.id}" class="edit-promotion-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${promo.id}" class="delete-promotion-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
+        });
+    };
+
+    const renderPromotionsLanding = (promotions) => {
+        promotionsContainerLanding.innerHTML = '';
+        const now = new Date();
+        const activePromos = promotions.filter(promo => {
+            const startDate = promo.startDate.toDate();
+            const endDate = promo.endDate.toDate();
+            return now >= startDate && now <= endDate;
+        });
+        if (activePromos.length === 0) { promotionsContainerLanding.innerHTML = '<p class="text-gray-600 col-span-full text-center">No active promotions right now. Check back soon!</p>'; return; }
+        activePromos.forEach(promo => { const promoEl = document.createElement('div'); promoEl.className = 'bg-white p-6 rounded-lg shadow-md text-center'; promoEl.innerHTML = `<h3 class="text-xl font-bold text-pink-700 mb-2">${promo.title}</h3><p class="text-gray-600">${promo.description}</p>`; promotionsContainerLanding.appendChild(promoEl); });
+    };
+
+    onSnapshot(query(collection(db, "promotions"), orderBy("startDate", "desc")), (snapshot) => {
+        allPromotions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderPromotionsAdminTable(allPromotions);
+        renderPromotionsLanding(allPromotions);
+    });
+
+    addPromotionForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const promoId = document.getElementById('edit-promotion-id').value;
+        const promoData = { title: document.getElementById('promotion-title').value, description: document.getElementById('promotion-description').value, startDate: Timestamp.fromDate(new Date(document.getElementById('promotion-start-date').value + 'T00:00:00')), endDate: Timestamp.fromDate(new Date(document.getElementById('promotion-end-date').value + 'T23:59:59')), };
+        try {
+            if (promoId) { await updateDoc(doc(db, "promotions", promoId), promoData); } 
+            else { promoData.createdAt = serverTimestamp(); await addDoc(collection(db, "promotions"), promoData); }
+            addPromotionForm.reset(); document.getElementById('edit-promotion-id').value = '';
+        } catch (error) { console.error("Error saving promotion:", error); alert("Could not save promotion."); }
+    });
+
+    promotionsTableBody.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-promotion-btn');
+        const deleteBtn = e.target.closest('.delete-promotion-btn');
+        const sendBtn = e.target.closest('.send-promo-notification-btn');
+        if (editBtn) {
+            const promo = allPromotions.find(p => p.id === editBtn.dataset.id);
+            if (promo) { document.getElementById('edit-promotion-id').value = promo.id; document.getElementById('promotion-title').value = promo.title; document.getElementById('promotion-description').value = promo.description; document.getElementById('promotion-start-date').value = promo.startDate.toDate().toISOString().split('T')[0]; document.getElementById('promotion-end-date').value = promo.endDate.toDate().toISOString().split('T')[0]; document.getElementById('add-promotion-btn').textContent = 'Update Promotion'; document.getElementById('cancel-edit-promotion-btn').classList.remove('hidden'); }
+        } else if (deleteBtn) { showConfirmModal("Are you sure you want to delete this promotion?", async () => { await deleteDoc(doc(db, "promotions", deleteBtn.dataset.id)); });
+        } else if (sendBtn) {
+            const promo = allPromotions.find(p => p.id === sendBtn.dataset.id);
+            if (promo) { showConfirmModal(`Send a notification for "${promo.title}" to all clients?`, () => { addNotification('promo', `New Promotion: ${promo.title}! ${promo.description}`); alert('Promotion notification sent!'); }); }
+        }
+    });
+
+    document.getElementById('cancel-edit-promotion-btn').addEventListener('click', () => {
+        addPromotionForm.reset();
+        document.getElementById('edit-promotion-id').value = '';
+        document.getElementById('add-promotion-btn').textContent = 'Add Promotion';
+        document.getElementById('cancel-edit-promotion-btn').classList.add('hidden');
+    });
+
+    const openClientModal = (client = null) => {
+        clientForm.reset();
+        const modalTitle = document.getElementById('client-form-title');
+        if (client) {
+            modalTitle.textContent = 'Edit Client Information';
+            document.getElementById('edit-client-id').value = client.id;
+            document.getElementById('client-form-name').value = client.name;
+            document.getElementById('client-form-phone').value = client.phone || '';
+            document.getElementById('client-form-dob').value = client.dob || '';
+        } else {
+            modalTitle.textContent = 'Create New Client';
+            document.getElementById('edit-client-id').value = '';
+        }
+        clientFormModal.classList.remove('hidden');
+        clientFormModal.classList.add('flex');
+    };
+
+    const closeClientModal = () => { clientFormModal.classList.add('hidden'); clientFormModal.classList.remove('flex'); };
+    document.getElementById('create-new-client-btn').addEventListener('click', () => openClientModal());
+    document.getElementById('client-form-cancel-btn').addEventListener('click', closeClientModal);
+    document.querySelector('.client-form-modal-overlay').addEventListener('click', closeClientModal);
+
+    clientForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const clientId = document.getElementById('edit-client-id').value;
+        const clientData = { name: document.getElementById('client-form-name').value, phone: document.getElementById('client-form-phone').value, dob: document.getElementById('client-form-dob').value, };
+        if (!clientData.name) { alert('Client name is required.'); return; }
+        try {
+            if (clientId) { await updateDoc(doc(db, "clients", clientId), clientData); } 
+            else { await addDoc(collection(db, "clients"), clientData); }
+            closeClientModal();
+        } catch (error) { console.error("Error saving client:", error); alert("Could not save client data."); }
+    });
+
+    const importClientsBtn = document.getElementById('import-clients-btn');
+    const importClientsInput = document.getElementById('import-clients-input');
+    importClientsBtn.addEventListener('click', () => importClientsInput.click());
+    importClientsInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            const data = new Uint8Array(event.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const clientsToImport = XLSX.utils.sheet_to_json(firstSheet);
+            if (clientsToImport.length === 0) { alert('No clients found in the file.'); return; }
+            const batch = writeBatch(db);
+            clientsToImport.forEach(client => { const newClientRef = doc(collection(db, "clients")); batch.set(newClientRef, { name: client.Name || 'N/A', phone: client.Phone || '', dob: client.DOB || '' }); });
+            try { await batch.commit(); alert(`${clientsToImport.length} clients imported successfully!`); } 
+            catch (error) { console.error("Error importing clients: ", error); alert("An error occurred during import."); }
+        };
+        reader.readAsArrayBuffer(file);
+        e.target.value = '';
+    });
+    
     // --- Gift Card Designer & Management Logic ---
     const createPrintableCardBtn = document.getElementById('create-printable-card-btn');
     const closeDesignerModalBtn = document.getElementById('close-designer-modal-btn');
@@ -2094,8 +2674,8 @@ function initMainApp(userRole) {
         const showFrom = document.getElementById('designer-show-from').checked;
         const setExpiry = document.getElementById('designer-set-expiry').checked;
         
-        document.getElementById('preview-to').parentElement.style.display = showTo ? '' : 'flex';
-        document.getElementById('preview-from').parentElement.style.display = showFrom ? '' : 'flex';
+        document.getElementById('preview-to').parentElement.style.display = showTo ? '' : 'none';
+        document.getElementById('preview-from').parentElement.style.display = showFrom ? '' : 'none';
         document.getElementById('designer-to-wrapper').style.display = showTo ? '' : 'none';
         document.getElementById('designer-from-wrapper').style.display = showFrom ? '' : 'none';
 
@@ -2344,6 +2924,17 @@ function initMainApp(userRole) {
         }
     });
 
+    document.getElementById('gift-cards-table').addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-gift-card-btn');
+        if (editBtn) {
+            const card = allGiftCards.find(c => c.id === editBtn.dataset.id);
+            if(card) openEditGiftCardModal(card);
+        }
+    });
+
+    document.getElementById('close-edit-gift-card-modal-btn').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));
+    editGiftCardModal.querySelector('.modal-overlay').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));
+
 
     loadAndRenderServices();
     const todayString = getLocalDateString();
@@ -2367,4 +2958,3 @@ function initMainApp(userRole) {
     document.getElementById('sign-out-btn').addEventListener('click', () => { signOut(auth); });
     document.getElementById('floating-booking-btn').addEventListener('click', () => { openAddAppointmentModal(getLocalDateString()); });
 }
-

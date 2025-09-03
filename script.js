@@ -882,6 +882,7 @@ function initMainApp(userRole) {
     const shareModal = document.getElementById('share-modal');
     const giftCardDesignerModal = document.getElementById('gift-card-designer-modal');
     const editGiftCardModal = document.getElementById('edit-gift-card-modal');
+    const clientProfileModal = document.getElementById('client-profile-modal');
 
     const rebookOtherInput = document.getElementById('rebook-other-input');
     const rebookSelect = document.getElementById('rebook-select');
@@ -1833,14 +1834,81 @@ function initMainApp(userRole) {
             else { sendLink.href = '#'; sendLink.onclick = () => alert('Client phone number is not available.'); sendLink.classList.remove('pointer-events-none', 'opacity-50'); }
         } catch (error) { console.error("Error generating SMS:", error); smsTextarea.value = "Error connecting to the AI service."; sendLink.classList.remove('pointer-events-none', 'opacity-50'); }
     }
+    
+    // --- Client Profile Modal Logic ---
+    const openClientProfileModal = async (client) => {
+        if (!client) return;
+
+        // 1. Populate basic info
+        document.getElementById('profile-client-name').textContent = client.name;
+        document.getElementById('profile-client-phone').textContent = client.phone || 'No phone number';
+        document.getElementById('profile-total-visits').textContent = client.visitCount || 0;
+        document.getElementById('profile-total-spent').textContent = `$${(client.totalSpent || 0).toFixed(2)}`;
+        document.getElementById('profile-fav-tech').textContent = client.favoriteTech || 'N/A';
+        document.getElementById('profile-fav-color').textContent = client.favoriteColor || 'N/A';
+
+        // 2. Fetch and render history
+        const historyBody = document.getElementById('profile-history-table-body');
+        historyBody.innerHTML = '<tr><td colspan="4" class="py-4 text-center">Loading history...</td></tr>';
+
+        const historyQuery = query(collection(db, "finished_clients"), where("name", "==", client.name), orderBy("checkOutTimestamp", "desc"));
+        const historySnapshot = await getDocs(historyQuery);
+        const history = historySnapshot.docs.map(doc => doc.data());
+        
+        if (history.length === 0) {
+            historyBody.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-gray-500">No visit history found.</td></tr>';
+        } else {
+            historyBody.innerHTML = history.map(visit => {
+                let total = 0;
+                if (typeof visit.services === 'string') {
+                    const prices = visit.services.match(/\$\d+/g) || [];
+                    total = prices.reduce((sum, price) => sum + parseFloat(price.substring(1)), 0);
+                }
+                return `
+                    <tr class="border-b">
+                        <td class="px-4 py-2">${new Date(visit.checkOutTimestamp.seconds * 1000).toLocaleDateString()}</td>
+                        <td class="px-4 py-2">${visit.services}</td>
+                        <td class="px-4 py-2">${visit.technician}</td>
+                        <td class="px-4 py-2 text-right font-medium">$${total.toFixed(2)}</td>
+                    </tr>`;
+            }).join('');
+        }
+        
+        clientProfileModal.classList.remove('hidden');
+        clientProfileModal.classList.add('flex');
+    };
+
+    const closeClientProfileModal = () => {
+        clientProfileModal.classList.add('hidden');
+        clientProfileModal.classList.remove('flex');
+    };
+
+    document.getElementById('close-client-profile-modal-btn').addEventListener('click', closeClientProfileModal);
+    clientProfileModal.querySelector('.modal-overlay').addEventListener('click', closeClientProfileModal);
 
     document.getElementById('clients-list-report-content').addEventListener('click', (e) => {
         const viewProfileBtn = e.target.closest('.view-client-profile-btn');
         const editBtn = e.target.closest('.edit-client-btn');
         const deleteBtn = e.target.closest('.delete-client-btn');
-        if (viewProfileBtn) { const client = aggregatedClients.find(c => c.id === viewProfileBtn.dataset.id); if(client) { alert(`Viewing profile for ${client.name}. (Admin view to be implemented)`); } } 
-        else if (editBtn) { const client = aggregatedClients.find(c => c.id === editBtn.dataset.id); if(client) { openClientModal(client); } } 
-        else if (deleteBtn) { const clientId = deleteBtn.dataset.id; const client = aggregatedClients.find(c => c.id === clientId); if (client) { showConfirmModal(`Delete all records for ${client.name}? This cannot be undone.`, async () => { await deleteDoc(doc(db, "clients", clientId)); }); } }
+        if (viewProfileBtn) {
+            const client = aggregatedClients.find(c => c.id === viewProfileBtn.dataset.id);
+            if(client) {
+                openClientProfileModal(client);
+            }
+        } else if (editBtn) {
+            const client = aggregatedClients.find(c => c.id === editBtn.dataset.id);
+            if(client) {
+                openClientModal(client);
+            }
+        } else if (deleteBtn) {
+            const clientId = deleteBtn.dataset.id;
+            const client = aggregatedClients.find(c => c.id === clientId);
+            if (client) {
+                showConfirmModal(`Delete all records for ${client.name}? This cannot be undone.`, async () => {
+                   await deleteDoc(doc(db, "clients", clientId));
+                });
+            }
+        }
     });
 
     document.getElementById('gemini-sms-close-btn').addEventListener('click', () => { geminiSmsModal.classList.add('hidden'); geminiSmsModal.classList.remove('flex'); });
@@ -2657,284 +2725,69 @@ function initMainApp(userRole) {
         e.target.value = '';
     });
     
-    // --- Gift Card Designer & Management Logic ---
-    const createPrintableCardBtn = document.getElementById('create-printable-card-btn');
-    const closeDesignerModalBtn = document.getElementById('close-designer-modal-btn');
-    const designerForm = document.getElementById('physical-gift-card-form');
-    const designerBackgroundTabs = document.getElementById('designer-background-tabs');
-    const designerBackgroundOptions = document.getElementById('designer-background-options');
-    const printableCardArea = document.getElementById('printable-gift-card-area');
-    const printableCard = document.getElementById('printable-gift-card');
-    const saveAndPrintBtn = document.getElementById('save-and-print-btn');
-    const editGiftCardForm = document.getElementById('edit-gift-card-form');
+    document.getElementById('clients-list-report-content').addEventListener('click', (e) => {
+        const viewProfileBtn = e.target.closest('.view-client-profile-btn');
+        const editBtn = e.target.closest('.edit-client-btn');
+        const deleteBtn = e.target.closest('.delete-client-btn');
+        if (viewProfileBtn) { const client = aggregatedClients.find(c => c.id === viewProfileBtn.dataset.id); if(client) { openClientProfileModal(client); } } 
+        else if (editBtn) { const client = aggregatedClients.find(c => c.id === editBtn.dataset.id); if(client) { openClientModal(client); } } 
+        else if (deleteBtn) { const clientId = deleteBtn.dataset.id; const client = aggregatedClients.find(c => c.id === clientId); if (client) { showConfirmModal(`Delete all records for ${client.name}? This cannot be undone.`, async () => { await deleteDoc(doc(db, "clients", clientId)); }); } }
+    });
+    
+    const openClientProfileModal = async (client) => {
+        if (!client) return;
 
-
-    const updateDesignerPreview = () => {
-        const showTo = document.getElementById('designer-show-to').checked;
-        const showFrom = document.getElementById('designer-show-from').checked;
-        const setExpiry = document.getElementById('designer-set-expiry').checked;
+        document.getElementById('profile-client-name').textContent = client.name;
+        document.getElementById('profile-client-phone').textContent = client.phone || 'No phone number';
+       
+        const historyQuery = query(collection(db, "finished_clients"), where("name", "==", client.name), orderBy("checkOutTimestamp", "desc"));
+        const historySnapshot = await getDocs(historyQuery);
+        const history = historySnapshot.docs.map(doc => doc.data());
         
-        document.getElementById('preview-to').parentElement.style.display = showTo ? '' : 'none';
-        document.getElementById('preview-from').parentElement.style.display = showFrom ? '' : 'none';
-        document.getElementById('designer-to-wrapper').style.display = showTo ? '' : 'none';
-        document.getElementById('designer-from-wrapper').style.display = showFrom ? '' : 'none';
-
-        document.getElementById('preview-to').textContent = document.getElementById('designer-to').value || 'Recipient';
-        document.getElementById('preview-from').textContent = document.getElementById('designer-from').value || 'Sender';
+        let totalSpent = 0;
+        const historyBody = document.getElementById('profile-history-table-body');
         
-        const amount = parseFloat(document.getElementById('designer-amount').value) || 0;
-        document.getElementById('preview-amount').textContent = `$${amount.toFixed(2)}`;
-        
-        const expiryPreview = document.getElementById('preview-expiry');
-        if (setExpiry) {
-            const value = parseInt(document.getElementById('designer-expiry-value').value, 10);
-            const unit = document.getElementById('designer-expiry-unit').value;
-            if (value > 0) {
-                const expiryDate = new Date();
-                if (unit === 'months') {
-                    expiryDate.setMonth(expiryDate.getMonth() + value);
-                } else {
-                    expiryDate.setFullYear(expiryDate.getFullYear() + value);
+        if (history.length === 0) {
+            historyBody.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-gray-500">No visit history found.</td></tr>';
+        } else {
+            historyBody.innerHTML = history.map(visit => {
+                let visitTotal = 0;
+                if (typeof visit.services === 'string') {
+                    const prices = visit.services.match(/\$\d+(\.\d{2})?/g) || [];
+                    visitTotal = prices.reduce((sum, price) => sum + parseFloat(price.substring(1)), 0);
+                    totalSpent += visitTotal;
                 }
-                expiryPreview.textContent = `Expires: ${expiryDate.toLocaleDateString()}`;
-                expiryPreview.style.display = 'block';
-            } else {
-                 expiryPreview.style.display = 'none';
-            }
-        } else {
-            expiryPreview.style.display = 'none';
-        }
-    };
-    
-    const populateBackgrounds = (category) => {
-        designerBackgroundOptions.innerHTML = giftCardBackgrounds[category].map(url => 
-            `<button type="button" data-bg="${url}" class="w-full h-16 bg-cover bg-center rounded-md border-2 border-transparent hover:border-pink-400" style="background-image: url('${url}')"></button>`
-        ).join('');
-        const firstBgBtn = designerBackgroundOptions.querySelector('button');
-        if (firstBgBtn) {
-            firstBgBtn.classList.add('ring-2', 'ring-pink-500');
-            printableCard.style.backgroundImage = `url('${firstBgBtn.dataset.bg}')`;
-        }
-    };
-    
-    const openDesignerModal = () => {
-        designerForm.reset();
-        document.getElementById('designer-quantity').value = 1;
-        document.getElementById('preview-code').textContent = `GC-${Date.now()}${[...Array(4)].map(() => Math.floor(Math.random() * 10)).join('')}`;
-        
-        designerBackgroundTabs.innerHTML = Object.keys(giftCardBackgrounds).map(cat => 
-            `<button type="button" data-category="${cat}" class="px-3 py-1 text-sm font-medium rounded-t-lg">${cat}</button>`
-        ).join('');
-        
-        const firstTab = designerBackgroundTabs.querySelector('button');
-        firstTab.classList.add('bg-gray-200');
-        populateBackgrounds(firstTab.dataset.category);
-
-        updateDesignerPreview();
-        giftCardDesignerModal.classList.remove('hidden');
-        giftCardDesignerModal.classList.add('flex');
-    };
-    
-    designerBackgroundTabs.addEventListener('click', e => {
-        const tab = e.target.closest('button');
-        if (tab) {
-            designerBackgroundTabs.querySelectorAll('button').forEach(t => t.classList.remove('bg-gray-200'));
-            tab.classList.add('bg-gray-200');
-            populateBackgrounds(tab.dataset.category);
-        }
-    });
-
-    const closeDesignerModal = () => {
-        giftCardDesignerModal.classList.add('hidden');
-        giftCardDesignerModal.classList.remove('flex');
-    };
-
-    designerBackgroundOptions.addEventListener('click', (e) => {
-        const target = e.target.closest('button');
-        if (target && target.dataset.bg) {
-            designerBackgroundOptions.querySelectorAll('button').forEach(btn => btn.classList.remove('ring-2', 'ring-pink-500'));
-            target.classList.add('ring-2', 'ring-pink-500');
-            printableCard.style.backgroundImage = `url('${target.dataset.bg}')`;
-        }
-    });
-
-    const handleSaveAndPrint = async () => {
-        const quantity = parseInt(document.getElementById('designer-quantity').value, 10);
-        if (isNaN(quantity) || quantity < 1) {
-            alert("Please enter a valid quantity.");
-            return;
-        }
-
-        const amount = parseFloat(document.getElementById('designer-amount').value);
-        if (isNaN(amount) || amount <= 0) {
-            alert("Please enter a valid amount.");
-            return;
-        }
-
-        const batch = writeBatch(db);
-        const cardsToPrint = [];
-
-        for (let i = 0; i < quantity; i++) {
-            const cardData = {
-                amount: amount,
-                balance: amount,
-                history: [],
-                recipientName: document.getElementById('designer-show-to').checked ? document.getElementById('designer-to').value : '',
-                senderName: document.getElementById('designer-show-from').checked ? document.getElementById('designer-from').value : '',
-                code: `GC-${Date.now()}-${i}`,
-                status: 'Active',
-                type: 'Physical',
-                createdAt: serverTimestamp()
-            };
-
-            if (document.getElementById('designer-set-expiry').checked) {
-                const value = parseInt(document.getElementById('designer-expiry-value').value, 10);
-                const unit = document.getElementById('designer-expiry-unit').value;
-                const expiryDate = new Date();
-                if (unit === 'months') expiryDate.setMonth(expiryDate.getMonth() + value);
-                else expiryDate.setFullYear(expiryDate.getFullYear() + value);
-                cardData.expiresAt = Timestamp.fromDate(expiryDate);
-            }
-
-            const newCardRef = doc(collection(db, "gift_cards"));
-            batch.set(newCardRef, cardData);
-            cardsToPrint.push(cardData);
-        }
-
-        try {
-            await batch.commit();
-            
-            printableCardArea.innerHTML = cardsToPrint.map(card => {
-                 const expiryText = card.expiresAt ? `Expires: ${card.expiresAt.toDate().toLocaleDateString()}` : '';
-                 return `
-                    <div class="printable-gift-card w-[400px] h-[228px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" style="background-image: url('${printableCard.style.backgroundImage.slice(5, -2)}');">
-                        <div class="flex justify-between items-start" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
-                            <img src="${document.getElementById('preview-logo').src}" class="w-12 h-12 rounded-full border-2 border-white"/>
-                            <div class="text-right">
-                                <p class="font-parisienne text-3xl">Gift Card</p>
-                                <p class="text-xs font-semibold tracking-wider">Nails Express</p>
-                            </div>
-                        </div>
-                        <div class="text-center" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.7);"><p class="text-5xl font-bold">$${card.amount.toFixed(2)}</p></div>
-                        <div class="text-xs" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
-                            <div class="flex justify-between font-semibold">
-                                <span style="display: ${card.recipientName ? 'inline' : 'none'}">FOR: <span class="font-normal">${card.recipientName}</span></span>
-                                <span style="display: ${card.senderName ? 'inline' : 'none'}">FROM: <span class="font-normal">${card.senderName}</span></span>
-                            </div>
-                            <p class="mt-2 text-center font-mono tracking-widest text-sm">${card.code}</p>
-                            <p class="mt-1 text-center text-[10px] opacity-80" style="display: ${expiryText ? 'block' : 'none'}">${expiryText}</p>
-                        </div>
-                    </div>`;
+                return `
+                    <tr class="border-b">
+                        <td class="px-4 py-2">${new Date(visit.checkOutTimestamp.seconds * 1000).toLocaleDateString()}</td>
+                        <td class="px-4 py-2">${visit.services}</td>
+                        <td class="px-4 py-2">${visit.technician}</td>
+                        <td class="px-4 py-2 text-right font-medium">$${visitTotal.toFixed(2)}</td>
+                    </tr>`;
             }).join('');
-
-            window.print();
-        } catch (error) {
-            console.error("Error saving physical gift cards:", error);
-            alert("Could not save the gift cards. Please try again.");
-        }
-    };
-    
-    document.getElementById('designer-show-to').addEventListener('change', updateDesignerPreview);
-    document.getElementById('designer-show-from').addEventListener('change', updateDesignerPreview);
-    document.getElementById('designer-set-expiry').addEventListener('change', (e) => {
-        document.getElementById('designer-expiry-inputs').classList.toggle('hidden', !e.target.checked);
-        updateDesignerPreview();
-    });
-
-    createPrintableCardBtn.addEventListener('click', openDesignerModal);
-    closeDesignerModalBtn.addEventListener('click', closeDesignerModal);
-    giftCardDesignerModal.querySelector('.modal-overlay').addEventListener('click', closeDesignerModal);
-    designerForm.addEventListener('input', updateDesignerPreview);
-    saveAndPrintBtn.addEventListener('click', handleSaveAndPrint);
-    
-    const openEditGiftCardModal = (card) => {
-        editGiftCardForm.reset();
-        document.getElementById('edit-gift-card-id').value = card.id;
-        document.getElementById('edit-gc-code').textContent = card.code;
-        document.getElementById('edit-gc-original-amount').textContent = `$${card.amount.toFixed(2)}`;
-        document.getElementById('edit-gc-current-balance').textContent = `$${card.balance.toFixed(2)}`;
-
-        const historyContainer = document.getElementById('edit-gc-history');
-        historyContainer.innerHTML = '';
-        if (card.history && card.history.length > 0) {
-            card.history.slice().reverse().forEach(entry => {
-                const isRedeem = entry.type === 'redeem';
-                const el = document.createElement('div');
-                el.className = 'text-sm p-2 rounded bg-gray-100 flex justify-between';
-                el.innerHTML = `
-                    <div>
-                        <p class="font-semibold ${isRedeem ? 'text-red-600' : 'text-green-600'}">${isRedeem ? 'Redeemed' : 'Added'} $${entry.amount.toFixed(2)}</p>
-                        <p class="text-xs text-gray-500">${entry.notes || ''}</p>
-                    </div>
-                    <div class="text-xs text-gray-500 text-right">
-                        ${new Date(entry.timestamp.seconds * 1000).toLocaleString()}
-                    </div>
-                `;
-                historyContainer.appendChild(el);
-            });
-        } else {
-            historyContainer.innerHTML = '<p class="text-sm text-gray-500 text-center">No transactions yet.</p>';
-        }
-
-        editGiftCardModal.classList.remove('hidden');
-        editGiftCardModal.classList.add('flex');
-    };
-
-    editGiftCardForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const cardId = document.getElementById('edit-gift-card-id').value;
-        const transactionAmount = parseFloat(document.getElementById('edit-gc-transaction-amount').value);
-        const transactionType = document.getElementById('edit-gc-transaction-type').value;
-        const currentCard = allGiftCards.find(c => c.id === cardId);
-
-        if (!currentCard || isNaN(transactionAmount) || transactionAmount <= 0) {
-            alert("Invalid amount.");
-            return;
         }
         
-        let newBalance = currentCard.balance;
-        if (transactionType === 'redeem') {
-            if (transactionAmount > currentCard.balance) {
-                alert("Cannot redeem more than the current balance.");
-                return;
-            }
-            newBalance -= transactionAmount;
-        } else {
-            newBalance += transactionAmount;
-        }
+        document.getElementById('profile-total-visits').textContent = history.length;
+        document.getElementById('profile-total-spent').textContent = `$${totalSpent.toFixed(2)}`;
+        document.getElementById('profile-fav-tech').textContent = client.favoriteTech || 'N/A';
+        document.getElementById('profile-fav-color').textContent = client.favoriteColor || 'N/A';
+        
+        clientProfileModal.classList.remove('hidden');
+        clientProfileModal.classList.add('flex');
+    };
 
-        const newTransaction = {
-            type: transactionType,
-            amount: transactionAmount,
-            notes: document.getElementById('edit-gc-transaction-notes').value,
-            timestamp: Timestamp.now()
-        };
+    const closeClientProfileModal = () => {
+        clientProfileModal.classList.add('hidden');
+        clientProfileModal.classList.remove('flex');
+    };
+    
+    document.getElementById('close-client-profile-modal-btn').addEventListener('click', closeClientProfileModal);
+    clientProfileModal.querySelector('.modal-overlay').addEventListener('click', closeClientProfileModal);
 
-        try {
-            await updateDoc(doc(db, "gift_cards", cardId), {
-                balance: newBalance,
-                history: arrayUnion(newTransaction),
-                status: newBalance > 0 ? 'Active' : 'Depleted'
-            });
-            editGiftCardForm.reset();
-            editGiftCardModal.classList.add('hidden');
-        } catch (error) {
-            console.error("Error updating gift card:", error);
-            alert("Could not update gift card.");
-        }
-    });
-
-    document.getElementById('gift-cards-table').addEventListener('click', (e) => {
-        const editBtn = e.target.closest('.edit-gift-card-btn');
-        if (editBtn) {
-            const card = allGiftCards.find(c => c.id === editBtn.dataset.id);
-            if(card) openEditGiftCardModal(card);
-        }
-    });
-
-    document.getElementById('close-edit-gift-card-modal-btn').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));
-    editGiftCardModal.querySelector('.modal-overlay').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));
-
+    document.getElementById('gemini-sms-close-btn').addEventListener('click', () => { geminiSmsModal.classList.add('hidden'); geminiSmsModal.classList.remove('flex'); });
+    document.querySelector('.gemini-sms-modal-overlay').addEventListener('click', () => { geminiSmsModal.classList.add('hidden'); geminiSmsModal.classList.remove('flex'); });
+    
+    document.getElementById('floating-booking-btn').addEventListener('click', () => { openAddAppointmentModal(getLocalDateString()); });
 
     loadAndRenderServices();
     const todayString = getLocalDateString();
@@ -2956,5 +2809,4 @@ function initMainApp(userRole) {
     renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, currentSalonEarningDateFilter, currentSalonEarningRangeFilter));
     document.getElementById('expense-date').value = todayString;
     document.getElementById('sign-out-btn').addEventListener('click', () => { signOut(auth); });
-    document.getElementById('floating-booking-btn').addEventListener('click', () => { openAddAppointmentModal(getLocalDateString()); });
 }

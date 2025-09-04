@@ -766,28 +766,28 @@ function initMainApp(userRole) {
     const bookingNavCount = document.getElementById('booking-nav-count');
     const appLoadTimestamp = Timestamp.now();
 
-    const updateNavCounts = () => {
-        const checkInCount = allActiveClients.length;
-        // FIX: Add checks to ensure elements exist before updating them.
-        if (checkInNavCount) {
-            if (checkInCount > 0) {
-                checkInNavCount.textContent = checkInCount;
-                checkInNavCount.classList.remove('hidden');
-            } else {
-                checkInNavCount.classList.add('hidden');
-            }
+const updateNavCounts = () => {
+    const checkInCount = allActiveClients.length;
+    // FIX: Add checks to ensure elements exist before updating them.
+    if (checkInNavCount) {
+        if (checkInCount > 0) {
+            checkInNavCount.textContent = checkInCount;
+            checkInNavCount.classList.remove('hidden');
+        } else {
+            checkInNavCount.classList.add('hidden');
         }
+    }
 
-        const bookingCount = allAppointments.length;
-        if (bookingNavCount) {
-            if (bookingCount > 0) {
-                bookingNavCount.textContent = bookingCount;
-                bookingNavCount.classList.remove('hidden');
-            } else {
-                bookingNavCount.classList.add('hidden');
-            }
+    const bookingCount = allAppointments.length;
+    if (bookingNavCount) {
+        if (bookingCount > 0) {
+            bookingNavCount.textContent = bookingCount;
+            bookingNavCount.classList.remove('hidden');
+        } else {
+            bookingNavCount.classList.add('hidden');
         }
-    };
+    }
+};
     
     const updateNotificationDisplay = () => {
         const unreadCount = notifications.filter(n => !n.read).length;
@@ -1600,11 +1600,11 @@ function initMainApp(userRole) {
                 if (dayCell) { dayCell.insertAdjacentHTML('beforeend', `<div class="appointment-entry bg-blue-100 text-blue-700" data-id="${appt.id}" data-type="appointment">${appt.name}</div>`); }
             }
         });
-        // FIX: Check if calendarCountSpan exists before trying to set its content.
-        if(calendarCountSpan) {
-            calendarCountSpan.textContent = calendarGrid.querySelectorAll('.appointment-entry').length;
-        }
+       // FIX: Check if calendarCountSpan exists before trying to set its content.
+    if(calendarCountSpan) {
+        calendarCountSpan.textContent = calendarGrid.querySelectorAll('.appointment-entry').length;
     }
+}
     document.getElementById('prev-month-btn').addEventListener('click', () => { currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(currentYear, currentMonth, currentTechFilterCalendar); });
     document.getElementById('next-month-btn').addEventListener('click', () => { currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; } renderCalendar(currentYear, currentMonth, currentTechFilterCalendar); });
     calendarGrid.addEventListener('click', (e) => {
@@ -2547,11 +2547,11 @@ function initMainApp(userRole) {
         });
     };
 
-    onSnapshot(query(collection(db, "gift_cards"), orderBy("createdAt", "desc")), (snapshot) => {
-        allGiftCards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        // FIX: Corrected function name typo
-        renderGiftCardsAdminTable(allGiftCards);
-    });
+onSnapshot(query(collection(db, "gift_cards"), orderBy("createdAt", "desc")), (snapshot) => {
+    allGiftCards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // FIX: Corrected function name typo from renderGiftCards to renderGiftCardsAdminTable
+    renderGiftCardsAdminTable(allGiftCards);
+});
 
     const addPromotionForm = document.getElementById('add-promotion-form');
     const promotionsTableBody = document.querySelector('#promotions-table tbody');

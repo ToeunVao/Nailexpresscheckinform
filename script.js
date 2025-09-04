@@ -3,7 +3,8 @@ import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, on
 import { getFirestore, collection, addDoc, onSnapshot, query, doc, getDoc, deleteDoc, serverTimestamp, where, getDocs, orderBy, Timestamp, updateDoc, writeBatch, setDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
-// FIX: Replaced invalid API key with an empty string to allow runtime injection.
+// FIX: The hardcoded API key was incorrect. It has been replaced with an empty string 
+// to allow the correct key to be automatically provided by the environment.
 const firebaseConfig = {
     apiKey: "",
     authDomain: "nailexpress-10f2f.firebaseapp.com",
@@ -231,64 +232,67 @@ addAppointmentForm.addEventListener('submit', async (e) => {
 
 // --- Primary Authentication Router ---
 onAuthStateChanged(auth, async (user) => {
-    const hoursDoc = await getDoc(doc(db, "settings", "salonHours"));
-    if (hoursDoc.exists()) {
-        salonHours = hoursDoc.data();
-    }
+    try {
+        const hoursDoc = await getDoc(doc(db, "settings", "salonHours"));
+        if (hoursDoc.exists()) {
+            salonHours = hoursDoc.data();
+        }
 
-    if (user) {
-        currentUserId = user.uid;
-        if (user.isAnonymous) {
-            anonymousUserId = user.uid;
-            loadingScreen.style.display = 'none';
-            appContent.style.display = 'none';
-            clientDashboardContent.style.display = 'none';
-            landingPageContent.style.display = 'block';
-            if (!landingPageInitialized) {
-                initLandingPage();
-                landingPageInitialized = true;
-            }
-        } else {
-            const userDocRef = doc(db, "users", user.uid);
-            const userDoc = await getDoc(userDocRef);
-            
-            if (userDoc.exists()) { 
-                currentUserRole = userDoc.data().role;
+        if (user) {
+            currentUserId = user.uid;
+            if (user.isAnonymous) {
+                anonymousUserId = user.uid;
                 loadingScreen.style.display = 'none';
-                landingPageContent.style.display = 'none';
+                appContent.style.display = 'none';
                 clientDashboardContent.style.display = 'none';
-                appContent.style.display = 'block';
-                if (!mainAppInitialized) {
-                    initMainApp(currentUserRole);
-                    mainAppInitialized = true;
+                landingPageContent.style.display = 'block';
+                if (!landingPageInitialized) {
+                    initLandingPage();
+                    landingPageInitialized = true;
                 }
-            } else { 
-                const clientDocRef = doc(db, "clients", user.uid);
-                const clientDoc = await getDoc(clientDocRef);
-                if (clientDoc.exists()) {
-                    currentUserRole = clientDoc.data().role; 
+            } else {
+                const userDocRef = doc(db, "users", user.uid);
+                const userDoc = await getDoc(userDocRef);
+                
+                if (userDoc.exists()) { 
+                    currentUserRole = userDoc.data().role;
                     loadingScreen.style.display = 'none';
                     landingPageContent.style.display = 'none';
-                    appContent.style.display = 'none';
-                    clientDashboardContent.style.display = 'block';
-                     if (!clientDashboardInitialized) {
-                        initClientDashboard(user.uid, clientDoc.data());
-                        clientDashboardInitialized = true;
+                    clientDashboardContent.style.display = 'none';
+                    appContent.style.display = 'block';
+                    if (!mainAppInitialized) {
+                        initMainApp(currentUserRole);
+                        mainAppInitialized = true;
                     }
-                } else {
-                     console.error("User authenticated but no user/client document found. Logging out.");
-                     await signOut(auth);
-                     alert("Login error: User data not found.");
+                } else { 
+                    const clientDocRef = doc(db, "clients", user.uid);
+                    const clientDoc = await getDoc(clientDocRef);
+                    if (clientDoc.exists()) {
+                        currentUserRole = clientDoc.data().role; 
+                        loadingScreen.style.display = 'none';
+                        landingPageContent.style.display = 'none';
+                        appContent.style.display = 'none';
+                        clientDashboardContent.style.display = 'block';
+                         if (!clientDashboardInitialized) {
+                            initClientDashboard(user.uid, clientDoc.data());
+                            clientDashboardInitialized = true;
+                        }
+                    } else {
+                         console.error("User authenticated but no user/client document found. Logging out.");
+                         await signOut(auth);
+                         alert("Login error: User data not found.");
+                    }
                 }
             }
+        } else {
+            currentUserId = null;
+            currentUserRole = null;
+            await signInAnonymously(auth)
+            // No need to do anything after anonymous sign in, the onAuthStateChanged will re-trigger
         }
-    } else {
-        currentUserId = null;
-        currentUserRole = null;
-        signInAnonymously(auth).catch((error) => {
-            console.error("Anonymous sign-in failed:", error);
-            loadingScreen.innerHTML = '<h2 class="text-3xl font-bold text-red-700">Could not connect. Please refresh.</h2>';
-        });
+    } catch (error) {
+        console.error("Authentication Error:", error);
+        loadingScreen.innerHTML = `<div class="text-center"><h2 class="text-3xl font-bold text-red-700">Connection Error</h2><p class="text-gray-600 mt-2">Could not connect to services. Please check your internet connection and refresh the page.</p><p class="text-xs text-gray-400 mt-4">Error: ${error.message}</p></div>`;
     }
 });
 
@@ -766,28 +770,28 @@ function initMainApp(userRole) {
     const bookingNavCount = document.getElementById('booking-nav-count');
     const appLoadTimestamp = Timestamp.now();
 
-const updateNavCounts = () => {
-    const checkInCount = allActiveClients.length;
-    // FIX: Add checks to ensure elements exist before updating them.
-    if (checkInNavCount) {
-        if (checkInCount > 0) {
-            checkInNavCount.textContent = checkInCount;
-            checkInNavCount.classList.remove('hidden');
-        } else {
-            checkInNavCount.classList.add('hidden');
+    const updateNavCounts = () => {
+        const checkInCount = allActiveClients.length;
+        // FIX: Add checks to ensure elements exist before updating them.
+        if (checkInNavCount) {
+            if (checkInCount > 0) {
+                checkInNavCount.textContent = checkInCount;
+                checkInNavCount.classList.remove('hidden');
+            } else {
+                checkInNavCount.classList.add('hidden');
+            }
         }
-    }
 
-    const bookingCount = allAppointments.length;
-    if (bookingNavCount) {
-        if (bookingCount > 0) {
-            bookingNavCount.textContent = bookingCount;
-            bookingNavCount.classList.remove('hidden');
-        } else {
-            bookingNavCount.classList.add('hidden');
+        const bookingCount = allAppointments.length;
+        if (bookingNavCount) {
+            if (bookingCount > 0) {
+                bookingNavCount.textContent = bookingCount;
+                bookingNavCount.classList.remove('hidden');
+            } else {
+                bookingNavCount.classList.add('hidden');
+            }
         }
-    }
-};
+    };
     
     const updateNotificationDisplay = () => {
         const unreadCount = notifications.filter(n => !n.read).length;
@@ -1539,6 +1543,11 @@ const updateNavCounts = () => {
     document.getElementById('search-finished').addEventListener('input', (e) => { renderFinishedClients(applyClientFilters(allFinishedClients, e.target.value.toLowerCase(), currentTechFilterFinished, currentFinishedDateFilter)); });
     document.getElementById('finished-date-filter').addEventListener('input', (e) => { currentFinishedDateFilter = e.target.value; renderFinishedClients(applyClientFilters(allFinishedClients, document.getElementById('search-finished').value.toLowerCase(), currentTechFilterFinished, currentFinishedDateFilter)); });
     document.getElementById('search-clients-list').addEventListener('input', () => renderClientsList());
+    document.getElementById('search-gift-cards').addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const filtered = allGiftCards.filter(card => card.code.toLowerCase().includes(searchTerm) || card.recipientName.toLowerCase().includes(searchTerm));
+        renderGiftCardsAdminTable(filtered);
+    });
     
     document.getElementById('export-clients-btn').addEventListener('click', () => {
         const dataToExport = aggregatedClients.map(c => ({ Name: c.name, Phone: c.phone || '', DOB: c.dob || '', 'Favorite Tech': c.favoriteTech || '', 'Favorite Color': c.favoriteColor || '', 'Last Visit': c.lastVisit ? new Date(c.lastVisit).toLocaleDateString() : '' }));
@@ -1600,11 +1609,10 @@ const updateNavCounts = () => {
                 if (dayCell) { dayCell.insertAdjacentHTML('beforeend', `<div class="appointment-entry bg-blue-100 text-blue-700" data-id="${appt.id}" data-type="appointment">${appt.name}</div>`); }
             }
         });
-       // FIX: Check if calendarCountSpan exists before trying to set its content.
-    if(calendarCountSpan) {
-        calendarCountSpan.textContent = calendarGrid.querySelectorAll('.appointment-entry').length;
+        if(calendarCountSpan) {
+            calendarCountSpan.textContent = calendarGrid.querySelectorAll('.appointment-entry').length;
+        }
     }
-}
     document.getElementById('prev-month-btn').addEventListener('click', () => { currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(currentYear, currentMonth, currentTechFilterCalendar); });
     document.getElementById('next-month-btn').addEventListener('click', () => { currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; } renderCalendar(currentYear, currentMonth, currentTechFilterCalendar); });
     calendarGrid.addEventListener('click', (e) => {
@@ -1834,7 +1842,6 @@ const updateNavCounts = () => {
         geminiSmsModal.classList.remove('hidden'); geminiSmsModal.classList.add('flex');
         const prompt = `Write a single, friendly, and short SMS message to a nail salon client named ${client.name}. Thank them for their recent visit where they received the following services: ${client.services}. Mention that their technician was ${client.technician}. Ask them to come back soon. Keep it concise and professional.`;
         try {
-            // FIX: Updated to use the correct model for text generation
             const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             const result = await response.json();
@@ -2547,11 +2554,10 @@ const updateNavCounts = () => {
         });
     };
 
-onSnapshot(query(collection(db, "gift_cards"), orderBy("createdAt", "desc")), (snapshot) => {
-    allGiftCards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    // FIX: Corrected function name typo from renderGiftCards to renderGiftCardsAdminTable
-    renderGiftCardsAdminTable(allGiftCards);
-});
+    onSnapshot(query(collection(db, "gift_cards"), orderBy("createdAt", "desc")), (snapshot) => {
+        allGiftCards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderGiftCardsAdminTable(allGiftCards);
+    });
 
     const addPromotionForm = document.getElementById('add-promotion-form');
     const promotionsTableBody = document.querySelector('#promotions-table tbody');
@@ -3027,3 +3033,4 @@ onSnapshot(query(collection(db, "gift_cards"), orderBy("createdAt", "desc")), (s
     document.getElementById('sign-out-btn').addEventListener('click', () => { signOut(auth); });
     document.getElementById('floating-booking-btn').addEventListener('click', () => { openAddAppointmentModal(getLocalDateString()); });
 }
+

@@ -5,7 +5,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "http
 
 // FIX: Replaced invalid API key with an empty string to allow runtime injection.
 const firebaseConfig = {
-    apiKey: "",
+    apiKey: "AIzaSyAGZBJFVi_o1HeGDmjcSsmCcWxWOkuLc_4",
     authDomain: "nailexpress-10f2f.firebaseapp.com",
     projectId: "nailexpress-10f2f",
     storageBucket: "nailexpress-10f2f.appspot.com",

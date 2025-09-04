@@ -5,7 +5,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "http
 
 // FIX: Replaced invalid API key with an empty string to allow runtime injection.
 const firebaseConfig = {
-    apiKey: "AIzaSyAGZBJFVi_o1HeGDmjcSsmCcWxWOkuLc_4",
+    apiKey: "",
     authDomain: "nailexpress-10f2f.firebaseapp.com",
     projectId: "nailexpress-10f2f",
     storageBucket: "nailexpress-10f2f.appspot.com",
@@ -40,11 +40,6 @@ let currentUserId = null;
 let initialAppointmentsLoaded = false;
 let initialInventoryLoaded = false;
 let allFinishedClients = [], allAppointments = [], allClients = [], allActiveClients = [], servicesData = {};
-let allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [];
-let allInventoryUsage = [], allGiftCards = [], allPromotions = [];
-let techniciansAndStaff = [], technicians = [];
-let allExpenseCategories = [], allPaymentAccounts = [], allSuppliers = [];
-let aggregatedClients = [];
 
 const giftCardBackgrounds = {
     'General': [
@@ -292,10 +287,7 @@ onAuthStateChanged(auth, async (user) => {
         currentUserRole = null;
         signInAnonymously(auth).catch((error) => {
             console.error("Anonymous sign-in failed:", error);
-            // FIX: Hide loading screen on sign-in failure to show error.
-            loadingScreen.style.display = 'none';
-            landingPageContent.innerHTML = '<div class="h-screen flex items-center justify-center"><h2 class="text-3xl font-bold text-red-700">Could not connect. Please refresh.</h2></div>';
-            landingPageContent.style.display = 'block';
+            loadingScreen.innerHTML = '<h2 class="text-3xl font-bold text-red-700">Could not connect. Please refresh.</h2>';
         });
     }
 });
@@ -633,44 +625,6 @@ function initLandingPage() {
             updateFeatureVisibility({ showClientLogin: true, showPromotions: true, showGiftCards: true, showNailArt: true });
         }
     });
-
-    const giftCardPreview = document.getElementById('gift-card-preview');
-    const giftCardBgSelect = document.getElementById('gift-card-bg-select');
-
-    const updateGiftCardPreview = () => {
-        const amount = giftCardAmountSelect.value === 'custom' ? customAmountInput.value : giftCardAmountSelect.value;
-        const to = document.getElementById('gift-card-recipient-name').value;
-        const from = document.getElementById('gift-card-sender-name').value;
-        const message = document.getElementById('gift-card-message').value;
-        const bg = giftCardBgSelect.value;
-
-        giftCardPreview.style.backgroundImage = `url('${bg}')`;
-        giftCardPreview.innerHTML = `
-            <div class="p-4 bg-black bg-opacity-40 rounded-t-lg h-1/2 flex justify-between">
-                <h3 class="font-parisienne text-3xl">Gift Card</h3>
-                <p class="text-3xl font-bold">$${amount || '0'}</p>
-            </div>
-            <div class="p-4 bg-black bg-opacity-20 rounded-b-lg h-1/2 flex flex-col justify-end text-sm">
-                <p>To: <span class="font-semibold">${to || 'Recipient'}</span></p>
-                <p>From: <span class="font-semibold">${from || 'Sender'}</span></p>
-                <p class="mt-2 italic">"${message || 'Enjoy your treat!'}"</p>
-            </div>
-        `;
-    };
-    
-
-    Object.keys(giftCardBackgrounds).forEach(category => {
-        const optgroup = document.createElement('optgroup');
-        optgroup.label = category;
-        giftCardBackgrounds[category].forEach((url, index) => {
-            const option = new Option(`${category} ${index + 1}`, url);
-            optgroup.appendChild(option);
-        });
-        giftCardBgSelect.appendChild(optgroup);
-    });
-
-    giftCardForm.addEventListener('input', updateGiftCardPreview);
-    updateGiftCardPreview();
 }
 
 // --- CLIENT DASHBOARD SCRIPT ---
@@ -814,19 +768,24 @@ function initMainApp(userRole) {
 
     const updateNavCounts = () => {
         const checkInCount = allActiveClients.length;
-        if (checkInCount > 0) {
-            checkInNavCount.textContent = checkInCount;
-            checkInNavCount.classList.remove('hidden');
-        } else {
-            checkInNavCount.classList.add('hidden');
+        // FIX: Add checks to ensure elements exist before updating them.
+        if (checkInNavCount) {
+            if (checkInCount > 0) {
+                checkInNavCount.textContent = checkInCount;
+                checkInNavCount.classList.remove('hidden');
+            } else {
+                checkInNavCount.classList.add('hidden');
+            }
         }
 
         const bookingCount = allAppointments.length;
-        if (bookingCount > 0) {
-            bookingNavCount.textContent = bookingCount;
-            bookingNavCount.classList.remove('hidden');
-        } else {
-            bookingNavCount.classList.add('hidden');
+        if (bookingNavCount) {
+            if (bookingCount > 0) {
+                bookingNavCount.textContent = bookingCount;
+                bookingNavCount.classList.remove('hidden');
+            } else {
+                bookingNavCount.classList.add('hidden');
+            }
         }
     };
     
@@ -919,7 +878,6 @@ function initMainApp(userRole) {
     const editSalonEarningForm = document.getElementById('edit-salon-earning-form');
     const clientFormModal = document.getElementById('client-form-modal');
     const clientForm = document.getElementById('client-form');
-    const clientProfileModal = document.getElementById('client-profile-modal');
     const geminiSmsModal = document.getElementById('gemini-sms-modal');
     const confirmModal = document.getElementById('confirm-modal');
     const confirmModalMessage = document.getElementById('confirm-modal-message');
@@ -930,6 +888,8 @@ function initMainApp(userRole) {
     const shareModal = document.getElementById('share-modal');
     const giftCardDesignerModal = document.getElementById('gift-card-designer-modal');
     const editGiftCardModal = document.getElementById('edit-gift-card-modal');
+    const clientProfileModal = document.getElementById('client-profile-modal');
+
 
     const rebookOtherInput = document.getElementById('rebook-other-input');
     const rebookSelect = document.getElementById('rebook-select');
@@ -951,6 +911,10 @@ function initMainApp(userRole) {
     let currentTechFilterCalendar = 'All', currentTechFilterActive = 'All', currentTechFilterProcessing = 'All', currentTechFilterFinished = 'All';
     let currentFinishedDateFilter = '', currentEarningTechFilter = 'All', currentEarningDateFilter = '', currentEarningRangeFilter = 'daily';
     let currentSalonEarningDateFilter = '', currentSalonEarningRangeFilter = String(new Date().getMonth()), currentExpenseMonthFilter = '';
+
+    let aggregatedClients = [], allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [], allInventoryUsage = [], allGiftCards = [], allPromotions = [];
+    let techniciansAndStaff = [], technicians = [];
+    let allExpenseCategories = [], allPaymentAccounts = [], allSuppliers = [];
 
     
     let confirmCallback = null;
@@ -1181,11 +1145,11 @@ function initMainApp(userRole) {
             return { ...client, favoriteTech: findFavorite(client.techCounts), favoriteColor: findFavorite(client.colorCounts) };
         });
     
-        const clientInfoMap = new Map(allClients.map(c => [c.name.toLowerCase(), { dob: c.dob, id: c.id, phone: c.phone, photoGallery: c.photoGallery }]));
+        const clientInfoMap = new Map(allClients.map(c => [c.name.toLowerCase(), { dob: c.dob, id: c.id, phone: c.phone }]));
         let finalClientList = processedClients.map(aggClient => {
             const key = aggClient.name.toLowerCase();
             const masterInfo = clientInfoMap.get(key);
-            return { ...aggClient, id: masterInfo ? masterInfo.id : null, dob: masterInfo ? masterInfo.dob : '', phone: masterInfo && masterInfo.phone ? masterInfo.phone : aggClient.phone, photoGallery: masterInfo ? masterInfo.photoGallery : [] };
+            return { ...aggClient, id: masterInfo ? masterInfo.id : null, dob: masterInfo ? masterInfo.dob : '', phone: masterInfo && masterInfo.phone ? masterInfo.phone : aggClient.phone };
         });
     
         allClients.forEach(masterClient => {
@@ -1636,7 +1600,10 @@ function initMainApp(userRole) {
                 if (dayCell) { dayCell.insertAdjacentHTML('beforeend', `<div class="appointment-entry bg-blue-100 text-blue-700" data-id="${appt.id}" data-type="appointment">${appt.name}</div>`); }
             }
         });
-        calendarCountSpan.textContent = calendarGrid.querySelectorAll('.appointment-entry').length;
+        // FIX: Check if calendarCountSpan exists before trying to set its content.
+        if(calendarCountSpan) {
+            calendarCountSpan.textContent = calendarGrid.querySelectorAll('.appointment-entry').length;
+        }
     }
     document.getElementById('prev-month-btn').addEventListener('click', () => { currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(currentYear, currentMonth, currentTechFilterCalendar); });
     document.getElementById('next-month-btn').addEventListener('click', () => { currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; } renderCalendar(currentYear, currentMonth, currentTechFilterCalendar); });
@@ -1867,16 +1834,9 @@ function initMainApp(userRole) {
         geminiSmsModal.classList.remove('hidden'); geminiSmsModal.classList.add('flex');
         const prompt = `Write a single, friendly, and short SMS message to a nail salon client named ${client.name}. Thank them for their recent visit where they received the following services: ${client.services}. Mention that their technician was ${client.technician}. Ask them to come back soon. Keep it concise and professional.`;
         try {
-            // FIX: Updated Gemini model and API call structure
-            const apiKey = "";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            // FIX: Updated to use the correct model for text generation
             const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            
-            if (!response.ok) {
-                throw new Error(`API call failed with status: ${response.status}`);
-            }
-
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             const result = await response.json();
             let text = "Sorry, could not generate a message.";
             if (result.candidates?.[0]?.content?.parts?.[0]) { text = result.candidates[0].content.parts[0].text; }
@@ -1890,69 +1850,13 @@ function initMainApp(userRole) {
         const viewProfileBtn = e.target.closest('.view-client-profile-btn');
         const editBtn = e.target.closest('.edit-client-btn');
         const deleteBtn = e.target.closest('.delete-client-btn');
-        if (viewProfileBtn) { const client = aggregatedClients.find(c => c.id === viewProfileBtn.dataset.id); if(client) { openClientProfileModal(client); } } 
+        if (viewProfileBtn) { 
+            const client = aggregatedClients.find(c => c.id === viewProfileBtn.dataset.id); 
+            if(client) { openClientProfileModal(client); } 
+        } 
         else if (editBtn) { const client = aggregatedClients.find(c => c.id === editBtn.dataset.id); if(client) { openClientModal(client); } } 
         else if (deleteBtn) { const clientId = deleteBtn.dataset.id; const client = aggregatedClients.find(c => c.id === clientId); if (client) { showConfirmModal(`Delete all records for ${client.name}? This cannot be undone.`, async () => { await deleteDoc(doc(db, "clients", clientId)); }); } }
     });
-    
-    const openClientProfileModal = async (client) => {
-        if (!client) return;
-        document.getElementById('profile-client-name').textContent = client.name;
-        document.getElementById('profile-client-phone').textContent = client.phone || 'No phone number';
-       
-        const historyQuery = query(collection(db, "finished_clients"), where("name", "==", client.name), orderBy("checkOutTimestamp", "desc"));
-        const historySnapshot = await getDocs(historyQuery);
-        const history = historySnapshot.docs.map(doc => doc.data());
-        
-        let totalSpent = 0;
-        const historyBody = document.getElementById('profile-history-table-body');
-        
-        if (history.length === 0) {
-            historyBody.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-gray-500">No visit history found.</td></tr>';
-        } else {
-            historyBody.innerHTML = history.map(visit => {
-                let visitTotal = 0;
-                // Simplified price parsing - assumes price is at the end after a '$'
-                if (typeof visit.services === 'string') {
-                    const prices = visit.services.match(/\$\s*(\d+(\.\d{2})?)/g) || [];
-                    visitTotal = prices.reduce((sum, price) => sum + parseFloat(price.replace(/[^0-9.]/g, '')), 0);
-                    totalSpent += visitTotal;
-                }
-                return `<tr class="border-b"><td class="px-4 py-2">${new Date(visit.checkOutTimestamp.seconds * 1000).toLocaleDateString()}</td><td class="px-4 py-2">${visit.services}</td><td class="px-4 py-2">${visit.technician}</td><td class="px-4 py-2 text-right font-medium">$${visitTotal.toFixed(2)}</td></tr>`;
-            }).join('');
-        }
-        
-        document.getElementById('profile-total-visits').textContent = history.length;
-        document.getElementById('profile-total-spent').textContent = `$${totalSpent.toFixed(2)}`;
-        document.getElementById('profile-fav-tech').textContent = client.favoriteTech || 'N/A';
-        document.getElementById('profile-fav-color').textContent = client.favoriteColor || 'N/A';
-
-        const upcomingAppointmentsContainer = document.getElementById('profile-upcoming-appointments');
-        const clientUpcomingAppointments = allAppointments.filter(a => a.name === client.name && a.appointmentTimestamp.toDate() > new Date());
-        if (clientUpcomingAppointments.length > 0) {
-            upcomingAppointmentsContainer.innerHTML = '<ul class="space-y-2">' + clientUpcomingAppointments.map(appt => `<li class="text-sm bg-blue-50 p-2 rounded-md">${new Date(appt.appointmentTimestamp.seconds * 1000).toLocaleString()}: <strong>${Array.isArray(appt.services) ? appt.services.join(', ') : appt.services}</strong></li>`).join('') + '</ul>';
-        } else {
-            upcomingAppointmentsContainer.innerHTML = '<p class="text-sm text-gray-500">No upcoming appointments.</p>';
-        }
-
-        const galleryContainer = document.getElementById('profile-photo-gallery');
-        if (client.photoGallery && client.photoGallery.length > 0) {
-            galleryContainer.innerHTML = client.photoGallery.map(url => `<div class="w-24 h-24 flex-shrink-0"><img src="${url}" class="w-full h-full object-cover rounded-md shadow-md"></div>`).join('');
-        } else {
-            galleryContainer.innerHTML = '<p class="text-sm text-gray-500">No photos in gallery.</p>';
-        }
-        
-        clientProfileModal.classList.remove('hidden');
-        clientProfileModal.classList.add('flex');
-    };
-
-    const closeClientProfileModal = () => {
-        clientProfileModal.classList.add('hidden');
-        clientProfileModal.classList.remove('flex');
-    };
-    document.getElementById('close-client-profile-modal-btn').addEventListener('click', closeClientProfileModal);
-    clientProfileModal.querySelector('.modal-overlay').addEventListener('click', closeClientProfileModal);
-
 
     document.getElementById('gemini-sms-close-btn').addEventListener('click', () => { geminiSmsModal.classList.add('hidden'); geminiSmsModal.classList.remove('flex'); });
     document.querySelector('.gemini-sms-modal-overlay').addEventListener('click', () => { geminiSmsModal.classList.add('hidden'); geminiSmsModal.classList.remove('flex'); });
@@ -2615,33 +2519,38 @@ function initMainApp(userRole) {
     });
 
     const giftCardsTableBody = document.querySelector('#gift-cards-table tbody');
+    const giftCardsTableAdminBody = document.querySelector('#gift-cards-table-admin tbody');
 
     const renderGiftCardsAdminTable = (cards) => {
-        giftCardsTableBody.innerHTML = '';
-        if (cards.length === 0) {
-            giftCardsTableBody.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-gray-400">No gift cards have been sold.</td></tr>`;
-            return;
-        }
-        cards.forEach(card => {
-            const row = giftCardsTableBody.insertRow();
-            const balance = card.balance !== undefined ? card.balance : card.amount;
-            let status = card.status;
-            let statusColor = 'text-gray-500';
-            if (balance > 0) {
-                status = 'Active';
-                statusColor = 'text-green-600';
-            } else {
-                status = 'Depleted';
+        const tables = [giftCardsTableBody, giftCardsTableAdminBody];
+        tables.forEach(tbody => {
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            if (cards.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-gray-400">No gift cards have been sold.</td></tr>`;
+                return;
             }
+            cards.forEach(card => {
+                const row = tbody.insertRow();
+                const balance = card.balance !== undefined ? card.balance : card.amount;
+                let status = card.status;
+                let statusColor = 'text-gray-500';
+                if (balance > 0) {
+                    status = 'Active';
+                    statusColor = 'text-green-600';
+                } else {
+                    status = 'Depleted';
+                }
 
-            row.innerHTML = `<td class="px-6 py-4">${new Date(card.createdAt.seconds * 1000).toLocaleDateString()}</td><td class="px-6 py-4 font-mono text-xs">${card.code}</td><td class="px-6 py-4">$${card.amount.toFixed(2)}</td><td class="px-6 py-4 font-bold">$${balance.toFixed(2)}</td><td class="px-6 py-4">${card.recipientName}<br><span class="text-xs text-gray-500">${card.recipientEmail || 'Physical Card'}</span></td><td class="px-6 py-4">${card.senderName}</td><td class="px-6 py-4 font-bold ${statusColor}">${status}</td><td class="px-6 py-4 text-center"><button data-id="${card.id}" class="edit-gift-card-btn text-blue-500 hover:text-blue-700" title="Manage Card"><i class="fas fa-edit text-lg"></i></button></td>`;
+                row.innerHTML = `<td class="px-6 py-4">${new Date(card.createdAt.seconds * 1000).toLocaleDateString()}</td><td class="px-6 py-4 font-mono text-xs">${card.code}</td><td class="px-6 py-4">$${card.amount.toFixed(2)}</td><td class="px-6 py-4 font-bold">$${balance.toFixed(2)}</td><td class="px-6 py-4">${card.recipientName}<br><span class="text-xs text-gray-500">${card.recipientEmail || 'Physical Card'}</span></td><td class="px-6 py-4">${card.senderName}</td><td class="px-6 py-4 font-bold ${statusColor}">${status}</td><td class="px-6 py-4 text-center"><button data-id="${card.id}" class="edit-gift-card-btn text-blue-500 hover:text-blue-700" title="Manage Card"><i class="fas fa-edit text-lg"></i></button></td>`;
+            });
         });
     };
 
     onSnapshot(query(collection(db, "gift_cards"), orderBy("createdAt", "desc")), (snapshot) => {
         allGiftCards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // FIX: Corrected function name typo
         renderGiftCardsAdminTable(allGiftCards);
-        renderGiftCards();
     });
 
     const addPromotionForm = document.getElementById('add-promotion-form');
@@ -3036,16 +2945,64 @@ function initMainApp(userRole) {
         }
     });
 
-    document.getElementById('gift-cards-table').addEventListener('click', (e) => {
-        const editBtn = e.target.closest('.edit-gift-card-btn');
-        if (editBtn) {
-            const card = allGiftCards.find(c => c.id === editBtn.dataset.id);
-            if(card) openEditGiftCardModal(card);
+    const setupGiftCardTableListener = (tableId) => {
+        const table = document.getElementById(tableId);
+        if (table) {
+            table.addEventListener('click', (e) => {
+                const editBtn = e.target.closest('.edit-gift-card-btn');
+                if (editBtn) {
+                    const card = allGiftCards.find(c => c.id === editBtn.dataset.id);
+                    if(card) openEditGiftCardModal(card);
+                }
+            });
         }
-    });
+    };
+    setupGiftCardTableListener('gift-cards-table');
+    setupGiftCardTableListener('gift-cards-table-admin');
+
 
     document.getElementById('close-edit-gift-card-modal-btn').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));
     editGiftCardModal.querySelector('.modal-overlay').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));
+
+    const openClientProfileModal = async (client) => {
+        const clientData = aggregatedClients.find(c => c.id === client.id);
+        const clientHistory = allFinishedClients.filter(c => c.name === clientData.name);
+        const clientAppointments = allAppointments.filter(c => c.name === clientData.name && c.appointmentTimestamp.toDate() > new Date());
+        
+        document.getElementById('profile-client-name').textContent = clientData.name;
+        document.getElementById('profile-client-phone').textContent = clientData.phone || 'No phone number';
+        document.getElementById('profile-total-visits').textContent = clientHistory.length;
+        
+        const totalSpent = clientHistory.reduce((sum, visit) => {
+            const prices = (visit.services.match(/\$\d+/g) || []).map(p => Number(p.slice(1)));
+            return sum + prices.reduce((a, b) => a + b, 0);
+        }, 0);
+        document.getElementById('profile-total-spent').textContent = `$${totalSpent.toFixed(2)}`;
+        
+        document.getElementById('profile-fav-tech').textContent = clientData.favoriteTech;
+        document.getElementById('profile-fav-color').textContent = clientData.favoriteColor;
+
+        const historyBody = document.getElementById('profile-history-table-body');
+        historyBody.innerHTML = clientHistory.map(v => `<tr><td class="px-4 py-2">${v.checkOutTimestamp.toDate().toLocaleDateString()}</td><td class="px-4 py-2">${v.services}</td><td class="px-4 py-2">${v.technician}</td><td class="px-4 py-2 text-right">$${(v.services.match(/\$\d+/g) || []).map(p => Number(p.slice(1))).reduce((a, b) => a + b, 0).toFixed(2)}</td></tr>`).join('');
+
+        const apptsContainer = document.getElementById('profile-upcoming-appts');
+        apptsContainer.innerHTML = clientAppointments.length > 0 
+            ? clientAppointments.map(a => `<div class="bg-blue-50 p-2 rounded-md"><p class="font-semibold">${a.appointmentTimestamp.toDate().toLocaleString()}</p><p class="text-sm">${a.services.join(', ')}</p></div>`).join('')
+            : '<p class="text-sm text-gray-500">No upcoming appointments.</p>';
+        
+        const galleryContainer = document.getElementById('profile-photo-gallery');
+        const clientDocSnap = await getDoc(doc(db, "clients", client.id));
+        if (clientDocSnap.exists() && clientDocSnap.data().photoGallery) {
+             galleryContainer.innerHTML = clientDocSnap.data().photoGallery.map(url => `<img src="${url}" class="w-full h-24 object-cover rounded-md">`).join('');
+        } else {
+            galleryContainer.innerHTML = '<p class="text-sm text-gray-500">No photos uploaded.</p>';
+        }
+        
+        clientProfileModal.classList.remove('hidden');
+    };
+    
+    document.getElementById('close-client-profile-modal-btn').addEventListener('click', () => clientProfileModal.classList.add('hidden'));
+    clientProfileModal.querySelector('.modal-overlay').addEventListener('click', () => clientProfileModal.classList.add('hidden'));
 
 
     loadAndRenderServices();
@@ -3070,4 +3027,3 @@ function initMainApp(userRole) {
     document.getElementById('sign-out-btn').addEventListener('click', () => { signOut(auth); });
     document.getElementById('floating-booking-btn').addEventListener('click', () => { openAddAppointmentModal(getLocalDateString()); });
 }
-

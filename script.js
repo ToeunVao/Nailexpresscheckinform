@@ -3,8 +3,9 @@ import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, on
 import { getFirestore, collection, addDoc, onSnapshot, query, doc, getDoc, deleteDoc, serverTimestamp, where, getDocs, orderBy, Timestamp, updateDoc, writeBatch, setDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
+// FIX: Replaced invalid API key with an empty string to allow runtime injection.
 const firebaseConfig = {
-    apiKey: "AIzaSyAGZBJFVi_o1HeGDmjcSsmCcWxWOkuLc_4",
+    apiKey: "",
     authDomain: "nailexpress-10f2f.firebaseapp.com",
     projectId: "nailexpress-10f2f",
     storageBucket: "nailexpress-10f2f.appspot.com",
@@ -43,6 +44,7 @@ let allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = []
 let allInventoryUsage = [], allGiftCards = [], allPromotions = [];
 let techniciansAndStaff = [], technicians = [];
 let allExpenseCategories = [], allPaymentAccounts = [], allSuppliers = [];
+let aggregatedClients = [];
 
 const giftCardBackgrounds = {
     'General': [
@@ -290,7 +292,10 @@ onAuthStateChanged(auth, async (user) => {
         currentUserRole = null;
         signInAnonymously(auth).catch((error) => {
             console.error("Anonymous sign-in failed:", error);
-            loadingScreen.innerHTML = '<h2 class="text-3xl font-bold text-red-700">Could not connect. Please refresh.</h2>';
+            // FIX: Hide loading screen on sign-in failure to show error.
+            loadingScreen.style.display = 'none';
+            landingPageContent.innerHTML = '<div class="h-screen flex items-center justify-center"><h2 class="text-3xl font-bold text-red-700">Could not connect. Please refresh.</h2></div>';
+            landingPageContent.style.display = 'block';
         });
     }
 });
@@ -641,24 +646,24 @@ function initLandingPage() {
 
         giftCardPreview.style.backgroundImage = `url('${bg}')`;
         giftCardPreview.innerHTML = `
-            <div class="p-4 bg-black bg-opacity-40 rounded-lg text-white h-full flex flex-col justify-between">
-                <div>
-                    <h3 class="text-2xl font-bold text-right">$${amount || '0'}</h3>
-                </div>
-                <div class="text-left">
-                    <p class="text-sm">To: ${to || 'Recipient'}</p>
-                    <p class="text-sm">From: ${from || 'Sender'}</p>
-                     <p class="mt-2 italic text-sm">"${message || 'Your message here...'}"</p>
-                </div>
+            <div class="p-4 bg-black bg-opacity-40 rounded-t-lg h-1/2 flex justify-between">
+                <h3 class="font-parisienne text-3xl">Gift Card</h3>
+                <p class="text-3xl font-bold">$${amount || '0'}</p>
+            </div>
+            <div class="p-4 bg-black bg-opacity-20 rounded-b-lg h-1/2 flex flex-col justify-end text-sm">
+                <p>To: <span class="font-semibold">${to || 'Recipient'}</span></p>
+                <p>From: <span class="font-semibold">${from || 'Sender'}</span></p>
+                <p class="mt-2 italic">"${message || 'Enjoy your treat!'}"</p>
             </div>
         `;
     };
+    
 
     Object.keys(giftCardBackgrounds).forEach(category => {
         const optgroup = document.createElement('optgroup');
         optgroup.label = category;
-        giftCardBackgrounds[category].forEach(url => {
-            const option = new Option(url.split('/').pop().split('?')[0], url);
+        giftCardBackgrounds[category].forEach((url, index) => {
+            const option = new Option(`${category} ${index + 1}`, url);
             optgroup.appendChild(option);
         });
         giftCardBgSelect.appendChild(optgroup);
@@ -946,8 +951,6 @@ function initMainApp(userRole) {
     let currentTechFilterCalendar = 'All', currentTechFilterActive = 'All', currentTechFilterProcessing = 'All', currentTechFilterFinished = 'All';
     let currentFinishedDateFilter = '', currentEarningTechFilter = 'All', currentEarningDateFilter = '', currentEarningRangeFilter = 'daily';
     let currentSalonEarningDateFilter = '', currentSalonEarningRangeFilter = String(new Date().getMonth()), currentExpenseMonthFilter = '';
-
-    let aggregatedClients = [];
 
     
     let confirmCallback = null;
@@ -1864,8 +1867,16 @@ function initMainApp(userRole) {
         geminiSmsModal.classList.remove('hidden'); geminiSmsModal.classList.add('flex');
         const prompt = `Write a single, friendly, and short SMS message to a nail salon client named ${client.name}. Thank them for their recent visit where they received the following services: ${client.services}. Mention that their technician was ${client.technician}. Ask them to come back soon. Keep it concise and professional.`;
         try {
+            // FIX: Updated Gemini model and API call structure
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
             const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            
+            if (!response.ok) {
+                throw new Error(`API call failed with status: ${response.status}`);
+            }
+
             const result = await response.json();
             let text = "Sorry, could not generate a message.";
             if (result.candidates?.[0]?.content?.parts?.[0]) { text = result.candidates[0].content.parts[0].text; }
@@ -1901,9 +1912,10 @@ function initMainApp(userRole) {
         } else {
             historyBody.innerHTML = history.map(visit => {
                 let visitTotal = 0;
+                // Simplified price parsing - assumes price is at the end after a '$'
                 if (typeof visit.services === 'string') {
-                    const prices = visit.services.match(/\$\d+(\.\d{2})?/g) || [];
-                    visitTotal = prices.reduce((sum, price) => sum + parseFloat(price.substring(1)), 0);
+                    const prices = visit.services.match(/\$\s*(\d+(\.\d{2})?)/g) || [];
+                    visitTotal = prices.reduce((sum, price) => sum + parseFloat(price.replace(/[^0-9.]/g, '')), 0);
                     totalSpent += visitTotal;
                 }
                 return `<tr class="border-b"><td class="px-4 py-2">${new Date(visit.checkOutTimestamp.seconds * 1000).toLocaleDateString()}</td><td class="px-4 py-2">${visit.services}</td><td class="px-4 py-2">${visit.technician}</td><td class="px-4 py-2 text-right font-medium">$${visitTotal.toFixed(2)}</td></tr>`;
@@ -1918,7 +1930,7 @@ function initMainApp(userRole) {
         const upcomingAppointmentsContainer = document.getElementById('profile-upcoming-appointments');
         const clientUpcomingAppointments = allAppointments.filter(a => a.name === client.name && a.appointmentTimestamp.toDate() > new Date());
         if (clientUpcomingAppointments.length > 0) {
-            upcomingAppointmentsContainer.innerHTML = '<ul>' + clientUpcomingAppointments.map(appt => `<li class="text-sm text-gray-600 mb-1">${new Date(appt.appointmentTimestamp.seconds * 1000).toLocaleString()}: ${appt.services.join(', ')}</li>`).join('') + '</ul>';
+            upcomingAppointmentsContainer.innerHTML = '<ul class="space-y-2">' + clientUpcomingAppointments.map(appt => `<li class="text-sm bg-blue-50 p-2 rounded-md">${new Date(appt.appointmentTimestamp.seconds * 1000).toLocaleString()}: <strong>${Array.isArray(appt.services) ? appt.services.join(', ') : appt.services}</strong></li>`).join('') + '</ul>';
         } else {
             upcomingAppointmentsContainer.innerHTML = '<p class="text-sm text-gray-500">No upcoming appointments.</p>';
         }
@@ -1940,6 +1952,7 @@ function initMainApp(userRole) {
     };
     document.getElementById('close-client-profile-modal-btn').addEventListener('click', closeClientProfileModal);
     clientProfileModal.querySelector('.modal-overlay').addEventListener('click', closeClientProfileModal);
+
 
     document.getElementById('gemini-sms-close-btn').addEventListener('click', () => { geminiSmsModal.classList.add('hidden'); geminiSmsModal.classList.remove('flex'); });
     document.querySelector('.gemini-sms-modal-overlay').addEventListener('click', () => { geminiSmsModal.classList.add('hidden'); geminiSmsModal.classList.remove('flex'); });
@@ -2624,36 +2637,6 @@ function initMainApp(userRole) {
             row.innerHTML = `<td class="px-6 py-4">${new Date(card.createdAt.seconds * 1000).toLocaleDateString()}</td><td class="px-6 py-4 font-mono text-xs">${card.code}</td><td class="px-6 py-4">$${card.amount.toFixed(2)}</td><td class="px-6 py-4 font-bold">$${balance.toFixed(2)}</td><td class="px-6 py-4">${card.recipientName}<br><span class="text-xs text-gray-500">${card.recipientEmail || 'Physical Card'}</span></td><td class="px-6 py-4">${card.senderName}</td><td class="px-6 py-4 font-bold ${statusColor}">${status}</td><td class="px-6 py-4 text-center"><button data-id="${card.id}" class="edit-gift-card-btn text-blue-500 hover:text-blue-700" title="Manage Card"><i class="fas fa-edit text-lg"></i></button></td>`;
         });
     };
-
-    const renderGiftCards = () => {
-        const searchTerm = document.getElementById('search-gift-cards').value.toLowerCase();
-        const filteredCards = allGiftCards.filter(card => 
-            card.recipientName.toLowerCase().includes(searchTerm) || 
-            card.code.toLowerCase().includes(searchTerm)
-        );
-
-        const tbody = document.querySelector('#gift-cards-report-table tbody');
-        tbody.innerHTML = '';
-        if (filteredCards.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-gray-400">No gift cards found.</td></tr>`;
-            return;
-        }
-
-        filteredCards.forEach(card => {
-            const row = tbody.insertRow();
-            row.className = 'bg-white border-b';
-            row.innerHTML = `
-                <td class="px-6 py-4 font-medium text-gray-900">${card.code}</td>
-                <td class="px-6 py-4">${card.recipientName}</td>
-                <td class="px-6 py-4">$${card.amount.toFixed(2)}</td>
-                <td class="px-6 py-4">$${card.balance.toFixed(2)}</td>
-                <td class="px-6 py-4">${card.status}</td>
-                <td class="px-6 py-4">${new Date(card.createdAt.seconds * 1000).toLocaleDateString()}</td>
-            `;
-        });
-    };
-    document.getElementById('search-gift-cards').addEventListener('input', renderGiftCards);
-
 
     onSnapshot(query(collection(db, "gift_cards"), orderBy("createdAt", "desc")), (snapshot) => {
         allGiftCards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));

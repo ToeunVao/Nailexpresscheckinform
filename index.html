@@ -188,7 +188,7 @@
                             <h3 class="text-xl font-semibold text-gray-700 border-b pb-3 mb-6">Step 1: Your Information</h3>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div><label for="appointment-client-name-landing" class="block text-sm font-medium text-gray-600">Client Name</label><input type="text" id="appointment-client-name-landing" class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg" placeholder="e.g., Jane Doe" required></div>
-                                <div><label for="appointment-phone-landing" class="block text-sm font-medium text-gray-600">Phone</label><input type="tel" id="appointment-phone-landing" class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg" placeholder="(555) 123-4567"></div>
+                                <div><label for="appointment-phone-landing" class="block text-sm font-medium text-gray-600">Phone</label><input type="tel" id="appointment-phone-landing" class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg" placeholder="(555) 123-4567" required></div>
                                 <div><label for="appointment-people-landing" class="block text-sm font-medium text-gray-600">Group Size</label><select id="appointment-people-landing" class="form-select w-full p-3 mt-1 border border-gray-300 rounded-lg"></select></div>
                                 <div><label for="appointment-technician-select-landing" class="block text-sm font-medium text-gray-600">Technician Request</label><select id="appointment-technician-select-landing" class="form-select w-full p-3 mt-1 border border-gray-300 rounded-lg"><option>Any Technician</option></select></div>
                                 <div class="md:col-span-2"><label for="appointment-datetime-landing" class="block text-sm font-medium text-gray-600">Date & Time</label><input type="datetime-local" id="appointment-datetime-landing" class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg" required></div>
@@ -340,7 +340,6 @@
                     </div>
                 </div>
                 <nav id="top-nav" class="hidden md:flex items-center gap-2 text-sm font-semibold text-gray-600">
-                    <!-- FIX: Added spans for navigation counts -->
                     <button class="top-nav-btn relative" data-target="check-in">
                         Check-in
                         <span id="check-in-nav-count" class="absolute -top-1 -right-1 bg-pink-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center hidden">0</span>
@@ -592,7 +591,6 @@
                                 <button id="prev-month-btn" class="px-4 py-2 bg-pink-600 text-white rounded-lg"><i class="fas fa-chevron-left"></i></button>
                                 <h3 id="month-year-display" class="text-xl font-bold w-48 text-center"></h3>
                                 <button id="next-month-btn" class="px-4 py-2 bg-pink-600 text-white rounded-lg"><i class="fas fa-chevron-right"></i></button>
-                                <!-- FIX: Added span for calendar count -->
                                 <span class="ml-4 bg-gray-200 text-gray-800 text-sm font-semibold px-3 py-1 rounded-full">Month Total: <span id="calendar-count">0</span></span>
                             </div>
                          </div>
@@ -658,7 +656,6 @@
                                 <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg" id="staff-earning-report-tab" type="button">Staff Earning</button></li>
                                 <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg" id="expense-report-tab" type="button">Expense Report</button></li>
                                 <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg" id="clients-list-report-tab" type="button">Clients List</button></li>
-                                <!-- NEW: Gift Card Report Tab -->
                                 <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg" id="gift-card-report-tab" type="button">Gift Cards</button></li>
                             </ul>
                         </div>
@@ -1574,11 +1571,13 @@
         </div>
     </div>
 
-    <!-- NEW: Landing Page Modals -->
+    <!-- Landing Page Modals -->
     <div id="signup-login-modal" class="modal hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
         <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
         <div class="relative bg-white w-full max-w-md p-8 rounded-2xl shadow-xl m-4">
             <button id="close-signup-login-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times fa-lg"></i></button>
+            <!-- Tittle Added -->
+            <h2 class="text-2xl font-bold text-center text-pink-700 mb-2">Nails Express Login</h2>
             <div class="mb-4 border-b border-gray-200">
                 <ul class="flex flex-wrap -mb-px text-sm font-medium text-center">
                     <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg active" id="login-tab-btn" type="button">Log In</button></li>
@@ -1587,17 +1586,19 @@
             </div>
             <div id="login-form-container">
                 <form id="landing-login-form" class="space-y-4">
-                    <div><label for="landing-email" class="block text-sm font-medium text-gray-600">Email</label><input type="email" id="landing-email" class="form-input w-full p-3 mt-1" required></div>
-                    <div><label for="landing-password" class="block text-sm font-medium text-gray-600">Password</label><input type="password" id="landing-password" class="form-input w-full p-3 mt-1" required></div>
+                    <!-- Placeholders and styles added -->
+                    <div><label for="landing-email" class="block text-sm font-medium text-gray-600">Email</label><input type="email" id="landing-email" class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg" placeholder="Enter your email" required></div>
+                    <div><label for="landing-password" class="block text-sm font-medium text-gray-600">Password</label><input type="password" id="landing-password" class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg" placeholder="Enter your password" required></div>
                     <div id="login-lockout-message" class="hidden text-sm text-red-600"></div>
                     <div><button type="submit" id="landing-login-btn" class="w-full bg-pink-600 text-white font-bold py-3 rounded-lg flex items-center justify-center"><span class="btn-text">Log In</span><i class="fas fa-spinner fa-spin ml-2 hidden"></i></button></div>
                 </form>
             </div>
             <div id="signup-form-container" class="hidden">
                 <form id="landing-signup-form" class="space-y-4">
-                    <div><label for="signup-name" class="block text-sm font-medium text-gray-600">Full Name</label><input type="text" id="signup-name" class="form-input w-full p-3 mt-1" required></div>
-                    <div><label for="signup-email" class="block text-sm font-medium text-gray-600">Email</label><input type="email" id="signup-email" class="form-input w-full p-3 mt-1" required></div>
-                    <div><label for="signup-password" class="block text-sm font-medium text-gray-600">Password</label><input type="password" id="signup-password" class="form-input w-full p-3 mt-1" required></div>
+                    <!-- Placeholders and styles added -->
+                    <div><label for="signup-name" class="block text-sm font-medium text-gray-600">Full Name</label><input type="text" id="signup-name" class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg" placeholder="Enter your full name" required></div>
+                    <div><label for="signup-email" class="block text-sm font-medium text-gray-600">Email</label><input type="email" id="signup-email" class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg" placeholder="Enter your email" required></div>
+                    <div><label for="signup-password" class="block text-sm font-medium text-gray-600">Password</label><input type="password" id="signup-password" class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg" placeholder="Create a password" required></div>
                     <div><button type="submit" id="landing-signup-btn" class="w-full bg-pink-600 text-white font-bold py-3 rounded-lg flex items-center justify-center"><span class="btn-text">Sign Up</span><i class="fas fa-spinner fa-spin ml-2 hidden"></i></button></div>
                 </form>
             </div>

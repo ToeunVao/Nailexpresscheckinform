@@ -1602,6 +1602,14 @@ function initMainApp(userRole) {
     document.getElementById('finished-date-filter').addEventListener('input', (e) => { currentFinishedDateFilter = e.target.value; renderFinishedClients(applyClientFilters(allFinishedClients, document.getElementById('search-finished').value.toLowerCase(), currentTechFilterFinished, currentFinishedDateFilter)); });
     document.getElementById('search-clients-list').addEventListener('input', () => renderClientsList());
     document.getElementById('search-gift-cards').addEventListener('input', (e) => {
+    const searchTerm = e.target.value.toLowerCase();
+    const filtered = allGiftCards.filter(card => 
+        card.code.toLowerCase().includes(searchTerm) || 
+        card.recipientName.toLowerCase().includes(searchTerm)
+    );
+    renderGiftCardsAdminTable(filtered);
+});
+    document.getElementById('search-gift-cards').addEventListener('input', (e) => {
         const searchTerm = e.target.value.toLowerCase();
         const filtered = allGiftCards.filter(card => card.code.toLowerCase().includes(searchTerm) || card.recipientName.toLowerCase().includes(searchTerm));
         renderGiftCardsAdminTable(filtered);
@@ -2634,8 +2642,8 @@ function initMainApp(userRole) {
                     status = 'Depleted';
                 }
 
-                row.innerHTML = `<td class="px-6 py-4">${new Date(card.createdAt.seconds * 1000).toLocaleDateString()}</td><td class="px-6 py-4 font-mono text-xs">${card.code}</td><td class="px-6 py-4">$${card.amount.toFixed(2)}</td><td class="px-6 py-4 font-bold">$${balance.toFixed(2)}</td><td class="px-6 py-4">${card.recipientName}<br><span class="text-xs text-gray-500">${card.recipientEmail || 'Physical Card'}</span></td><td class="px-6 py-4">${card.senderName}</td><td class="px-6 py-4 font-bold ${statusColor}">${status}</td><td class="px-6 py-4 text-center"><button data-id="${card.id}" class="edit-gift-card-btn text-blue-500 hover:text-blue-700" title="Manage Card"><i class="fas fa-edit text-lg"></i></button></td>`;
-            });
+            row.innerHTML = `<td class="px-6 py-4">${new Date(card.createdAt.seconds * 1000).toLocaleDateString()}</td><td class="px-6 py-4 font-mono text-xs">${card.code}</td><td class="px-6 py-4">$${card.amount.toFixed(2)}</td><td class="px-6 py-4 font-bold">$${balance.toFixed(2)}</td><td class="px-6 py-4">${card.recipientName}<br><span class="text-xs text-gray-500">${card.recipientEmail || 'Physical Card'}</span></td><td class="px-6 py-4">${card.senderName}</td><td class="px-6 py-4 font-bold ${statusColor}">${status}</td><td class="px-6 py-4 text-center space-x-4"><button data-id="${card.id}" class="edit-gift-card-btn text-blue-500 hover:text-blue-700" title="Manage Card"><i class="fas fa-edit text-lg"></i></button><button data-id="${card.id}" class="delete-gift-card-btn text-red-500 hover:text-red-700" title="Delete Card"><i class="fas fa-trash-alt text-lg"></i></button></td>`;
+                });
         });
     };
 
@@ -3054,6 +3062,37 @@ function initMainApp(userRole) {
 
     document.getElementById('close-edit-gift-card-modal-btn').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));
     editGiftCardModal.querySelector('.modal-overlay').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));
+    const setupGiftCardTableListener = (tableId) => {
+    const table = document.getElementById(tableId);
+    if (table) {
+        table.addEventListener('click', (e) => {
+            const editBtn = e.target.closest('.edit-gift-card-btn');
+            if (editBtn) {
+                const card = allGiftCards.find(c => c.id === editBtn.dataset.id);
+                if(card) openEditGiftCardModal(card);
+            }
+
+            const deleteBtn = e.target.closest('.delete-gift-card-btn');
+            if (deleteBtn) {
+                const cardId = deleteBtn.dataset.id;
+                const card = allGiftCards.find(c => c.id === cardId);
+                if (card) {
+                    showConfirmModal(`Are you sure you want to delete gift card ${card.code}? This action cannot be undone.`, async () => {
+                        try {
+                            await deleteDoc(doc(db, "gift_cards", cardId));
+                            alert(`Gift card ${card.code} has been deleted.`);
+                        } catch (error) {
+                            console.error("Error deleting gift card:", error);
+                            alert("Could not delete the gift card.");
+                        }
+                    });
+                }
+            }
+        });
+    }
+};
+setupGiftCardTableListener('gift-cards-table');
+setupGiftCardTableListener('gift-cards-table-admin');
     document.getElementById('close-client-profile-modal-btn').addEventListener('click', () => clientProfileModal.classList.add('hidden'));
 clientProfileModal.querySelector('.modal-overlay').addEventListener('click', () => clientProfileModal.classList.add('hidden'));
 

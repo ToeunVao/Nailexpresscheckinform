@@ -340,8 +340,14 @@
                     </div>
                 </div>
                 <nav id="top-nav" class="hidden md:flex items-center gap-2 text-sm font-semibold text-gray-600">
-                    <button class="top-nav-btn" data-target="check-in">Check-in <span id="check-in-nav-count" class="ml-2 bg-pink-100 text-pink-800 text-xs font-semibold px-2.5 py-0.5 rounded-full hidden">0</span></button>
-                    <button class="top-nav-btn" data-target="booking">Booking <span id="booking-nav-count" class="ml-2 bg-pink-100 text-pink-800 text-xs font-semibold px-2.5 py-0.5 rounded-full hidden">0</span></button>
+                    <button class="top-nav-btn relative" data-target="check-in">
+                        Check-in
+                        <span id="check-in-nav-count" class="absolute -top-1 -right-1 bg-pink-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center hidden">0</span>
+                    </button>
+                    <button class="top-nav-btn relative" data-target="booking">
+                        Booking
+                        <span id="booking-nav-count" class="absolute -top-1 -right-1 bg-blue-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center hidden">0</span>
+                    </button>
                     <button class="top-nav-btn" data-target="nails-idea">Nails Idea</button>
                     <button class="top-nav-btn" data-target="report">Report</button>
                     <button class="top-nav-btn" data-target="setting">Setting</button>
@@ -401,12 +407,9 @@
                         <h3 class="text-xl font-bold text-gray-700 mb-4">Top Services</h3>
                         <canvas id="services-chart"></canvas>
                     </div>
-                    <!-- NEW: Staff Earning Overview Section -->
-                    <div class="bg-white p-6 rounded-2xl shadow-lg lg:col-span-2">
-                        <h3 class="text-xl font-bold text-gray-700 mb-4">Staff Earning Overview</h3>
-                        <div class="h-96">
-                             <canvas id="dashboard-earnings-chart"></canvas>
-                        </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-lg lg:col-span-2 h-96">
+                        <h3 class="text-xl font-bold text-gray-700 mb-4">Technician Earnings</h3>
+                        <canvas id="earnings-chart"></canvas>
                     </div>
                 </div>
                 
@@ -431,9 +434,740 @@
                 <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-xl">
                     
                     <div id="check-in-section" class="main-section">
-                        <!-- All app sections are within this container but hidden by default -->
+                        <div id="main-tabs-container" class="mb-4 border-b border-gray-200">
+                            <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="main-tabs">
+                                <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg active" id="check-in-tab" type="button">Check In</button></li>
+                                <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg" id="queue-tab" type="button">Active Queue <span id="active-count" class="ml-2 bg-pink-100 text-pink-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">0</span></button></li>
+                                <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg" id="processing-tab" type="button">Processing <span id="processing-count" class="ml-2 bg-gray-200 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">0</span></button></li>
+                                <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg" id="finished-tab" type="button">Finished Clients <span id="finished-count" class="ml-2 bg-gray-200 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">0</span></button></li>
+                            </ul>
+                        </div>
+                        <div id="check-in-content" class="tab-content">
+                            <form id="check-in-form">
+                                <div class="space-y-8">
+                                     <div>
+                                        <h3 class="text-xl font-semibold text-gray-700 border-b pb-3 mb-6">Your Information</h3>
+                                        <div class="grid grid-cols-2 md:grid-cols-5 gap-6">
+                                            <div class="col-span-2 md:col-span-1">
+                                                <label for="full-name" class="block text-sm font-medium text-gray-600 mb-1">Full Name</label>
+                                                <input type="text" id="full-name" list="checkin-client-names" class="form-input w-full p-3 border border-gray-300 rounded-lg" placeholder="e.g., Jane Doe" required>
+                                                <datalist id="checkin-client-names"></datalist>
+                                            </div>
+                                            <div class="col-span-2 md:col-span-1">
+                                                <label for="phone-number" class="block text-sm font-medium text-gray-600 mb-1">Phone</label>
+                                                <input type="tel" id="phone-number" list="checkin-client-phones" class="form-input w-full p-3 border border-gray-300 rounded-lg" placeholder="(555) 123-4567">
+                                                <datalist id="checkin-client-phones"></datalist>
+                                            </div>
+                                            <div>
+                                                <label for="checkin-technician-select" class="block text-sm font-medium text-gray-600 mb-1">Technician</label>
+                                                <select id="checkin-technician-select" class="form-select w-full p-3 border border-gray-300 rounded-lg">
+                                                    <option>Any Technician</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label for="people-count" class="block text-sm font-medium text-gray-600 mb-1">Group Size</label>
+                                                <select id="people-count" class="form-select w-full p-3 border border-gray-300 rounded-lg"></select>
+                                            </div>
+                                            <div>
+                                                <label for="booking-type" class="block text-sm font-medium text-gray-600 mb-1">Booking Type</label>
+                                                <select id="booking-type" class="form-select w-full p-3 border border-gray-300 rounded-lg">
+                                                    <option>Walk-in</option>
+                                                    <option value="Phone">Phone</option>
+                                                    <option value="Online">Online</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between items-center border-b pb-3 mb-6">
+                                            <h3 class="text-xl font-semibold text-gray-700">Select Your Services</h3>
+                                        </div>
+                                        <div id="services-container" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+                                        <div id="hidden-checkbox-container" class="hidden"></div>
+                                    </div>
+                                </div>
+                                 <div class="mt-8 text-center">
+                                     <label class="flex items-center justify-center">
+                                        <input type="checkbox" id="policy-agree" class="form-checkbox" checked required>
+                                        <span class="ml-2 text-sm text-gray-600">I agree to the <button type="button" class="text-pink-600 hover:underline font-semibold view-policy-btn">Salon Policy</button>.</span>
+                                    </label>
+                                </div>
+                                <div class="mt-4 text-center">
+                                    <button type="submit" class="w-full md:w-auto bg-pink-600 text-white font-bold py-3 px-12 rounded-full hover:bg-pink-700 transition-all duration-300 transform hover:scale-105">
+                                        <i class="fas fa-check mr-2"></i> Check In
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        <div id="queue-content" class="tab-content hidden">
+                            <div class="flex justify-between items-center mb-4">
+                                <input type="text" id="search-active" class="w-64 p-2 border border-gray-300 rounded-lg" placeholder="Search active clients by name...">
+                                <div id="tech-filter-container-active" class="tech-filter-container flex gap-2">
+                                     <button class="tech-filter-btn px-3 py-1 rounded-full text-sm active" data-tech="All">All</button>
+                                     <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Any Technician">Any Technician</button>
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table id="clients-table" class="w-full text-sm text-left text-gray-600">
+                                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3 text-center">No.</th>
+                                            <th scope="col" class="px-6 py-3">Name</th>
+                                            <th scope="col" class="px-6 py-3">Services</th>
+                                            <th scope="col" class="px-6 py-3 text-center">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div id="processing-content" class="tab-content hidden">
+                             <div class="flex justify-between items-center mb-4">
+                                <input type="text" id="search-processing" class="w-64 p-2 border border-gray-300 rounded-lg" placeholder="Search processing clients by name...">
+                                <div id="tech-filter-container-processing" class="tech-filter-container flex gap-2">
+                                     <button class="tech-filter-btn px-3 py-1 rounded-full text-sm active" data-tech="All">All</button>
+                                     <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Any Technician">Any Technician</button>
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table id="processing-table" class="w-full text-sm text-left text-gray-600">
+                                     <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3 text-center">No.</th>
+                                            <th scope="col" class="px-6 py-3">Name</th>
+                                            <th scope="col" class="px-6 py-3">Services</th>
+                                            <th scope="col" class="px-6 py-3">Technician</th>
+                                            <th scope="col" class="px-6 py-3">Check-in Time</th>
+                                            <th scope="col" class="px-6 py-3 text-center">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div id="finished-content" class="tab-content hidden">
+                             <div class="flex justify-between items-center mb-4">
+                                <input type="text" id="search-finished" class="w-64 p-2 border border-gray-300 rounded-lg" placeholder="Search finished clients by name...">
+                                <div class="flex items-center gap-4">
+                                    <div id="tech-filter-container-finished" class="tech-filter-container flex gap-2">
+                                         <button class="tech-filter-btn px-3 py-1 rounded-full text-sm active" data-tech="All">All</button>
+                                         <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Any Technician">Any Technician</button>
+                                    </div>
+                                    <div>
+                                        <label for="finished-date-filter" class="text-sm font-medium text-gray-700 mr-2">Date:</label>
+                                        <input type="date" id="finished-date-filter" class="p-2 border border-gray-300 rounded-lg">
+                                   </div>
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table id="finished-clients-table" class="w-full text-sm text-left text-gray-600">
+                                     <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3 text-center">No.</th>
+                                            <th scope="col" class="px-6 py-3">Name</th>
+                                            <th scope="col" class="px-6 py-3">Group</th>
+                                            <th scope="col" class="px-6 py-3">Services</th>
+                                            <th scope="col" class="px-6 py-3">Check-in Time</th>
+                                            <th scope="col" class="px-6 py-3 text-center">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
 
+                    <div id="calendar-content" class="main-section hidden">
+                         <div class="flex justify-between items-center mb-4">
+                            <div class="flex items-center gap-2">
+                                 <button id="today-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg">List all Booking <span id="today-count" class="ml-2 bg-pink-100 text-pink-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">0</span></button>
+                                 <button id="month-view-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hidden">Month View</button>
+                            </div>
+                            <div id="tech-filter-container-calendar" class="tech-filter-container flex gap-2">
+                                <button class="tech-filter-btn px-3 py-1 rounded-full text-sm active" data-tech="All">All</button>
+                                <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Any Technician">Any Technician</button>
+                            </div>
+                            <div id="month-nav" class="flex items-center gap-2">
+                                <button id="prev-month-btn" class="px-4 py-2 bg-pink-600 text-white rounded-lg"><i class="fas fa-chevron-left"></i></button>
+                                <h3 id="month-year-display" class="text-xl font-bold w-48 text-center"></h3>
+                                <button id="next-month-btn" class="px-4 py-2 bg-pink-600 text-white rounded-lg"><i class="fas fa-chevron-right"></i></button>
+                                <span class="ml-4 bg-gray-200 text-gray-800 text-sm font-semibold px-3 py-1 rounded-full">Month Total: <span id="calendar-count">0</span></span>
+                            </div>
+                         </div>
+                         <div id="list-view" class="hidden">
+                             <div class="overflow-x-auto">
+                                <table id="today-bookings-table" class="w-full text-sm text-left text-gray-600">
+                                     <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3">Name</th>
+                                            <th scope="col" class="px-6 py-3">Services</th>
+                                            <th scope="col" class="px-6 py-3">Technician</th>
+                                            <th scope="col" class="px-6 py-3">Group</th>
+                                            <th scope="col" class="px-6 py-3">Date & Time</th>
+                                            <th scope="col" class="px-6 py-3">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                         </div>
+                         <div id="month-view">
+                            <div class="grid grid-cols-7 text-center font-semibold mb-2">
+                                <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                            </div>
+                            <div id="calendar"></div>
+                         </div>
+                    </div>
+
+                    <!-- NEW: Nails Idea Section -->
+                    <div id="nails-idea-content" class="main-section hidden">
+                        <div class="mb-6 border-b pb-3">
+                            <h3 class="text-xl font-semibold text-gray-700">Nail Art Gallery</h3>
+                        </div>
+                        <!-- Filters -->
+                        <div class="flex flex-wrap gap-4 mb-8">
+                            <input type="text" id="nail-idea-search" placeholder="Search by name or category..." class="form-input p-2 border border-gray-300 rounded-lg flex-grow">
+                            <select id="nail-idea-shape-filter" class="form-select p-2 border border-gray-300 rounded-lg">
+                                <option value="">All Shapes</option>
+                                <!-- JS will populate this -->
+                            </select>
+                            <select id="nail-idea-category-filter" class="form-select p-2 border border-gray-300 rounded-lg">
+                                <option value="">All Categories</option>
+                                <!-- JS will populate this -->
+                            </select>
+                        </div>
+                        <!-- Gallery -->
+                        <div id="nails-idea-gallery" class="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
+                             <!-- Placeholder Images for Pinterest-style board -->
+                            <div class="break-inside-avoid relative gallery-item">
+                                <img class="w-full rounded-lg shadow-md" src="https://placehold.co/400x600/d63384/FFFFFF?text=Nail+Art+1" alt="Nail Art Idea 1">
+                                <div class="overlay absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center rounded-lg">
+                                    <button class="share-nail-idea-btn text-white text-3xl"><i class="fas fa-share-alt"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div id="reports-content" class="main-section hidden">
+                        <div class="mb-4 border-b border-gray-200">
+                            <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="reports-sub-tabs">
+                                <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg active" id="salon-earning-report-tab" type="button">Salon Earning</button></li>
+                                <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg" id="staff-earning-report-tab" type="button">Staff Earning</button></li>
+                                <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg" id="expense-report-tab" type="button">Expense Report</button></li>
+                                <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg" id="clients-list-report-tab" type="button">Clients List</button></li>
+                                <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg" id="gift-card-report-tab" type="button">Gift Cards</button></li>
+                            </ul>
+                        </div>
+
+                        <!-- Salon Earning Content -->
+                        <div id="salon-earning-report-content" class="sub-tab-content">
+                            <div class="mb-6 border-b pb-3">
+                                <h3 class="text-xl font-semibold text-gray-700">Salon Earning Report</h3>
+                            </div>
+                            <form id="salon-earning-form" class="space-y-6 mb-8">
+                                 <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                                    <div>
+                                        <label for="salon-earning-date" class="block text-sm font-medium text-gray-600">Date</label>
+                                        <input type="date" id="salon-earning-date" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" required>
+                                    </div>
+                                </div>
+                                <div id="salon-earning-inputs" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end"></div>
+                                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                                    <div><label for="sell-gift-card" class="block text-sm font-medium text-gray-600">Sell Gift Card</label><input type="number" step="0.01" id="sell-gift-card" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount"></div>
+                                    <div><label for="return-gift-card" class="block text-sm font-medium text-gray-600">Return Gift Card</label><input type="number" step="0.01" id="return-gift-card" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount"></div>
+                                    <div><label for="check-payment" class="block text-sm font-medium text-gray-600">Check</label><input type="number" step="0.01" id="check-payment" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount"></div>
+                                    <div><label for="no-of-credit" class="block text-sm font-medium text-gray-600">No. of Credit</label><input type="number" id="no-of-credit" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Count"></div>
+                                    <div><label for="total-credit" class="block text-sm font-medium text-gray-600">Total Credit</label><input type="number" step="0.01" id="total-credit" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount"></div>
+                                    <div><label for="venmo-payment" class="block text-sm font-medium text-gray-600">Venmo</label><input type="number" step="0.01" id="venmo-payment" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount"></div>
+                                    <div><label for="square-payment" class="block text-sm font-medium text-gray-600">Square</label><input type="number" step="0.01" id="square-payment" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount"></div>
+                                </div>
+                                <div class="text-center pt-4">
+                                    <button type="submit" class="w-full md:w-auto bg-pink-600 text-white font-bold py-3 px-12 rounded-full hover:bg-pink-700">Add Salon Earning</button>
+                                </div>
+                            </form>
+                            <div class="flex justify-end items-center mb-4 gap-2">
+                                <button id="export-salon-earnings-btn" class="bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600"><i class="fas fa-file-excel mr-2"></i>Export</button>
+                                <button id="print-salon-earnings-btn" class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600"><i class="fas fa-print mr-2"></i>Print</button>
+                                <select id="salon-earning-range-filter" class="form-select p-2 border border-gray-300 rounded-lg"></select>
+                                <input type="date" id="salon-earning-date-filter" class="p-2 border border-gray-300 rounded-lg hidden">
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table id="salon-earning-table" class="w-full text-sm text-left text-gray-600">
+                                    <thead id="salon-earning-table-head" class="text-xs text-gray-700 uppercase bg-gray-50"></thead>
+                                    <tbody></tbody>
+                                    <tfoot id="salon-earning-table-foot" class="bg-gray-100 font-semibold"></tfoot>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Staff Earning Content -->
+                        <div id="staff-earning-report-content" class="sub-tab-content hidden">
+                            <h3 class="text-xl font-semibold text-gray-700 border-b pb-3 mb-6 flex justify-between items-center">
+                                <span>Staff Earning Report</span>
+                                <div class="flex gap-4">
+                                    <span id="filtered-earning-total-main" class="ml-2 bg-pink-100 text-pink-800 text-sm font-semibold px-2.5 py-0.5 rounded-full"></span>
+                                    <span id="filtered-earning-total-tip" class="ml-2 bg-green-100 text-green-800 text-sm font-semibold px-2.5 py-0.5 rounded-full"></span>
+                                </div>
+                            </h3>
+                            <form id="staff-earning-form" class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8 items-end">
+                                <div><label for="staff-earning-date" class="block text-sm font-medium text-gray-600 mb-1">Date</label><input type="date" id="staff-earning-date" class="form-input w-full p-3 border border-gray-300 rounded-lg" required></div>
+                                <div><label for="staff-name" class="block text-sm font-medium text-gray-600 mb-1">Staff Name</label><select id="staff-name" class="form-select w-full p-3 border border-gray-300 rounded-lg" required></select></div>
+                                <div><label for="staff-earning" class="block text-sm font-medium text-gray-600 mb-1">Earning</label><input type="number" step="0.01" id="staff-earning" class="form-input w-full p-3 border border-gray-300 rounded-lg" placeholder="e.g., 100" required></div>
+                                <div><label for="staff-tip" class="block text-sm font-medium text-gray-600 mb-1">Tip</label><input type="number" step="0.01" id="staff-tip" class="form-input w-full p-3 border border-gray-300 rounded-lg" placeholder="e.g., 20" required></div>
+                                <div><button type="submit" class="w-full bg-pink-600 text-white font-bold py-3 px-6 rounded-full hover:bg-pink-700">Add Earning</button></div>
+                            </form>
+                            <div class="flex justify-between items-center mb-4">
+                                <div id="tech-filter-container-earning" class="tech-filter-container flex gap-2 flex-wrap"><button class="tech-filter-btn px-3 py-1 rounded-full text-sm active" data-tech="All">All</button></div>
+                                <div class="flex items-center gap-2">
+                                    <select id="earning-range-filter" class="form-select p-2 border border-gray-300 rounded-lg"></select>
+                                    <input type="date" id="earning-date-filter" class="p-2 border border-gray-300 rounded-lg">
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table id="staff-earning-table" class="w-full text-sm text-left text-gray-600">
+                                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3">Date</th>
+                                            <th scope="col" class="px-6 py-3">Staff Name</th>
+                                            <th scope="col" class="px-6 py-3">Earning</th>
+                                            <th scope="col" class="px-6 py-3">Tip</th>
+                                            <th scope="col" class="px-6 py-3 text-center">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                    <tfoot class="bg-gray-100 font-semibold">
+                                        <tr>
+                                            <td colspan="2" class="px-6 py-3 text-right">Total:</td>
+                                            <td id="total-earning" class="px-6 py-3"></td>
+                                            <td id="total-tip" class="px-6 py-3"></td>
+                                            <td class="px-6 py-3"></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Expense Report Content -->
+                        <div id="expense-report-content" class="sub-tab-content hidden">
+                            <h3 class="text-xl font-semibold text-gray-700 mb-4">Monthly Expense Report</h3>
+                            <form id="add-expense-form" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 p-4 border rounded-lg bg-gray-50 items-end">
+                                <input type="hidden" id="edit-expense-id">
+                                <div><label for="expense-date" class="block text-sm font-medium text-gray-600">Date</label><input type="date" id="expense-date" class="form-input w-full mt-1" required></div>
+                                <div><label for="expense-name" class="block text-sm font-medium text-gray-600">Expense Name</label><input type="text" id="expense-name" class="form-input w-full mt-1" placeholder="e.g., Rent, Supplies" required></div>
+                                <div><label for="expense-amount" class="block text-sm font-medium text-gray-600">Amount</label><input type="number" id="expense-amount" step="0.01" class="form-input w-full mt-1" placeholder="e.g., 1500.00" required></div>
+                                <div><label for="expense-category" class="block text-sm font-medium text-gray-600">Category</label><select id="expense-category" class="form-select w-full mt-1"><option value="">Select Category</option></select></div>
+                                <div><label for="expense-supplier" class="block text-sm font-medium text-gray-600">Supplier</label><select id="expense-supplier" class="form-select w-full mt-1"><option value="">Select Supplier</option></select></div>
+                                <div><label for="expense-payment-account" class="block text-sm font-medium text-gray-600">Payment Account</label><select id="expense-payment-account" class="form-select w-full mt-1"><option value="">Select Account</option></select></div>
+                                <div class="md:col-span-2"><label for="expense-attachment" class="block text-sm font-medium text-gray-600">Attachment</label><input type="file" id="expense-attachment" class="form-input w-full mt-1 text-sm"><div id="current-attachment-info" class="text-xs text-gray-500 mt-1"></div></div>
+                                <div class="self-end flex gap-2">
+                                    <button type="submit" id="add-expense-btn" class="w-full bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">Add Expense</button>
+                                    <button type="button" id="cancel-edit-expense-btn" class="w-full bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 hidden">Cancel</button>
+                                </div>
+                            </form>
+
+                            <div class="flex justify-end items-center mb-4">
+                                <label for="expense-month-filter" class="text-sm font-medium text-gray-700 mr-2">Filter by Month:</label>
+                                <select id="expense-month-filter" class="form-select p-2 border border-gray-300 rounded-lg"></select>
+                            </div>
+
+                            <div class="overflow-x-auto">
+                                <table id="expense-table" class="w-full text-sm text-left text-gray-600">
+                                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3">Date</th>
+                                            <th scope="col" class="px-6 py-3">Expense Name</th>
+                                            <th scope="col" class="px-6 py-3">Category</th>
+                                            <th scope="col" class="px-6 py-3">Supplier</th>
+                                            <th scope="col" class="px-6 py-3">Paid Via</th>
+                                            <th scope="col" class="px-6 py-3">Attachment</th>
+                                            <th scope="col" class="px-6 py-3 text-right">Amount</th>
+                                            <th scope="col" class="px-6 py-3 text-center">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                    <tfoot class="bg-gray-100 font-semibold">
+                                        <tr>
+                                            <td colspan="6" class="px-6 py-3 text-right">Total:</td>
+                                            <td id="total-expense" class="px-6 py-3 text-right"></td>
+                                            <td class="px-6 py-3"></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Clients List Content -->
+                        <div id="clients-list-report-content" class="sub-tab-content hidden">
+                            <div class="flex justify-between items-center mb-4">
+                                <input type="text" id="search-clients-list" class="w-1/2 p-2 border border-gray-300 rounded-lg" placeholder="Search by client name...">
+                                <div class="flex gap-2">
+                                    <button id="create-new-client-btn" class="bg-pink-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-pink-700 transition-colors"><i class="fas fa-plus mr-2"></i>Create New</button>
+                                    <input type="file" id="import-clients-input" class="hidden" accept=".xlsx, .xls">
+                                    <button id="import-clients-btn" class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"><i class="fas fa-file-import mr-2"></i>Import</button>
+                                    <button id="export-clients-btn" class="bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors"><i class="fas fa-file-export mr-2"></i>Export</button>
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table id="clients-list-table" class="w-full text-sm text-left text-gray-600">
+                                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3">Name</th>
+                                            <th scope="col" class="px-6 py-3">Phone</th>
+                                            <th scope="col" class="px-6 py-3">Last Visit</th>
+                                            <th scope="col" class="px-6 py-3 text-center">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Gift Card Report Content -->
+                        <div id="gift-card-report-content" class="sub-tab-content hidden">
+                            <div class="flex justify-between items-center mb-4">
+    <h3 class="text-xl font-semibold text-gray-700">Gift Card Sales</h3>
+    <input type="text" id="search-gift-cards" class="form-input w-64 p-2 border border-gray-300 rounded-lg" placeholder="Search by code or name...">
+</div>                            <div class="overflow-x-auto">
+                                <table id="gift-cards-table" class="w-full text-sm text-left text-gray-600">
+                                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3">Date</th>
+                                            <th scope="col" class="px-6 py-3">Code</th>
+                                            <th scope="col" class="px-6 py-3">Initial</th>
+                                            <th scope="col" class="px-6 py-3">Balance</th>
+                                            <th scope="col" class="px-6 py-3">Recipient</th>
+                                            <th scope="col" class="px-6 py-3">Sender</th>
+                                            <th scope="col" class="px-6 py-3">Status</th>
+                                            <th scope="col" class="px-6 py-3 text-center">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="admin-content" class="main-section hidden">
+                        <div class="mb-4 border-b border-gray-200">
+                            <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="admin-sub-tabs">
+                                <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg active" id="user-management-tab" type="button">User Management</button></li>
+                                <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg" id="inventory-management-tab" type="button">Inventory Management</button></li>
+                                <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg" id="inventory-report-tab" type="button">Inventory Report</button></li>
+                                <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg" id="service-management-tab" type="button">Service Management</button></li>
+                                <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg" id="nail-ideas-management-tab" type="button">Nail Ideas Management</button></li>
+                                <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg" id="gift-card-management-tab" type="button">Gift Card Management</button></li>
+                                <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg" id="promotions-management-tab" type="button">Promotions</button></li>
+                                <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg" id="settings-management-tab" type="button">Settings</button></li>
+                            </ul>
+                        </div>
+
+                        <!-- User Management Content -->
+                        <div id="user-management-content" class="sub-tab-content">
+                            <h3 class="text-xl font-semibold text-gray-700 mb-4">Manage Users</h3>
+                            <form id="add-user-form" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 border rounded-lg bg-gray-50 items-end">
+                                <input type="hidden" id="edit-user-id">
+                                <div><label for="new-user-name" class="block text-sm font-medium text-gray-600">Name</label><input type="text" id="new-user-name" class="form-input w-full mt-1" required></div>
+                                <div><label for="new-user-phone" class="block text-sm font-medium text-gray-600">Phone</label><input type="tel" id="new-user-phone" class="form-input w-full mt-1"></div>
+                                <div><label for="new-user-email" class="block text-sm font-medium text-gray-600">Email</label><input type="email" id="new-user-email" class="form-input w-full mt-1" required></div>
+                                <div><label for="new-user-password" class="block text-sm font-medium text-gray-600">Password</label><input type="password" id="new-user-password" class="form-input w-full mt-1" placeholder="Min. 6 characters"></div>
+                                <div><label for="user-role" class="block text-sm font-medium text-gray-600">Role</label><select id="user-role" class="form-select w-full mt-1"><option value="technician">Technician</option><option value="staff">Staff</option><option value="admin">Admin</option></select></div>
+                                <div class="self-end"><button type="submit" class="w-full bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">Add/Update User</button></div>
+                            </form>
+                            <div class="overflow-x-auto">
+                                <table id="users-table" class="w-full text-sm text-left text-gray-600">
+                                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3">Name</th><th scope="col" class="px-6 py-3">Email</th><th scope="col" class="px-6 py-3">Phone</th><th scope="col" class="px-6 py-3">Role</th><th scope="col" class="px-6 py-3 text-center">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Inventory Management Content -->
+                        <div id="inventory-management-content" class="sub-tab-content hidden">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-xl font-semibold text-gray-700">Manage Inventory</h3>
+                                <button id="log-usage-btn" class="bg-purple-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-purple-600"><i class="fas fa-dolly-flatbed mr-2"></i>Log Product Usage</button>
+                            </div>
+                            <form id="add-product-form" class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6 p-4 border rounded-lg bg-gray-50 items-end">
+                                <input type="hidden" id="edit-product-id">
+                                <div><label for="product-name" class="block text-sm font-medium text-gray-600">Product Name</label><input type="text" id="product-name" class="form-input w-full mt-1" required></div>
+                                <div><label for="product-category" class="block text-sm font-medium text-gray-600">Category</label><input type="text" id="product-category" class="form-input w-full mt-1"></div>
+                                <div><label for="product-supplier" class="block text-sm font-medium text-gray-600">Supplier</label><select id="product-supplier" class="form-select w-full mt-1"><option value="">Select Supplier</option></select></div>
+                                <div><label for="product-quantity" class="block text-sm font-medium text-gray-600">Quantity</label><input type="number" id="product-quantity" class="form-input w-full mt-1" required></div>
+                                <div><label for="product-price" class="block text-sm font-medium text-gray-600">Price Per Unit</label><input type="number" step="0.01" id="product-price" class="form-input w-full mt-1" required></div>
+                                <div><label for="low-stock-alert" class="block text-sm font-medium text-gray-600">Low Stock Alert</label><input type="number" id="low-stock-alert" class="form-input w-full mt-1" value="10" required></div>
+                                <div class="self-end flex gap-2 col-span-2">
+                                    <button type="submit" id="add-product-btn" class="w-full bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">Add Product</button>
+                                    <button type="button" id="cancel-edit-product-btn" class="w-full bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 hidden">Cancel</button>
+                                </div>
+                            </form>
+                            <div class="overflow-x-auto">
+                                <table id="inventory-table" class="w-full text-sm text-left text-gray-600">
+                                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3">Product Name</th>
+                                            <th scope="col" class="px-6 py-3">Category</th>
+                                            <th scope="col" class="px-6 py-3">Supplier</th>
+                                            <th scope="col" class="px-6 py-3 text-center">Quantity</th>
+                                            <th scope="col" class="px-6 py-3 text-right">Price/Unit</th>
+                                            <th scope="col" class="px-6 py-3 text-right">Total Price</th>
+                                            <th scope="col" class="px-6 py-3 text-center">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Inventory Report Content -->
+                        <div id="inventory-report-content" class="sub-tab-content hidden">
+                            <h3 class="text-xl font-semibold text-gray-700 mb-4">Inventory Reorder Suggestions</h3>
+                            <p class="text-sm text-gray-600 mb-6">This report shows items that are below their low stock threshold and suggests reorder quantities based on usage in the last 30 days.</p>
+                            <div class="overflow-x-auto">
+                                <table id="inventory-report-table" class="w-full text-sm text-left text-gray-600">
+                                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3">Product Name</th>
+                                            <th scope="col" class="px-6 py-3 text-center">Current Qty</th>
+                                            <th scope="col" class="px-6 py-3 text-center">Low Stock At</th>
+                                            <th scope="col" class="px-6 py-3 text-center">Usage (Last 30d)</th>
+                                            <th scope="col" class="px-6 py-3 text-center font-bold">Suggested Reorder</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Nail Ideas Management Content -->
+                        <div id="nail-ideas-management-content" class="sub-tab-content hidden">
+                            <h3 class="text-xl font-semibold text-gray-700 mb-4">Manage Nail Ideas</h3>
+                            <form id="add-nail-idea-form" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 p-4 border rounded-lg bg-gray-50 items-end">
+                                <input type="hidden" id="edit-nail-idea-id">
+                                <div><label for="nail-idea-name" class="block text-sm font-medium text-gray-600">Image Name</label><input type="text" id="nail-idea-name" class="form-input w-full mt-1" required></div>
+                                <div><label for="nail-idea-color" class="block text-sm font-medium text-gray-600">Color Code</label><input type="text" id="nail-idea-color" class="form-input w-full mt-1" placeholder="e.g., #FFC0CB, Red"></div>
+                                <div><label for="nail-idea-shape" class="block text-sm font-medium text-gray-600">Nail Shape</label><input type="text" id="nail-idea-shape" class="form-input w-full mt-1" placeholder="e.g., Almond, Square"></div>
+                                <div class="md:col-span-2"><label for="nail-idea-categories" class="block text-sm font-medium text-gray-600">Categories</label><input type="text" id="nail-idea-categories" class="form-input w-full mt-1" placeholder="e.g., minimalist, glitter, holiday (comma-separated)"></div>
+                                <div class="md:col-span-3"><label for="nail-idea-image" class="block text-sm font-medium text-gray-600">Image</label><input type="file" id="nail-idea-image" class="form-input w-full mt-1 text-sm" accept="image/*"></div>
+                                <div class="self-end flex gap-2">
+                                    <button type="submit" id="add-nail-idea-btn" class="w-full bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">Add Idea</button>
+                                    <button type="button" id="cancel-edit-nail-idea-btn" class="w-full bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 hidden">Cancel</button>
+                                </div>
+                            </form>
+                            <div class="overflow-x-auto">
+                                <table id="nail-ideas-table" class="w-full text-sm text-left text-gray-600">
+                                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3">Image</th>
+                                            <th scope="col" class="px-6 py-3">Name</th>
+                                            <th scope="col" class="px-6 py-3">Shape</th>
+                                            <th scope="col" class="px-6 py-3">Categories</th>
+                                            <th scope="col" class="px-6 py-3 text-center">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- JS will populate this -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Gift Card Management Content -->
+                        <div id="gift-card-management-content" class="sub-tab-content hidden">
+                           <div class="flex justify-between items-center mb-4">
+            
+                                <button id="create-printable-card-btn" class="bg-purple-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-purple-600">
+                                    <i class="fas fa-credit-card mr-2"></i>Create Printable Card
+                                </button>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table id="gift-cards-table-admin" class="w-full text-sm text-left text-gray-600">
+                                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3">Date</th>
+                                            <th scope="col" class="px-6 py-3">Code</th>
+                                            <th scope="col" class="px-6 py-3">Initial</th>
+                                            <th scope="col" class="px-6 py-3">Balance</th>
+                                            <th scope="col" class="px-6 py-3">Recipient</th>
+                                            <th scope="col" class="px-6 py-3">Sender</th>
+                                            <th scope="col" class="px-6 py-3">Status</th>
+                                            <th scope="col" class="px-6 py-3 text-center">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- JS will populate this -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Promotions Management Content -->
+                        <div id="promotions-management-content" class="sub-tab-content hidden">
+                            <h3 class="text-xl font-semibold text-gray-700 mb-4">Manage Promotions</h3>
+                            <form id="add-promotion-form" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 p-4 border rounded-lg bg-gray-50 items-end">
+                                <input type="hidden" id="edit-promotion-id">
+                                <div class="md:col-span-2"><label for="promotion-title" class="block text-sm font-medium text-gray-600">Title</label><input type="text" id="promotion-title" class="form-input w-full mt-1" required></div>
+                                <div class="md:col-span-2"><label for="promotion-description" class="block text-sm font-medium text-gray-600">Description</label><textarea id="promotion-description" rows="2" class="form-input w-full mt-1" required></textarea></div>
+                                <div><label for="promotion-start-date" class="block text-sm font-medium text-gray-600">Start Date</label><input type="date" id="promotion-start-date" class="form-input w-full mt-1" required></div>
+                                <div><label for="promotion-end-date" class="block text-sm font-medium text-gray-600">End Date</label><input type="date" id="promotion-end-date" class="form-input w-full mt-1" required></div>
+                                <div class="md:col-span-2 self-end flex gap-2">
+                                    <button type="submit" id="add-promotion-btn" class="w-full bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">Add Promotion</button>
+                                    <button type="button" id="cancel-edit-promotion-btn" class="w-full bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 hidden">Cancel</button>
+                                </div>
+                            </form>
+                            <div class="overflow-x-auto">
+                                <table id="promotions-table" class="w-full text-sm text-left text-gray-600">
+                                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3">Title</th>
+                                            <th scope="col" class="px-6 py-3">Description</th>
+                                            <th scope="col" class="px-6 py-3">Duration</th>
+                                            <th scope="col" class="px-6 py-3">Status</th>
+                                            <th scope="col" class="px-6 py-3 text-center">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Settings Management Content -->
+                        <div id="settings-management-content" class="sub-tab-content hidden">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <!-- General Settings -->
+                                <div>
+                                    <h3 class="text-xl font-semibold text-gray-700 mb-4">General Settings</h3>
+                                    <form id="settings-form" class="p-4 border rounded-lg bg-gray-50 mb-6 space-y-4">
+                                        <div>
+                                            <label for="min-booking-hours" class="block text-sm font-medium text-gray-600">Minimum Booking Notice (in hours)</label>
+                                            <input type="number" id="min-booking-hours" class="form-input w-full md:w-1/3 mt-1" placeholder="e.g., 2" required>
+                                            <p class="text-xs text-gray-500 mt-1">Set the minimum number of hours in advance a client can book an appointment.</p>
+                                        </div>
+                                         <div class="border-t pt-4">
+                                            <h4 class="font-semibold text-gray-800 mb-2">Login Security</h4>
+                                            <div>
+                                                <label for="max-login-attempts" class="block text-sm font-medium text-gray-600">Max Login Attempts</label>
+                                                <input type="number" id="max-login-attempts" class="form-input w-full md:w-1/3 mt-1" value="5" required>
+                                                <p class="text-xs text-gray-500 mt-1">Number of failed login attempts before lockout.</p>
+                                            </div>
+                                            <div class="mt-4">
+                                                <label for="login-lockout-minutes" class="block text-sm font-medium text-gray-600">Login Lockout Duration (in minutes)</label>
+                                                <input type="number" id="login-lockout-minutes" class="form-input w-full md:w-1/3 mt-1" value="15" required>
+                                                <p class="text-xs text-gray-500 mt-1">How long to disable login after too many failures.</p>
+                                            </div>
+                                        </div>
+                                        <div class="text-right"><button type="submit" class="bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">Save Settings</button></div>
+                                    </form>
+
+                                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Salon Hours</h3>
+                                    <form id="salon-hours-form" class="p-4 border rounded-lg bg-gray-50 mb-6 space-y-4">
+                                        <div id="salon-hours-inputs" class="space-y-3">
+                                            <!-- JS will populate this -->
+                                        </div>
+                                        <div class="text-right">
+                                            <button type="submit" class="bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">Save Hours</button>
+                                        </div>
+                                    </form>
+
+                                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Frontend Feature Management</h3>
+                                    <div id="feature-toggles-form" class="p-4 border rounded-lg bg-gray-50 space-y-4">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-sm font-medium text-gray-900">Enable Client Registration</span>
+                                            <label for="toggle-client-login" class="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" id="toggle-client-login" class="sr-only peer">
+                                                <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-pink-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-600"></div>
+                                            </label>
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-sm font-medium text-gray-900">Show Promotions Section</span>
+                                            <label for="toggle-promotions" class="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" id="toggle-promotions" class="sr-only peer">
+                                                <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-pink-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-600"></div>
+                                            </label>
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-sm font-medium text-gray-900">Show Gift Card Section</span>
+                                            <label for="toggle-gift-card" class="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" id="toggle-gift-card" class="sr-only peer">
+                                                <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-pink-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-600"></div>
+                                            </label>
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-sm font-medium text-gray-900">Show Nail Art Gallery</span>
+                                            <label for="toggle-nails-idea" class="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" id="toggle-nails-idea" class="sr-only peer">
+                                                <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-pink-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-600"></div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Expense Settings -->
+                                <div>
+                                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Expense Settings</h3>
+                                    <div class="space-y-6">
+                                        <!-- Manage Categories -->
+                                        <div class="p-4 border rounded-lg bg-gray-50">
+                                            <h4 class="font-semibold mb-2">Manage Categories</h4>
+                                            <form id="add-expense-category-form" class="flex gap-2 mb-2"><input type="text" id="new-expense-category-name" class="form-input w-full" placeholder="New category name" required><button type="submit" class="bg-blue-500 text-white px-4 rounded-lg">Add</button></form>
+                                            <div id="expense-categories-list" class="text-sm max-h-32 overflow-y-auto"></div>
+                                        </div>
+                                        <!-- Manage Payment Accounts -->
+                                        <div class="p-4 border rounded-lg bg-gray-50">
+                                            <h4 class="font-semibold mb-2">Manage Payment Accounts</h4>
+                                            <form id="add-payment-account-form" class="flex gap-2 mb-2"><input type="text" id="new-payment-account-name" class="form-input w-full" placeholder="New account name" required><button type="submit" class="bg-blue-500 text-white px-4 rounded-lg">Add</button></form>
+                                            <div id="payment-accounts-list" class="text-sm max-h-32 overflow-y-auto"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Manage Suppliers -->
+                            <div class="mt-8">
+                                <h3 class="text-xl font-semibold text-gray-700 mb-4">Manage Suppliers</h3>
+                                <form id="add-supplier-form" class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6 p-4 border rounded-lg bg-gray-50 items-end">
+                                    <input type="hidden" id="edit-supplier-id">
+                                    <div><label for="supplier-name" class="block text-sm font-medium">Name</label><input type="text" id="supplier-name" class="form-input w-full mt-1" required></div>
+                                    <div><label for="supplier-phone" class="block text-sm font-medium">Phone</label><input type="tel" id="supplier-phone" class="form-input w-full mt-1"></div>
+                                    <div><label for="supplier-email" class="block text-sm font-medium">Email</label><input type="email" id="supplier-email" class="form-input w-full mt-1"></div>
+                                    <div><label for="supplier-website" class="block text-sm font-medium">Website</label><input type="url" id="supplier-website" class="form-input w-full mt-1"></div>
+                                    <div class="flex gap-2"><button type="submit" id="add-supplier-btn" class="w-full bg-pink-600 text-white font-bold py-2 px-4 rounded-lg">Add Supplier</button><button type="button" id="cancel-edit-supplier-btn" class="w-full bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hidden">Cancel</button></div>
+                                </form>
+                                <div class="overflow-x-auto">
+                                    <table id="suppliers-table" class="w-full text-sm text-left text-gray-600"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Name</th><th class="px-6 py-3">Phone</th><th class="px-6 py-3">Email</th><th class="px-6 py-3">Website</th><th class="px-6 py-3 text-center">Action</th></tr></thead><tbody></tbody></table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Service Management Content -->
+                        <div id="service-management-content" class="sub-tab-content hidden">
+                            <h3 class="text-xl font-semibold text-gray-700 mb-4">Manage Services</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div>
+                                    <form id="add-category-form" class="p-4 border rounded-lg bg-gray-50 mb-6">
+                                        <label for="new-category-name" class="block text-sm font-medium text-gray-600">New Category Name</label>
+                                        <div class="flex gap-2 mt-1">
+                                            <input type="text" id="new-category-name" class="form-input w-full" required>
+                                            <button type="submit" class="bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">Add</button>
+                                        </div>
+                                    </form>
+                                    <div id="service-categories-admin" class="space-y-4"></div>
+                                </div>
+                                <div id="edit-service-section" class="p-4 border rounded-lg bg-gray-50 hidden">
+                                    <h4 id="edit-service-title" class="text-lg font-semibold mb-3">Add/Edit Service</h4>
+                                    <form id="add-service-form" class="space-y-3">
+                                        <input type="hidden" id="edit-category-id"><input type="hidden" id="edit-service-index">
+                                        <div><label for="service-prefix" class="block text-sm font-medium text-gray-600">Prefix (Optional)</label><input type="text" id="service-prefix" class="form-input w-full mt-1" placeholder="e.g., Gel Polish - "></div>
+                                        <div><label for="service-name" class="block text-sm font-medium text-gray-600">Service Name</label><input type="text" id="service-name" class="form-input w-full mt-1" required></div>
+                                        <div><label for="service-price" class="block text-sm font-medium text-gray-600">Price</label><input type="text" id="service-price" class="form-input w-full mt-1" placeholder="e.g., $50"></div>
+                                        <div class="text-right"><button type="submit" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700">Save Service</button></div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
@@ -450,7 +1184,7 @@
         </button>
     </div>
 
-    <!-- ========= ALL APPLICATION MODALS ARE PLACED HERE ========= -->
+    <!-- ========= MODALS (Moved to top level) ========= -->
     <div id="service-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
         <div class="absolute inset-0 bg-black opacity-50 modal-overlay"></div>
         <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
@@ -665,22 +1399,183 @@
         </div>
     </div>
     
+    <!-- Gift Card Designer Modal -->
     <div id="gift-card-designer-modal" class="modal hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
-        <!-- Gift Card Designer Modal Content -->
+        <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
+        <div class="relative bg-gray-100 w-full max-w-5xl p-6 rounded-2xl shadow-xl m-4 max-h-[90vh] overflow-y-auto">
+            <button id="close-designer-modal-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 z-10"><i class="fas fa-times fa-lg"></i></button>
+            <h2 class="text-3xl font-bold text-center text-pink-700 mb-6">Gift Card Designer</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6">
+                <!-- Controls Panel -->
+                <div id="designer-controls" class="space-y-4">
+                    <h3 class="text-xl font-semibold text-gray-700 border-b pb-2">Card Details</h3>
+                    <form id="physical-gift-card-form" class="space-y-4">
+                        <div class="flex items-center gap-4">
+                            <input type="checkbox" id="designer-show-to" class="form-checkbox" checked> <label for="designer-show-to">Show 'To' Field</label>
+                            <input type="checkbox" id="designer-show-from" class="form-checkbox" checked> <label for="designer-show-from">Show 'From' Field</label>
+                        </div>
+                        <div id="designer-to-wrapper"><label for="designer-to" class="block text-sm font-medium text-gray-600">To</label><input type="text" id="designer-to" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg"></div>
+                        <div id="designer-from-wrapper"><label for="designer-from" class="block text-sm font-medium text-gray-600">From</label><input type="text" id="designer-from" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg"></div>
+                        <div><label for="designer-amount" class="block text-sm font-medium text-gray-600">Amount ($)</label><input type="number" id="designer-amount" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg" required></div>
+                        <div class="border-t pt-4">
+                            <label for="designer-set-expiry" class="flex items-center gap-2"><input type="checkbox" id="designer-set-expiry" class="form-checkbox"> Set Expiration Date</label>
+                            <div id="designer-expiry-inputs" class="flex items-center gap-2 mt-2 hidden">
+                                <input type="number" id="designer-expiry-value" class="form-input w-24 p-2 border-gray-300 rounded-lg" min="1" value="12">
+                                <select id="designer-expiry-unit" class="form-select p-2 border-gray-300 rounded-lg">
+                                    <option value="months">Months</option>
+                                    <option value="years">Years</option>
+                                </select>
+                            </div>
+                        </div>
+                         <div class="border-t pt-4">
+                            <label for="designer-quantity" class="block text-sm font-medium text-gray-600">Quantity to Generate</label>
+                            <input type="number" id="designer-quantity" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg" min="1" value="1">
+                         </div>
+                    </form>
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-700 border-b pb-2 mt-6">Background Style</h3>
+                        <div id="designer-background-tabs" class="flex flex-wrap gap-2 mt-2 border-b"></div>
+                        <div id="designer-background-options" class="grid grid-cols-3 gap-2 mt-2">
+                           <!-- JS will populate this -->
+                        </div>
+                    </div>
+                     <div class="mt-6 text-center">
+                        <button id="save-and-print-btn" class="w-full bg-green-500 text-white font-bold py-3 px-12 rounded-full hover:bg-green-600"><i class="fas fa-print mr-2"></i>Save & Print</button>
+                    </div>
+                </div>
+                <!-- Preview Panel -->
+                <div class="flex items-center justify-center">
+                    <div id="printable-gift-card-area">
+                         <div id="printable-gift-card" class="w-[400px] h-[228px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white transition-all duration-300 printable-gift-card" style="background-image: url('https://images.unsplash.com/photo-1596048135132-911961bd4350?q=80&w=1887&auto=format&fit=crop');">
+                            <div class="flex justify-between items-start" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
+                                <img id="preview-logo" src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white"/>
+                                <div class="text-right">
+                                    <p class="font-parisienne text-3xl">Gift Card</p>
+                                    <p class="text-xs font-semibold tracking-wider">Nails Express</p>
+                                </div>
+                            </div>
+                            <div class="text-center" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.7);">
+                                <p id="preview-amount" class="text-5xl font-bold">$0.00</p>
+                            </div>
+                            <div class="text-xs" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
+                                <div id="preview-to-from-wrapper" class="flex justify-between font-semibold">
+                                    <span>FOR: <span id="preview-to" class="font-normal"></span></span>
+                                    <span>FROM: <span id="preview-from" class="font-normal"></span></span>
+                                </div>
+                                <p class="mt-2 text-center font-mono tracking-widest text-sm" id="preview-code">CODE-HERE</p>
+                                <p class="mt-1 text-center text-[10px] opacity-80" id="preview-expiry">Expires: --/--/----</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <!-- Edit Gift Card Modal -->
     <div id="edit-gift-card-modal" class="modal hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
-        <!-- Edit Gift Card Modal Content -->
+        <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
+        <div class="relative bg-white w-full max-w-2xl p-6 rounded-2xl shadow-xl m-4 max-h-[90vh] overflow-y-auto">
+            <button id="close-edit-gift-card-modal-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800"><i class="fas fa-times fa-lg"></i></button>
+            <h2 class="text-3xl font-bold text-center text-pink-700 mb-6">Manage Gift Card</h2>
+            <div class="text-center mb-4">
+                <p class="font-mono text-lg" id="edit-gc-code"></p>
+            </div>
+            <div class="grid grid-cols-2 gap-4 mb-6 text-center">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Original Amount</p>
+                    <p id="edit-gc-original-amount" class="text-2xl font-bold text-gray-800"></p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Current Balance</p>
+                    <p id="edit-gc-current-balance" class="text-2xl font-bold text-green-600"></p>
+                </div>
+            </div>
+
+            <form id="edit-gift-card-form">
+                <input type="hidden" id="edit-gift-card-id">
+                <h3 class="text-lg font-semibold text-gray-700 border-b pb-2">New Transaction</h3>
+                <div class="grid grid-cols-3 gap-4 mt-4 items-end">
+                    <div>
+                        <label for="edit-gc-transaction-type" class="block text-sm font-medium text-gray-600">Type</label>
+                        <select id="edit-gc-transaction-type" class="form-select w-full p-2 mt-1 border-gray-300 rounded-lg">
+                            <option value="redeem">Redeem</option>
+                            <option value="add">Add Value</option>
+                        </select>
+                    </div>
+                     <div>
+                        <label for="edit-gc-transaction-amount" class="block text-sm font-medium text-gray-600">Amount ($)</label>
+                        <input type="number" step="0.01" min="0.01" id="edit-gc-transaction-amount" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg" required>
+                    </div>
+                    <button type="submit" class="bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">Apply Transaction</button>
+                </div>
+                 <div class="mt-2">
+                    <label for="edit-gc-transaction-notes" class="block text-sm font-medium text-gray-600">Notes (Optional)</label>
+                    <input type="text" id="edit-gc-transaction-notes" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg" placeholder="e.g., Manicure service">
+                </div>
+            </form>
+
+            <div class="mt-6">
+                 <h3 class="text-lg font-semibold text-gray-700 border-b pb-2">Transaction History</h3>
+                 <div id="edit-gc-history" class="mt-2 space-y-2 max-h-48 overflow-y-auto">
+                    <!-- History will be populated here -->
+                 </div>
+            </div>
+        </div>
     </div>
     
+    <!-- Client Profile Modal -->
     <div id="client-profile-modal" class="modal hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
-        <!-- Client Profile Modal Content -->
+        <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
+        <div class="relative bg-white w-full max-w-4xl p-6 rounded-2xl shadow-xl m-4 max-h-[90vh] overflow-y-auto">
+            <button id="close-client-profile-modal-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800"><i class="fas fa-times fa-lg"></i></button>
+            <div id="client-profile-header" class="text-center">
+                <h2 class="text-3xl font-bold text-pink-700" id="profile-client-name"></h2>
+                <p class="text-gray-500" id="profile-client-phone"></p>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 my-6 text-center">
+                <div class="bg-pink-50 p-3 rounded-lg"><p class="text-sm font-medium text-pink-700">Total Visits</p><p id="profile-total-visits" class="text-2xl font-bold"></p></div>
+                <div class="bg-green-50 p-3 rounded-lg"><p class="text-sm font-medium text-green-700">Total Spent</p><p id="profile-total-spent" class="text-2xl font-bold"></p></div>
+                <div class="bg-blue-50 p-3 rounded-lg"><p class="text-sm font-medium text-blue-700">Favorite Tech</p><p id="profile-fav-tech" class="text-xl font-bold"></p></div>
+                <div class="bg-yellow-50 p-3 rounded-lg"><p class="text-sm font-medium text-yellow-700">Favorite Color</p><p id="profile-fav-color" class="text-xl font-bold"></p></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-700 border-b pb-2 mb-2">Upcoming Appointments</h3>
+                    <div id="profile-upcoming-appts" class="space-y-2"></div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-700 border-b pb-2 mb-2">Client Photo Gallery</h3>
+                    <div id="profile-photo-gallery" class="grid grid-cols-3 gap-2"></div>
+                </div>
+            </div>
+            <div class="mt-6">
+                 <h3 class="text-xl font-semibold text-gray-700 border-b pb-2">Visit History</h3>
+                 <div class="mt-2 max-h-64 overflow-y-auto">
+                     <table class="w-full text-sm text-left">
+                         <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                             <tr>
+                                 <th class="px-4 py-2">Date</th>
+                                 <th class="px-4 py-2">Services</th>
+                                 <th class="px-4 py-2">Technician</th>
+                                 <th class="px-4 py-2 text-right">Total</th>
+                             </tr>
+                         </thead>
+                         <tbody id="profile-history-table-body">
+                             <!-- History will be populated here -->
+                         </tbody>
+                     </table>
+                 </div>
+            </div>
+        </div>
     </div>
 
+    <!-- Landing Page Modals -->
     <div id="signup-login-modal" class="modal hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
         <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
         <div class="relative bg-white w-full max-w-md p-8 rounded-2xl shadow-xl m-4">
-             <button id="close-signup-login-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times fa-lg"></i></button>
+            <button id="close-signup-login-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times fa-lg"></i></button>
+            <!-- Tittle Added -->
             <h2 class="text-2xl font-bold text-center text-pink-700 mb-2">Nails Express Login</h2>
             <div class="mb-4 border-b border-gray-200">
                 <ul class="flex flex-wrap -mb-px text-sm font-medium text-center">
@@ -690,6 +1585,7 @@
             </div>
             <div id="login-form-container">
                 <form id="landing-login-form" class="space-y-4">
+                    <!-- Placeholders and styles added -->
                     <div><label for="landing-email" class="block text-sm font-medium text-gray-600">Email</label><input type="email" id="landing-email" class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg" placeholder="Enter your email" required></div>
                     <div><label for="landing-password" class="block text-sm font-medium text-gray-600">Password</label><input type="password" id="landing-password" class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg" placeholder="Enter your password" required></div>
                     <div id="login-lockout-message" class="hidden text-sm text-red-600"></div>
@@ -698,6 +1594,7 @@
             </div>
             <div id="signup-form-container" class="hidden">
                 <form id="landing-signup-form" class="space-y-4">
+                    <!-- Placeholders and styles added -->
                     <div><label for="signup-name" class="block text-sm font-medium text-gray-600">Full Name</label><input type="text" id="signup-name" class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg" placeholder="Enter your full name" required></div>
                     <div><label for="signup-email" class="block text-sm font-medium text-gray-600">Email</label><input type="email" id="signup-email" class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg" placeholder="Enter your email" required></div>
                     <div><label for="signup-password" class="block text-sm font-medium text-gray-600">Password</label><input type="password" id="signup-password" class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg" placeholder="Create a password" required></div>
@@ -708,15 +1605,34 @@
     </div>
     
     <div id="gift-card-modal" class="modal hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
-        <!-- Gift Card Purchase Modal Content -->
+        <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
+        <div class="relative bg-white w-full max-w-lg p-8 rounded-2xl shadow-xl m-4">
+            <button id="close-gift-card-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times fa-lg"></i></button>
+            <h2 class="text-2xl font-bold text-center text-pink-700 mb-6">Purchase a Gift Card</h2>
+            <form id="gift-card-form" class="space-y-4">
+                <div><label for="gift-card-amount" class="block text-sm font-medium text-gray-600">Amount</label><select id="gift-card-amount" class="form-select w-full p-3 mt-1"><option value="25">$25</option><option value="50">$50</option><option value="100">$100</option><option value="custom">Custom</option></select></div>
+                <input type="number" id="gift-card-custom-amount" class="form-input w-full p-3 mt-1 hidden" placeholder="Enter custom amount">
+                <div><label for="gift-card-recipient-name" class="block text-sm font-medium text-gray-600">Recipient's Name</label><input type="text" id="gift-card-recipient-name" class="form-input w-full p-3 mt-1" required></div>
+                <div><label for="gift-card-recipient-email" class="block text-sm font-medium text-gray-600">Recipient's Email</label><input type="email" id="gift-card-recipient-email" class="form-input w-full p-3 mt-1" required></div>
+                <div><label for="gift-card-sender-name" class="block text-sm font-medium text-gray-600">Your Name</label><input type="text" id="gift-card-sender-name" class="form-input w-full p-3 mt-1" required></div>
+                <div><label for="gift-card-message" class="block text-sm font-medium text-gray-600">Message (optional)</label><textarea id="gift-card-message" rows="2" class="form-input w-full p-3 mt-1"></textarea></div>
+                <div class="pt-2"><button type="submit" class="w-full bg-pink-600 text-white font-bold py-3 rounded-lg">Proceed to Payment</button></div>
+            </form>
+        </div>
     </div>
 
     <div id="landing-booking-service-modal" class="modal hidden fixed inset-0 z-[70] flex items-center justify-center">
-        <!-- Landing Page Service Selection Modal Content -->
+        <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
+        <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
+            <h3 id="landing-booking-modal-title" class="text-2xl font-bold text-pink-700 mb-4">Select Services</h3>
+            <div id="landing-booking-service-modal-content" class="space-y-3 max-h-96 overflow-y-auto"></div>
+            <div class="mt-6 text-right">
+                <button id="landing-booking-service-modal-done-btn" type="button" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Done</button>
+            </div>
+        </div>
     </div>
 
 
- <script type="module" src="script.js"></script>
+ <script  type="module" src="script.js"></script>
 </body>
 </html>
-

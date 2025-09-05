@@ -3044,22 +3044,7 @@ function initMainApp(userRole) {
         }
     });
 
-    const setupGiftCardTableListener = (tableId) => {
-        const table = document.getElementById(tableId);
-        if (table) {
-            table.addEventListener('click', (e) => {
-                const editBtn = e.target.closest('.edit-gift-card-btn');
-                if (editBtn) {
-                    const card = allGiftCards.find(c => c.id === editBtn.dataset.id);
-                    if(card) openEditGiftCardModal(card);
-                }
-            });
-        }
-    };
-    setupGiftCardTableListener('gift-cards-table');
-    setupGiftCardTableListener('gift-cards-table-admin');
-
-
+    
     document.getElementById('close-edit-gift-card-modal-btn').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));
     editGiftCardModal.querySelector('.modal-overlay').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));
     const setupGiftCardTableListener = (tableId) => {

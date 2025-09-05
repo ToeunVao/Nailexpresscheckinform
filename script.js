@@ -769,7 +769,6 @@ function initMainApp(userRole) {
     const checkInNavCount = document.getElementById('check-in-nav-count');
     const bookingNavCount = document.getElementById('booking-nav-count');
     const appLoadTimestamp = Timestamp.now();
-    let currentUserName = null; // To store the logged-in user's name for filtering
 
     const updateNavCounts = () => {
         const checkInCount = allActiveClients.length;
@@ -862,12 +861,6 @@ function initMainApp(userRole) {
         document.querySelector('[data-target="report"]').style.display = 'none';
         document.querySelector('[data-target="setting"]').style.display = 'none';
     }
-    // Add this line to get the current user's name
-getDoc(doc(db, "users", currentUserId)).then(docSnap => {
-    if(docSnap.exists()){
-        currentUserName = docSnap.data().name;
-    }
-});
 
     const checkInForm = document.getElementById('check-in-form');
     const peopleCountSelect = document.getElementById('people-count');
@@ -968,47 +961,7 @@ getDoc(doc(db, "users", currentUserId)).then(docSnap => {
         else { chartInstance = new Chart(ctx, { type, data, options }); }
         return chartInstance;
     };
-    // NEW: Function to update the Staff Earnings chart on the dashboard
-const updateDashboardEarningsChart = (earnings, filter) => {
-    const ctx = document.getElementById('dashboard-earnings-chart').getContext('2d');
-    let labels = [], chartData = [], counts = {};
-
-    if (filter === 'today' || filter === 'this_week') {
-        const formatOptions = { weekday: 'short' };
-        earnings.forEach(item => { 
-            const date = item.date.toDate();
-            const key = date.toLocaleDateString('en-US', formatOptions);
-            counts[key] = (counts[key] || 0) + item.earning;
-        });
-        labels = Object.keys(counts).reverse();
-        chartData = labels.map(label => counts[label]);
-    } else {
-        const formatOptions = { month: 'short' };
-        earnings.forEach(item => {
-            const date = item.date.toDate();
-            const key = date.toLocaleDateString('en-US', formatOptions);
-            counts[key] = (counts[key] || 0) + item.earning;
-        });
-        labels = Object.keys(counts).reverse();
-        chartData = labels.map(label => counts[label]);
-    }
-
-    const chartConfig = {
-        labels: labels,
-        datasets: [{
-            label: 'Total Earnings',
-            data: chartData,
-            backgroundColor: 'rgba(75, 192, 192, 0.5)',
-            borderColor: 'rgba(75, 192, 192, 1)',
-            borderWidth: 1,
-            tension: 0.1,
-            fill: true
-        }]
-    };
-    const options = { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } };
-    // Assuming you have a global variable `dashboardEarningsChart` like the others
-    window.dashboardEarningsChart = initializeChart(window.dashboardEarningsChart, ctx, 'line', chartConfig, options);
-};
+    
     const updateBookingsChart = (data, filter) => {
         const ctx = document.getElementById('bookings-chart').getContext('2d');
         let labels = [], chartData = [], counts = {};
@@ -1621,38 +1574,11 @@ const updateDashboardEarningsChart = (earnings, filter) => {
         }
     });
 
-onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot) => {
-    allEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-    // Logic for Staff Earning Report page
-    const staffEarningForm = document.getElementById('staff-earning-form');
-    if (userRole === 'admin') {
-        staffEarningForm.style.display = 'grid';
+    onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot) => {
+        allEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter, currentEarningRangeFilter));
-    } else {
-        staffEarningForm.style.display = 'none';
-        // Hide action buttons in the table for non-admins
-        setTimeout(() => {
-             document.querySelectorAll('#staff-earning-table .edit-earning-btn, #staff-earning-table .delete-earning-btn').forEach(btn => {
-                btn.parentElement.innerHTML = ''; // Remove buttons
-            });
-        }, 100);
-
-        // For staff, filter by their own name and disable the technician filter
-        const selfEarnings = allEarnings.filter(e => e.staffName === currentUserName);
-        document.getElementById('tech-filter-container-earning').style.display = 'none';
-        renderStaffEarnings(applyEarningFilters(selfEarnings, currentUserName, currentEarningDateFilter, currentEarningRangeFilter));
-    }
-
-    // Logic for Dashboard Earning Display
-    let dashboardEarnings = allEarnings;
-    if (userRole !== 'admin') {
-        dashboardEarnings = allEarnings.filter(e => e.staffName === currentUserName);
-    }
-    // Call the new dashboard chart function
-    updateDashboardEarningsChart(dashboardEarnings, document.getElementById('dashboard-date-filter').value);
-    updateDashboard();
-});
+        updateDashboard();
+    });
 
     onSnapshot(query(collection(db, "salon_earnings"), orderBy("date", "desc")), (snapshot) => {
         allSalonEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -3180,4 +3106,3 @@ clientProfileModal.querySelector('.modal-overlay').addEventListener('click', () 
     document.getElementById('sign-out-btn').addEventListener('click', () => { signOut(auth); });
     document.getElementById('floating-booking-btn').addEventListener('click', () => { openAddAppointmentModal(getLocalDateString()); });
 }
-

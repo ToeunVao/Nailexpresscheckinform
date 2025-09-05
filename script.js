@@ -386,78 +386,81 @@ function initLandingPage() {
         }
     });
 
-    landingLoginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('landing-email').value;
-        const password = document.getElementById('landing-password').value;
-        const loginBtn = document.getElementById('landing-login-btn');
-        const btnText = loginBtn.querySelector('.btn-text');
-        const spinner = loginBtn.querySelector('i');
-        const emailKey = 'loginAttempts_' + email.toLowerCase();
-        const lockoutKey = 'lockoutUntil_' + email.toLowerCase();
+landingLoginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('landing-email').value;
+    const password = document.getElementById('landing-password').value;
+    const loginBtn = document.getElementById('landing-login-btn');
+    const btnText = loginBtn.querySelector('.btn-text');
+    const spinner = loginBtn.querySelector('i');
+    const emailKey = 'loginAttempts_' + email.toLowerCase();
+    const lockoutKey = 'lockoutUntil_' + email.toLowerCase();
 
-        const lockoutUntil = localStorage.getItem(lockoutKey);
-        if (lockoutUntil && Date.now() < parseInt(lockoutUntil)) {
-            const remainingTime = Math.ceil((parseInt(lockoutUntil) - Date.now()) / (1000 * 60));
-            lockoutMessageDiv.textContent = `Too many failed attempts. Please try again in ${remainingTime} minutes.`;
+    const lockoutUntil = localStorage.getItem(lockoutKey);
+    if (lockoutUntil && Date.now() < parseInt(lockoutUntil)) {
+        const remainingTime = Math.ceil((parseInt(lockoutUntil) - Date.now()) / (1000 * 60));
+        lockoutMessageDiv.textContent = `Too many failed attempts. Please try again in ${remainingTime} minutes.`;
+        lockoutMessageDiv.classList.remove('hidden');
+        return;
+    } else if (lockoutUntil) {
+        localStorage.removeItem(lockoutKey);
+    }
+    lockoutMessageDiv.classList.add('hidden');
+
+    btnText.textContent = 'Logging In...';
+    spinner.classList.remove('hidden');
+    loginBtn.disabled = true;
+
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+        localStorage.removeItem(emailKey); 
+        localStorage.removeItem(lockoutKey);
+        // FIX: Explicitly close the modal after a successful login.
+        closeAuthModal(); 
+    } catch (error) {
+        let attempts = (parseInt(localStorage.getItem(emailKey)) || 0) + 1;
+        if (attempts >= loginSecuritySettings.maxAttempts) {
+            const lockoutTime = Date.now() + loginSecuritySettings.lockoutMinutes * 60 * 1000;
+            localStorage.setItem(lockoutKey, lockoutTime);
+            localStorage.removeItem(emailKey);
+            lockoutMessageDiv.textContent = `Login disabled for ${loginSecuritySettings.lockoutMinutes} minutes due to too many failed attempts.`;
             lockoutMessageDiv.classList.remove('hidden');
-            return;
-        } else if (lockoutUntil) {
-            localStorage.removeItem(lockoutKey);
+        } else {
+            localStorage.setItem(emailKey, attempts);
+            alert(`Login Failed: ${error.message}. You have ${loginSecuritySettings.maxAttempts - attempts} attempts remaining.`);
         }
-        lockoutMessageDiv.classList.add('hidden');
+    } finally {
+        btnText.textContent = 'Log In';
+        spinner.classList.add('hidden');
+        loginBtn.disabled = false;
+    }
+});
 
-        btnText.textContent = 'Logging In...';
-        spinner.classList.remove('hidden');
-        loginBtn.disabled = true;
+   landingSignupForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('signup-name').value;
+    const email = document.getElementById('signup-email').value;
+    const password = document.getElementById('signup-password').value;
+    const signupBtn = document.getElementById('landing-signup-btn');
+    const btnText = signupBtn.querySelector('.btn-text');
+    const spinner = signupBtn.querySelector('i');
 
-        try {
-            await signInWithEmailAndPassword(auth, email, password);
-            localStorage.removeItem(emailKey); 
-            localStorage.removeItem(lockoutKey);
-        } catch (error) {
-            let attempts = (parseInt(localStorage.getItem(emailKey)) || 0) + 1;
-            if (attempts >= loginSecuritySettings.maxAttempts) {
-                const lockoutTime = Date.now() + loginSecuritySettings.lockoutMinutes * 60 * 1000;
-                localStorage.setItem(lockoutKey, lockoutTime);
-                localStorage.removeItem(emailKey);
-                lockoutMessageDiv.textContent = `Login disabled for ${loginSecuritySettings.lockoutMinutes} minutes due to too many failed attempts.`;
-                lockoutMessageDiv.classList.remove('hidden');
-            } else {
-                localStorage.setItem(emailKey, attempts);
-                alert(`Login Failed: ${error.message}. You have ${loginSecuritySettings.maxAttempts - attempts} attempts remaining.`);
-            }
-        } finally {
-            btnText.textContent = 'Log In';
-            spinner.classList.add('hidden');
-            loginBtn.disabled = false;
-        }
-    });
+    btnText.textContent = 'Signing Up...';
+    spinner.classList.remove('hidden');
 
-    landingSignupForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const name = document.getElementById('signup-name').value;
-        const email = document.getElementById('signup-email').value;
-        const password = document.getElementById('signup-password').value;
-        const signupBtn = document.getElementById('landing-signup-btn');
-        const btnText = signupBtn.querySelector('.btn-text');
-        const spinner = signupBtn.querySelector('i');
-
-        btnText.textContent = 'Signing Up...';
-        spinner.classList.remove('hidden');
-
-        try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
-            await setDoc(doc(db, "clients", user.uid), { name: name, email: email, role: 'client', createdAt: serverTimestamp() });
-        } catch (error) {
-            alert(`Sign Up Failed: ${error.message}`);
-        } finally {
-            btnText.textContent = 'Sign Up';
-            spinner.classList.add('hidden');
-        }
-    });
-
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        await setDoc(doc(db, "clients", user.uid), { name: name, email: email, role: 'client', createdAt: serverTimestamp() });
+        // FIX: Explicitly close the modal after a successful sign-up.
+        closeAuthModal();
+    } catch (error) {
+        alert(`Sign Up Failed: ${error.message}`);
+    } finally {
+        btnText.textContent = 'Sign Up';
+        spinner.classList.add('hidden');
+    }
+});
     const peopleSelect = document.getElementById('appointment-people-landing');
     for (let i = 1; i <= 20; i++) {
         peopleSelect.appendChild(new Option(i, i));

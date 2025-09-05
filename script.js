@@ -1683,13 +1683,17 @@ if (dashboardStaffEarningForm) {
              if (dashboardForm) {
                 dashboardForm.style.display = 'grid';
                 document.getElementById('dashboard-staff-earning-date').value = getLocalDateString();
-                const staffSelect = document.getElementById('dashboard-staff-name');
-                if (staffSelect) {
-                    staffSelect.innerHTML = '<option value="">Select Staff</option>';
-                    techniciansAndStaff.forEach(tech => {
-                        staffSelect.appendChild(new Option(tech.name, tech.name));
-                    });
-                }
+                // ... existing code ...
+const staffSelect = document.getElementById('dashboard-staff-name');
+if (staffSelect) {
+    staffSelect.innerHTML = '<option value="">Select Staff</option>';
+    techniciansAndStaff.forEach(tech => {
+        staffSelect.appendChild(new Option(tech.name, tech.name));
+    });
+    // Add this line to set the default value
+    staffSelect.value = 'TJ';
+}
+// ... existing code ...
              }
         }
         renderDashboardStaffEarnings(dashboardEarnings);
@@ -2106,6 +2110,10 @@ if (dashboardStaffEarningForm) {
             if(firstOption && (firstOption.value === 'Any Technician' || firstOption.value === '')) { select.appendChild(firstOption); }
             userList.forEach(tech => { select.appendChild(new Option(tech.name, tech.name)); });
              if(select.id === 'technician-name-select') { select.appendChild(new Option("Other", "other")); }
+            // Add this 'if' block to set the default value
+     if(select.id === 'staff-name') {
+        select.value = 'TJ';
+     }
         });
         const salonEarningInputs = document.getElementById('salon-earning-inputs');
         const salonEarningTableHead = document.getElementById('salon-earning-table-head');

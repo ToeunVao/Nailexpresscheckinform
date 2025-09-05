@@ -3081,47 +3081,9 @@ setupGiftCardTableListener('gift-cards-table-admin');
     document.getElementById('close-client-profile-modal-btn').addEventListener('click', () => clientProfileModal.classList.add('hidden'));
 clientProfileModal.querySelector('.modal-overlay').addEventListener('click', () => clientProfileModal.classList.add('hidden'));
 
-    const openClientProfileModal = async (client) => {
-        const clientData = aggregatedClients.find(c => c.id === client.id);
-        const clientHistory = allFinishedClients.filter(c => c.name === clientData.name);
-        const clientAppointments = allAppointments.filter(c => c.name === clientData.name && c.appointmentTimestamp.toDate() > new Date());
-        
-        document.getElementById('profile-client-name').textContent = clientData.name;
-        document.getElementById('profile-client-phone').textContent = clientData.phone || 'No phone number';
-        document.getElementById('profile-total-visits').textContent = clientHistory.length;
-        
-        const totalSpent = clientHistory.reduce((sum, visit) => {
-            const prices = (visit.services.match(/\$\d+/g) || []).map(p => Number(p.slice(1)));
-            return sum + prices.reduce((a, b) => a + b, 0);
-        }, 0);
-        document.getElementById('profile-total-spent').textContent = `$${totalSpent.toFixed(2)}`;
-        
-        document.getElementById('profile-fav-tech').textContent = clientData.favoriteTech;
-        document.getElementById('profile-fav-color').textContent = clientData.favoriteColor;
 
-        const historyBody = document.getElementById('profile-history-table-body');
-        historyBody.innerHTML = clientHistory.map(v => `<tr><td class="px-4 py-2">${v.checkOutTimestamp.toDate().toLocaleDateString()}</td><td class="px-4 py-2">${v.services}</td><td class="px-4 py-2">${v.technician}</td><td class="px-4 py-2 text-right">$${(v.services.match(/\$\d+/g) || []).map(p => Number(p.slice(1))).reduce((a, b) => a + b, 0).toFixed(2)}</td></tr>`).join('');
 
-        const apptsContainer = document.getElementById('profile-upcoming-appts');
-        apptsContainer.innerHTML = clientAppointments.length > 0 
-            ? clientAppointments.map(a => `<div class="bg-blue-50 p-2 rounded-md"><p class="font-semibold">${a.appointmentTimestamp.toDate().toLocaleString()}</p><p class="text-sm">${a.services.join(', ')}</p></div>`).join('')
-            : '<p class="text-sm text-gray-500">No upcoming appointments.</p>';
-        
-        const galleryContainer = document.getElementById('profile-photo-gallery');
-        const clientDocSnap = await getDoc(doc(db, "clients", client.id));
-        if (clientDocSnap.exists() && clientDocSnap.data().photoGallery) {
-             galleryContainer.innerHTML = clientDocSnap.data().photoGallery.map(url => `<img src="${url}" class="w-full h-24 object-cover rounded-md">`).join('');
-        } else {
-            galleryContainer.innerHTML = '<p class="text-sm text-gray-500">No photos uploaded.</p>';
-        }
-        
-        clientProfileModal.classList.remove('hidden');
-    };
     
-    document.getElementById('close-client-profile-modal-btn').addEventListener('click', () => clientProfileModal.classList.add('hidden'));
-    clientProfileModal.querySelector('.modal-overlay').addEventListener('click', () => clientProfileModal.classList.add('hidden'));
-
-
     loadAndRenderServices();
     const todayString = getLocalDateString();
     const currentMonthIndex = new Date().getMonth();

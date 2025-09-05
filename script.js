@@ -1411,6 +1411,64 @@ function initMainApp(userRole) {
         }
     });
 
+    const openClientProfileModal = async (client) => {
+    // Find all relevant data for the selected client
+    const clientData = aggregatedClients.find(c => c.id === client.id);
+    if (!clientData) {
+        console.error("Could not find aggregated data for client:", client);
+        alert("Could not load client profile.");
+        return;
+    }
+    const clientHistory = allFinishedClients.filter(c => c.name === clientData.name);
+    const clientAppointments = allAppointments.filter(c => c.name === clientData.name && c.appointmentTimestamp.toDate() > new Date());
+
+    // Populate the modal with basic info
+    document.getElementById('profile-client-name').textContent = clientData.name;
+    document.getElementById('profile-client-phone').textContent = clientData.phone || 'No phone number';
+
+    // Populate stats cards
+    document.getElementById('profile-total-visits').textContent = clientHistory.length;
+    const totalSpent = clientHistory.reduce((sum, visit) => {
+        const prices = (visit.services.match(/\$\d+/g) || []).map(p => Number(p.slice(1)));
+        return sum + prices.reduce((a, b) => a + b, 0);
+    }, 0);
+    document.getElementById('profile-total-spent').textContent = `$${totalSpent.toFixed(2)}`;
+    document.getElementById('profile-fav-tech').textContent = clientData.favoriteTech;
+    document.getElementById('profile-fav-color').textContent = clientData.favoriteColor;
+
+    // Populate the visit history table
+    const historyBody = document.getElementById('profile-history-table-body');
+    historyBody.innerHTML = clientHistory.length > 0 ? clientHistory.map(v => 
+        `<tr>
+            <td class="px-4 py-2">${v.checkOutTimestamp.toDate().toLocaleDateString()}</td>
+            <td class="px-4 py-2">${v.services}</td>
+            <td class="px-4 py-2">${v.technician}</td>
+        </tr>`
+    ).join('') : '<tr><td colspan="3" class="text-center p-4 text-gray-500">No visit history found.</td></tr>';
+
+    // Populate upcoming appointments
+    const apptsContainer = document.getElementById('profile-upcoming-appts');
+    apptsContainer.innerHTML = clientAppointments.length > 0 
+        ? clientAppointments.map(a => `<div class="bg-blue-50 p-2 rounded-md"><p class="font-semibold">${a.appointmentTimestamp.toDate().toLocaleString()}</p><p class="text-sm">${a.services.join(', ')}</p></div>`).join('')
+        : '<p class="text-sm text-gray-500">No upcoming appointments.</p>';
+
+    // Populate photo gallery
+    const galleryContainer = document.getElementById('profile-photo-gallery');
+    try {
+        const clientDocSnap = await getDoc(doc(db, "clients", client.id));
+        if (clientDocSnap.exists() && clientDocSnap.data().photoGallery && clientDocSnap.data().photoGallery.length > 0) {
+             galleryContainer.innerHTML = clientDocSnap.data().photoGallery.map(url => `<a href="${url}" target="_blank"><img src="${url}" class="w-full h-24 object-cover rounded-md"></a>`).join('');
+        } else {
+            galleryContainer.innerHTML = '<p class="text-sm text-gray-500 col-span-full">No photos uploaded.</p>';
+        }
+    } catch (error) {
+        console.error("Error fetching client photo gallery:", error);
+        galleryContainer.innerHTML = '<p class="text-sm text-red-500 col-span-full">Could not load photos.</p>';
+    }
+
+    // Show the modal
+    clientProfileModal.classList.remove('hidden');
+};
      document.getElementById('finished-content').addEventListener('click', async (e) => {
         const deleteBtn = e.target.closest('.delete-btn-finished');
         const feedbackBtn = e.target.closest('.view-feedback-btn');
@@ -1854,17 +1912,44 @@ function initMainApp(userRole) {
     }
 
     document.getElementById('clients-list-report-content').addEventListener('click', (e) => {
-        const viewProfileBtn = e.target.closest('.view-client-profile-btn');
-        const editBtn = e.target.closest('.edit-client-btn');
-        const deleteBtn = e.target.closest('.delete-client-btn');
-        if (viewProfileBtn) { 
-            const client = aggregatedClients.find(c => c.id === viewProfileBtn.dataset.id); 
-            if(client) { openClientProfileModal(client); } 
-        } 
-        else if (editBtn) { const client = aggregatedClients.find(c => c.id === editBtn.dataset.id); if(client) { openClientModal(client); } } 
-        else if (deleteBtn) { const clientId = deleteBtn.dataset.id; const client = aggregatedClients.find(c => c.id === clientId); if (client) { showConfirmModal(`Delete all records for ${client.name}? This cannot be undone.`, async () => { await deleteDoc(doc(db, "clients", clientId)); }); } }
-    });
+    const viewProfileBtn = e.target.closest('.view-client-profile-btn');
+    const editBtn = e.target.closest('.edit-client-btn');
+    const deleteBtn = e.target.closest('.delete-client-btn');
 
+    if (viewProfileBtn) { 
+        const client = aggregatedClients.find(c => c.id === viewProfileBtn.dataset.id); 
+        if(client) { 
+            openClientProfileModal(client); 
+        } else {
+            console.warn("Could not find client data for ID:", viewProfileBtn.dataset.id);
+        }
+    } 
+    else if (editBtn) { 
+        const client = aggregatedClients.find(c => c.id === editBtn.dataset.id); 
+        if(client) { 
+            openClientModal(client); 
+        } else {
+            console.warn("Could not find client data for ID:", editBtn.dataset.id);
+        }
+    } 
+    else if (deleteBtn) { 
+        const clientId = deleteBtn.dataset.id; 
+        const client = aggregatedClients.find(c => c.id === clientId); 
+        if (client) { 
+            showConfirmModal(`Delete all records for ${client.name}? This cannot be undone.`, async () => { 
+                try {
+                    await deleteDoc(doc(db, "clients", clientId)); 
+                    alert(`${client.name} has been deleted.`);
+                } catch (error) {
+                    console.error("Error deleting client:", error);
+                    alert("Could not delete the client.");
+                }
+            }); 
+        } else {
+             console.warn("Could not find client data for ID:", clientId);
+        }
+    }
+});
     document.getElementById('gemini-sms-close-btn').addEventListener('click', () => { geminiSmsModal.classList.add('hidden'); geminiSmsModal.classList.remove('flex'); });
     document.querySelector('.gemini-sms-modal-overlay').addEventListener('click', () => { geminiSmsModal.classList.add('hidden'); geminiSmsModal.classList.remove('flex'); });
     
@@ -2969,6 +3054,8 @@ function initMainApp(userRole) {
 
     document.getElementById('close-edit-gift-card-modal-btn').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));
     editGiftCardModal.querySelector('.modal-overlay').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));
+    document.getElementById('close-client-profile-modal-btn').addEventListener('click', () => clientProfileModal.classList.add('hidden'));
+clientProfileModal.querySelector('.modal-overlay').addEventListener('click', () => clientProfileModal.classList.add('hidden'));
 
     const openClientProfileModal = async (client) => {
         const clientData = aggregatedClients.find(c => c.id === client.id);

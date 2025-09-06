@@ -926,6 +926,7 @@ function initMainApp(userRole) {
     let currentTechFilterCalendar = 'All', currentTechFilterActive = 'All', currentTechFilterProcessing = 'All', currentTechFilterFinished = 'All';
     let currentFinishedDateFilter = '', currentEarningTechFilter = 'All', currentEarningDateFilter = '', currentEarningRangeFilter = 'daily';
     let currentSalonEarningDateFilter = '', currentSalonEarningRangeFilter = String(new Date().getMonth()), currentExpenseMonthFilter = '';
+    let currentDashboardEarningTechFilter = 'All', currentDashboardEarningDateFilter = '', currentDashboardEarningRangeFilter = 'daily';
 
     let aggregatedClients = [], allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [], allInventoryUsage = [], allGiftCards = [], allPromotions = [];
     let techniciansAndStaff = [], technicians = [];
@@ -1227,6 +1228,40 @@ function initMainApp(userRole) {
             row.className = 'bg-white border-b';
             row.innerHTML = `<td class="px-6 py-4">${new Date(earning.date.seconds * 1000).toLocaleDateString()}</td><td class="px-6 py-4 font-medium text-gray-900">${earning.staffName}</td><td class="px-6 py-4">$${earning.earning.toFixed(2)}</td><td class="px-6 py-4">$${earning.tip.toFixed(2)}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${earning.id}" class="edit-earning-btn text-blue-500 hover:text-blue-700" title="Edit Earning"><i class="fas fa-edit text-lg"></i></button><button data-id="${earning.id}" class="delete-earning-btn text-red-500 hover:text-red-700" title="Delete Earning"><i class="fas fa-trash-alt text-lg"></i></button></td>`;
         });
+
+        const renderDashboardFullStaffEarnings = (earnings) => {
+            const tbody = document.querySelector('#dashboard-staff-earning-table-full tbody');
+            if (!tbody) return;
+        
+            tbody.innerHTML = earnings.length === 0 ? `<tr><td colspan="5" class="py-6 text-center text-gray-400">No earnings found.</td></tr>` : '';
+        
+            earnings.sort((a, b) => b.date.seconds - a.date.seconds).forEach(earning => {
+                const row = tbody.insertRow();
+                row.className = 'bg-white border-b';
+                let actionButtons = '';
+                // Only show action buttons for admins
+                if (userRole === 'admin') {
+                    actionButtons = `
+                        <button data-id="${earning.id}" class="edit-earning-btn text-blue-500 hover:text-blue-700" title="Edit Earning"><i class="fas fa-edit text-lg"></i></button>
+                        <button data-id="${earning.id}" class="delete-earning-btn text-red-500 hover:text-red-700" title="Delete Earning"><i class="fas fa-trash-alt text-lg"></i></button>
+                    `;
+                }
+                row.innerHTML = `
+                    <td class="px-6 py-4">${new Date(earning.date.seconds * 1000).toLocaleDateString()}</td>
+                    <td class="px-6 py-4 font-medium text-gray-900">${earning.staffName}</td>
+                    <td class="px-6 py-4">$${earning.earning.toFixed(2)}</td>
+                    <td class="px-6 py-4">$${earning.tip.toFixed(2)}</td>
+                    <td class="px-6 py-4 text-center space-x-2">${actionButtons}</td>
+                `;
+            });
+        
+            const totalEarning = earnings.reduce((sum, e) => sum + e.earning, 0);
+            const totalTip = earnings.reduce((sum, e) => sum + e.tip, 0);
+        
+            document.getElementById('dashboard-filtered-earning-total-main').textContent = `Total ($${totalEarning.toFixed(2)})`;
+            document.getElementById('dashboard-filtered-earning-total-tip').textContent = `Tip ($${totalTip.toFixed(2)})`;
+        };
+
         const totalEarning = earnings.reduce((sum, e) => sum + e.earning, 0);
         const totalTip = earnings.reduce((sum, e) => sum + e.tip, 0);
         document.getElementById('total-earning').textContent = `$${totalEarning.toFixed(2)}`;
@@ -1595,67 +1630,41 @@ function initMainApp(userRole) {
         }
     });
 
-    onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot) => {
+onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot) => {
     allEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    // --- Logic for the full "Staff Earning Report" page ---
+    // --- Logic for the Main "Report" Page ---
     const staffEarningForm = document.getElementById('staff-earning-form');
     if (userRole === 'admin') {
         if(staffEarningForm) staffEarningForm.style.display = 'grid';
         renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter, currentEarningRangeFilter));
-    } else { // For Staff/Technicians
+    } else { 
         if(staffEarningForm) staffEarningForm.style.display = 'none';
-        // Hide action buttons in the main report table for non-admins
-        setTimeout(() => {
-             document.querySelectorAll('#staff-earning-table .edit-earning-btn, #staff-earning-table .delete-earning-btn').forEach(btn => {
-                if(btn.parentElement) btn.parentElement.innerHTML = '';
-            });
-        }, 100);
         const selfEarnings = allEarnings.filter(e => e.staffName === currentUserName);
         if(document.getElementById('tech-filter-container-earning')) {
             document.getElementById('tech-filter-container-earning').style.display = 'none';
         }
         renderStaffEarnings(applyEarningFilters(selfEarnings, currentUserName, currentEarningDateFilter, currentEarningRangeFilter));
     }
-// --- Logic for the NEW Dashboard Staff Earning Section ---
-const dashboardStaffEarningSection = document.getElementById('dashboard-staff-earning-section');
-if (dashboardStaffEarningSection) {
-    let dashboardEarnings = allEarnings;
-    const dashboardForm = document.getElementById('dashboard-staff-earning-form');
+
+    // --- Logic for the NEW Dashboard Report ---
+    const dashboardForm = document.getElementById('dashboard-staff-earning-form-full');
+    const dashboardFilters = document.getElementById('dashboard-earning-filters');
+
+    let dashboardDataToRender = allEarnings;
 
     if (userRole !== 'admin') {
-        // For staff, filter earnings and hide the form
-        dashboardEarnings = allEarnings.filter(e => e.staffName === currentUserName);
+        dashboardDataToRender = allEarnings.filter(e => e.staffName === currentUserName);
         if (dashboardForm) dashboardForm.style.display = 'none';
+        if (dashboardFilters) document.getElementById('dashboard-tech-filter-container-earning').style.display = 'none';
     } else {
-        // For admins, show the form and populate the dropdown
-        if (dashboardForm) {
-            dashboardForm.style.display = 'grid';
-            document.getElementById('dashboard-staff-earning-date').value = getLocalDateString();
-
-            // THIS IS THE CORRECTED LOGIC TO POPULATE THE DROPDOWN
-            const staffSelect = document.getElementById('dashboard-staff-name');
-            // Check if the dropdown exists and if the staff list has been loaded
-            if (staffSelect && techniciansAndStaff.length > 0) {
-                const currentValue = staffSelect.value; // Save current value to prevent it from resetting
-                
-                // Rebuild the dropdown to ensure it's up-to-date
-                staffSelect.innerHTML = '<option value="">Select Staff</option>';
-                techniciansAndStaff.forEach(tech => {
-                    staffSelect.appendChild(new Option(tech.name, tech.name));
-                });
-                
-                // Set the default value to TJ or restore the user's previous selection
-                staffSelect.value = currentValue || 'TJ';
-            }
-        }
+        if (dashboardForm) dashboardForm.style.display = 'grid';
+        if (dashboardFilters) document.getElementById('dashboard-tech-filter-container-earning').style.display = 'flex';
     }
-    
-    // This part remains the same
-    renderDashboardStaffEarnings(dashboardEarnings);
-}
 
-updateDashboard();
+    renderDashboardFullStaffEarnings(applyEarningFilters(dashboardDataToRender, currentDashboardEarningTechFilter, currentDashboardEarningDateFilter, currentDashboardEarningRangeFilter));
+
+    updateDashboard(); 
 });
     onSnapshot(query(collection(db, "salon_earnings"), orderBy("date", "desc")), (snapshot) => {
         allSalonEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -1834,6 +1843,48 @@ document.getElementById('admin-sub-tabs').addEventListener('click', (e) => {
         select.addEventListener('change', (e) => { const range = e.target.value; dateInput.style.display = range === 'daily' ? 'block' : 'none'; callback(dateInput.value, range); });
         dateInput.addEventListener('input', (e) => { callback(e.target.value, select.value); });
     };
+    // --- Setup for NEW Dashboard Earning Report Filters and Actions ---
+setupTechFilter('dashboard-tech-filter-container-earning', (tech) => { 
+    currentDashboardEarningTechFilter = tech; 
+    let data = userRole === 'admin' ? allEarnings : allEarnings.filter(e => e.staffName === currentUserName);
+    renderDashboardFullStaffEarnings(applyEarningFilters(data, tech, currentDashboardEarningDateFilter, currentDashboardEarningRangeFilter));
+});
+
+setupReportDateFilters('dashboard-earning-range-filter', 'dashboard-earning-date-filter', (date, range) => {
+    currentDashboardEarningDateFilter = date; 
+    currentDashboardEarningRangeFilter = range;
+    let data = userRole === 'admin' ? allEarnings : allEarnings.filter(e => e.staffName === currentUserName);
+    renderDashboardFullStaffEarnings(applyEarningFilters(data, currentDashboardEarningTechFilter, date, range));
+});
+
+const dashboardStaffEarningFormFull = document.getElementById('dashboard-staff-earning-form-full');
+if (dashboardStaffEarningFormFull) {
+    dashboardStaffEarningFormFull.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const staffName = document.getElementById('dashboard-staff-name-full').value;
+        const earning = parseFloat(document.getElementById('dashboard-staff-earning-full').value);
+        const tip = parseFloat(document.getElementById('dashboard-staff-tip-full').value);
+        const date = document.getElementById('dashboard-staff-earning-date-full').value;
+        if (isNaN(earning) || isNaN(tip) || !date) { return alert('Please fill out all fields correctly.'); }
+        try {
+            await addDoc(collection(db, "earnings"), { staffName, earning, tip, date: Timestamp.fromDate(new Date(date + 'T12:00:00')) });
+            e.target.reset();
+            document.getElementById('dashboard-staff-earning-date-full').value = getLocalDateString();
+            document.getElementById('dashboard-staff-name-full').value = 'TJ';
+        } catch (err) { console.error("Error adding earning: ", err); alert("Could not add earning."); }
+    });
+}
+
+const dashboardStaffEarningTableFull = document.getElementById('dashboard-staff-earning-table-full');
+if (dashboardStaffEarningTableFull) {
+    dashboardStaffEarningTableFull.addEventListener('click', async (e) => {
+        const deleteBtn = e.target.closest('.delete-earning-btn');
+        const editBtn = e.target.closest('.edit-earning-btn');
+        if(deleteBtn) { showConfirmModal("Delete this earning entry?", async () => { await deleteDoc(doc(db, "earnings", deleteBtn.dataset.id)); }); } 
+        else if (editBtn) { const earning = allEarnings.find(e => e.id === editBtn.dataset.id); if (earning) { openEditEarningModal(earning); } }
+    });
+}
+
 
     setupReportDateFilters('earning-range-filter', 'earning-date-filter', (date, range) => { currentEarningDateFilter = date; currentEarningRangeFilter = range; renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, date, range)); });
     setupReportDateFilters('salon-earning-range-filter', 'salon-earning-date-filter', (date, range) => { currentSalonEarningDateFilter = date; currentSalonEarningRangeFilter = range; renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, date, range)); });
@@ -2162,8 +2213,8 @@ if (dashboardStaffEarningForm) {
 const populateTechnicianFilters = () => {
     const techContainers = document.querySelectorAll('.tech-filter-container');
     // Add the new dashboard dropdown ID to this list
-    const techSelects = document.querySelectorAll('#appointment-technician-select, #technician-name-select, #staff-name, #edit-staff-name, #checkin-technician-select, #dashboard-staff-name');
-
+    const techSelects = document.querySelectorAll('#appointment-technician-select, #technician-name-select, #staff-name, #edit-staff-name, #checkin-technician-select, #dashboard-staff-name-full');
+    
     techContainers.forEach(container => {
         const userList = container.id.includes('earning') ? techniciansAndStaff : technicians;
         container.querySelectorAll('.dynamic-tech-btn').forEach(btn => btn.remove());
@@ -2195,9 +2246,9 @@ const populateTechnicianFilters = () => {
         }
 
         // This correctly sets 'TJ' as the default for both forms
-        if (select.id === 'staff-name' || select.id === 'dashboard-staff-name') {
-           select.value = 'TJ';
-        }
+        if(select.id === 'staff-name' || select.id === 'dashboard-staff-name' || select.id === 'dashboard-staff-name-full') {
+            select.value = 'TJ';
+         }
     });
         
         const salonEarningInputs = document.getElementById('salon-earning-inputs');

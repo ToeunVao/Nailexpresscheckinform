@@ -1021,35 +1021,72 @@
                             </div>
                         </div>
 
-                        <!-- Gift Card Management Content -->
-                        <div id="gift-card-management-content" class="sub-tab-content hidden">
-                           <div class="flex justify-between items-center mb-4">
-            
-                                <button id="create-printable-card-btn" class="bg-purple-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-purple-600">
-                                    <i class="fas fa-credit-card mr-2"></i>Create Printable Card
-                                </button>
-                            </div>
-                            <div class="overflow-x-auto">
-                                <table id="gift-cards-table-admin" class="w-full text-sm text-left text-gray-600">
-                                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                                        <tr>
-                                            <th scope="col" class="px-6 py-3">Date</th>
-                                            <th scope="col" class="px-6 py-3">Code</th>
-                                            <th scope="col" class="px-6 py-3">Initial</th>
-                                            <th scope="col" class="px-6 py-3">Balance</th>
-                                            <th scope="col" class="px-6 py-3">Recipient</th>
-                                            <th scope="col" class="px-6 py-3">Sender</th>
-                                            <th scope="col" class="px-6 py-3">Status</th>
-                                            <th scope="col" class="px-6 py-3 text-center">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <!-- JS will populate this -->
-                                    </tbody>
-                                </table>
-                            </div>
+                      <!-- Gift Card Management Content -->
+<div id="gift-card-management-content" class="sub-tab-content hidden">
+    <h2 class="text-3xl font-bold text-center text-pink-700 mb-6">Gift Card Designer</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6 bg-gray-50 p-6 rounded-2xl border">
+        <!-- Controls Panel -->
+        <div id="designer-controls" class="space-y-4">
+            <h3 class="text-xl font-semibold text-gray-700 border-b pb-2">Card Details</h3>
+            <form id="physical-gift-card-form" class="space-y-4">
+                <div class="flex items-center gap-4">
+                    <input type="checkbox" id="designer-show-to" class="form-checkbox" checked> <label for="designer-show-to">Show 'To' Field</label>
+                    <input type="checkbox" id="designer-show-from" class="form-checkbox" checked> <label for="designer-show-from">Show 'From' Field</label>
+                </div>
+                <div id="designer-to-wrapper"><label for="designer-to" class="block text-sm font-medium text-gray-600">To</label><input type="text" id="designer-to" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg"></div>
+                <div id="designer-from-wrapper"><label for="designer-from" class="block text-sm font-medium text-gray-600">From</label><input type="text" id="designer-from" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg"></div>
+                <div><label for="designer-amount" class="block text-sm font-medium text-gray-600">Amount ($)</label><input type="number" id="designer-amount" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg" required></div>
+                <div class="border-t pt-4">
+                    <label for="designer-set-expiry" class="flex items-center gap-2"><input type="checkbox" id="designer-set-expiry" class="form-checkbox"> Set Expiration Date</label>
+                    <div id="designer-expiry-inputs" class="flex items-center gap-2 mt-2 hidden">
+                        <input type="number" id="designer-expiry-value" class="form-input w-24 p-2 border-gray-300 rounded-lg" min="1" value="12">
+                        <select id="designer-expiry-unit" class="form-select p-2 border-gray-300 rounded-lg">
+                            <option value="months">Months</option>
+                            <option value="years">Years</option>
+                        </select>
+                    </div>
+                </div>
+                 <div class="border-t pt-4">
+                    <label for="designer-quantity" class="block text-sm font-medium text-gray-600">Quantity to Generate</label>
+                    <input type="number" id="designer-quantity" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg" min="1" value="1">
+                 </div>
+            </form>
+            <div>
+                <h3 class="text-xl font-semibold text-gray-700 border-b pb-2 mt-6">Background Style</h3>
+                <div id="designer-background-tabs" class="flex flex-wrap gap-2 mt-2 border-b"></div>
+                <div id="designer-background-options" class="grid grid-cols-3 gap-2 mt-2">
+                   <!-- JS will populate this -->
+                </div>
+            </div>
+             <div class="mt-6 text-center">
+                <button id="save-and-print-btn" class="w-full bg-green-500 text-white font-bold py-3 px-12 rounded-full hover:bg-green-600"><i class="fas fa-print mr-2"></i>Save & Print</button>
+            </div>
+        </div>
+        <!-- Preview Panel -->
+        <div class="flex items-center justify-center">
+            <div id="printable-gift-card-area">
+                 <div id="printable-gift-card" class="w-[400px] h-[228px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white transition-all duration-300 printable-gift-card" style="background-image: url('https://images.unsplash.com/photo-1596048135132-911961bd4350?q=80&w=1887&auto=format&fit=crop');">
+                    <div class="flex justify-between items-start" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
+                        <img id="preview-logo" src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white"/>
+                        <div class="text-right">
+                            <p class="font-parisienne text-3xl">Gift Card</p>
+                            <p class="text-xs font-semibold tracking-wider">Nails Express</p>
                         </div>
-
+                    </div>
+                    <div class="text-center" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.7);"><p id="preview-amount" class="text-5xl font-bold">$0.00</p></div>
+                    <div class="text-xs" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
+                        <div id="preview-to-from-wrapper" class="flex justify-between font-semibold">
+                            <span>FOR: <span id="preview-to" class="font-normal"></span></span>
+                            <span>FROM: <span id="preview-from" class="font-normal"></span></span>
+                        </div>
+                        <p class="mt-2 text-center font-mono tracking-widest text-sm" id="preview-code">CODE-HERE</p>
+                        <p class="mt-1 text-center text-[10px] opacity-80" id="preview-expiry">Expires: --/--/----</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
                         <!-- Promotions Management Content -->
                         <div id="promotions-management-content" class="sub-tab-content hidden">
                             <h3 class="text-xl font-semibold text-gray-700 mb-4">Manage Promotions</h3>
@@ -1444,79 +1481,7 @@
         </div>
     </div>
     
-    <!-- Gift Card Designer Modal -->
-    <div id="gift-card-designer-modal" class="modal hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
-        <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
-        <div class="relative bg-gray-100 w-full max-w-5xl p-6 rounded-2xl shadow-xl m-4 max-h-[90vh] overflow-y-auto">
-            <button id="close-designer-modal-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 z-10"><i class="fas fa-times fa-lg"></i></button>
-            <h2 class="text-3xl font-bold text-center text-pink-700 mb-6">Gift Card Designer</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6">
-                <!-- Controls Panel -->
-                <div id="designer-controls" class="space-y-4">
-                    <h3 class="text-xl font-semibold text-gray-700 border-b pb-2">Card Details</h3>
-                    <form id="physical-gift-card-form" class="space-y-4">
-                        <div class="flex items-center gap-4">
-                            <input type="checkbox" id="designer-show-to" class="form-checkbox" checked> <label for="designer-show-to">Show 'To' Field</label>
-                            <input type="checkbox" id="designer-show-from" class="form-checkbox" checked> <label for="designer-show-from">Show 'From' Field</label>
-                        </div>
-                        <div id="designer-to-wrapper"><label for="designer-to" class="block text-sm font-medium text-gray-600">To</label><input type="text" id="designer-to" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg"></div>
-                        <div id="designer-from-wrapper"><label for="designer-from" class="block text-sm font-medium text-gray-600">From</label><input type="text" id="designer-from" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg"></div>
-                        <div><label for="designer-amount" class="block text-sm font-medium text-gray-600">Amount ($)</label><input type="number" id="designer-amount" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg" required></div>
-                        <div class="border-t pt-4">
-                            <label for="designer-set-expiry" class="flex items-center gap-2"><input type="checkbox" id="designer-set-expiry" class="form-checkbox"> Set Expiration Date</label>
-                            <div id="designer-expiry-inputs" class="flex items-center gap-2 mt-2 hidden">
-                                <input type="number" id="designer-expiry-value" class="form-input w-24 p-2 border-gray-300 rounded-lg" min="1" value="12">
-                                <select id="designer-expiry-unit" class="form-select p-2 border-gray-300 rounded-lg">
-                                    <option value="months">Months</option>
-                                    <option value="years">Years</option>
-                                </select>
-                            </div>
-                        </div>
-                         <div class="border-t pt-4">
-                            <label for="designer-quantity" class="block text-sm font-medium text-gray-600">Quantity to Generate</label>
-                            <input type="number" id="designer-quantity" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg" min="1" value="1">
-                         </div>
-                    </form>
-                    <div>
-                        <h3 class="text-xl font-semibold text-gray-700 border-b pb-2 mt-6">Background Style</h3>
-                        <div id="designer-background-tabs" class="flex flex-wrap gap-2 mt-2 border-b"></div>
-                        <div id="designer-background-options" class="grid grid-cols-3 gap-2 mt-2">
-                           <!-- JS will populate this -->
-                        </div>
-                    </div>
-                     <div class="mt-6 text-center">
-                        <button id="save-and-print-btn" class="w-full bg-green-500 text-white font-bold py-3 px-12 rounded-full hover:bg-green-600"><i class="fas fa-print mr-2"></i>Save & Print</button>
-                    </div>
-                </div>
-                <!-- Preview Panel -->
-                <div class="flex items-center justify-center">
-                    <div id="printable-gift-card-area">
-                         <div id="printable-gift-card" class="w-[400px] h-[228px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white transition-all duration-300 printable-gift-card" style="background-image: url('https://images.unsplash.com/photo-1596048135132-911961bd4350?q=80&w=1887&auto=format&fit=crop');">
-                            <div class="flex justify-between items-start" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
-                                <img id="preview-logo" src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white"/>
-                                <div class="text-right">
-                                    <p class="font-parisienne text-3xl">Gift Card</p>
-                                    <p class="text-xs font-semibold tracking-wider">Nails Express</p>
-                                </div>
-                            </div>
-                            <div class="text-center" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.7);">
-                                <p id="preview-amount" class="text-5xl font-bold">$0.00</p>
-                            </div>
-                            <div class="text-xs" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
-                                <div id="preview-to-from-wrapper" class="flex justify-between font-semibold">
-                                    <span>FOR: <span id="preview-to" class="font-normal"></span></span>
-                                    <span>FROM: <span id="preview-from" class="font-normal"></span></span>
-                                </div>
-                                <p class="mt-2 text-center font-mono tracking-widest text-sm" id="preview-code">CODE-HERE</p>
-                                <p class="mt-1 text-center text-[10px] opacity-80" id="preview-expiry">Expires: --/--/----</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
+   
     <!-- Edit Gift Card Modal -->
     <div id="edit-gift-card-modal" class="modal hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
         <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>

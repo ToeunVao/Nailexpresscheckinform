@@ -2151,6 +2151,21 @@ document.getElementById('admin-sub-tabs').addEventListener('click', (e) => {
      if(select.id === 'staff-name' || select.id === 'dashboard-staff-name') {
    select.value = 'TJ';
 }
+// Function to specifically populate the dashboard staff dropdown
+const populateDashboardStaffDropdown = () => {
+    // Only proceed if the staff list has been loaded
+    if (techniciansAndStaff.length > 0) {
+        const staffSelect = document.getElementById('dashboard-staff-name');
+        if (staffSelect) {
+            staffSelect.innerHTML = '<option value="">Select Staff</option>';
+            techniciansAndStaff.forEach(tech => {
+                staffSelect.appendChild(new Option(tech.name, tech.name));
+            });
+            // Set the default value to 'TJ'
+            staffSelect.value = 'TJ';
+        }
+    }
+};
         });
         const salonEarningInputs = document.getElementById('salon-earning-inputs');
         const salonEarningTableHead = document.getElementById('salon-earning-table-head');
@@ -2180,14 +2195,14 @@ document.getElementById('admin-sub-tabs').addEventListener('click', (e) => {
         salonEarningTableFoot.innerHTML = footHTML + commissionHTML + check70HTML + cash30HTML;
     };
 
-    onSnapshot(collection(db, "users"), (snapshot) => {
-        const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        techniciansAndStaff = users.filter(user => user.role === 'technician' || user.role === 'staff');
-        technicians = users.filter(user => user.role === 'technician');
-        renderUsers(users);
-        populateTechnicianFilters();
-    });
-
+   onSnapshot(collection(db, "users"), (snapshot) => {
+    const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    techniciansAndStaff = users.filter(user => user.role === 'technician' || user.role === 'staff');
+    technicians = users.filter(user => user.role === 'technician');
+    renderUsers(users);
+    populateTechnicianFilters();
+    populateDashboardStaffDropdown(); // Add this line
+});
     addUserForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const userId = document.getElementById('edit-user-id').value;

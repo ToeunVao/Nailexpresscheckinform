@@ -1781,6 +1781,19 @@ const initGiftCardDesigner = () => {
         `<button type="button" data-category="${cat}" class="px-3 py-1 text-sm font-medium rounded-t-lg">${cat}</button>`
     ).join('');
 
+    // FIX: Add the event listener for the category tabs to make them interactive.
+    designerBackgroundTabs.addEventListener('click', e => {
+        const tab = e.target.closest('button');
+        if (tab && tab.dataset.category) {
+            // Remove active style from all tabs
+            designerBackgroundTabs.querySelectorAll('button').forEach(t => t.classList.remove('bg-gray-200'));
+            // Add active style to the clicked tab
+            tab.classList.add('bg-gray-200');
+            // Load the backgrounds for the selected category
+            populateBackgrounds(tab.dataset.category);
+        }
+    });
+
     const firstTab = designerBackgroundTabs.querySelector('button');
     if (firstTab) {
         firstTab.classList.add('bg-gray-200');

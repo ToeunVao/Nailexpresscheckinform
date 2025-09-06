@@ -1687,23 +1687,13 @@ if (dashboardStaffEarningForm) {
 if (dashboardForm) {
     dashboardForm.style.display = 'grid';
     document.getElementById('dashboard-staff-earning-date').value = getLocalDateString();
-
-    // This corrected code populates the dropdown and sets the default
-    const staffSelect = document.getElementById('dashboard-staff-name');
-    // First, check if the dropdown element exists and if the staff list has been loaded
-    if (staffSelect && techniciansAndStaff.length > 0) {
-        const currentValue = staffSelect.value; // Save the currently selected staff member
-
-        // Rebuild the dropdown options
-        staffSelect.innerHTML = '<option value="">Select Staff</option>';
-        techniciansAndStaff.forEach(tech => {
-            staffSelect.appendChild(new Option(tech.name, tech.name));
-        });
-
-        // Restore the previous selection or set the default to 'TJ'
-        staffSelect.value = currentValue || 'TJ';
+}		
+			 
+        renderDashboardStaffEarnings(dashboardEarnings);
     }
-}
+
+    updateDashboard();
+});
 
     onSnapshot(query(collection(db, "salon_earnings"), orderBy("date", "desc")), (snapshot) => {
         allSalonEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -2143,47 +2133,40 @@ document.getElementById('admin-sub-tabs').addEventListener('click', (e) => {
     };
     
     const populateTechnicianFilters = () => {
-    const techContainers = document.querySelectorAll('.tech-filter-container');
-    // Add the new dashboard dropdown ID to this list
-    const techSelects = document.querySelectorAll('#appointment-technician-select, #technician-name-select, #staff-name, #edit-staff-name, #checkin-technician-select, #dashboard-staff-name');
-
-    techContainers.forEach(container => {
-        const userList = container.id.includes('earning') ? techniciansAndStaff : technicians;
-        container.querySelectorAll('.dynamic-tech-btn').forEach(btn => btn.remove());
-        userList.forEach(tech => {
-            const btn = document.createElement('button');
-            btn.className = 'tech-filter-btn dynamic-tech-btn px-3 py-1 rounded-full text-sm';
-            btn.dataset.tech = tech.name;
-            btn.textContent = tech.name;
-            container.appendChild(btn);
+        const techContainers = document.querySelectorAll('.tech-filter-container');
+        const techSelects = document.querySelectorAll('#appointment-technician-select, #technician-name-select, #staff-name, #edit-staff-name, #checkin-technician-select, #dashboard-staff-name');
+        techContainers.forEach(container => {
+            const userList = container.id.includes('earning') ? techniciansAndStaff : technicians;
+            container.querySelectorAll('.dynamic-tech-btn').forEach(btn => btn.remove());
+            userList.forEach(tech => { const btn = document.createElement('button'); btn.className = 'tech-filter-btn dynamic-tech-btn px-3 py-1 rounded-full text-sm'; btn.dataset.tech = tech.name; btn.textContent = tech.name; container.appendChild(btn); });
         });
-    });
-
-    techSelects.forEach(select => {
-        // This line now correctly identifies which dropdowns need all staff
-        const userList = ['staff-name', 'edit-staff-name', 'dashboard-staff-name'].includes(select.id) ? techniciansAndStaff : technicians;
-
-        const firstOption = select.options[0];
-        select.innerHTML = '';
-        if (firstOption && (firstOption.value === 'Any Technician' || firstOption.value === '')) {
-            select.appendChild(firstOption);
+        techSelects.forEach(select => {
+            const userList = (select.id === 'staff-name' || select.id === 'edit-staff-name') ? techniciansAndStaff : technicians;
+            const firstOption = select.options[0];
+            select.innerHTML = '';
+            if(firstOption && (firstOption.value === 'Any Technician' || firstOption.value === '')) { select.appendChild(firstOption); }
+            userList.forEach(tech => { select.appendChild(new Option(tech.name, tech.name)); });
+             if(select.id === 'technician-name-select') { select.appendChild(new Option("Other", "other")); }
+            // Add this 'if' block to set the default value
+     if(select.id === 'staff-name' || select.id === 'dashboard-staff-name') {
+   select.value = 'TJ';
+}
+// Function to specifically populate the dashboard staff dropdown
+const populateDashboardStaffDropdown = () => {
+    // Only proceed if the staff list has been loaded
+    if (techniciansAndStaff.length > 0) {
+        const staffSelect = document.getElementById('dashboard-staff-name');
+        if (staffSelect) {
+            staffSelect.innerHTML = '<option value="">Select Staff</option>';
+            techniciansAndStaff.forEach(tech => {
+                staffSelect.appendChild(new Option(tech.name, tech.name));
+            });
+            // Set the default value to 'TJ'
+            staffSelect.value = 'TJ';
         }
-
-        userList.forEach(tech => {
-            select.appendChild(new Option(tech.name, tech.name));
-        });
-
-        if (select.id === 'technician-name-select') {
-            select.appendChild(new Option("Other", "other"));
-        }
-
-        // This correctly sets 'TJ' as the default for both forms
-        if (select.id === 'staff-name' || select.id === 'dashboard-staff-name') {
-           select.value = 'TJ';
-        }
-    });
+    }
 };
-
+        });
         const salonEarningInputs = document.getElementById('salon-earning-inputs');
         const salonEarningTableHead = document.getElementById('salon-earning-table-head');
         const salonEarningTableFoot = document.getElementById('salon-earning-table-foot');

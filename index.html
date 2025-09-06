@@ -414,42 +414,60 @@
                 </div>
 
                 
-                <!-- NEW: Staff Earning Report Section -->
-<div id="dashboard-staff-earning-section" class="mt-8 bg-white p-6 rounded-2xl shadow-lg">
-    <h3 class="text-xl font-bold text-gray-700 mb-4">Staff Earning Report</h3>
+             <!-- NEW: Full Staff Earning Report on Dashboard -->
+<div class="mt-8 bg-white p-6 rounded-2xl shadow-lg">
+    <h3 class="text-xl font-bold text-gray-700 border-b pb-3 mb-6 flex justify-between items-center">
+        <span>Staff Earning Report</span>
+        <div class="flex gap-4">
+            <span id="dashboard-filtered-earning-total-main" class="ml-2 bg-pink-100 text-pink-800 text-sm font-semibold px-2.5 py-0.5 rounded-full"></span>
+            <span id="dashboard-filtered-earning-total-tip" class="ml-2 bg-green-100 text-green-800 text-sm font-semibold px-2.5 py-0.5 rounded-full"></span>
+        </div>
+    </h3>
 
     <!-- Earning Submission Form (Admin Only) -->
-    <form id="dashboard-staff-earning-form" class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8 items-end">
+    <form id="dashboard-staff-earning-form-full" class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8 items-end">
         <div>
-            <label for="dashboard-staff-earning-date" class="block text-sm font-medium text-gray-600 mb-1">Date</label>
-            <input type="date" id="dashboard-staff-earning-date" class="form-input w-full p-3 border border-gray-300 rounded-lg" required>
+            <label for="dashboard-staff-earning-date-full" class="block text-sm font-medium text-gray-600 mb-1">Date</label>
+            <input type="date" id="dashboard-staff-earning-date-full" class="form-input w-full p-3 border border-gray-300 rounded-lg" required>
         </div>
         <div>
-            <label for="dashboard-staff-name" class="block text-sm font-medium text-gray-600 mb-1">Staff Name</label>
-            <select id="dashboard-staff-name" class="form-select w-full p-3 border border-gray-300 rounded-lg" required></select>
+            <label for="dashboard-staff-name-full" class="block text-sm font-medium text-gray-600 mb-1">Staff Name</label>
+            <select id="dashboard-staff-name-full" class="form-select w-full p-3 border border-gray-300 rounded-lg" required></select>
         </div>
         <div>
-            <label for="dashboard-staff-earning" class="block text-sm font-medium text-gray-600 mb-1">Earning</label>
-            <input type="number" step="0.01" id="dashboard-staff-earning" class="form-input w-full p-3 border border-gray-300 rounded-lg" placeholder="e.g., 100" required>
+            <label for="dashboard-staff-earning-full" class="block text-sm font-medium text-gray-600 mb-1">Earning</label>
+            <input type="number" step="0.01" id="dashboard-staff-earning-full" class="form-input w-full p-3 border border-gray-300 rounded-lg" placeholder="e.g., 100" required>
         </div>
         <div>
-            <label for="dashboard-staff-tip" class="block text-sm font-medium text-gray-600 mb-1">Tip</label>
-            <input type="number" step="0.01" id="dashboard-staff-tip" class="form-input w-full p-3 border border-gray-300 rounded-lg" placeholder="e.g., 20" required>
+            <label for="dashboard-staff-tip-full" class="block text-sm font-medium text-gray-600 mb-1">Tip</label>
+            <input type="number" step="0.01" id="dashboard-staff-tip-full" class="form-input w-full p-3 border border-gray-300 rounded-lg" placeholder="e.g., 20" required>
         </div>
         <div>
             <button type="submit" class="w-full bg-pink-600 text-white font-bold py-3 px-6 rounded-full hover:bg-pink-700">Add Earning</button>
         </div>
     </form>
 
-    <!-- Earnings Data List -->
+    <!-- Filters -->
+    <div id="dashboard-earning-filters" class="flex justify-between items-center mb-4">
+        <div id="dashboard-tech-filter-container-earning" class="tech-filter-container flex gap-2 flex-wrap">
+            <button class="tech-filter-btn px-3 py-1 rounded-full text-sm active" data-tech="All">All</button>
+        </div>
+        <div class="flex items-center gap-2">
+            <select id="dashboard-earning-range-filter" class="form-select p-2 border border-gray-300 rounded-lg"></select>
+            <input type="date" id="dashboard-earning-date-filter" class="p-2 border border-gray-300 rounded-lg">
+        </div>
+    </div>
+
+    <!-- Earnings Data Table -->
     <div class="overflow-x-auto max-h-96">
-        <table id="dashboard-staff-earning-table" class="w-full text-sm text-left text-gray-600">
+        <table id="dashboard-staff-earning-table-full" class="w-full text-sm text-left text-gray-600">
             <thead class="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
                 <tr>
                     <th scope="col" class="px-6 py-3">Date</th>
                     <th scope="col" class="px-6 py-3">Staff Name</th>
                     <th scope="col" class="px-6 py-3">Earning</th>
                     <th scope="col" class="px-6 py-3">Tip</th>
+                    <th scope="col" class="px-6 py-3 text-center">Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -457,8 +475,7 @@
             </tbody>
         </table>
     </div>
-</div>
-                <!-- Daily Notes Section -->
+</div>                <!-- Daily Notes Section -->
                 <div class="mt-8 bg-white p-6 rounded-2xl shadow-lg">
                     <h3 class="text-xl font-bold text-gray-700 mb-4">Daily Notes</h3>
                     <form id="daily-notes-form" class="mb-4">

@@ -951,85 +951,30 @@ function initMainApp(userRole) {
             case 'this_month': startDate = new Date(now.getFullYear(), now.getMonth(), 1); endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999); break;
             case 'this_year': startDate = new Date(now.getFullYear(), 0, 1); endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999); break;
         }
-        // --- Dashboard Staff Earning Report Logic ---
-const dashboardStaffEarningForm = document.getElementById('dashboard-staff-earning-form');
-const dashboardStaffEarningTableBody = document.querySelector('#dashboard-staff-earning-table tbody');
-
-// Function to render the earnings list on the dashboard
-const renderDashboardStaffEarnings = (earnings) => {
-    if (!dashboardStaffEarningTableBody) return;
-
-    // Filter for the date range selected on the dashboard
-    const filter = document.getElementById('dashboard-date-filter').value;
-    const now = new Date();
-    let startDate, endDate;
-    switch (filter) {
-        case 'today': startDate = new Date(now.setHours(0, 0, 0, 0)); endDate = new Date(now.setHours(23, 59, 59, 999)); break;
-        case 'this_week': const firstDayOfWeek = now.getDate() - now.getDay(); startDate = new Date(now.setDate(firstDayOfWeek)); startDate.setHours(0, 0, 0, 0); endDate = new Date(startDate); endDate.setDate(startDate.getDate() + 6); endDate.setHours(23, 59, 59, 999); break;
-        case 'this_month': startDate = new Date(now.getFullYear(), now.getMonth(), 1); endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999); break;
-        case 'this_year': startDate = new Date(now.getFullYear(), 0, 1); endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999); break;
-    }
-    const filteredEarnings = earnings.filter(e => { const earnDate = e.date.toDate(); return earnDate >= startDate && earnDate <= endDate; });
-
-    dashboardStaffEarningTableBody.innerHTML = '';
-    if (filteredEarnings.length === 0) {
-        dashboardStaffEarningTableBody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-gray-400">No earnings recorded for this period.</td></tr>`;
-        return;
-    }
-
-    filteredEarnings.forEach(earning => {
-        const row = dashboardStaffEarningTableBody.insertRow();
-        row.className = 'bg-white border-b';
-        row.innerHTML = `
-            <td class="px-6 py-4">${new Date(earning.date.seconds * 1000).toLocaleDateString()}</td>
-            <td class="px-6 py-4 font-medium text-gray-900">${earning.staffName}</td>
-            <td class="px-6 py-4">$${earning.earning.toFixed(2)}</td>
-            <td class="px-6 py-4">$${earning.tip.toFixed(2)}</td>
-        `;
-    });
-};
-
-// Handle form submission for admins
-if (dashboardStaffEarningForm) {
-    dashboardStaffEarningForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const staffName = document.getElementById('dashboard-staff-name').value;
-        const earning = parseFloat(document.getElementById('dashboard-staff-earning').value);
-        const tip = parseFloat(document.getElementById('dashboard-staff-tip').value);
-        const date = document.getElementById('dashboard-staff-earning-date').value;
-
-        if (isNaN(earning) || isNaN(tip) || !date || !staffName) {
-            return alert('Please fill out all fields correctly.');
-        }
-        try {
-            await addDoc(collection(db, "earnings"), { 
-                staffName, 
-                earning, 
-                tip, 
-                date: Timestamp.fromDate(new Date(date + 'T12:00:00')) 
-            });
-            e.target.reset();
-            document.getElementById('dashboard-staff-earning-date').value = getLocalDateString();
-        } catch (err) {
-            console.error("Error adding earning from dashboard: ", err);
-            alert("Could not add earning.");
-        }
-    });
-}
+    
         const filteredBookings = allAppointments.filter(a => { const apptDate = a.appointmentTimestamp.toDate(); return apptDate >= startDate && apptDate <= endDate; });
         const filteredFinished = allFinishedClients.filter(f => { const finDate = f.checkOutTimestamp.toDate(); return finDate >= startDate && finDate <= endDate; });
         const filteredEarnings = allEarnings.filter(e => { const earnDate = e.date.toDate(); return earnDate >= startDate && earnDate <= endDate; });
+    
         document.getElementById('total-bookings-card').textContent = filteredBookings.length + filteredFinished.length;
         const totalRevenue = filteredEarnings.reduce((sum, e) => sum + e.earning, 0);
         document.getElementById('total-revenue-card').textContent = `$${totalRevenue.toFixed(2)}`;
         const lowStockItems = allInventory.filter(item => item.quantity <= item.lowStockAlert).length;
         document.getElementById('low-stock-card').textContent = lowStockItems;
         const techEarnings = filteredEarnings.reduce((acc, curr) => { acc[curr.staffName] = (acc[curr.staffName] || 0) + curr.earning; return acc; }, {});
-        const topTechnician = Object.keys(techEarnings).reduce((a, b) => techEarnings[a] > techEarnings[b] ? a : b, '-');
+        const topTechnician = Object.keys(techEarnings).length > 0 ? Object.keys(techEarnings).reduce((a, b) => techEarnings[a] > techEarnings[b] ? a : b, '-') : '-';
         document.getElementById('top-technician-card').textContent = topTechnician;
+    
         updateBookingsChart(filteredBookings.concat(filteredFinished), filter);
         updateServicesChart(filteredFinished);
         updateEarningsChart(techEarnings);
+    
+        // This new logic ensures the dashboard earnings table is always updated
+        let dashboardEarningsData = allEarnings;
+        if (userRole !== 'admin') {
+            dashboardEarningsData = allEarnings.filter(e => e.staffName === currentUserName);
+        }
+        renderDashboardStaffEarnings(dashboardEarningsData);
     };
 
     const initializeChart = (chartInstance, ctx, type, data, options) => {
@@ -2137,6 +2082,72 @@ document.getElementById('admin-sub-tabs').addEventListener('click', (e) => {
     document.querySelector('.gemini-sms-modal-overlay').addEventListener('click', () => { geminiSmsModal.classList.add('hidden'); geminiSmsModal.classList.remove('flex'); });
     
     document.getElementById('floating-booking-btn').addEventListener('click', () => { openAddAppointmentModal(getLocalDateString()); });
+
+            // --- Dashboard Staff Earning Report Logic ---
+const dashboardStaffEarningForm = document.getElementById('dashboard-staff-earning-form');
+const dashboardStaffEarningTableBody = document.querySelector('#dashboard-staff-earning-table tbody');
+
+// Function to render the earnings list on the dashboard
+const renderDashboardStaffEarnings = (earnings) => {
+    if (!dashboardStaffEarningTableBody) return;
+
+    // Filter for the date range selected on the dashboard
+    const filter = document.getElementById('dashboard-date-filter').value;
+    const now = new Date();
+    let startDate, endDate;
+    switch (filter) {
+        case 'today': startDate = new Date(now.setHours(0, 0, 0, 0)); endDate = new Date(now.setHours(23, 59, 59, 999)); break;
+        case 'this_week': const firstDayOfWeek = now.getDate() - now.getDay(); startDate = new Date(now.setDate(firstDayOfWeek)); startDate.setHours(0, 0, 0, 0); endDate = new Date(startDate); endDate.setDate(startDate.getDate() + 6); endDate.setHours(23, 59, 59, 999); break;
+        case 'this_month': startDate = new Date(now.getFullYear(), now.getMonth(), 1); endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999); break;
+        case 'this_year': startDate = new Date(now.getFullYear(), 0, 1); endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999); break;
+    }
+    const filteredEarnings = earnings.filter(e => { const earnDate = e.date.toDate(); return earnDate >= startDate && earnDate <= endDate; });
+
+    dashboardStaffEarningTableBody.innerHTML = '';
+    if (filteredEarnings.length === 0) {
+        dashboardStaffEarningTableBody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-gray-400">No earnings recorded for this period.</td></tr>`;
+        return;
+    }
+
+    filteredEarnings.forEach(earning => {
+        const row = dashboardStaffEarningTableBody.insertRow();
+        row.className = 'bg-white border-b';
+        row.innerHTML = `
+            <td class="px-6 py-4">${new Date(earning.date.seconds * 1000).toLocaleDateString()}</td>
+            <td class="px-6 py-4 font-medium text-gray-900">${earning.staffName}</td>
+            <td class="px-6 py-4">$${earning.earning.toFixed(2)}</td>
+            <td class="px-6 py-4">$${earning.tip.toFixed(2)}</td>
+        `;
+    });
+};
+
+// Handle form submission for admins
+if (dashboardStaffEarningForm) {
+    dashboardStaffEarningForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const staffName = document.getElementById('dashboard-staff-name').value;
+        const earning = parseFloat(document.getElementById('dashboard-staff-earning').value);
+        const tip = parseFloat(document.getElementById('dashboard-staff-tip').value);
+        const date = document.getElementById('dashboard-staff-earning-date').value;
+
+        if (isNaN(earning) || isNaN(tip) || !date || !staffName) {
+            return alert('Please fill out all fields correctly.');
+        }
+        try {
+            await addDoc(collection(db, "earnings"), { 
+                staffName, 
+                earning, 
+                tip, 
+                date: Timestamp.fromDate(new Date(date + 'T12:00:00')) 
+            });
+            e.target.reset();
+            document.getElementById('dashboard-staff-earning-date').value = getLocalDateString();
+        } catch (err) {
+            console.error("Error adding earning from dashboard: ", err);
+            alert("Could not add earning.");
+        }
+    });
+}
 
     const addUserForm = document.getElementById('add-user-form');
     const usersTableBody = document.querySelector('#users-table tbody');

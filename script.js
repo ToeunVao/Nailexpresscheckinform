@@ -1672,28 +1672,46 @@ if (dashboardStaffEarningForm) {
         }
         renderStaffEarnings(applyEarningFilters(selfEarnings, currentUserName, currentEarningDateFilter, currentEarningRangeFilter));
     }
+// --- Logic for the NEW Dashboard Staff Earning Section ---
+const dashboardStaffEarningSection = document.getElementById('dashboard-staff-earning-section');
+if (dashboardStaffEarningSection) {
+    let dashboardEarnings = allEarnings;
+    const dashboardForm = document.getElementById('dashboard-staff-earning-form');
 
-    // --- Logic for the NEW Dashboard Staff Earning Section ---
-    const dashboardStaffEarningSection = document.getElementById('dashboard-staff-earning-section');
-    if (dashboardStaffEarningSection) {
-        let dashboardEarnings = allEarnings;
-        const dashboardForm = document.getElementById('dashboard-staff-earning-form');
+    if (userRole !== 'admin') {
+        // For staff, filter earnings and hide the form
+        dashboardEarnings = allEarnings.filter(e => e.staffName === currentUserName);
+        if (dashboardForm) dashboardForm.style.display = 'none';
+    } else {
+        // For admins, show the form and populate the dropdown
+        if (dashboardForm) {
+            dashboardForm.style.display = 'grid';
+            document.getElementById('dashboard-staff-earning-date').value = getLocalDateString();
 
-        if (userRole !== 'admin') {
-            dashboardEarnings = allEarnings.filter(e => e.staffName === currentUserName);
-            if (dashboardForm) dashboardForm.style.display = 'none';
-        } else {
-if (dashboardForm) {
-    dashboardForm.style.display = 'grid';
-    document.getElementById('dashboard-staff-earning-date').value = getLocalDateString();
-}
-}
-        renderDashboardStaffEarnings(dashboardEarnings);
+            // THIS IS THE CORRECTED LOGIC TO POPULATE THE DROPDOWN
+            const staffSelect = document.getElementById('dashboard-staff-name');
+            // Check if the dropdown exists and if the staff list has been loaded
+            if (staffSelect && techniciansAndStaff.length > 0) {
+                const currentValue = staffSelect.value; // Save current value to prevent it from resetting
+                
+                // Rebuild the dropdown to ensure it's up-to-date
+                staffSelect.innerHTML = '<option value="">Select Staff</option>';
+                techniciansAndStaff.forEach(tech => {
+                    staffSelect.appendChild(new Option(tech.name, tech.name));
+                });
+                
+                // Set the default value to TJ or restore the user's previous selection
+                staffSelect.value = currentValue || 'TJ';
+            }
+        }
     }
+    
+    // This part remains the same
+    renderDashboardStaffEarnings(dashboardEarnings);
+}
 
-    updateDashboard();
+updateDashboard();
 });
-
     onSnapshot(query(collection(db, "salon_earnings"), orderBy("date", "desc")), (snapshot) => {
         allSalonEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, currentSalonEarningDateFilter, currentSalonEarningRangeFilter));

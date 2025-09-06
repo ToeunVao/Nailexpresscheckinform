@@ -1686,6 +1686,22 @@ if (dashboardStaffEarningForm) {
 if (dashboardForm) {
     dashboardForm.style.display = 'grid';
     document.getElementById('dashboard-staff-earning-date').value = getLocalDateString();
+
+    // This corrected code populates the dropdown and sets the default
+    const staffSelect = document.getElementById('dashboard-staff-name');
+    // First, check if the dropdown element exists and if the staff list has been loaded
+    if (staffSelect && techniciansAndStaff.length > 0) {
+        const currentValue = staffSelect.value; // Save the currently selected staff member
+
+        // Rebuild the dropdown options
+        staffSelect.innerHTML = '<option value="">Select Staff</option>';
+        techniciansAndStaff.forEach(tech => {
+            staffSelect.appendChild(new Option(tech.name, tech.name));
+        });
+
+        // Restore the previous selection or set the default to 'TJ'
+        staffSelect.value = currentValue || 'TJ';
+    }
 }
         renderDashboardStaffEarnings(dashboardEarnings);
     }

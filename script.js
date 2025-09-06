@@ -1776,7 +1776,50 @@ if (staffSelect) {
     setupSubTabs('reports-sub-tabs', 'sub-tab-content');
     setupSubTabs('admin-sub-tabs', 'sub-tab-content');
 
+// --- New Gift Card Designer Initialization Logic ---
+const initGiftCardDesigner = () => {
+    const designerForm = document.getElementById('physical-gift-card-form');
+    const designerBackgroundTabs = document.getElementById('designer-background-tabs');
 
+    if (!designerForm) return; 
+
+    designerForm.reset();
+    document.getElementById('designer-quantity').value = 1;
+    document.getElementById('preview-code').textContent = `GC-${Date.now()}${[...Array(4)].map(() => Math.floor(Math.random() * 10)).join('')}`;
+
+    designerBackgroundTabs.innerHTML = Object.keys(giftCardBackgrounds).map(cat => 
+        `<button type="button" data-category="${cat}" class="px-3 py-1 text-sm font-medium rounded-t-lg">${cat}</button>`
+    ).join('');
+
+    // FIX: Add the event listener for the category tabs to make them interactive.
+    designerBackgroundTabs.addEventListener('click', e => {
+        const tab = e.target.closest('button');
+        if (tab && tab.dataset.category) {
+            // Remove active style from all tabs
+            designerBackgroundTabs.querySelectorAll('button').forEach(t => t.classList.remove('bg-gray-200'));
+            // Add active style to the clicked tab
+            tab.classList.add('bg-gray-200');
+            // Load the backgrounds for the selected category
+            populateBackgrounds(tab.dataset.category);
+        }
+    });
+
+    const firstTab = designerBackgroundTabs.querySelector('button');
+    if (firstTab) {
+        firstTab.classList.add('bg-gray-200');
+        populateBackgrounds(firstTab.dataset.category);
+    }
+
+    updateDesignerPreview();
+};
+
+// Trigger the designer setup when its tab is clicked
+document.getElementById('admin-sub-tabs').addEventListener('click', (e) => {
+    const button = e.target.closest('button');
+    if (button && button.id === 'gift-card-management-tab') {
+        initGiftCardDesigner();
+    }
+});
     function renderCalendar(year, month, technicianFilter = 'All') {
         monthYearDisplay.textContent = `${new Date(year, month).toLocaleString('default', { month: 'long' })} ${year}`;
         calendarGrid.innerHTML = '';
@@ -2966,38 +3009,7 @@ if (staffSelect) {
         }
     };
     
-    const openDesignerModal = () => {
-        designerForm.reset();
-        document.getElementById('designer-quantity').value = 1;
-        document.getElementById('preview-code').textContent = `GC-${Date.now()}${[...Array(4)].map(() => Math.floor(Math.random() * 10)).join('')}`;
-        
-        designerBackgroundTabs.innerHTML = Object.keys(giftCardBackgrounds).map(cat => 
-            `<button type="button" data-category="${cat}" class="px-3 py-1 text-sm font-medium rounded-t-lg">${cat}</button>`
-        ).join('');
-        
-        const firstTab = designerBackgroundTabs.querySelector('button');
-        firstTab.classList.add('bg-gray-200');
-        populateBackgrounds(firstTab.dataset.category);
-
-        updateDesignerPreview();
-        giftCardDesignerModal.classList.remove('hidden');
-        giftCardDesignerModal.classList.add('flex');
-    };
-    
-    designerBackgroundTabs.addEventListener('click', e => {
-        const tab = e.target.closest('button');
-        if (tab) {
-            designerBackgroundTabs.querySelectorAll('button').forEach(t => t.classList.remove('bg-gray-200'));
-            tab.classList.add('bg-gray-200');
-            populateBackgrounds(tab.dataset.category);
-        }
-    });
-
-    const closeDesignerModal = () => {
-        giftCardDesignerModal.classList.add('hidden');
-        giftCardDesignerModal.classList.remove('flex');
-    };
-
+   
     designerBackgroundOptions.addEventListener('click', (e) => {
         const target = e.target.closest('button');
         if (target && target.dataset.bg) {
@@ -3090,9 +3102,6 @@ if (staffSelect) {
         updateDesignerPreview();
     });
 
-    createPrintableCardBtn.addEventListener('click', openDesignerModal);
-    closeDesignerModalBtn.addEventListener('click', closeDesignerModal);
-    giftCardDesignerModal.querySelector('.modal-overlay').addEventListener('click', closeDesignerModal);
     designerForm.addEventListener('input', updateDesignerPreview);
     saveAndPrintBtn.addEventListener('click', handleSaveAndPrint);
     

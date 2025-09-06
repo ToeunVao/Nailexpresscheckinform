@@ -2210,47 +2210,47 @@ if (dashboardStaffEarningForm) {
         });
     };
     
-const populateTechnicianFilters = () => {
-    const techContainers = document.querySelectorAll('.tech-filter-container');
-    // Add the new dashboard dropdown ID to this list
-    const techSelects = document.querySelectorAll('#appointment-technician-select, #technician-name-select, #staff-name, #edit-staff-name, #checkin-technician-select, #dashboard-staff-name-full');
+    const populateTechnicianFilters = () => {
+        const techContainers = document.querySelectorAll('.tech-filter-container');
+        // Add the new dashboard dropdown ID to this list
+        const techSelects = document.querySelectorAll('#appointment-technician-select, #technician-name-select, #staff-name, #edit-staff-name, #checkin-technician-select, #dashboard-staff-name-full');
     
-    techContainers.forEach(container => {
-        const userList = container.id.includes('earning') ? techniciansAndStaff : technicians;
-        container.querySelectorAll('.dynamic-tech-btn').forEach(btn => btn.remove());
-        userList.forEach(tech => {
-            const btn = document.createElement('button');
-            btn.className = 'tech-filter-btn dynamic-tech-btn px-3 py-1 rounded-full text-sm';
-            btn.dataset.tech = tech.name;
-            btn.textContent = tech.name;
-            container.appendChild(btn);
+        techContainers.forEach(container => {
+            const userList = container.id.includes('earning') ? techniciansAndStaff : technicians;
+            container.querySelectorAll('.dynamic-tech-btn').forEach(btn => btn.remove());
+            userList.forEach(tech => {
+                const btn = document.createElement('button');
+                btn.className = 'tech-filter-btn dynamic-tech-btn px-3 py-1 rounded-full text-sm';
+                btn.dataset.tech = tech.name;
+                btn.textContent = tech.name;
+                container.appendChild(btn);
+            });
         });
-    });
-
-    techSelects.forEach(select => {
-        // This line now correctly identifies which dropdowns need all staff
-        const userList = ['staff-name', 'edit-staff-name', 'dashboard-staff-name'].includes(select.id) ? techniciansAndStaff : technicians;
-
-        const firstOption = select.options[0];
-        select.innerHTML = '';
-        if (firstOption && (firstOption.value === 'Any Technician' || firstOption.value === '')) {
-            select.appendChild(firstOption);
-        }
-
-        userList.forEach(tech => {
-            select.appendChild(new Option(tech.name, tech.name));
+    
+        techSelects.forEach(select => {
+            // This line now correctly identifies which dropdowns need all staff
+            const userList = ['staff-name', 'edit-staff-name', 'dashboard-staff-name-full'].includes(select.id) ? techniciansAndStaff : technicians;
+    
+            const firstOption = select.options[0];
+            select.innerHTML = '';
+            if (firstOption && (firstOption.value === 'Any Technician' || firstOption.value === '')) {
+                select.appendChild(firstOption);
+            }
+    
+            userList.forEach(tech => {
+                select.appendChild(new Option(tech.name, tech.name));
+            });
+    
+            if (select.id === 'technician-name-select') {
+                select.appendChild(new Option("Other", "other"));
+            }
+    
+            // This correctly sets 'TJ' as the default for all relevant forms
+            if (select.id === 'staff-name' || select.id === 'dashboard-staff-name-full') {
+               select.value = 'TJ';
+            }
         });
-
-        if (select.id === 'technician-name-select') {
-            select.appendChild(new Option("Other", "other"));
-        }
-
-        // This correctly sets 'TJ' as the default for both forms
-        if(select.id === 'staff-name' || select.id === 'dashboard-staff-name' || select.id === 'dashboard-staff-name-full') {
-            select.value = 'TJ';
-         }
-    });
-        
+    };
         const salonEarningInputs = document.getElementById('salon-earning-inputs');
         const salonEarningTableHead = document.getElementById('salon-earning-table-head');
         const salonEarningTableFoot = document.getElementById('salon-earning-table-foot');
@@ -2285,7 +2285,6 @@ onSnapshot(collection(db, "users"), (snapshot) => {
     technicians = users.filter(user => user.role === 'technician');
     renderUsers(users);
     populateTechnicianFilters();
-    populateDashboardStaffDropdown(); // Add this line
 });
 
     addUserForm.addEventListener('submit', async (e) => {

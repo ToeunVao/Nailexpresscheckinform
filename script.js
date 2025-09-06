@@ -1683,22 +1683,12 @@ if (dashboardStaffEarningForm) {
             dashboardEarnings = allEarnings.filter(e => e.staffName === currentUserName);
             if (dashboardForm) dashboardForm.style.display = 'none';
         } else {
-             if (dashboardForm) {
-                dashboardForm.style.display = 'grid';
-                document.getElementById('dashboard-staff-earning-date').value = getLocalDateString();
-                // ... existing code ...
-const staffSelect = document.getElementById('dashboard-staff-name');
-if (staffSelect) {
-    staffSelect.innerHTML = '<option value="">Select Staff</option>';
-    techniciansAndStaff.forEach(tech => {
-        staffSelect.appendChild(new Option(tech.name, tech.name));
-    });
-    // Add this line to set the default value
-    staffSelect.value = 'TJ';
-}
-// ... existing code ...
-             }
-        }
+        
+if (dashboardForm) {
+    dashboardForm.style.display = 'grid';
+    document.getElementById('dashboard-staff-earning-date').value = getLocalDateString();
+}		
+			 
         renderDashboardStaffEarnings(dashboardEarnings);
     }
 
@@ -1776,6 +1766,37 @@ if (staffSelect) {
     setupSubTabs('reports-sub-tabs', 'sub-tab-content');
     setupSubTabs('admin-sub-tabs', 'sub-tab-content');
 
+// --- New Gift Card Designer Initialization Logic ---
+const initGiftCardDesigner = () => {
+    const designerForm = document.getElementById('physical-gift-card-form');
+    const designerBackgroundTabs = document.getElementById('designer-background-tabs');
+
+    if (!designerForm) return; 
+
+    designerForm.reset();
+    document.getElementById('designer-quantity').value = 1;
+    document.getElementById('preview-code').textContent = `GC-${Date.now()}${[...Array(4)].map(() => Math.floor(Math.random() * 10)).join('')}`;
+
+    designerBackgroundTabs.innerHTML = Object.keys(giftCardBackgrounds).map(cat => 
+        `<button type="button" data-category="${cat}" class="px-3 py-1 text-sm font-medium rounded-t-lg">${cat}</button>`
+    ).join('');
+
+    const firstTab = designerBackgroundTabs.querySelector('button');
+    if (firstTab) {
+        firstTab.classList.add('bg-gray-200');
+        populateBackgrounds(firstTab.dataset.category);
+    }
+
+    updateDesignerPreview();
+};
+
+// Trigger the designer setup when its tab is clicked
+document.getElementById('admin-sub-tabs').addEventListener('click', (e) => {
+    const button = e.target.closest('button');
+    if (button && button.id === 'gift-card-management-tab') {
+        initGiftCardDesigner();
+    }
+});
 
     function renderCalendar(year, month, technicianFilter = 'All') {
         monthYearDisplay.textContent = `${new Date(year, month).toLocaleString('default', { month: 'long' })} ${year}`;
@@ -2100,7 +2121,7 @@ if (staffSelect) {
     
     const populateTechnicianFilters = () => {
         const techContainers = document.querySelectorAll('.tech-filter-container');
-        const techSelects = document.querySelectorAll('#appointment-technician-select, #technician-name-select, #staff-name, #edit-staff-name, #checkin-technician-select');
+        const techSelects = document.querySelectorAll('#appointment-technician-select, #technician-name-select, #staff-name, #edit-staff-name, #checkin-technician-select, #dashboard-staff-name');
         techContainers.forEach(container => {
             const userList = container.id.includes('earning') ? techniciansAndStaff : technicians;
             container.querySelectorAll('.dynamic-tech-btn').forEach(btn => btn.remove());
@@ -2114,9 +2135,9 @@ if (staffSelect) {
             userList.forEach(tech => { select.appendChild(new Option(tech.name, tech.name)); });
              if(select.id === 'technician-name-select') { select.appendChild(new Option("Other", "other")); }
             // Add this 'if' block to set the default value
-     if(select.id === 'staff-name') {
-        select.value = 'TJ';
-     }
+     if(select.id === 'staff-name' || select.id === 'dashboard-staff-name') {
+   select.value = 'TJ';
+}
         });
         const salonEarningInputs = document.getElementById('salon-earning-inputs');
         const salonEarningTableHead = document.getElementById('salon-earning-table-head');
@@ -2966,37 +2987,6 @@ if (staffSelect) {
         }
     };
     
-    const openDesignerModal = () => {
-        designerForm.reset();
-        document.getElementById('designer-quantity').value = 1;
-        document.getElementById('preview-code').textContent = `GC-${Date.now()}${[...Array(4)].map(() => Math.floor(Math.random() * 10)).join('')}`;
-        
-        designerBackgroundTabs.innerHTML = Object.keys(giftCardBackgrounds).map(cat => 
-            `<button type="button" data-category="${cat}" class="px-3 py-1 text-sm font-medium rounded-t-lg">${cat}</button>`
-        ).join('');
-        
-        const firstTab = designerBackgroundTabs.querySelector('button');
-        firstTab.classList.add('bg-gray-200');
-        populateBackgrounds(firstTab.dataset.category);
-
-        updateDesignerPreview();
-        giftCardDesignerModal.classList.remove('hidden');
-        giftCardDesignerModal.classList.add('flex');
-    };
-    
-    designerBackgroundTabs.addEventListener('click', e => {
-        const tab = e.target.closest('button');
-        if (tab) {
-            designerBackgroundTabs.querySelectorAll('button').forEach(t => t.classList.remove('bg-gray-200'));
-            tab.classList.add('bg-gray-200');
-            populateBackgrounds(tab.dataset.category);
-        }
-    });
-
-    const closeDesignerModal = () => {
-        giftCardDesignerModal.classList.add('hidden');
-        giftCardDesignerModal.classList.remove('flex');
-    };
 
     designerBackgroundOptions.addEventListener('click', (e) => {
         const target = e.target.closest('button');
@@ -3090,9 +3080,6 @@ if (staffSelect) {
         updateDesignerPreview();
     });
 
-    createPrintableCardBtn.addEventListener('click', openDesignerModal);
-    closeDesignerModalBtn.addEventListener('click', closeDesignerModal);
-    giftCardDesignerModal.querySelector('.modal-overlay').addEventListener('click', closeDesignerModal);
     designerForm.addEventListener('input', updateDesignerPreview);
     saveAndPrintBtn.addEventListener('click', handleSaveAndPrint);
     

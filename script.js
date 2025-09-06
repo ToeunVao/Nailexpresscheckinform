@@ -2188,7 +2188,6 @@ const populateTechnicianFilters = () => {
            select.value = 'TJ';
         }
     });
-};
         
         const salonEarningInputs = document.getElementById('salon-earning-inputs');
         const salonEarningTableHead = document.getElementById('salon-earning-table-head');

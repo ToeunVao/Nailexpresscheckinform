@@ -1665,7 +1665,7 @@ onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot
     renderDashboardFullStaffEarnings(applyEarningFilters(dashboardDataToRender, currentDashboardEarningTechFilter, currentDashboardEarningDateFilter, currentDashboardEarningRangeFilter));
 
     updateDashboard(); 
-
+});
     onSnapshot(query(collection(db, "salon_earnings"), orderBy("date", "desc")), (snapshot) => {
         allSalonEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, currentSalonEarningDateFilter, currentSalonEarningRangeFilter));

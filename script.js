@@ -416,6 +416,7 @@ function initLandingPage() {
             await signInWithEmailAndPassword(auth, email, password);
             localStorage.removeItem(emailKey); 
             localStorage.removeItem(lockoutKey);
+            closeAuthModal(); // FIX: Close the modal on successful login
         } catch (error) {
             let attempts = (parseInt(localStorage.getItem(emailKey)) || 0) + 1;
             if (attempts >= loginSecuritySettings.maxAttempts) {
@@ -446,16 +447,19 @@ function initLandingPage() {
 
         btnText.textContent = 'Signing Up...';
         spinner.classList.remove('hidden');
+        signupBtn.disabled = true;
 
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
             await setDoc(doc(db, "clients", user.uid), { name: name, email: email, role: 'client', createdAt: serverTimestamp() });
+            closeAuthModal(); // FIX: Close the modal on successful signup
         } catch (error) {
             alert(`Sign Up Failed: ${error.message}`);
         } finally {
             btnText.textContent = 'Sign Up';
             spinner.classList.add('hidden');
+            signupBtn.disabled = false;
         }
     });
 
@@ -1201,17 +1205,14 @@ function initMainApp(userRole, userName) {
     const applyEarningFilters = (earnings, techFilter, dateFilter, rangeFilter, role, name) => {
         let filtered = earnings;
 
-        // Role-based filtering
         if (role !== 'admin') {
             filtered = filtered.filter(e => e.staffName === name);
         } else {
-            // Admin filtering
             if (techFilter !== 'All') {
                 filtered = filtered.filter(e => e.staffName === techFilter);
             }
         }
-
-        // Date/Range filtering
+        
         const now = new Date();
         const currentYear = now.getFullYear();
         const lastYear = currentYear - 1;
@@ -1221,10 +1222,8 @@ function initMainApp(userRole, userName) {
         else if (!isNaN(parseInt(rangeFilter))) { const month = parseInt(rangeFilter, 10); startDate = new Date(currentYear, month, 1); endDate = new Date(currentYear, month + 1, 0, 23, 59, 59, 999); } 
         else if (rangeFilter === 'daily' && dateFilter) { startDate = new Date(dateFilter + 'T00:00:00'); endDate = new Date(dateFilter + 'T23:59:59'); }
         if (startDate && endDate) { filtered = filtered.filter(e => { const earningDate = new Date(e.date.seconds * 1000); return earningDate >= startDate && earningDate <= endDate; }); }
-        
         return filtered;
     };
-
 
      const renderStaffEarnings = (earnings) => {
         const tbody = document.querySelector('#staff-earning-table tbody');

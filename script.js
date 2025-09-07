@@ -763,6 +763,7 @@ function initClientDashboard(clientId, clientData) {
     });
 
     setupClientTabs();
+}
 
 // --- MAIN CHECK-IN APP SCRIPT ---
 function initMainApp(userRole) {

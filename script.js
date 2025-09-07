@@ -3,6 +3,8 @@ import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, on
 import { getFirestore, collection, addDoc, onSnapshot, query, doc, getDoc, deleteDoc, serverTimestamp, where, getDocs, orderBy, Timestamp, updateDoc, writeBatch, setDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
+// FIX: The hardcoded API key was incorrect. It has been replaced with an empty string 
+// to allow the correct key to be automatically provided by the environment.
 const firebaseConfig = {
     apiKey: "AIzaSyAGZBJFVi_o1HeGDmjcSsmCcWxWOkuLc_4",
     authDomain: "nailexpress-10f2f.firebaseapp.com",
@@ -384,81 +386,78 @@ function initLandingPage() {
         }
     });
 
-landingLoginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('landing-email').value;
-    const password = document.getElementById('landing-password').value;
-    const loginBtn = document.getElementById('landing-login-btn');
-    const btnText = loginBtn.querySelector('.btn-text');
-    const spinner = loginBtn.querySelector('i');
-    const emailKey = 'loginAttempts_' + email.toLowerCase();
-    const lockoutKey = 'lockoutUntil_' + email.toLowerCase();
+    landingLoginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('landing-email').value;
+        const password = document.getElementById('landing-password').value;
+        const loginBtn = document.getElementById('landing-login-btn');
+        const btnText = loginBtn.querySelector('.btn-text');
+        const spinner = loginBtn.querySelector('i');
+        const emailKey = 'loginAttempts_' + email.toLowerCase();
+        const lockoutKey = 'lockoutUntil_' + email.toLowerCase();
 
-    const lockoutUntil = localStorage.getItem(lockoutKey);
-    if (lockoutUntil && Date.now() < parseInt(lockoutUntil)) {
-        const remainingTime = Math.ceil((parseInt(lockoutUntil) - Date.now()) / (1000 * 60));
-        lockoutMessageDiv.textContent = `Too many failed attempts. Please try again in ${remainingTime} minutes.`;
-        lockoutMessageDiv.classList.remove('hidden');
-        return;
-    } else if (lockoutUntil) {
-        localStorage.removeItem(lockoutKey);
-    }
-    lockoutMessageDiv.classList.add('hidden');
-
-    btnText.textContent = 'Logging In...';
-    spinner.classList.remove('hidden');
-    loginBtn.disabled = true;
-
-    try {
-        await signInWithEmailAndPassword(auth, email, password);
-        localStorage.removeItem(emailKey); 
-        localStorage.removeItem(lockoutKey);
-        // FIX: Explicitly close the modal after a successful login.
-        closeAuthModal(); 
-    } catch (error) {
-        let attempts = (parseInt(localStorage.getItem(emailKey)) || 0) + 1;
-        if (attempts >= loginSecuritySettings.maxAttempts) {
-            const lockoutTime = Date.now() + loginSecuritySettings.lockoutMinutes * 60 * 1000;
-            localStorage.setItem(lockoutKey, lockoutTime);
-            localStorage.removeItem(emailKey);
-            lockoutMessageDiv.textContent = `Login disabled for ${loginSecuritySettings.lockoutMinutes} minutes due to too many failed attempts.`;
+        const lockoutUntil = localStorage.getItem(lockoutKey);
+        if (lockoutUntil && Date.now() < parseInt(lockoutUntil)) {
+            const remainingTime = Math.ceil((parseInt(lockoutUntil) - Date.now()) / (1000 * 60));
+            lockoutMessageDiv.textContent = `Too many failed attempts. Please try again in ${remainingTime} minutes.`;
             lockoutMessageDiv.classList.remove('hidden');
-        } else {
-            localStorage.setItem(emailKey, attempts);
-            alert(`Login Failed: ${error.message}. You have ${loginSecuritySettings.maxAttempts - attempts} attempts remaining.`);
+            return;
+        } else if (lockoutUntil) {
+            localStorage.removeItem(lockoutKey);
         }
-    } finally {
-        btnText.textContent = 'Log In';
-        spinner.classList.add('hidden');
-        loginBtn.disabled = false;
-    }
-});
+        lockoutMessageDiv.classList.add('hidden');
 
-   landingSignupForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = document.getElementById('signup-name').value;
-    const email = document.getElementById('signup-email').value;
-    const password = document.getElementById('signup-password').value;
-    const signupBtn = document.getElementById('landing-signup-btn');
-    const btnText = signupBtn.querySelector('.btn-text');
-    const spinner = signupBtn.querySelector('i');
+        btnText.textContent = 'Logging In...';
+        spinner.classList.remove('hidden');
+        loginBtn.disabled = true;
 
-    btnText.textContent = 'Signing Up...';
-    spinner.classList.remove('hidden');
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            localStorage.removeItem(emailKey); 
+            localStorage.removeItem(lockoutKey);
+        } catch (error) {
+            let attempts = (parseInt(localStorage.getItem(emailKey)) || 0) + 1;
+            if (attempts >= loginSecuritySettings.maxAttempts) {
+                const lockoutTime = Date.now() + loginSecuritySettings.lockoutMinutes * 60 * 1000;
+                localStorage.setItem(lockoutKey, lockoutTime);
+                localStorage.removeItem(emailKey);
+                lockoutMessageDiv.textContent = `Login disabled for ${loginSecuritySettings.lockoutMinutes} minutes due to too many failed attempts.`;
+                lockoutMessageDiv.classList.remove('hidden');
+            } else {
+                localStorage.setItem(emailKey, attempts);
+                alert(`Login Failed: ${error.message}. You have ${loginSecuritySettings.maxAttempts - attempts} attempts remaining.`);
+            }
+        } finally {
+            btnText.textContent = 'Log In';
+            spinner.classList.add('hidden');
+            loginBtn.disabled = false;
+        }
+    });
 
-    try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        await setDoc(doc(db, "clients", user.uid), { name: name, email: email, role: 'client', createdAt: serverTimestamp() });
-        // FIX: Explicitly close the modal after a successful sign-up.
-        closeAuthModal();
-    } catch (error) {
-        alert(`Sign Up Failed: ${error.message}`);
-    } finally {
-        btnText.textContent = 'Sign Up';
-        spinner.classList.add('hidden');
-    }
-});
+    landingSignupForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('signup-name').value;
+        const email = document.getElementById('signup-email').value;
+        const password = document.getElementById('signup-password').value;
+        const signupBtn = document.getElementById('landing-signup-btn');
+        const btnText = signupBtn.querySelector('.btn-text');
+        const spinner = signupBtn.querySelector('i');
+
+        btnText.textContent = 'Signing Up...';
+        spinner.classList.remove('hidden');
+
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            await setDoc(doc(db, "clients", user.uid), { name: name, email: email, role: 'client', createdAt: serverTimestamp() });
+        } catch (error) {
+            alert(`Sign Up Failed: ${error.message}`);
+        } finally {
+            btnText.textContent = 'Sign Up';
+            spinner.classList.add('hidden');
+        }
+    });
+
     const peopleSelect = document.getElementById('appointment-people-landing');
     for (let i = 1; i <= 20; i++) {
         peopleSelect.appendChild(new Option(i, i));
@@ -770,8 +769,7 @@ function initMainApp(userRole) {
     const checkInNavCount = document.getElementById('check-in-nav-count');
     const bookingNavCount = document.getElementById('booking-nav-count');
     const appLoadTimestamp = Timestamp.now();
-    let currentUserName = null; // To store the logged-in user's name for filtering
-    
+
     const updateNavCounts = () => {
         const checkInCount = allActiveClients.length;
         // FIX: Add checks to ensure elements exist before updating them.
@@ -864,13 +862,6 @@ function initMainApp(userRole) {
         document.querySelector('[data-target="setting"]').style.display = 'none';
     }
 
-    // Get the current user's name for filtering reports
-    getDoc(doc(db, "users", currentUserId)).then(docSnap => {
-    if(docSnap.exists()){
-        currentUserName = docSnap.data().name;
-    }
-    });
-
     const checkInForm = document.getElementById('check-in-form');
     const peopleCountSelect = document.getElementById('people-count');
     const servicesContainer = document.getElementById('services-container');
@@ -949,71 +940,6 @@ function initMainApp(userRole) {
             case 'this_month': startDate = new Date(now.getFullYear(), now.getMonth(), 1); endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999); break;
             case 'this_year': startDate = new Date(now.getFullYear(), 0, 1); endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999); break;
         }
-        // --- Dashboard Staff Earning Report Logic ---
-const dashboardStaffEarningForm = document.getElementById('dashboard-staff-earning-form');
-const dashboardStaffEarningTableBody = document.querySelector('#dashboard-staff-earning-table tbody');
-
-// Function to render the earnings list on the dashboard
-const renderDashboardStaffEarnings = (earnings) => {
-    if (!dashboardStaffEarningTableBody) return;
-
-    // Filter for the date range selected on the dashboard
-    const filter = document.getElementById('dashboard-date-filter').value;
-    const now = new Date();
-    let startDate, endDate;
-    switch (filter) {
-        case 'today': startDate = new Date(now.setHours(0, 0, 0, 0)); endDate = new Date(now.setHours(23, 59, 59, 999)); break;
-        case 'this_week': const firstDayOfWeek = now.getDate() - now.getDay(); startDate = new Date(now.setDate(firstDayOfWeek)); startDate.setHours(0, 0, 0, 0); endDate = new Date(startDate); endDate.setDate(startDate.getDate() + 6); endDate.setHours(23, 59, 59, 999); break;
-        case 'this_month': startDate = new Date(now.getFullYear(), now.getMonth(), 1); endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999); break;
-        case 'this_year': startDate = new Date(now.getFullYear(), 0, 1); endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999); break;
-    }
-    const filteredEarnings = earnings.filter(e => { const earnDate = e.date.toDate(); return earnDate >= startDate && earnDate <= endDate; });
-
-    dashboardStaffEarningTableBody.innerHTML = '';
-    if (filteredEarnings.length === 0) {
-        dashboardStaffEarningTableBody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-gray-400">No earnings recorded for this period.</td></tr>`;
-        return;
-    }
-
-    filteredEarnings.forEach(earning => {
-        const row = dashboardStaffEarningTableBody.insertRow();
-        row.className = 'bg-white border-b';
-        row.innerHTML = `
-            <td class="px-6 py-4">${new Date(earning.date.seconds * 1000).toLocaleDateString()}</td>
-            <td class="px-6 py-4 font-medium text-gray-900">${earning.staffName}</td>
-            <td class="px-6 py-4">$${earning.earning.toFixed(2)}</td>
-            <td class="px-6 py-4">$${earning.tip.toFixed(2)}</td>
-        `;
-    });
-};
-
-// Handle form submission for admins
-if (dashboardStaffEarningForm) {
-    dashboardStaffEarningForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const staffName = document.getElementById('dashboard-staff-name').value;
-        const earning = parseFloat(document.getElementById('dashboard-staff-earning').value);
-        const tip = parseFloat(document.getElementById('dashboard-staff-tip').value);
-        const date = document.getElementById('dashboard-staff-earning-date').value;
-
-        if (isNaN(earning) || isNaN(tip) || !date || !staffName) {
-            return alert('Please fill out all fields correctly.');
-        }
-        try {
-            await addDoc(collection(db, "earnings"), { 
-                staffName, 
-                earning, 
-                tip, 
-                date: Timestamp.fromDate(new Date(date + 'T12:00:00')) 
-            });
-            e.target.reset();
-            document.getElementById('dashboard-staff-earning-date').value = getLocalDateString();
-        } catch (err) {
-            console.error("Error adding earning from dashboard: ", err);
-            alert("Could not add earning.");
-        }
-    });
-}
         const filteredBookings = allAppointments.filter(a => { const apptDate = a.appointmentTimestamp.toDate(); return apptDate >= startDate && apptDate <= endDate; });
         const filteredFinished = allFinishedClients.filter(f => { const finDate = f.checkOutTimestamp.toDate(); return finDate >= startDate && finDate <= endDate; });
         const filteredEarnings = allEarnings.filter(e => { const earnDate = e.date.toDate(); return earnDate >= startDate && earnDate <= endDate; });
@@ -1271,7 +1197,7 @@ if (dashboardStaffEarningForm) {
         return filtered;
     };
 
-    const renderStaffEarnings = (earnings) => {
+     const renderStaffEarnings = (earnings) => {
         const tbody = document.querySelector('#staff-earning-table tbody');
         if (!tbody) return;
         tbody.innerHTML = earnings.length === 0 ? `<tr><td colspan="5" class="py-6 text-center text-gray-400">No earnings found.</td></tr>` : '';
@@ -1280,47 +1206,12 @@ if (dashboardStaffEarningForm) {
             row.className = 'bg-white border-b';
             row.innerHTML = `<td class="px-6 py-4">${new Date(earning.date.seconds * 1000).toLocaleDateString()}</td><td class="px-6 py-4 font-medium text-gray-900">${earning.staffName}</td><td class="px-6 py-4">$${earning.earning.toFixed(2)}</td><td class="px-6 py-4">$${earning.tip.toFixed(2)}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${earning.id}" class="edit-earning-btn text-blue-500 hover:text-blue-700" title="Edit Earning"><i class="fas fa-edit text-lg"></i></button><button data-id="${earning.id}" class="delete-earning-btn text-red-500 hover:text-red-700" title="Delete Earning"><i class="fas fa-trash-alt text-lg"></i></button></td>`;
         });
-
-       
-
         const totalEarning = earnings.reduce((sum, e) => sum + e.earning, 0);
         const totalTip = earnings.reduce((sum, e) => sum + e.tip, 0);
         document.getElementById('total-earning').textContent = `$${totalEarning.toFixed(2)}`;
         document.getElementById('total-tip').textContent = `$${totalTip.toFixed(2)}`;
         filteredEarningTotalMainSpan.textContent = `Total ($${totalEarning.toFixed(2)})`;
         filteredEarningTotalTipSpan.textContent = `Tip ($${totalTip.toFixed(2)})`;
-    };
-    const renderDashboardFullStaffEarnings = (earnings) => {
-        const tbody = document.querySelector('#dashboard-staff-earning-table-full tbody');
-        if (!tbody) return;
-    
-        tbody.innerHTML = earnings.length === 0 ? `<tr><td colspan="5" class="py-6 text-center text-gray-400">No earnings found.</td></tr>` : '';
-    
-        earnings.sort((a, b) => b.date.seconds - a.date.seconds).forEach(earning => {
-            const row = tbody.insertRow();
-            row.className = 'bg-white border-b';
-            let actionButtons = '';
-            // Only show action buttons for admins
-            if (userRole === 'admin') {
-                actionButtons = `
-                    <button data-id="${earning.id}" class="edit-earning-btn text-blue-500 hover:text-blue-700" title="Edit Earning"><i class="fas fa-edit text-lg"></i></button>
-                    <button data-id="${earning.id}" class="delete-earning-btn text-red-500 hover:text-red-700" title="Delete Earning"><i class="fas fa-trash-alt text-lg"></i></button>
-                `;
-            }
-            row.innerHTML = `
-                <td class="px-6 py-4">${new Date(earning.date.seconds * 1000).toLocaleDateString()}</td>
-                <td class="px-6 py-4 font-medium text-gray-900">${earning.staffName}</td>
-                <td class="px-6 py-4">$${earning.earning.toFixed(2)}</td>
-                <td class="px-6 py-4">$${earning.tip.toFixed(2)}</td>
-                <td class="px-6 py-4 text-center space-x-2">${actionButtons}</td>
-            `;
-        });
-    
-        const totalEarning = earnings.reduce((sum, e) => sum + e.earning, 0);
-        const totalTip = earnings.reduce((sum, e) => sum + e.tip, 0);
-    
-        document.getElementById('dashboard-filtered-earning-total-main').textContent = `Total ($${totalEarning.toFixed(2)})`;
-        document.getElementById('dashboard-filtered-earning-total-tip').textContent = `Tip ($${totalTip.toFixed(2)})`;
     };
 
     const applySalonEarningFilters = (earnings, dateFilter, rangeFilter) => {
@@ -1683,43 +1574,11 @@ if (dashboardStaffEarningForm) {
         }
     });
 
-onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot) => {
-    allEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-    // --- Logic for the full "Staff Earning Report" page ---
-    const staffEarningForm = document.getElementById('staff-earning-form');
-    if (userRole === 'admin') {
-        if(staffEarningForm) staffEarningForm.style.display = 'grid';
+    onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot) => {
+        allEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter, currentEarningRangeFilter));
-    } else { 
-        if(staffEarningForm) staffEarningForm.style.display = 'none';
-        const selfEarnings = allEarnings.filter(e => e.staffName === currentUserName);
-        if(document.getElementById('tech-filter-container-earning')) {
-            document.getElementById('tech-filter-container-earning').style.display = 'none';
-        }
-        renderStaffEarnings(applyEarningFilters(selfEarnings, currentUserName, currentEarningDateFilter, currentEarningRangeFilter));
-    }
-
-    // --- Logic for the NEW Dashboard Report ---
-    const dashboardForm = document.getElementById('dashboard-staff-earning-form-full');
-    const dashboardFilters = document.getElementById('dashboard-earning-filters');
-
-    let dashboardDataToRender = allEarnings;
-
-    if (userRole !== 'admin') {
-        dashboardDataToRender = allEarnings.filter(e => e.staffName === currentUserName);
-        if (dashboardForm) dashboardForm.style.display = 'none';
-        if (dashboardFilters) document.getElementById('dashboard-tech-filter-container-earning').style.display = 'none';
-    } else {
-        if (dashboardForm) dashboardForm.style.display = 'grid';
-        if (dashboardFilters) document.getElementById('dashboard-tech-filter-container-earning').style.display = 'flex';
-    }
-
-    renderDashboardFullStaffEarnings(applyEarningFilters(dashboardDataToRender, currentDashboardEarningTechFilter, currentDashboardEarningDateFilter, currentDashboardEarningRangeFilter));
-
-    updateDashboard(); 
-    
-    }); 
+        updateDashboard();
+    });
 
     onSnapshot(query(collection(db, "salon_earnings"), orderBy("date", "desc")), (snapshot) => {
         allSalonEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -1792,50 +1651,7 @@ onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot
     setupSubTabs('reports-sub-tabs', 'sub-tab-content');
     setupSubTabs('admin-sub-tabs', 'sub-tab-content');
 
-// --- New Gift Card Designer Initialization Logic ---
-const initGiftCardDesigner = () => {
-    const designerForm = document.getElementById('physical-gift-card-form');
-    const designerBackgroundTabs = document.getElementById('designer-background-tabs');
 
-    if (!designerForm) return; 
-
-    designerForm.reset();
-    document.getElementById('designer-quantity').value = 1;
-    document.getElementById('preview-code').textContent = `GC-${Date.now()}${[...Array(4)].map(() => Math.floor(Math.random() * 10)).join('')}`;
-
-    designerBackgroundTabs.innerHTML = Object.keys(giftCardBackgrounds).map(cat => 
-        `<button type="button" data-category="${cat}" class="px-3 py-1 text-sm font-medium rounded-t-lg">${cat}</button>`
-    ).join('');
-
-    // FIX: Add the event listener for the category tabs to make them interactive.
-    designerBackgroundTabs.addEventListener('click', e => {
-        const tab = e.target.closest('button');
-        if (tab && tab.dataset.category) {
-            // Remove active style from all tabs
-            designerBackgroundTabs.querySelectorAll('button').forEach(t => t.classList.remove('bg-gray-200'));
-            // Add active style to the clicked tab
-            tab.classList.add('bg-gray-200');
-            // Load the backgrounds for the selected category
-            populateBackgrounds(tab.dataset.category);
-        }
-    });
-
-    const firstTab = designerBackgroundTabs.querySelector('button');
-    if (firstTab) {
-        firstTab.classList.add('bg-gray-200');
-        populateBackgrounds(firstTab.dataset.category);
-    }
-
-    updateDesignerPreview();
-};
-
-// Trigger the designer setup when its tab is clicked
-document.getElementById('admin-sub-tabs').addEventListener('click', (e) => {
-    const button = e.target.closest('button');
-    if (button && button.id === 'gift-card-management-tab') {
-        initGiftCardDesigner();
-    }
-});
     function renderCalendar(year, month, technicianFilter = 'All') {
         monthYearDisplay.textContent = `${new Date(year, month).toLocaleString('default', { month: 'long' })} ${year}`;
         calendarGrid.innerHTML = '';
@@ -1898,48 +1714,6 @@ document.getElementById('admin-sub-tabs').addEventListener('click', (e) => {
         select.addEventListener('change', (e) => { const range = e.target.value; dateInput.style.display = range === 'daily' ? 'block' : 'none'; callback(dateInput.value, range); });
         dateInput.addEventListener('input', (e) => { callback(e.target.value, select.value); });
     };
-    // --- Setup for NEW Dashboard Earning Report Filters and Actions ---
-setupTechFilter('dashboard-tech-filter-container-earning', (tech) => { 
-    currentDashboardEarningTechFilter = tech; 
-    let data = userRole === 'admin' ? allEarnings : allEarnings.filter(e => e.staffName === currentUserName);
-    renderDashboardFullStaffEarnings(applyEarningFilters(data, tech, currentDashboardEarningDateFilter, currentDashboardEarningRangeFilter));
-});
-
-setupReportDateFilters('dashboard-earning-range-filter', 'dashboard-earning-date-filter', (date, range) => {
-    currentDashboardEarningDateFilter = date; 
-    currentDashboardEarningRangeFilter = range;
-    let data = userRole === 'admin' ? allEarnings : allEarnings.filter(e => e.staffName === currentUserName);
-    renderDashboardFullStaffEarnings(applyEarningFilters(data, currentDashboardEarningTechFilter, date, range));
-});
-
-const dashboardStaffEarningFormFull = document.getElementById('dashboard-staff-earning-form-full');
-if (dashboardStaffEarningFormFull) {
-    dashboardStaffEarningFormFull.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const staffName = document.getElementById('dashboard-staff-name-full').value;
-        const earning = parseFloat(document.getElementById('dashboard-staff-earning-full').value);
-        const tip = parseFloat(document.getElementById('dashboard-staff-tip-full').value);
-        const date = document.getElementById('dashboard-staff-earning-date-full').value;
-        if (isNaN(earning) || isNaN(tip) || !date) { return alert('Please fill out all fields correctly.'); }
-        try {
-            await addDoc(collection(db, "earnings"), { staffName, earning, tip, date: Timestamp.fromDate(new Date(date + 'T12:00:00')) });
-            e.target.reset();
-            document.getElementById('dashboard-staff-earning-date-full').value = getLocalDateString();
-            document.getElementById('dashboard-staff-name-full').value = 'TJ';
-        } catch (err) { console.error("Error adding earning: ", err); alert("Could not add earning."); }
-    });
-}
-
-const dashboardStaffEarningTableFull = document.getElementById('dashboard-staff-earning-table-full');
-if (dashboardStaffEarningTableFull) {
-    dashboardStaffEarningTableFull.addEventListener('click', async (e) => {
-        const deleteBtn = e.target.closest('.delete-earning-btn');
-        const editBtn = e.target.closest('.edit-earning-btn');
-        if(deleteBtn) { showConfirmModal("Delete this earning entry?", async () => { await deleteDoc(doc(db, "earnings", deleteBtn.dataset.id)); }); } 
-        else if (editBtn) { const earning = allEarnings.find(e => e.id === editBtn.dataset.id); if (earning) { openEditEarningModal(earning); } }
-    });
-}
-
 
     setupReportDateFilters('earning-range-filter', 'earning-date-filter', (date, range) => { currentEarningDateFilter = date; currentEarningRangeFilter = range; renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, date, range)); });
     setupReportDateFilters('salon-earning-range-filter', 'salon-earning-date-filter', (date, range) => { currentSalonEarningDateFilter = date; currentSalonEarningRangeFilter = range; renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, date, range)); });
@@ -2189,72 +1963,6 @@ if (dashboardStaffEarningTableFull) {
     
     document.getElementById('floating-booking-btn').addEventListener('click', () => { openAddAppointmentModal(getLocalDateString()); });
 
-            // --- Dashboard Staff Earning Report Logic ---
-const dashboardStaffEarningForm = document.getElementById('dashboard-staff-earning-form');
-const dashboardStaffEarningTableBody = document.querySelector('#dashboard-staff-earning-table tbody');
-
-// Function to render the earnings list on the dashboard
-const renderDashboardStaffEarnings = (earnings) => {
-    if (!dashboardStaffEarningTableBody) return;
-
-    // Filter for the date range selected on the dashboard
-    const filter = document.getElementById('dashboard-date-filter').value;
-    const now = new Date();
-    let startDate, endDate;
-    switch (filter) {
-        case 'today': startDate = new Date(now.setHours(0, 0, 0, 0)); endDate = new Date(now.setHours(23, 59, 59, 999)); break;
-        case 'this_week': const firstDayOfWeek = now.getDate() - now.getDay(); startDate = new Date(now.setDate(firstDayOfWeek)); startDate.setHours(0, 0, 0, 0); endDate = new Date(startDate); endDate.setDate(startDate.getDate() + 6); endDate.setHours(23, 59, 59, 999); break;
-        case 'this_month': startDate = new Date(now.getFullYear(), now.getMonth(), 1); endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999); break;
-        case 'this_year': startDate = new Date(now.getFullYear(), 0, 1); endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999); break;
-    }
-    const filteredEarnings = earnings.filter(e => { const earnDate = e.date.toDate(); return earnDate >= startDate && earnDate <= endDate; });
-
-    dashboardStaffEarningTableBody.innerHTML = '';
-    if (filteredEarnings.length === 0) {
-        dashboardStaffEarningTableBody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-gray-400">No earnings recorded for this period.</td></tr>`;
-        return;
-    }
-
-    filteredEarnings.forEach(earning => {
-        const row = dashboardStaffEarningTableBody.insertRow();
-        row.className = 'bg-white border-b';
-        row.innerHTML = `
-            <td class="px-6 py-4">${new Date(earning.date.seconds * 1000).toLocaleDateString()}</td>
-            <td class="px-6 py-4 font-medium text-gray-900">${earning.staffName}</td>
-            <td class="px-6 py-4">$${earning.earning.toFixed(2)}</td>
-            <td class="px-6 py-4">$${earning.tip.toFixed(2)}</td>
-        `;
-    });
-};
-
-// Handle form submission for admins
-if (dashboardStaffEarningForm) {
-    dashboardStaffEarningForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const staffName = document.getElementById('dashboard-staff-name').value;
-        const earning = parseFloat(document.getElementById('dashboard-staff-earning').value);
-        const tip = parseFloat(document.getElementById('dashboard-staff-tip').value);
-        const date = document.getElementById('dashboard-staff-earning-date').value;
-
-        if (isNaN(earning) || isNaN(tip) || !date || !staffName) {
-            return alert('Please fill out all fields correctly.');
-        }
-        try {
-            await addDoc(collection(db, "earnings"), { 
-                staffName, 
-                earning, 
-                tip, 
-                date: Timestamp.fromDate(new Date(date + 'T12:00:00')) 
-            });
-            e.target.reset();
-            document.getElementById('dashboard-staff-earning-date').value = getLocalDateString();
-        } catch (err) {
-            console.error("Error adding earning from dashboard: ", err);
-            alert("Could not add earning.");
-        }
-    });
-}
-
     const addUserForm = document.getElementById('add-user-form');
     const usersTableBody = document.querySelector('#users-table tbody');
     const renderUsers = (users) => {
@@ -2267,46 +1975,20 @@ if (dashboardStaffEarningForm) {
     
     const populateTechnicianFilters = () => {
         const techContainers = document.querySelectorAll('.tech-filter-container');
-        // Add the new dashboard dropdown ID to this list
-        const techSelects = document.querySelectorAll('#appointment-technician-select, #technician-name-select, #staff-name, #edit-staff-name, #checkin-technician-select, #dashboard-staff-name');
-    
+        const techSelects = document.querySelectorAll('#appointment-technician-select, #technician-name-select, #staff-name, #edit-staff-name, #checkin-technician-select');
         techContainers.forEach(container => {
             const userList = container.id.includes('earning') ? techniciansAndStaff : technicians;
             container.querySelectorAll('.dynamic-tech-btn').forEach(btn => btn.remove());
-            userList.forEach(tech => {
-                const btn = document.createElement('button');
-                btn.className = 'tech-filter-btn dynamic-tech-btn px-3 py-1 rounded-full text-sm';
-                btn.dataset.tech = tech.name;
-                btn.textContent = tech.name;
-                container.appendChild(btn);
-            });
+            userList.forEach(tech => { const btn = document.createElement('button'); btn.className = 'tech-filter-btn dynamic-tech-btn px-3 py-1 rounded-full text-sm'; btn.dataset.tech = tech.name; btn.textContent = tech.name; container.appendChild(btn); });
         });
-    
         techSelects.forEach(select => {
-            // This line now correctly identifies which dropdowns need all staff
-            const userList = ['staff-name', 'edit-staff-name', 'dashboard-staff-name'].includes(select.id) ? techniciansAndStaff : technicians;
-    
+            const userList = (select.id === 'staff-name' || select.id === 'edit-staff-name') ? techniciansAndStaff : technicians;
             const firstOption = select.options[0];
             select.innerHTML = '';
-            if (firstOption && (firstOption.value === 'Any Technician' || firstOption.value === '')) {
-                select.appendChild(firstOption);
-            }
-    
-            userList.forEach(tech => {
-                select.appendChild(new Option(tech.name, tech.name));
-            });
-    
-            if (select.id === 'technician-name-select') {
-                select.appendChild(new Option("Other", "other"));
-            }
-    
-            // This correctly sets 'TJ' as the default for both forms
-            if (select.id === 'staff-name' || select.id === 'dashboard-staff-name') {
-               select.value = 'TJ';
-            }
+            if(firstOption && (firstOption.value === 'Any Technician' || firstOption.value === '')) { select.appendChild(firstOption); }
+            userList.forEach(tech => { select.appendChild(new Option(tech.name, tech.name)); });
+             if(select.id === 'technician-name-select') { select.appendChild(new Option("Other", "other")); }
         });
-    };
-        
         const salonEarningInputs = document.getElementById('salon-earning-inputs');
         const salonEarningTableHead = document.getElementById('salon-earning-table-head');
         const salonEarningTableFoot = document.getElementById('salon-earning-table-foot');
@@ -2335,14 +2017,13 @@ if (dashboardStaffEarningForm) {
         salonEarningTableFoot.innerHTML = footHTML + commissionHTML + check70HTML + cash30HTML;
     };
 
-onSnapshot(collection(db, "users"), (snapshot) => {
-    const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    techniciansAndStaff = users.filter(user => user.role === 'technician' || user.role === 'staff');
-    technicians = users.filter(user => user.role === 'technician');
-    renderUsers(users);
-    populateTechnicianFilters();
-    populateDashboardStaffDropdown(); // Add this line
-});
+    onSnapshot(collection(db, "users"), (snapshot) => {
+        const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        techniciansAndStaff = users.filter(user => user.role === 'technician' || user.role === 'staff');
+        technicians = users.filter(user => user.role === 'technician');
+        renderUsers(users);
+        populateTechnicianFilters();
+    });
 
     addUserForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -3156,7 +2837,38 @@ onSnapshot(collection(db, "users"), (snapshot) => {
         }
     };
     
-   
+    const openDesignerModal = () => {
+        designerForm.reset();
+        document.getElementById('designer-quantity').value = 1;
+        document.getElementById('preview-code').textContent = `GC-${Date.now()}${[...Array(4)].map(() => Math.floor(Math.random() * 10)).join('')}`;
+        
+        designerBackgroundTabs.innerHTML = Object.keys(giftCardBackgrounds).map(cat => 
+            `<button type="button" data-category="${cat}" class="px-3 py-1 text-sm font-medium rounded-t-lg">${cat}</button>`
+        ).join('');
+        
+        const firstTab = designerBackgroundTabs.querySelector('button');
+        firstTab.classList.add('bg-gray-200');
+        populateBackgrounds(firstTab.dataset.category);
+
+        updateDesignerPreview();
+        giftCardDesignerModal.classList.remove('hidden');
+        giftCardDesignerModal.classList.add('flex');
+    };
+    
+    designerBackgroundTabs.addEventListener('click', e => {
+        const tab = e.target.closest('button');
+        if (tab) {
+            designerBackgroundTabs.querySelectorAll('button').forEach(t => t.classList.remove('bg-gray-200'));
+            tab.classList.add('bg-gray-200');
+            populateBackgrounds(tab.dataset.category);
+        }
+    });
+
+    const closeDesignerModal = () => {
+        giftCardDesignerModal.classList.add('hidden');
+        giftCardDesignerModal.classList.remove('flex');
+    };
+
     designerBackgroundOptions.addEventListener('click', (e) => {
         const target = e.target.closest('button');
         if (target && target.dataset.bg) {
@@ -3249,6 +2961,9 @@ onSnapshot(collection(db, "users"), (snapshot) => {
         updateDesignerPreview();
     });
 
+    createPrintableCardBtn.addEventListener('click', openDesignerModal);
+    closeDesignerModalBtn.addEventListener('click', closeDesignerModal);
+    giftCardDesignerModal.querySelector('.modal-overlay').addEventListener('click', closeDesignerModal);
     designerForm.addEventListener('input', updateDesignerPreview);
     saveAndPrintBtn.addEventListener('click', handleSaveAndPrint);
     

@@ -5,7 +5,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "http
 
 // FIX: The hardcoded API key has been removed. The environment will provide the correct key automatically.
 const firebaseConfig = {
-    apiKey: "",
+    apiKey: "AIzaSyAGZBJFVi_o1HeGDmjcSsmCcWxWOkuLc_4",
     authDomain: "nailexpress-10f2f.firebaseapp.com",
     projectId: "nailexpress-10f2f",
     storageBucket: "nailexpress-10f2f.appspot.com",

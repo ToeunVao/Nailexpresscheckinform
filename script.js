@@ -3,7 +3,6 @@ import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, on
 import { getFirestore, collection, addDoc, onSnapshot, query, doc, getDoc, deleteDoc, serverTimestamp, where, getDocs, orderBy, Timestamp, updateDoc, writeBatch, setDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
-// FIX: The hardcoded API key has been removed. The environment will provide the correct key automatically.
 const firebaseConfig = {
     apiKey: "AIzaSyAGZBJFVi_o1HeGDmjcSsmCcWxWOkuLc_4",
     authDomain: "nailexpress-10f2f.firebaseapp.com",
@@ -36,6 +35,7 @@ let salonHours = {}; // To store salon operating hours
 let bookingsChart, servicesChart, earningsChart;
 let notifications = [];
 let currentUserRole = null;
+let currentUserName = null; // To store the logged-in user's name
 let currentUserId = null;
 let initialAppointmentsLoaded = false;
 let initialInventoryLoaded = false;
@@ -254,13 +254,15 @@ onAuthStateChanged(auth, async (user) => {
                 const userDoc = await getDoc(userDocRef);
                 
                 if (userDoc.exists()) { 
-                    currentUserRole = userDoc.data().role;
+                    const userData = userDoc.data();
+                    currentUserRole = userData.role;
+                    currentUserName = userData.name; // Store user's name
                     loadingScreen.style.display = 'none';
                     landingPageContent.style.display = 'none';
                     clientDashboardContent.style.display = 'none';
                     appContent.style.display = 'block';
                     if (!mainAppInitialized) {
-                        initMainApp(currentUserRole);
+                        initMainApp(currentUserRole, currentUserName);
                         mainAppInitialized = true;
                     }
                 } else { 
@@ -286,8 +288,8 @@ onAuthStateChanged(auth, async (user) => {
         } else {
             currentUserId = null;
             currentUserRole = null;
+            currentUserName = null;
             await signInAnonymously(auth)
-            // No need to do anything after anonymous sign in, the onAuthStateChanged will re-trigger
         }
     } catch (error) {
         console.error("Authentication Error:", error);
@@ -755,7 +757,7 @@ function initClientDashboard(clientId, clientData) {
 }
 
 // --- MAIN CHECK-IN APP SCRIPT ---
-function initMainApp(userRole) {
+function initMainApp(userRole, userName) {
     const dashboardContent = document.getElementById('dashboard-content');
     const mainAppContainer = document.getElementById('main-app-container');
     const logoLink = document.getElementById('logo-link');
@@ -769,12 +771,25 @@ function initMainApp(userRole) {
     const bookingNavCount = document.getElementById('booking-nav-count');
     const appLoadTimestamp = Timestamp.now();
 
-    // FIX: State variables for dashboard earning report filters
+    // State variables for dashboard earning report filters
     let currentDashboardEarningTechFilter = 'All', currentDashboardEarningDateFilter = '', currentDashboardEarningRangeFilter = 'daily';
+
+    // Role-based UI adjustments
+    const dashboardStaffEarningForm = document.getElementById('dashboard-staff-earning-form-full');
+    const dashboardTechFilterContainer = document.getElementById('dashboard-tech-filter-container-earning');
+    const reportsStaffEarningForm = document.getElementById('staff-earning-form');
+    const reportsTechFilterContainer = document.getElementById('tech-filter-container-earning');
+
+    if (userRole !== 'admin') {
+        if (dashboardStaffEarningForm) dashboardStaffEarningForm.style.display = 'none';
+        if (dashboardTechFilterContainer) dashboardTechFilterContainer.style.display = 'none';
+        if (reportsStaffEarningForm) reportsStaffEarningForm.style.display = 'none';
+        if (reportsTechFilterContainer) reportsTechFilterContainer.style.display = 'none';
+    }
+
 
     const updateNavCounts = () => {
         const checkInCount = allActiveClients.length;
-        // FIX: Add checks to ensure elements exist before updating them.
         if (checkInNavCount) {
             if (checkInCount > 0) {
                 checkInNavCount.textContent = checkInCount;
@@ -1183,9 +1198,20 @@ function initMainApp(userRole) {
         });
     };
 
-    const applyEarningFilters = (earnings, techFilter, dateFilter, rangeFilter) => {
+    const applyEarningFilters = (earnings, techFilter, dateFilter, rangeFilter, role, name) => {
         let filtered = earnings;
-        if (techFilter !== 'All') { filtered = filtered.filter(e => e.staffName === techFilter); }
+
+        // Role-based filtering
+        if (role !== 'admin') {
+            filtered = filtered.filter(e => e.staffName === name);
+        } else {
+            // Admin filtering
+            if (techFilter !== 'All') {
+                filtered = filtered.filter(e => e.staffName === techFilter);
+            }
+        }
+
+        // Date/Range filtering
         const now = new Date();
         const currentYear = now.getFullYear();
         const lastYear = currentYear - 1;
@@ -1195,8 +1221,10 @@ function initMainApp(userRole) {
         else if (!isNaN(parseInt(rangeFilter))) { const month = parseInt(rangeFilter, 10); startDate = new Date(currentYear, month, 1); endDate = new Date(currentYear, month + 1, 0, 23, 59, 59, 999); } 
         else if (rangeFilter === 'daily' && dateFilter) { startDate = new Date(dateFilter + 'T00:00:00'); endDate = new Date(dateFilter + 'T23:59:59'); }
         if (startDate && endDate) { filtered = filtered.filter(e => { const earningDate = new Date(e.date.seconds * 1000); return earningDate >= startDate && earningDate <= endDate; }); }
+        
         return filtered;
     };
+
 
      const renderStaffEarnings = (earnings) => {
         const tbody = document.querySelector('#staff-earning-table tbody');
@@ -1215,7 +1243,6 @@ function initMainApp(userRole) {
         filteredEarningTotalTipSpan.textContent = `Tip ($${totalTip.toFixed(2)})`;
     };
 
-    // FIX: New function to render staff earnings on the dashboard
     const renderDashboardStaffEarnings = (earnings) => {
         const tbody = document.querySelector('#dashboard-staff-earning-table-full tbody');
         if (!tbody) return;
@@ -1604,10 +1631,8 @@ function initMainApp(userRole) {
 
     onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot) => {
         allEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        // Reports tab
-        renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter, currentEarningRangeFilter));
-        // FIX: Also render for the dashboard
-        renderDashboardStaffEarnings(applyEarningFilters(allEarnings, currentDashboardEarningTechFilter, currentDashboardEarningDateFilter, currentDashboardEarningRangeFilter));
+        renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter, currentEarningRangeFilter, userRole, userName));
+        renderDashboardStaffEarnings(applyEarningFilters(allEarnings, currentDashboardEarningTechFilter, currentDashboardEarningDateFilter, currentDashboardEarningRangeFilter, userRole, userName));
         updateDashboard();
     });
 
@@ -1733,12 +1758,11 @@ function initMainApp(userRole) {
     setupTechFilter('tech-filter-container-processing', (tech) => { currentTechFilterProcessing = tech; renderProcessingClients(applyClientFilters(allActiveClients.filter(c => c.status === 'processing'), document.getElementById('search-processing').value.toLowerCase(), currentTechFilterProcessing, null)); });
     setupTechFilter('tech-filter-container-finished', (tech) => { currentTechFilterFinished = tech; renderFinishedClients(applyClientFilters(allFinishedClients, document.getElementById('search-finished').value.toLowerCase(), currentTechFilterFinished, currentFinishedDateFilter)); });
     setupTechFilter('tech-filter-container-calendar', (tech) => { currentTechFilterCalendar = tech; if (!document.getElementById('list-view').classList.contains('hidden')) { renderAllBookingsList(); } else { renderCalendar(currentYear, currentMonth, currentTechFilterCalendar); } });
-    setupTechFilter('tech-filter-container-earning', (tech) => { currentEarningTechFilter = tech; renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter, currentEarningRangeFilter)); });
+    setupTechFilter('tech-filter-container-earning', (tech) => { currentEarningTechFilter = tech; renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter, currentEarningRangeFilter, userRole, userName)); });
     
-    // FIX: Setup filters for the new dashboard earning report
     setupTechFilter('dashboard-tech-filter-container-earning', (tech) => {
         currentDashboardEarningTechFilter = tech;
-        renderDashboardStaffEarnings(applyEarningFilters(allEarnings, currentDashboardEarningTechFilter, currentDashboardEarningDateFilter, currentDashboardEarningRangeFilter));
+        renderDashboardStaffEarnings(applyEarningFilters(allEarnings, currentDashboardEarningTechFilter, currentDashboardEarningDateFilter, currentDashboardEarningRangeFilter, userRole, userName));
     });
 
     const setupReportDateFilters = (selectId, dateInputId, callback) => {
@@ -1752,14 +1776,13 @@ function initMainApp(userRole) {
         dateInput.addEventListener('input', (e) => { callback(e.target.value, select.value); });
     };
 
-    setupReportDateFilters('earning-range-filter', 'earning-date-filter', (date, range) => { currentEarningDateFilter = date; currentEarningRangeFilter = range; renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, date, range)); });
+    setupReportDateFilters('earning-range-filter', 'earning-date-filter', (date, range) => { currentEarningDateFilter = date; currentEarningRangeFilter = range; renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, date, range, userRole, userName)); });
     setupReportDateFilters('salon-earning-range-filter', 'salon-earning-date-filter', (date, range) => { currentSalonEarningDateFilter = date; currentSalonEarningRangeFilter = range; renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, date, range)); });
     
-    // FIX: Setup date filters for the new dashboard earning report
     setupReportDateFilters('dashboard-earning-range-filter', 'dashboard-earning-date-filter', (date, range) => {
         currentDashboardEarningDateFilter = date;
         currentDashboardEarningRangeFilter = range;
-        renderDashboardStaffEarnings(applyEarningFilters(allEarnings, currentDashboardEarningTechFilter, date, range));
+        renderDashboardStaffEarnings(applyEarningFilters(allEarnings, currentDashboardEarningTechFilter, date, range, userRole, userName));
     });
 
     
@@ -1777,7 +1800,6 @@ function initMainApp(userRole) {
         } catch (err) { console.error("Error adding earning: ", err); alert("Could not add earning."); }
     });
 
-    // FIX: Add event listener for dashboard earning form
     document.getElementById('dashboard-staff-earning-form-full').addEventListener('submit', async (e) => {
         e.preventDefault();
         const staffName = document.getElementById('dashboard-staff-name-full').value;
@@ -1799,7 +1821,6 @@ function initMainApp(userRole) {
         else if (editBtn) { const earning = allEarnings.find(e => e.id === editBtn.dataset.id); if (earning) { openEditEarningModal(earning); } }
     });
 
-    // FIX: Add event listener for dashboard earning table actions
     document.getElementById('dashboard-staff-earning-table-full').addEventListener('click', async (e) => {
         const deleteBtn = e.target.closest('.delete-earning-btn');
         const editBtn = e.target.closest('.edit-earning-btn');
@@ -1977,7 +1998,7 @@ function initMainApp(userRole) {
         const prompt = `Write a single, friendly, and short SMS message to a nail salon client named ${client.name}. Thank them for their recent visit where they received the following services: ${client.services}. Mention that their technician was ${client.technician}. Ask them to come back soon. Keep it concise and professional.`;
         try {
             const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${firebaseConfig.apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             const result = await response.json();
             let text = "Sorry, could not generate a message.";
             if (result.candidates?.[0]?.content?.parts?.[0]) { text = result.candidates[0].content.parts[0].text; }
@@ -2042,7 +2063,6 @@ function initMainApp(userRole) {
     };
     
     const populateTechnicianFilters = () => {
-        // FIX: Added #dashboard-staff-name-full to the selector
         const techSelects = document.querySelectorAll('#appointment-technician-select, #technician-name-select, #staff-name, #edit-staff-name, #checkin-technician-select, #dashboard-staff-name-full');
         const techContainers = document.querySelectorAll('.tech-filter-container');
         techContainers.forEach(container => {
@@ -2051,7 +2071,7 @@ function initMainApp(userRole) {
             userList.forEach(tech => { const btn = document.createElement('button'); btn.className = 'tech-filter-btn dynamic-tech-btn px-3 py-1 rounded-full text-sm'; btn.dataset.tech = tech.name; btn.textContent = tech.name; container.appendChild(btn); });
         });
         techSelects.forEach(select => {
-            if (!select) return; // Add a guard clause
+            if (!select) return; 
             const userList = (select.id.includes('staff-name')) ? techniciansAndStaff : technicians;
             const firstOption = select.options[0];
             select.innerHTML = '';
@@ -2905,7 +2925,6 @@ function initMainApp(userRole) {
         }
     };
     
-    // FIX: Initialize the designer when the main app loads instead of treating it as a modal.
     const initializeGiftCardDesigner = () => {
         designerForm.reset();
         document.getElementById('designer-quantity').value = 1;
@@ -2942,7 +2961,6 @@ function initMainApp(userRole) {
         }
     });
 
-    // FIX: Corrected the Save & Print functionality.
     const handleSaveAndPrint = async () => {
         const quantity = parseInt(document.getElementById('designer-quantity').value, 10);
         if (isNaN(quantity) || quantity < 1) {
@@ -3155,7 +3173,7 @@ clientProfileModal.querySelector('.modal-overlay').addEventListener('click', () 
 
     
     loadAndRenderServices();
-    initializeGiftCardDesigner(); // FIX: Initialize the designer
+    initializeGiftCardDesigner();
     const todayString = getLocalDateString();
     const currentMonthIndex = new Date().getMonth();
     document.getElementById('finished-date-filter').value = todayString;
@@ -3164,12 +3182,11 @@ clientProfileModal.querySelector('.modal-overlay').addEventListener('click', () 
     document.getElementById('staff-earning-date').value = todayString;
     document.getElementById('earning-date-filter').value = todayString;
     currentEarningDateFilter = todayString;
-    renderStaffEarnings(applyEarningFilters(allEarnings, 'All', currentEarningDateFilter, 'daily'));
-    // FIX: Initialize dashboard date filter
+    renderStaffEarnings(applyEarningFilters(allEarnings, 'All', currentEarningDateFilter, 'daily', userRole, userName));
     const dashboardEarningDateFilter = document.getElementById('dashboard-earning-date-filter');
     dashboardEarningDateFilter.value = todayString;
     currentDashboardEarningDateFilter = todayString;
-    renderDashboardStaffEarnings(applyEarningFilters(allEarnings, 'All', currentDashboardEarningDateFilter, 'daily'));
+    renderDashboardStaffEarnings(applyEarningFilters(allEarnings, 'All', currentDashboardEarningDateFilter, 'daily', userRole, userName));
 
     document.getElementById('salon-earning-date').value = todayString;
     const salonEarningRangeFilter = document.getElementById('salon-earning-range-filter');
@@ -3183,3 +3200,4 @@ clientProfileModal.querySelector('.modal-overlay').addEventListener('click', () 
     document.getElementById('sign-out-btn').addEventListener('click', () => { signOut(auth); });
     document.getElementById('floating-booking-btn').addEventListener('click', () => { openAddAppointmentModal(getLocalDateString()); });
 }
+

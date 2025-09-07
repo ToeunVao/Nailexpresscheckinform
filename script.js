@@ -951,13 +951,14 @@ function initMainApp(userRole, userName) {
         let startDate, endDate = new Date(now);
         switch (filter) {
             case 'today':
-                startDate = new Date(now.setHours(0, 0, 0, 0));
-                endDate = new Date(now.setHours(23, 59, 59, 999));
+                startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
                 break;
             case 'this_week':
                 const firstDayOfWeek = now.getDate() - now.getDay();
                 startDate = new Date(now.setDate(firstDayOfWeek));
                 startDate.setHours(0, 0, 0, 0);
+                endDate = new Date(startDate);
                 endDate.setDate(startDate.getDate() + 6);
                 endDate.setHours(23, 59, 59, 999);
                 break;
@@ -1021,7 +1022,7 @@ function initMainApp(userRole, userName) {
         document.getElementById('top-earning-technician-card').textContent = topEarningTechnician;
 
         const techBookings = filteredAppointments.reduce((acc, curr) => {
-            if (curr.technician !== 'Any Technician') {
+            if (curr.technician && curr.technician !== 'Any Technician') {
                 acc[curr.technician] = (acc[curr.technician] || 0) + 1;
             }
             return acc;
@@ -1063,6 +1064,7 @@ function initMainApp(userRole, userName) {
 
     const updateSalonRevenueChart = (data, filter) => {
         const ctx = document.getElementById('salon-revenue-chart').getContext('2d');
+        if (!ctx) return;
         let labels = [], chartData = [];
         let counts = {};
 
@@ -1102,7 +1104,8 @@ function initMainApp(userRole, userName) {
 
     const updateMyEarningsChart = (data, filter) => {
         const ctx = document.getElementById('my-earnings-chart').getContext('2d');
-         let labels = [], chartData = [];
+        if (!ctx) return;
+        let labels = [], chartData = [];
         let counts = {};
         
         data.forEach(item => {
@@ -2698,6 +2701,7 @@ function initMainApp(userRole, userName) {
         const appGallery = document.getElementById('nails-idea-gallery');
         
         const renderTo = (container, isLanding) => {
+            if (!container) return;
             container.innerHTML = '';
             if (ideas.length === 0) { container.innerHTML = '<p class="text-gray-500 col-span-full text-center">No nail ideas found. Check back later!</p>'; return; }
             const ideasToRender = isLanding ? ideas.slice(0, 8) : ideas;

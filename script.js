@@ -32,7 +32,7 @@ let anonymousUserId = null;
 let bookingSettings = { minBookingHours: 2 };
 let loginSecuritySettings = { maxAttempts: 5, lockoutMinutes: 15 };
 let salonHours = {}; // To store salon operating hours
-let bookingsChart, servicesChart, earningsChart;
+let salonRevenueChart, myEarningsChart;
 let notifications = [];
 let currentUserRole = null;
 let currentUserName = null; // To store the logged-in user's name
@@ -416,7 +416,7 @@ function initLandingPage() {
             await signInWithEmailAndPassword(auth, email, password);
             localStorage.removeItem(emailKey); 
             localStorage.removeItem(lockoutKey);
-            closeAuthModal(); // FIX: Close the modal on successful login
+            closeAuthModal(); 
         } catch (error) {
             let attempts = (parseInt(localStorage.getItem(emailKey)) || 0) + 1;
             if (attempts >= loginSecuritySettings.maxAttempts) {
@@ -453,7 +453,7 @@ function initLandingPage() {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
             await setDoc(doc(db, "clients", user.uid), { name: name, email: email, role: 'client', createdAt: serverTimestamp() });
-            closeAuthModal(); // FIX: Close the modal on successful signup
+            closeAuthModal(); 
         } catch (error) {
             alert(`Sign Up Failed: ${error.message}`);
         } finally {
@@ -774,23 +774,18 @@ function initMainApp(userRole, userName) {
     const checkInNavCount = document.getElementById('check-in-nav-count');
     const bookingNavCount = document.getElementById('booking-nav-count');
     const appLoadTimestamp = Timestamp.now();
+    const adminDashboardView = document.getElementById('admin-dashboard-view');
+    const staffDashboardView = document.getElementById('staff-dashboard-view');
 
-    // State variables for dashboard earning report filters
-    let currentDashboardEarningTechFilter = 'All', currentDashboardEarningDateFilter = '', currentDashboardEarningRangeFilter = 'daily';
-
-    // Role-based UI adjustments
-    const dashboardStaffEarningForm = document.getElementById('dashboard-staff-earning-form-full');
-    const dashboardTechFilterContainer = document.getElementById('dashboard-tech-filter-container-earning');
-    const reportsStaffEarningForm = document.getElementById('staff-earning-form');
-    const reportsTechFilterContainer = document.getElementById('tech-filter-container-earning');
-
-    if (userRole !== 'admin') {
-        if (dashboardStaffEarningForm) dashboardStaffEarningForm.style.display = 'none';
-        if (dashboardTechFilterContainer) dashboardTechFilterContainer.style.display = 'none';
-        if (reportsStaffEarningForm) reportsStaffEarningForm.style.display = 'none';
-        if (reportsTechFilterContainer) reportsTechFilterContainer.style.display = 'none';
+    // Role-based Dashboard View
+    if (userRole === 'admin') {
+        adminDashboardView.classList.remove('hidden');
+        staffDashboardView.classList.add('hidden');
+    } else {
+        adminDashboardView.classList.add('hidden');
+        staffDashboardView.classList.remove('hidden');
+        document.getElementById('staff-welcome-heading').textContent = `Welcome, ${userName}!`;
     }
-
 
     const updateNavCounts = () => {
         const checkInCount = allActiveClients.length;
@@ -878,7 +873,7 @@ function initMainApp(userRole, userName) {
     });
 
 
-    if (userRole === 'technician' || userRole === 'staff') {
+    if (userRole !== 'admin') {
         document.querySelector('[data-target="report"]').style.display = 'none';
         document.querySelector('[data-target="setting"]').style.display = 'none';
     }
@@ -923,10 +918,7 @@ function initMainApp(userRole, userName) {
     const todayCountSpan = document.getElementById('today-count');
     const calendarCountSpan = document.getElementById('calendar-count');
     const processingCountSpan = document.getElementById('processing-count');
-    const clientsListCountSpan = document.getElementById('clients-list-count');
-    const filteredEarningTotalMainSpan = document.getElementById('filtered-earning-total-main');
-    const filteredEarningTotalTipSpan = document.getElementById('filtered-earning-total-tip');
-
+    
     const calendarGrid = document.getElementById('calendar');
     const monthYearDisplay = document.getElementById('month-year-display');
     let currentMonth = new Date().getMonth();
@@ -948,80 +940,210 @@ function initMainApp(userRole, userName) {
     confirmCancelBtn.addEventListener('click', closeConfirmModal);
     document.querySelector('.confirm-modal-overlay').addEventListener('click', closeConfirmModal);
 
-    const dashboardDateFilter = document.getElementById('dashboard-date-filter');
-
-    const updateDashboard = () => {
-        const filter = dashboardDateFilter.value;
-        const now = new Date();
-        let startDate, endDate;
-        switch (filter) {
-            case 'today': startDate = new Date(now.setHours(0, 0, 0, 0)); endDate = new Date(now.setHours(23, 59, 59, 999)); break;
-            case 'this_week': const firstDayOfWeek = now.getDate() - now.getDay(); startDate = new Date(now.setDate(firstDayOfWeek)); startDate.setHours(0, 0, 0, 0); endDate = new Date(startDate); endDate.setDate(startDate.getDate() + 6); endDate.setHours(23, 59, 59, 999); break;
-            case 'this_month': startDate = new Date(now.getFullYear(), now.getMonth(), 1); endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999); break;
-            case 'this_year': startDate = new Date(now.getFullYear(), 0, 1); endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999); break;
-        }
-        const filteredBookings = allAppointments.filter(a => { const apptDate = a.appointmentTimestamp.toDate(); return apptDate >= startDate && apptDate <= endDate; });
-        const filteredFinished = allFinishedClients.filter(f => { const finDate = f.checkOutTimestamp.toDate(); return finDate >= startDate && finDate <= endDate; });
-        const filteredEarnings = allEarnings.filter(e => { const earnDate = e.date.toDate(); return earnDate >= startDate && earnDate <= endDate; });
-        document.getElementById('total-bookings-card').textContent = filteredBookings.length + filteredFinished.length;
-        const totalRevenue = filteredEarnings.reduce((sum, e) => sum + e.earning, 0);
-        document.getElementById('total-revenue-card').textContent = `$${totalRevenue.toFixed(2)}`;
-        const lowStockItems = allInventory.filter(item => item.quantity <= item.lowStockAlert).length;
-        document.getElementById('low-stock-card').textContent = lowStockItems;
-        const techEarnings = filteredEarnings.reduce((acc, curr) => { acc[curr.staffName] = (acc[curr.staffName] || 0) + curr.earning; return acc; }, {});
-        const topTechnician = Object.keys(techEarnings).reduce((a, b) => techEarnings[a] > techEarnings[b] ? a : b, '-');
-        document.getElementById('top-technician-card').textContent = topTechnician;
-        updateBookingsChart(filteredBookings.concat(filteredFinished), filter);
-        updateServicesChart(filteredFinished);
-        updateEarningsChart(techEarnings);
-    };
-
     const initializeChart = (chartInstance, ctx, type, data, options) => {
         if (chartInstance) { chartInstance.data = data; chartInstance.options = options; chartInstance.update(); } 
         else { chartInstance = new Chart(ctx, { type, data, options }); }
         return chartInstance;
     };
     
-    const updateBookingsChart = (data, filter) => {
-        const ctx = document.getElementById('bookings-chart').getContext('2d');
-        let labels = [], chartData = [], counts = {};
+    const getDateRange = (filter) => {
+        const now = new Date();
+        let startDate, endDate = new Date(now);
+        switch (filter) {
+            case 'today':
+                startDate = new Date(now.setHours(0, 0, 0, 0));
+                endDate = new Date(now.setHours(23, 59, 59, 999));
+                break;
+            case 'this_week':
+                const firstDayOfWeek = now.getDate() - now.getDay();
+                startDate = new Date(now.setDate(firstDayOfWeek));
+                startDate.setHours(0, 0, 0, 0);
+                endDate.setDate(startDate.getDate() + 6);
+                endDate.setHours(23, 59, 59, 999);
+                break;
+            case 'this_month':
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+                break;
+            case 'this_year':
+                startDate = new Date(now.getFullYear(), 0, 1);
+                endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+                break;
+        }
+        return { startDate, endDate };
+    };
+
+    // --- NEW DASHBOARD LOGIC ---
+    const updateDashboard = () => {
+        if (currentUserRole === 'admin') {
+            updateAdminDashboard();
+        } else {
+            updateStaffDashboard();
+        }
+    };
+    
+    const updateAdminDashboard = () => {
+        const filter = document.getElementById('dashboard-date-filter').value;
+        const { startDate, endDate } = getDateRange(filter);
+
+        const filteredSalonEarnings = allSalonEarnings.filter(e => {
+            const earnDate = e.date.toDate();
+            return earnDate >= startDate && earnDate <= endDate;
+        });
+
+        const filteredAppointments = allAppointments.filter(a => {
+            const apptDate = a.appointmentTimestamp.toDate();
+            return apptDate >= startDate && apptDate <= endDate;
+        });
+        
+        let totalRevenue = 0;
+        let totalCash = 0;
+        const techEarnings = {};
+
+        filteredSalonEarnings.forEach(earning => {
+            let dailyTotal = 0;
+            techniciansAndStaff.forEach(tech => {
+                const techNameLower = tech.name.toLowerCase();
+                const dailyEarning = earning[techNameLower] || 0;
+                dailyTotal += dailyEarning;
+                techEarnings[tech.name] = (techEarnings[tech.name] || 0) + dailyEarning;
+            });
+            dailyTotal += earning.sellGiftCard || 0;
+            const dailyCash = dailyTotal - ((earning.totalCredit || 0) + (earning.check || 0) + (earning.returnGiftCard || 0) + (earning.venmo || 0) + (earning.square || 0));
+            totalRevenue += dailyTotal;
+            totalCash += dailyCash;
+        });
+
+        document.getElementById('total-salon-revenue-card').textContent = `$${totalRevenue.toFixed(2)}`;
+        document.getElementById('total-salon-cash-card').textContent = `$${totalCash.toFixed(2)}`;
+
+        const topEarningTechnician = Object.keys(techEarnings).reduce((a, b) => techEarnings[a] > techEarnings[b] ? a : b, '-');
+        document.getElementById('top-earning-technician-card').textContent = topEarningTechnician;
+
+        const techBookings = filteredAppointments.reduce((acc, curr) => {
+            if (curr.technician !== 'Any Technician') {
+                acc[curr.technician] = (acc[curr.technician] || 0) + 1;
+            }
+            return acc;
+        }, {});
+        const topBookingTechnician = Object.keys(techBookings).reduce((a, b) => techBookings[a] > techBookings[b] ? a : b, '-');
+        document.getElementById('top-booking-technician-card').textContent = topBookingTechnician;
+
+        updateSalonRevenueChart(filteredSalonEarnings, filter);
+    };
+
+    const updateStaffDashboard = () => {
+        const filter = document.getElementById('staff-dashboard-date-filter').value;
+        const { startDate, endDate } = getDateRange(filter);
+
+        const myEarnings = allEarnings.filter(e => {
+            const earnDate = e.date.toDate();
+            return e.staffName === currentUserName && earnDate >= startDate && earnDate <= endDate;
+        });
+
+        const myBookings = allAppointments.filter(a => {
+            const apptDate = a.appointmentTimestamp.toDate();
+            return a.technician === currentUserName && apptDate >= startDate && apptDate <= endDate;
+        });
+
+        const myTotalPayout = myEarnings.reduce((sum, e) => sum + e.earning + e.tip, 0);
+        document.getElementById('my-total-earning-card').textContent = `$${myTotalPayout.toFixed(2)}`;
+        document.getElementById('my-total-bookings-card').textContent = myBookings.length;
+
+        updateMyEarningsChart(myEarnings, filter);
+        
+        const tableBody = document.getElementById('my-earnings-table-body');
+        tableBody.innerHTML = '';
+        myEarnings.sort((a,b) => b.date.seconds - a.date.seconds).forEach(e => {
+            const row = tableBody.insertRow();
+            const total = e.earning + e.tip;
+            row.innerHTML = `<td class="px-6 py-4">${e.date.toDate().toLocaleDateString()}</td><td class="px-6 py-4 font-semibold">$${total.toFixed(2)}</td>`;
+        });
+    };
+
+    const updateSalonRevenueChart = (data, filter) => {
+        const ctx = document.getElementById('salon-revenue-chart').getContext('2d');
+        let labels = [], chartData = [];
+        let counts = {};
+
+        data.forEach(item => {
+            const date = item.date.toDate();
+            let key;
+            if (filter === 'today') key = date.getHours();
+            else if (filter === 'this_week') key = date.getDay();
+            else if (filter === 'this_month') key = date.getDate();
+            else if (filter === 'this_year') key = date.getMonth();
+
+            let dailyTotal = 0;
+            techniciansAndStaff.forEach(tech => { dailyTotal += item[tech.name.toLowerCase()] || 0; });
+            dailyTotal += item.sellGiftCard || 0;
+
+            counts[key] = (counts[key] || 0) + dailyTotal;
+        });
+        
         if (filter === 'today') {
-            labels = Array.from({ length: 12 }, (_, i) => `${i * 2}:00`);
-            chartData = Array(12).fill(0);
-            data.forEach(item => { const date = item.appointmentTimestamp?.toDate() || item.checkOutTimestamp?.toDate(); if (date) { const hour = Math.floor(date.getHours() / 2); chartData[hour]++; } });
+            labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+            chartData = labels.map((_, i) => counts[i] || 0);
         } else if (filter === 'this_week') {
             labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-            chartData = Array(7).fill(0);
-            data.forEach(item => { const date = item.appointmentTimestamp?.toDate() || item.checkOutTimestamp?.toDate(); if (date) { chartData[date.getDay()]++; } });
-        } else {
-            const format = filter === 'this_month' ? 'numeric' : 'short';
-            data.forEach(item => { const date = item.appointmentTimestamp?.toDate() || item.checkOutTimestamp?.toDate(); if (date) { const key = filter === 'this_month' ? date.getDate() : date.toLocaleString('default', { month: format }); counts[key] = (counts[key] || 0) + 1; } });
-            labels = Object.keys(counts).sort((a,b) => (filter === 'this_month' ? a-b : new Date(a + ' 1, 2000') - new Date(b + ' 1, 2000')) );
-            chartData = labels.map(label => counts[label]);
+            chartData = labels.map((_, i) => counts[i] || 0);
+        } else if (filter === 'this_month') {
+             const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+             labels = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+             chartData = labels.map(day => counts[day] || 0);
+        } else if (filter === 'this_year') {
+            labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            chartData = labels.map((_, i) => counts[i] || 0);
         }
-        const chartConfig = { labels: labels, datasets: [{ label: 'Bookings', data: chartData, backgroundColor: 'rgba(219, 39, 119, 0.5)', borderColor: 'rgba(219, 39, 119, 1)', borderWidth: 1, tension: 0.1 }] };
-        bookingsChart = initializeChart(bookingsChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
+
+        const chartConfig = { labels, datasets: [{ label: 'Salon Revenue', data: chartData, backgroundColor: 'rgba(219, 39, 119, 0.5)', borderColor: 'rgba(219, 39, 119, 1)', borderWidth: 1, tension: 0.1 }] };
+        salonRevenueChart = initializeChart(salonRevenueChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
     };
 
-    const updateServicesChart = (data) => {
-        const ctx = document.getElementById('services-chart').getContext('2d');
-        const serviceCounts = data.reduce((acc, client) => { const services = typeof client.services === 'string' ? client.services.split(', ') : (client.services || []); services.forEach(service => { const serviceName = service.split(' $')[0].replace(/Gel Polish - /g, '').trim(); acc[serviceName] = (acc[serviceName] || 0) + 1; }); return acc; }, {});
-        const sortedServices = Object.entries(serviceCounts).sort(([, a], [, b]) => b - a).slice(0, 5);
-        const labels = sortedServices.map(item => item[0]);
-        const chartData = sortedServices.map(item => item[1]);
-        const chartConfig = { labels: labels, datasets: [{ label: 'Top Services', data: chartData, backgroundColor: ['rgba(255, 99, 132, 0.5)', 'rgba(54, 162, 235, 0.5)', 'rgba(255, 206, 86, 0.5)', 'rgba(75, 192, 192, 0.5)', 'rgba(153, 102, 255, 0.5)'], borderColor: ['rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)', 'rgba(255, 206, 86, 1)', 'rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)'], borderWidth: 1 }] };
-        servicesChart = initializeChart(servicesChart, ctx, 'doughnut', chartConfig, { responsive: true, maintainAspectRatio: false });
+    const updateMyEarningsChart = (data, filter) => {
+        const ctx = document.getElementById('my-earnings-chart').getContext('2d');
+         let labels = [], chartData = [];
+        let counts = {};
+        
+        data.forEach(item => {
+            const date = item.date.toDate();
+            let key;
+            if (filter === 'today') key = date.getHours();
+            else if (filter === 'this_week') key = date.getDay();
+            else if (filter === 'this_month') key = date.getDate();
+            else if (filter === 'this_year') key = date.getMonth();
+            counts[key] = (counts[key] || 0) + item.earning + item.tip;
+        });
+
+        if (filter === 'today' || filter === 'this_week') {
+            labels = (filter === 'this_week') ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] : Array.from({ length: 12 }, (_, i) => `${i*2}:00`);
+            const keyMap = (filter === 'this_week') ? (d) => d.getDay() : (d) => Math.floor(d.getHours() / 2);
+            const groupedData = data.reduce((acc, curr) => {
+                const key = keyMap(curr.date.toDate());
+                acc[key] = (acc[key] || 0) + curr.earning + curr.tip;
+                return acc;
+            }, {});
+            chartData = labels.map((_, i) => groupedData[i] || 0);
+        } else {
+             const keyMap = (filter === 'this_month') ? (d) => d.getDate() : (d) => d.getMonth();
+             labels = (filter === 'this_month') ? Array.from({length: 31}, (_, i) => i + 1) : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+             const groupedData = data.reduce((acc, curr) => {
+                const key = keyMap(curr.date.toDate());
+                acc[key] = (acc[key] || 0) + curr.earning + curr.tip;
+                return acc;
+            }, {});
+             chartData = labels.map((lbl, i) => groupedData[filter === 'this_month' ? lbl : i] || 0);
+        }
+        
+        const chartConfig = { labels, datasets: [{ label: 'My Payout', data: chartData, backgroundColor: 'rgba(54, 162, 235, 0.5)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 1, tension: 0.1 }] };
+        myEarningsChart = initializeChart(myEarningsChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
     };
 
-    const updateEarningsChart = (techEarnings) => {
-        const ctx = document.getElementById('earnings-chart').getContext('2d');
-        const labels = Object.keys(techEarnings);
-        const chartData = Object.values(techEarnings);
-        const chartConfig = { labels: labels, datasets: [{ label: 'Technician Earnings', data: chartData, backgroundColor: 'rgba(54, 162, 235, 0.5)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 1 }] };
-        earningsChart = initializeChart(earningsChart, ctx, 'bar', chartConfig, { responsive: true, maintainAspectRatio: false, indexAxis: 'y' });
-    };
+    document.getElementById('dashboard-date-filter').addEventListener('change', updateAdminDashboard);
+    document.getElementById('staff-dashboard-date-filter').addEventListener('change', updateStaffDashboard);
+    
+    // END NEW DASHBOARD LOGIC
 
-    dashboardDateFilter.addEventListener('change', updateDashboard);
     const dailyNotesForm = document.getElementById('daily-notes-form');
     const dailyNoteInput = document.getElementById('daily-note-input');
     const dailyNotesContainer = document.getElementById('daily-notes-container');
@@ -1213,14 +1335,7 @@ function initMainApp(userRole, userName) {
             }
         }
         
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const lastYear = currentYear - 1;
-        let startDate, endDate;
-        if (rangeFilter === 'this-year') { startDate = new Date(currentYear, 0, 1); endDate = new Date(currentYear, 11, 31, 23, 59, 59, 999); } 
-        else if (rangeFilter === 'last-year') { startDate = new Date(lastYear, 0, 1); endDate = new Date(lastYear, 11, 31, 23, 59, 59, 999); } 
-        else if (!isNaN(parseInt(rangeFilter))) { const month = parseInt(rangeFilter, 10); startDate = new Date(currentYear, month, 1); endDate = new Date(currentYear, month + 1, 0, 23, 59, 59, 999); } 
-        else if (rangeFilter === 'daily' && dateFilter) { startDate = new Date(dateFilter + 'T00:00:00'); endDate = new Date(dateFilter + 'T23:59:59'); }
+        const { startDate, endDate } = getDateRange(rangeFilter === 'daily' ? dateFilter : rangeFilter);
         if (startDate && endDate) { filtered = filtered.filter(e => { const earningDate = new Date(e.date.seconds * 1000); return earningDate >= startDate && earningDate <= endDate; }); }
         return filtered;
     };
@@ -1228,56 +1343,39 @@ function initMainApp(userRole, userName) {
      const renderStaffEarnings = (earnings) => {
         const tbody = document.querySelector('#staff-earning-table tbody');
         if (!tbody) return;
-        tbody.innerHTML = earnings.length === 0 ? `<tr><td colspan="5" class="py-6 text-center text-gray-400">No earnings found.</td></tr>` : '';
+        
+        const colspan = userRole === 'admin' ? 5 : 4;
+        tbody.innerHTML = earnings.length === 0 ? `<tr><td colspan="${colspan}" class="py-6 text-center text-gray-400">No earnings found.</td></tr>` : '';
+        
         earnings.sort((a, b) => b.date.seconds - a.date.seconds).forEach(earning => {
             const row = tbody.insertRow();
             row.className = 'bg-white border-b';
-            row.innerHTML = `<td class="px-6 py-4">${new Date(earning.date.seconds * 1000).toLocaleDateString()}</td><td class="px-6 py-4 font-medium text-gray-900">${earning.staffName}</td><td class="px-6 py-4">$${earning.earning.toFixed(2)}</td><td class="px-6 py-4">$${earning.tip.toFixed(2)}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${earning.id}" class="edit-earning-btn text-blue-500 hover:text-blue-700" title="Edit Earning"><i class="fas fa-edit text-lg"></i></button><button data-id="${earning.id}" class="delete-earning-btn text-red-500 hover:text-red-700" title="Delete Earning"><i class="fas fa-trash-alt text-lg"></i></button></td>`;
-        });
-        const totalEarning = earnings.reduce((sum, e) => sum + e.earning, 0);
-        const totalTip = earnings.reduce((sum, e) => sum + e.tip, 0);
-        document.getElementById('total-earning').textContent = `$${totalEarning.toFixed(2)}`;
-        document.getElementById('total-tip').textContent = `$${totalTip.toFixed(2)}`;
-        filteredEarningTotalMainSpan.textContent = `Total ($${totalEarning.toFixed(2)})`;
-        filteredEarningTotalTipSpan.textContent = `Tip ($${totalTip.toFixed(2)})`;
-    };
-
-    const renderDashboardStaffEarnings = (earnings) => {
-        const tbody = document.querySelector('#dashboard-staff-earning-table-full tbody');
-        if (!tbody) return;
-        tbody.innerHTML = earnings.length === 0 ? `<tr><td colspan="5" class="py-6 text-center text-gray-400">No earnings found for this period.</td></tr>` : '';
-        earnings.sort((a, b) => b.date.seconds - a.date.seconds).forEach(earning => {
-            const row = tbody.insertRow();
-            row.className = 'bg-white border-b';
-            row.innerHTML = `
+            let rowHTML = `
                 <td class="px-6 py-4">${new Date(earning.date.seconds * 1000).toLocaleDateString()}</td>
                 <td class="px-6 py-4 font-medium text-gray-900">${earning.staffName}</td>
                 <td class="px-6 py-4">$${earning.earning.toFixed(2)}</td>
                 <td class="px-6 py-4">$${earning.tip.toFixed(2)}</td>
-                <td class="px-6 py-4 text-center space-x-2">
-                    <button data-id="${earning.id}" class="edit-earning-btn text-blue-500 hover:text-blue-700" title="Edit Earning"><i class="fas fa-edit text-lg"></i></button>
-                    <button data-id="${earning.id}" class="delete-earning-btn text-red-500 hover:text-red-700" title="Delete Earning"><i class="fas fa-trash-alt text-lg"></i></button>
-                </td>
             `;
+            if (userRole === 'admin') {
+                rowHTML += `<td class="px-6 py-4 text-center space-x-2"><button data-id="${earning.id}" class="edit-earning-btn text-blue-500 hover:text-blue-700" title="Edit Earning"><i class="fas fa-edit text-lg"></i></button><button data-id="${earning.id}" class="delete-earning-btn text-red-500 hover:text-red-700" title="Delete Earning"><i class="fas fa-trash-alt text-lg"></i></button></td>`;
+            }
+            row.innerHTML = rowHTML;
         });
+
         const totalEarning = earnings.reduce((sum, e) => sum + e.earning, 0);
         const totalTip = earnings.reduce((sum, e) => sum + e.tip, 0);
-        const dashboardFilteredEarningTotalMainSpan = document.getElementById('dashboard-filtered-earning-total-main');
-        const dashboardFilteredEarningTotalTipSpan = document.getElementById('dashboard-filtered-earning-total-tip');
-        if (dashboardFilteredEarningTotalMainSpan) dashboardFilteredEarningTotalMainSpan.textContent = `Total ($${totalEarning.toFixed(2)})`;
-        if (dashboardFilteredEarningTotalTipSpan) dashboardFilteredEarningTotalTipSpan.textContent = `Tip ($${totalTip.toFixed(2)})`;
+        document.getElementById('total-earning').textContent = `$${totalEarning.toFixed(2)}`;
+        document.getElementById('total-tip').textContent = `$${totalTip.toFixed(2)}`;
+        
+        const filteredEarningTotalMainSpan = document.getElementById('filtered-earning-total-main');
+        const filteredEarningTotalTipSpan = document.getElementById('filtered-earning-total-tip');
+        if(filteredEarningTotalMainSpan) filteredEarningTotalMainSpan.textContent = `Total ($${totalEarning.toFixed(2)})`;
+        if(filteredEarningTotalTipSpan) filteredEarningTotalTipSpan.textContent = `Tip ($${totalTip.toFixed(2)})`;
     };
-
+    
     const applySalonEarningFilters = (earnings, dateFilter, rangeFilter) => {
         let filtered = [...earnings];
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const lastYear = currentYear - 1;
-        let startDate, endDate;
-        if (rangeFilter === 'this-year') { startDate = new Date(currentYear, 0, 1); endDate = new Date(currentYear, 11, 31, 23, 59, 59, 999); } 
-        else if (rangeFilter === 'last-year') { startDate = new Date(lastYear, 0, 1); endDate = new Date(lastYear, 11, 31, 23, 59, 59, 999); } 
-        else if (!isNaN(parseInt(rangeFilter))) { const month = parseInt(rangeFilter, 10); startDate = new Date(currentYear, month, 1); endDate = new Date(currentYear, month + 1, 0, 23, 59, 59, 999); } 
-        else if (rangeFilter === 'daily' && dateFilter) { startDate = new Date(dateFilter + 'T00:00:00'); endDate = new Date(dateFilter + 'T23:59:59'); }
+        const { startDate, endDate } = getDateRange(rangeFilter === 'daily' ? dateFilter : rangeFilter);
         if (startDate && endDate) { filtered = filtered.filter(e => { const earningDate = new Date(e.date.seconds * 1000); return earningDate >= startDate && earningDate <= endDate; }); }
         return filtered;
     };
@@ -1631,13 +1729,13 @@ function initMainApp(userRole, userName) {
     onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot) => {
         allEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter, currentEarningRangeFilter, userRole, userName));
-        renderDashboardStaffEarnings(applyEarningFilters(allEarnings, currentDashboardEarningTechFilter, currentDashboardEarningDateFilter, currentDashboardEarningRangeFilter, userRole, userName));
         updateDashboard();
     });
 
     onSnapshot(query(collection(db, "salon_earnings"), orderBy("date", "desc")), (snapshot) => {
         allSalonEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, currentSalonEarningDateFilter, currentSalonEarningRangeFilter));
+        updateDashboard();
     });
 
     onSnapshot(query(collection(db, "expenses"), orderBy("date", "desc")), (snapshot) => {
@@ -1759,11 +1857,7 @@ function initMainApp(userRole, userName) {
     setupTechFilter('tech-filter-container-calendar', (tech) => { currentTechFilterCalendar = tech; if (!document.getElementById('list-view').classList.contains('hidden')) { renderAllBookingsList(); } else { renderCalendar(currentYear, currentMonth, currentTechFilterCalendar); } });
     setupTechFilter('tech-filter-container-earning', (tech) => { currentEarningTechFilter = tech; renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter, currentEarningRangeFilter, userRole, userName)); });
     
-    setupTechFilter('dashboard-tech-filter-container-earning', (tech) => {
-        currentDashboardEarningTechFilter = tech;
-        renderDashboardStaffEarnings(applyEarningFilters(allEarnings, currentDashboardEarningTechFilter, currentDashboardEarningDateFilter, currentDashboardEarningRangeFilter, userRole, userName));
-    });
-
+    
     const setupReportDateFilters = (selectId, dateInputId, callback) => {
         const select = document.getElementById(selectId);
         const dateInput = document.getElementById(dateInputId);
@@ -1778,12 +1872,6 @@ function initMainApp(userRole, userName) {
     setupReportDateFilters('earning-range-filter', 'earning-date-filter', (date, range) => { currentEarningDateFilter = date; currentEarningRangeFilter = range; renderStaffEarnings(applyEarningFilters(allEarnings, currentEarningTechFilter, date, range, userRole, userName)); });
     setupReportDateFilters('salon-earning-range-filter', 'salon-earning-date-filter', (date, range) => { currentSalonEarningDateFilter = date; currentSalonEarningRangeFilter = range; renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, date, range)); });
     
-    setupReportDateFilters('dashboard-earning-range-filter', 'dashboard-earning-date-filter', (date, range) => {
-        currentDashboardEarningDateFilter = date;
-        currentDashboardEarningRangeFilter = range;
-        renderDashboardStaffEarnings(applyEarningFilters(allEarnings, currentDashboardEarningTechFilter, date, range, userRole, userName));
-    });
-
     
     document.getElementById('staff-earning-form').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -1804,14 +1892,35 @@ function initMainApp(userRole, userName) {
         const staffName = document.getElementById('dashboard-staff-name-full').value;
         const earning = parseFloat(document.getElementById('dashboard-staff-earning-full').value);
         const tip = parseFloat(document.getElementById('dashboard-staff-tip-full').value);
-        const date = document.getElementById('dashboard-staff-earning-date-full').value;
-        if (isNaN(earning) || isNaN(tip) || !date) { return alert('Please fill out all fields correctly.'); }
+        const dateStr = document.getElementById('dashboard-staff-earning-date-full').value;
+        
+        if (isNaN(earning) || isNaN(tip) || !dateStr) { return alert('Please fill out all fields correctly.'); }
+        
+        const date = new Date(dateStr + 'T12:00:00');
+        const earningId = `${dateStr}_${staffName.replace(/\s+/g, '-')}`;
+
+        const batch = writeBatch(db);
+
+        // 1. Update Salon Earning Report
+        const salonEarningDocRef = doc(db, "salon_earnings", dateStr);
+        const staffNameKey = staffName.toLowerCase();
+        batch.set(salonEarningDocRef, { [staffNameKey]: earning, date: Timestamp.fromDate(date) }, { merge: true });
+
+        // 2. Update Staff Payout (earnings collection)
+        const staffEarningDocRef = doc(db, "earnings", earningId);
+        batch.set(staffEarningDocRef, { staffName, earning, tip, date: Timestamp.fromDate(date) }, { merge: true });
+
         try {
-            await addDoc(collection(db, "earnings"), { staffName, earning, tip, date: Timestamp.fromDate(new Date(date + 'T12:00:00')) });
+            await batch.commit();
+            alert(`Payout for ${staffName} on ${dateStr} has been saved.`);
             e.target.reset();
             document.getElementById('dashboard-staff-earning-date-full').value = getLocalDateString();
-        } catch (err) { console.error("Error adding earning from dashboard: ", err); alert("Could not add earning."); }
+        } catch (err) {
+            console.error("Error saving payout entry: ", err);
+            alert("Could not save the payout entry.");
+        }
     });
+
 
     document.getElementById('staff-earning-table').addEventListener('click', async (e) => {
         const deleteBtn = e.target.closest('.delete-earning-btn');
@@ -1820,14 +1929,6 @@ function initMainApp(userRole, userName) {
         else if (editBtn) { const earning = allEarnings.find(e => e.id === editBtn.dataset.id); if (earning) { openEditEarningModal(earning); } }
     });
 
-    document.getElementById('dashboard-staff-earning-table-full').addEventListener('click', async (e) => {
-        const deleteBtn = e.target.closest('.delete-earning-btn');
-        const editBtn = e.target.closest('.edit-earning-btn');
-        if(deleteBtn) { showConfirmModal("Delete this earning entry?", async () => { await deleteDoc(doc(db, "earnings", deleteBtn.dataset.id)); }); }
-        else if (editBtn) { const earning = allEarnings.find(e => e.id === editBtn.dataset.id); if (earning) { openEditEarningModal(earning); } }
-    });
-
-
     document.getElementById('salon-earning-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const date = document.getElementById('salon-earning-date').value;
@@ -1835,7 +1936,8 @@ function initMainApp(userRole, userName) {
         const salonEarningData = { date: Timestamp.fromDate(new Date(date + 'T12:00:00')), sellGiftCard: parseFloat(document.getElementById('sell-gift-card').value) || 0, returnGiftCard: parseFloat(document.getElementById('return-gift-card').value) || 0, check: parseFloat(document.getElementById('check-payment').value) || 0, noOfCredit: parseInt(document.getElementById('no-of-credit').value) || 0, totalCredit: parseFloat(document.getElementById('total-credit').value) || 0, venmo: parseFloat(document.getElementById('venmo-payment').value) || 0, square: parseFloat(document.getElementById('square-payment').value) || 0 };
         techniciansAndStaff.forEach(tech => { const input = document.getElementById(`salon-earning-${tech.name.toLowerCase()}`); if(input) { salonEarningData[tech.name.toLowerCase()] = parseFloat(input.value) || 0; } });
         try {
-            await addDoc(collection(db, "salon_earnings"), salonEarningData);
+            // Using set with merge to update if exists, create if not
+            await setDoc(doc(db, "salon_earnings", date), salonEarningData, { merge: true });
             e.target.reset();
             document.getElementById('salon-earning-date').value = getLocalDateString();
         } catch (err) { console.error("Error adding salon earning: ", err); alert("Could not add salon earning."); }
@@ -3182,11 +3284,9 @@ clientProfileModal.querySelector('.modal-overlay').addEventListener('click', () 
     document.getElementById('earning-date-filter').value = todayString;
     currentEarningDateFilter = todayString;
     renderStaffEarnings(applyEarningFilters(allEarnings, 'All', currentEarningDateFilter, 'daily', userRole, userName));
-    const dashboardEarningDateFilter = document.getElementById('dashboard-earning-date-filter');
+    const dashboardEarningDateFilter = document.getElementById('dashboard-staff-earning-date-full');
     dashboardEarningDateFilter.value = todayString;
-    currentDashboardEarningDateFilter = todayString;
-    renderDashboardStaffEarnings(applyEarningFilters(allEarnings, 'All', currentDashboardEarningDateFilter, 'daily', userRole, userName));
-
+    
     document.getElementById('salon-earning-date').value = todayString;
     const salonEarningRangeFilter = document.getElementById('salon-earning-range-filter');
     const salonEarningDateFilter = document.getElementById('salon-earning-date-filter');

@@ -365,130 +365,115 @@
         </header>
 
         <main class="container mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
-            <!-- DASHBOARD CONTENT -->
+            <!-- ======== NEW DASHBOARD CONTENT ======== -->
             <div id="dashboard-content">
-                <div class="flex justify-end items-center mb-6">
-                    <label for="dashboard-date-filter" class="text-sm font-medium text-gray-700 mr-2">Date Range:</label>
-                    <select id="dashboard-date-filter" class="form-select p-2 border border-gray-300 rounded-lg">
-                        <option value="today">Today</option>
-                        <option value="this_week">This Week</option>
-                        <option value="this_month" selected>This Month</option>
-                        <option value="this_year">This Year</option>
-                    </select>
-                </div>
-
-                <!-- Summary Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div class="dashboard-card bg-pink-100">
-                        <h4 class="font-bold text-pink-800">Total Bookings</h4>
-                        <p id="total-bookings-card" class="text-3xl font-bold text-pink-600">0</p>
+                <!-- Admin Dashboard View -->
+                <div id="admin-dashboard-view" class="hidden">
+                    <div class="flex justify-end items-center mb-6">
+                        <label for="dashboard-date-filter" class="text-sm font-medium text-gray-700 mr-2">Date Range:</label>
+                        <select id="dashboard-date-filter" class="form-select p-2 border border-gray-300 rounded-lg">
+                            <option value="today">Today</option>
+                            <option value="this_week">This Week</option>
+                            <option value="this_month" selected>This Month</option>
+                            <option value="this_year">This Year</option>
+                        </select>
                     </div>
-                    <div class="dashboard-card bg-green-100">
-                        <h4 class="font-bold text-green-800">Total Revenue</h4>
-                        <p id="total-revenue-card" class="text-3xl font-bold text-green-600">$0</p>
-                    </div>
-                    <div class="dashboard-card bg-yellow-100">
-                        <h4 class="font-bold text-yellow-800">Low Stock Items</h4>
-                        <p id="low-stock-card" class="text-3xl font-bold text-yellow-600">0</p>
-                    </div>
-                    <div class="dashboard-card bg-blue-100">
-                        <h4 class="font-bold text-blue-800">Top Technician</h4>
-                        <p id="top-technician-card" class="text-xl font-bold text-blue-600">-</p>
-                    </div>
-                </div>
-
-                <!-- Charts -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div class="bg-white p-6 rounded-2xl shadow-lg h-96">
-                        <h3 class="text-xl font-bold text-gray-700 mb-4">Booking Trends</h3>
-                        <canvas id="bookings-chart"></canvas>
-                    </div>
-                    <div class="bg-white p-6 rounded-2xl shadow-lg h-96">
-                        <h3 class="text-xl font-bold text-gray-700 mb-4">Top Services</h3>
-                        <canvas id="services-chart"></canvas>
-                    </div>
-                    <div class="bg-white p-6 rounded-2xl shadow-lg lg:col-span-2 h-96">
-                        <h3 class="text-xl font-bold text-gray-700 mb-4">Technician Earnings</h3>
-                        <canvas id="earnings-chart"></canvas>
-                    </div>
-                </div>
-
-                
-             <!-- NEW: Full Staff Earning Report on Dashboard -->
-<div class="mt-8 bg-white p-6 rounded-2xl shadow-lg">
-    <h3 class="text-xl font-bold text-gray-700 border-b pb-3 mb-6 flex justify-between items-center">
-        <span>Staff Earning Report</span>
-        <div class="flex gap-4">
-            <span id="dashboard-filtered-earning-total-main" class="ml-2 bg-pink-100 text-pink-800 text-sm font-semibold px-2.5 py-0.5 rounded-full"></span>
-            <span id="dashboard-filtered-earning-total-tip" class="ml-2 bg-green-100 text-green-800 text-sm font-semibold px-2.5 py-0.5 rounded-full"></span>
-        </div>
-    </h3>
-
-    <!-- Earning Submission Form (Admin Only) -->
-    <form id="dashboard-staff-earning-form-full" class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8 items-end">
-        <div>
-            <label for="dashboard-staff-earning-date-full" class="block text-sm font-medium text-gray-600 mb-1">Date</label>
-            <input type="date" id="dashboard-staff-earning-date-full" class="form-input w-full p-3 border border-gray-300 rounded-lg" required>
-        </div>
-        <div>
-            <label for="dashboard-staff-name-full" class="block text-sm font-medium text-gray-600 mb-1">Staff Name</label>
-            <select id="dashboard-staff-name-full" class="form-select w-full p-3 border border-gray-300 rounded-lg" required></select>
-        </div>
-        <div>
-            <label for="dashboard-staff-earning-full" class="block text-sm font-medium text-gray-600 mb-1">Earning</label>
-            <input type="number" step="0.01" id="dashboard-staff-earning-full" class="form-input w-full p-3 border border-gray-300 rounded-lg" placeholder="e.g., 100" required>
-        </div>
-        <div>
-            <label for="dashboard-staff-tip-full" class="block text-sm font-medium text-gray-600 mb-1">Tip</label>
-            <input type="number" step="0.01" id="dashboard-staff-tip-full" class="form-input w-full p-3 border border-gray-300 rounded-lg" placeholder="e.g., 20" required>
-        </div>
-        <div>
-            <button type="submit" class="w-full bg-pink-600 text-white font-bold py-3 px-6 rounded-full hover:bg-pink-700">Add Earning</button>
-        </div>
-    </form>
-
-    <!-- Filters -->
-    <div id="dashboard-earning-filters" class="flex justify-between items-center mb-4">
-        <div id="dashboard-tech-filter-container-earning" class="tech-filter-container flex gap-2 flex-wrap">
-            <button class="tech-filter-btn px-3 py-1 rounded-full text-sm active" data-tech="All">All</button>
-        </div>
-        <div class="flex items-center gap-2">
-            <select id="dashboard-earning-range-filter" class="form-select p-2 border border-gray-300 rounded-lg"></select>
-            <input type="date" id="dashboard-earning-date-filter" class="p-2 border border-gray-300 rounded-lg">
-        </div>
-    </div>
-
-    <!-- Earnings Data Table -->
-    <div class="overflow-x-auto max-h-96">
-        <table id="dashboard-staff-earning-table-full" class="w-full text-sm text-left text-gray-600">
-            <thead class="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
-                <tr>
-                    <th scope="col" class="px-6 py-3">Date</th>
-                    <th scope="col" class="px-6 py-3">Staff Name</th>
-                    <th scope="col" class="px-6 py-3">Earning</th>
-                    <th scope="col" class="px-6 py-3">Tip</th>
-                    <th scope="col" class="px-6 py-3 text-center">Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- JS will populate this -->
-            </tbody>
-        </table>
-    </div>
-</div>                <!-- Daily Notes Section -->
-                <div class="mt-8 bg-white p-6 rounded-2xl shadow-lg">
-                    <h3 class="text-xl font-bold text-gray-700 mb-4">Daily Notes</h3>
-                    <form id="daily-notes-form" class="mb-4">
-                        <textarea id="daily-note-input" class="form-input w-full p-3 border border-gray-300 rounded-lg" rows="3" placeholder="Add a note for today..."></textarea>
-                        <div class="text-right mt-2">
-                            <button type="submit" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-pink-700">Save Note</button>
+                    <!-- NEW Summary Cards for Admin -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="dashboard-card bg-green-100">
+                            <h4 class="font-bold text-green-800">Total Salon Revenue</h4>
+                            <p id="total-salon-revenue-card" class="text-3xl font-bold text-green-600">$0</p>
                         </div>
-                    </form>
-                    <div id="daily-notes-container" class="space-y-3">
-                        <!-- Notes will be displayed here -->
+                        <div class="dashboard-card bg-blue-100">
+                            <h4 class="font-bold text-blue-800">Total Cash</h4>
+                            <p id="total-salon-cash-card" class="text-3xl font-bold text-blue-600">$0</p>
+                        </div>
+                        <div class="dashboard-card bg-purple-100">
+                            <h4 class="font-bold text-purple-800">Top Earning Technician</h4>
+                            <p id="top-earning-technician-card" class="text-xl font-bold text-purple-600">-</p>
+                        </div>
+                        <div class="dashboard-card bg-yellow-100">
+                            <h4 class="font-bold text-yellow-800">Top Booking Technician</h4>
+                            <p id="top-booking-technician-card" class="text-xl font-bold text-yellow-600">-</p>
+                        </div>
+                    </div>
+                    <!-- NEW Salon Revenue Chart -->
+                    <div class="bg-white p-6 rounded-2xl shadow-lg h-96 mb-8">
+                        <h3 class="text-xl font-bold text-gray-700 mb-4">Salon Revenue Trends</h3>
+                        <canvas id="salon-revenue-chart"></canvas>
+                    </div>
+                    <!-- NEW Daily Staff Payout Entry Form -->
+                    <div class="mt-8 bg-white p-6 rounded-2xl shadow-lg">
+                        <h3 class="text-xl font-bold text-gray-700 border-b pb-3 mb-6">Daily Staff Payout Entry</h3>
+                        <form id="dashboard-staff-earning-form-full" class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8 items-end">
+                            <div>
+                                <label for="dashboard-staff-earning-date-full" class="block text-sm font-medium text-gray-600 mb-1">Date</label>
+                                <input type="date" id="dashboard-staff-earning-date-full" class="form-input w-full p-3 border border-gray-300 rounded-lg" required>
+                            </div>
+                            <div>
+                                <label for="dashboard-staff-name-full" class="block text-sm font-medium text-gray-600 mb-1">Staff Name</label>
+                                <select id="dashboard-staff-name-full" class="form-select w-full p-3 border border-gray-300 rounded-lg" required></select>
+                            </div>
+                            <div>
+                                <label for="dashboard-staff-earning-full" class="block text-sm font-medium text-gray-600 mb-1">Earning (from Salon Report)</label>
+                                <input type="number" step="0.01" id="dashboard-staff-earning-full" class="form-input w-full p-3 border border-gray-300 rounded-lg" placeholder="e.g., 100" required>
+                            </div>
+                             <div>
+                                <label for="dashboard-staff-tip-full" class="block text-sm font-medium text-gray-600 mb-1">Tip</label>
+                                <input type="number" step="0.01" id="dashboard-staff-tip-full" class="form-input w-full p-3 border border-gray-300 rounded-lg" placeholder="e.g., 20" required>
+                            </div>
+                            <div>
+                                <button type="submit" class="w-full bg-pink-600 text-white font-bold py-3 px-6 rounded-full hover:bg-pink-700">Add/Update Entry</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
 
+                <!-- Staff Dashboard View -->
+                <div id="staff-dashboard-view" class="hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 id="staff-welcome-heading" class="text-2xl font-bold text-gray-800">Your Dashboard</h2>
+                        <div class="flex items-center">
+                            <label for="staff-dashboard-date-filter" class="text-sm font-medium text-gray-700 mr-2">Date Range:</label>
+                            <select id="staff-dashboard-date-filter" class="form-select p-2 border border-gray-300 rounded-lg">
+                                <option value="today">Today</option>
+                                <option value="this_week">This Week</option>
+                                <option value="this_month" selected>This Month</option>
+                                <option value="this_year">This Year</option>
+                            </select>
+                        </div>
+                    </div>
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div class="dashboard-card bg-green-100">
+                            <h4 class="font-bold text-green-800">My Total Payout</h4>
+                            <p id="my-total-earning-card" class="text-3xl font-bold text-green-600">$0</p>
+                        </div>
+                        <div class="dashboard-card bg-blue-100">
+                            <h4 class="font-bold text-blue-800">My Online Bookings</h4>
+                            <p id="my-total-bookings-card" class="text-3xl font-bold text-blue-600">0</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-lg h-96 mb-8">
+                        <h3 class="text-xl font-bold text-gray-700 mb-4">My Payout Trend</h3>
+                        <canvas id="my-earnings-chart"></canvas>
+                    </div>
+                     <div class="bg-white p-6 rounded-2xl shadow-lg">
+                        <h3 class="text-xl font-bold text-gray-700 mb-4">My Recent Payouts</h3>
+                        <div class="overflow-x-auto max-h-96">
+                            <table class="w-full text-sm text-left text-gray-600">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3">Date</th>
+                                        <th scope="col" class="px-6 py-3">Total Payout</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="my-earnings-table-body">
+                                    <!-- Staff's earnings will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- MAIN APP CONTAINER -->
@@ -794,7 +779,7 @@
                                             <th scope="col" class="px-6 py-3">Staff Name</th>
                                             <th scope="col" class="px-6 py-3">Earning</th>
                                             <th scope="col" class="px-6 py-3">Tip</th>
-                                            <th scope="col" class="px-6 py-3 text-center">Action</th>
+                                            <th scope="col" class="px-6 py-3 text-center" id="report-earning-action-header">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>

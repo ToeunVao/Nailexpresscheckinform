@@ -1054,17 +1054,40 @@ const getDateRange = (filter, specificDate = null) => {
 
 // REPLACE the old updateStaffDashboard function with this one
 const updateStaffDashboard = () => {
-    const rangeFilter = document.getElementById('staff-dashboard-earning-range-filter').value;
-    const dateFilter = document.getElementById('staff-dashboard-earning-date-filter').value;
+    const filter = document.getElementById('staff-dashboard-date-filter').value;
+    const { startDate, endDate } = getDateRange(filter);
+    if (!startDate) return;
 
-    const filteredEarnings = applyEarningFilters(allEarnings, 'All', dateFilter, rangeFilter, currentUserRole, currentUserName);
+    // --- Calculations based on Salon Earnings for Cards & Graph ---
+    const mySalonEarnings = allSalonEarnings.filter(e => {
+        const earnDate = e.date.toDate();
+        return earnDate >= startDate && earnDate <= endDate;
+    });
+
+    const staffNameLower = currentUserName.toLowerCase();
+    let myTotalEarning = 0;
+    mySalonEarnings.forEach(earning => {
+        myTotalEarning += earning[staffNameLower] || 0;
+    });
     
-    const { totalEarning, totalTip } = renderStaffEarningsTable(filteredEarnings, 'staff-dashboard-earning-table', 'staff-dashboard-total-earning', 'staff-dashboard-total-tip');
+    const myTotalPayout = myTotalEarning * 0.70;
+    const myCheckPayout = myTotalPayout * 0.70;
+    const myCashPayout = myTotalPayout - myCheckPayout;
 
-    const totalMainSpan = document.getElementById('staff-dashboard-filtered-earning-total-main');
-    const totalTipSpan = document.getElementById('staff-dashboard-filtered-earning-total-tip');
-    if(totalMainSpan) totalMainSpan.textContent = `Total ($${totalEarning.toFixed(2)})`;
-    if(totalTipSpan) totalTipSpan.textContent = `Tip ($${totalTip.toFixed(2)})`;
+    document.getElementById('my-earning-card').textContent = `$${myTotalEarning.toFixed(2)}`;
+    document.getElementById('my-total-payout-card').textContent = `$${myTotalPayout.toFixed(2)}`;
+    document.getElementById('my-cash-payout-card').textContent = `$${myCashPayout.toFixed(2)}`;
+    document.getElementById('my-check-payout-card').textContent = `$${myCheckPayout.toFixed(2)}`;
+    
+    updateMyEarningsChart(mySalonEarnings, filter, currentUserName);
+
+    // --- Payout Details Table (from 'earnings' collection) ---
+    const myPayoutDetails = allEarnings.filter(e => {
+        const earnDate = e.date.toDate();
+        return e.staffName === currentUserName && earnDate >= startDate && earnDate <= endDate;
+    });
+    
+    renderStaffEarningsTable(myPayoutDetails, 'staff-dashboard-earning-table', 'staff-dashboard-total-earning', 'staff-dashboard-total-tip');
 };
 
 // REPLACE the old updateSalonRevenueChart function with this one
@@ -1137,6 +1160,43 @@ const updateSalonRevenueChart = (data, filter) => {
         ] 
     };
     salonRevenueChart = initializeChart(salonRevenueChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
+};
+    // ADD THIS ENTIRE NEW FUNCTION
+const updateMyEarningsChart = (data, filter, staffName) => {
+    const ctx = document.getElementById('my-earnings-chart').getContext('2d');
+    if (!ctx) return;
+    let labels = [], chartData = [];
+    let counts = {};
+    const staffNameLower = staffName.toLowerCase();
+
+    data.forEach(item => {
+        const date = item.date.toDate();
+        let key;
+        if (filter === 'today') key = date.getHours();
+        else if (filter === 'this_week') key = date.getDay();
+        else if (filter === 'this_month') key = date.getDate();
+        else if (filter === 'this_year') key = date.getMonth();
+        
+        counts[key] = (counts[key] || 0) + (item[staffNameLower] || 0);
+    });
+    
+    if (filter === 'today') {
+        labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+        chartData = labels.map((_, i) => counts[i] || 0);
+    } else if (filter === 'this_week') {
+        labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        chartData = labels.map((_, i) => counts[i] || 0);
+    } else if (filter === 'this_month') {
+        const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+        labels = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+        chartData = labels.map(day => counts[day] || 0);
+    } else if (filter === 'this_year') {
+        labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        chartData = labels.map((_, i) => counts[i] || 0);
+    }
+
+    const chartConfig = { labels, datasets: [{ label: 'My Earning', data: chartData, backgroundColor: 'rgba(54, 162, 235, 0.5)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 1, tension: 0.1 }] };
+    myEarningsChart = initializeChart(myEarningsChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
 };
     // END NEW DASHBOARD LOGIC
 
@@ -1873,16 +1933,24 @@ onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot
     setupTechFilter('dashboard-tech-filter-container-earning', (tech) => { currentDashboardEarningTechFilter = tech; renderAllStaffEarnings(); });
     
     
-    const setupReportDateFilters = (selectId, dateInputId, callback) => {
-        const select = document.getElementById(selectId);
-        const dateInput = document.getElementById(dateInputId);
-        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-        select.innerHTML = `<option value="daily">Daily</option>`;
-        months.forEach((month, index) => { select.innerHTML += `<option value="${index}">${month}</option>`; });
-        select.innerHTML += `<option value="this-year">This Year</option><option value="last-year">Last Year</option>`;
-        select.addEventListener('change', (e) => { const range = e.target.value; dateInput.style.display = range === 'daily' ? 'block' : 'none'; callback(dateInput.value, range); });
-        dateInput.addEventListener('input', (e) => { callback(e.target.value, select.value); });
-    };
+// REPLACE the old setupReportDateFilters function with this one
+const setupReportDateFilters = (selectId, dateInputId, callback) => {
+    const select = document.getElementById(selectId);
+    const dateInput = document.getElementById(dateInputId);
+    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    select.innerHTML = `<option value="daily">Daily</option>`;
+    months.forEach((month, index) => { select.innerHTML += `<option value="${index}">${month}</option>`; });
+    select.innerHTML += `<option value="this-year">This Year</option><option value="last-year">Last Year</option>`;
+    
+    select.addEventListener('change', (e) => { 
+        const range = e.target.value; 
+        dateInput.style.display = range === 'daily' ? 'block' : 'none'; 
+        callback(dateInput.value, range); 
+    });
+    dateInput.addEventListener('input', (e) => { 
+        callback(e.target.value, select.value); 
+    });
+};
 
     setupReportDateFilters('earning-range-filter', 'earning-date-filter', (date, range) => { currentEarningDateFilter = date; currentEarningRangeFilter = range; renderAllStaffEarnings(); });
     setupReportDateFilters('dashboard-earning-range-filter', 'dashboard-earning-date-filter', (date, range) => { currentDashboardEarningDateFilter = date; currentDashboardEarningRangeFilter = range; renderAllStaffEarnings(); });

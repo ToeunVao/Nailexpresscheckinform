@@ -947,6 +947,7 @@ function initMainApp(userRole, userName) {
     };
     
    // REPLACE the old getDateRange function with this one
+// REPLACE the old getDateRange function with this one
 const getDateRange = (filter, specificDate = null) => {
     const now = new Date();
     let startDate, endDate = new Date(now);
@@ -989,8 +990,7 @@ const getDateRange = (filter, specificDate = null) => {
             break;
     }
     return { startDate, endDate };
-}; 
-
+};
     // --- NEW DASHBOARD LOGIC ---
     const updateDashboard = () => {
         if (currentUserRole === 'admin') {
@@ -1051,7 +1051,7 @@ const getDateRange = (filter, specificDate = null) => {
         updateSalonRevenueChart(filteredSalonEarnings, filter);
     };
 
-   // REPLACE the old updateStaffDashboard function with this one
+// REPLACE the old updateStaffDashboard function with this one
 const updateStaffDashboard = () => {
     const rangeFilter = document.getElementById('staff-dashboard-earning-range-filter').value;
     const dateFilter = document.getElementById('staff-dashboard-earning-date-filter').value;
@@ -1065,26 +1065,6 @@ const updateStaffDashboard = () => {
     if(totalMainSpan) totalMainSpan.textContent = `Total ($${totalEarning.toFixed(2)})`;
     if(totalTipSpan) totalTipSpan.textContent = `Tip ($${totalTip.toFixed(2)})`;
 };
-
-        const myBookings = allAppointments.filter(a => {
-            const apptDate = a.appointmentTimestamp.toDate();
-            return a.technician === currentUserName && apptDate >= startDate && apptDate <= endDate;
-        });
-
-        const myTotalPayout = myEarnings.reduce((sum, e) => sum + e.earning + e.tip, 0);
-        document.getElementById('my-total-earning-card').textContent = `$${myTotalPayout.toFixed(2)}`;
-        document.getElementById('my-total-bookings-card').textContent = myBookings.length;
-
-        updateMyEarningsChart(myEarnings, filter);
-        
-        const tableBody = document.getElementById('my-earnings-table-body');
-        tableBody.innerHTML = '';
-        myEarnings.sort((a,b) => b.date.seconds - a.date.seconds).forEach(e => {
-            const row = tableBody.insertRow();
-            const total = e.earning + e.tip;
-            row.innerHTML = `<td class="px-6 py-4">${e.date.toDate().toLocaleDateString()}</td><td class="px-6 py-4 font-semibold">$${total.toFixed(2)}</td>`;
-        });
-    };
 
 // REPLACE the old updateSalonRevenueChart function with this one
 const updateSalonRevenueChart = (data, filter) => {
@@ -1157,50 +1137,6 @@ const updateSalonRevenueChart = (data, filter) => {
     };
     salonRevenueChart = initializeChart(salonRevenueChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
 };
-
-    const updateMyEarningsChart = (data, filter) => {
-        const ctx = document.getElementById('my-earnings-chart').getContext('2d');
-        if (!ctx) return;
-        let labels = [], chartData = [];
-        let counts = {};
-        
-        data.forEach(item => {
-            const date = item.date.toDate();
-            let key;
-            if (filter === 'today') key = date.getHours();
-            else if (filter === 'this_week') key = date.getDay();
-            else if (filter === 'this_month') key = date.getDate();
-            else if (filter === 'this_year') key = date.getMonth();
-            counts[key] = (counts[key] || 0) + item.earning + item.tip;
-        });
-
-        if (filter === 'today' || filter === 'this_week') {
-            labels = (filter === 'this_week') ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] : Array.from({ length: 12 }, (_, i) => `${i*2}:00`);
-            const keyMap = (filter === 'this_week') ? (d) => d.getDay() : (d) => Math.floor(d.getHours() / 2);
-            const groupedData = data.reduce((acc, curr) => {
-                const key = keyMap(curr.date.toDate());
-                acc[key] = (acc[key] || 0) + curr.earning + curr.tip;
-                return acc;
-            }, {});
-            chartData = labels.map((_, i) => groupedData[i] || 0);
-        } else {
-             const keyMap = (filter === 'this_month') ? (d) => d.getDate() : (d) => d.getMonth();
-             labels = (filter === 'this_month') ? Array.from({length: 31}, (_, i) => i + 1) : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-             const groupedData = data.reduce((acc, curr) => {
-                const key = keyMap(curr.date.toDate());
-                acc[key] = (acc[key] || 0) + curr.earning + curr.tip;
-                return acc;
-            }, {});
-             chartData = labels.map((lbl, i) => groupedData[filter === 'this_month' ? lbl : i] || 0);
-        }
-        
-        const chartConfig = { labels, datasets: [{ label: 'My Payout', data: chartData, backgroundColor: 'rgba(54, 162, 235, 0.5)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 1, tension: 0.1 }] };
-        myEarningsChart = initializeChart(myEarningsChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
-    };
-
-    document.getElementById('dashboard-date-filter').addEventListener('change', updateAdminDashboard);
-    document.getElementById('staff-dashboard-date-filter').addEventListener('change', updateStaffDashboard);
-    
     // END NEW DASHBOARD LOGIC
 
     const loadAndRenderServices = async () => {
@@ -1766,30 +1702,6 @@ const updateSalonRevenueChart = (data, filter) => {
         }
     });
 
-    const updateSalonEarningsForDate = async (dateStr) => {
-        const date = new Date(dateStr + 'T00:00:00');
-        const startOfDay = Timestamp.fromDate(date);
-        const endOfDay = Timestamp.fromDate(new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999));
-    
-        const q = query(collection(db, "earnings"), where("date", ">=", startOfDay), where("date", "<=", endOfDay));
-        const querySnapshot = await getDocs(q);
-    
-        const dailyStaffTotals = {};
-        querySnapshot.forEach(doc => {
-            const earningData = doc.data();
-            dailyStaffTotals[earningData.staffName] = (dailyStaffTotals[earningData.staffName] || 0) + earningData.earning;
-        });
-    
-        const salonEarningUpdate = {};
-        Object.keys(dailyStaffTotals).forEach(staffName => {
-            salonEarningUpdate[staffName.toLowerCase()] = dailyStaffTotals[staffName];
-        });
-    
-        if (Object.keys(salonEarningUpdate).length > 0) {
-            const salonEarningDocRef = doc(db, "salon_earnings", dateStr);
-            await setDoc(salonEarningDocRef, salonEarningUpdate, { merge: true });
-        }
-    };
 // ADD THIS ENTIRE NEW FUNCTION
 const updateSalonEarningsForDate = async (dateStr) => {
     const date = new Date(dateStr + 'T00:00:00');

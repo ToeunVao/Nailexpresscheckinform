@@ -1147,51 +1147,6 @@ function initMainApp(userRole, userName) {
     
     // END NEW DASHBOARD LOGIC
 
-    const dailyNotesForm = document.getElementById('daily-notes-form');
-    const dailyNoteInput = document.getElementById('daily-note-input');
-    const dailyNotesContainer = document.getElementById('daily-notes-container');
-
-    const renderDailyNotes = (notes) => {
-        dailyNotesContainer.innerHTML = '';
-        if (!notes || notes.length === 0) {
-            dailyNotesContainer.innerHTML = '<p class="text-gray-500">No notes for today.</p>';
-            return;
-        }
-        notes.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
-        notes.forEach(note => { const noteEl = document.createElement('div'); noteEl.className = 'bg-pink-50 p-3 rounded-lg flex justify-between items-center'; noteEl.innerHTML = `<p class="text-gray-800">${note.text}</p><button data-id="${note.id}" class="delete-note-btn text-red-400 hover:text-red-600"><i class="fas fa-times-circle"></i></button>`; dailyNotesContainer.appendChild(noteEl); });
-    };
-
-    const todayStringForNotes = getLocalDateString();
-    const noteDocRef = doc(db, "daily_notes", todayStringForNotes);
-
-    onSnapshot(noteDocRef, (docSnap) => {
-        if (docSnap.exists()) { renderDailyNotes(docSnap.data().notes); } 
-        else { renderDailyNotes([]); }
-    });
-
-    dailyNotesForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const noteText = dailyNoteInput.value.trim();
-        if (!noteText) return;
-        const newNote = { text: noteText, createdAt: Timestamp.now(), id: crypto.randomUUID() };
-        try { await setDoc(noteDocRef, { notes: arrayUnion(newNote) }, { merge: true }); dailyNoteInput.value = ''; } 
-        catch (error) { console.error("Error adding note: ", error); alert("Could not save the note."); }
-    });
-
-    dailyNotesContainer.addEventListener('click', async (e) => {
-        const deleteBtn = e.target.closest('.delete-note-btn');
-        if (deleteBtn) {
-            const noteIdToDelete = deleteBtn.dataset.id;
-            try {
-                const docSnap = await getDoc(noteDocRef);
-                if (docSnap.exists()) {
-                    const existingNotes = docSnap.data().notes || [];
-                    const noteToRemove = existingNotes.find(note => note.id === noteIdToDelete);
-                    if (noteToRemove) { await updateDoc(noteDocRef, { notes: arrayRemove(noteToRemove) }); }
-                }
-            } catch (error) { console.error("Error deleting note: ", error); alert("Could not delete the note."); }
-        }
-    });
 
     const loadAndRenderServices = async () => {
         const servicesSnapshot = await getDocs(collection(db, "services"));

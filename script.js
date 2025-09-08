@@ -783,7 +783,10 @@ function initMainApp(userRole, userName) {
     } else {
         adminDashboardView.classList.add('hidden');
         staffDashboardView.classList.remove('hidden');
-        document.getElementById('staff-welcome-heading').textContent = `Welcome, ${userName}!`;
+       const welcomeHeading = document.getElementById('staff-welcome-heading');
+if (welcomeHeading) {
+    welcomeHeading.textContent = `Welcome, ${userName}!`;
+}
     }
 
     const updateNavCounts = () => {
@@ -923,7 +926,6 @@ function initMainApp(userRole, userName) {
     let currentMonth = new Date().getMonth();
     let currentYear = new Date().getFullYear();
 // ... inside the initMainApp function ...
-
     let currentTechFilterCalendar = 'All', currentTechFilterActive = 'All', currentTechFilterProcessing = 'All', currentTechFilterFinished = 'All', currentFinishedDateFilter = '';
     let currentEarningTechFilter = 'All', currentEarningDateFilter = '', currentEarningRangeFilter = 'daily';
     let currentDashboardEarningTechFilter = 'All', currentDashboardEarningDateFilter = '', currentDashboardEarningRangeFilter = 'daily';

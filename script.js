@@ -1710,7 +1710,31 @@ const updateMyEarningsChart = (data, filter, staffName) => {
     });
     document.getElementById('checkout-cancel-btn').addEventListener('click', closeCheckoutModal);
     document.querySelector('.checkout-modal-overlay').addEventListener('click', closeCheckoutModal);
+	
+const updateSalonEarningsForDate = async (dateStr) => {
+    const date = new Date(dateStr + 'T00:00:00');
+    const startOfDay = Timestamp.fromDate(date);
+    const endOfDay = Timestamp.fromDate(new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999));
 
+    const q = query(collection(db, "earnings"), where("date", ">=", startOfDay), where("date", "<=", endOfDay));
+    const querySnapshot = await getDocs(q);
+
+    const dailyStaffTotals = {};
+    querySnapshot.forEach(doc => {
+        const earningData = doc.data();
+        dailyStaffTotals[earningData.staffName] = (dailyStaffTotals[earningData.staffName] || 0) + earningData.earning;
+    });
+
+    const salonEarningUpdate = {};
+    techniciansAndStaff.forEach(tech => {
+        const staffName = tech.name;
+        const total = dailyStaffTotals[staffName] || 0;
+        salonEarningUpdate[staffName.toLowerCase()] = total;
+    });
+
+    const salonEarningDocRef = doc(db, "salon_earnings", dateStr);
+    await setDoc(salonEarningDocRef, salonEarningUpdate, { merge: true });
+};
     onSnapshot(query(collection(db, "active_queue"), orderBy("checkInTimestamp", "asc")), (snapshot) => {
          allActiveClients = snapshot.docs.map(doc => ({ id: doc.id, checkInTime: doc.data().checkInTimestamp ? new Date(doc.data().checkInTimestamp.seconds * 1000).toLocaleString() : 'Pending...', services: (doc.data().services || []).join(', '), ...doc.data() }));
         const waitingClients = allActiveClients.filter(c => c.status === 'waiting');
@@ -2237,31 +2261,6 @@ const setupReportDateFilters = (selectId, dateInputId, callback) => {
         salonEarningTableHead.innerHTML = headHTML;
         salonEarningTableFoot.innerHTML = footHTML + commissionHTML + check70HTML + cash30HTML;
     };
-// ADD THIS ENTIRE NEW FUNCTION
-const updateSalonEarningsForDate = async (dateStr) => {
-    const date = new Date(dateStr + 'T00:00:00');
-    const startOfDay = Timestamp.fromDate(date);
-    const endOfDay = Timestamp.fromDate(new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999));
-
-    const q = query(collection(db, "earnings"), where("date", ">=", startOfDay), where("date", "<=", endOfDay));
-    const querySnapshot = await getDocs(q);
-
-    const dailyStaffTotals = {};
-    querySnapshot.forEach(doc => {
-        const earningData = doc.data();
-        dailyStaffTotals[earningData.staffName] = (dailyStaffTotals[earningData.staffName] || 0) + earningData.earning;
-    });
-
-    const salonEarningUpdate = {};
-    techniciansAndStaff.forEach(tech => {
-        const staffName = tech.name;
-        const total = dailyStaffTotals[staffName] || 0;
-        salonEarningUpdate[staffName.toLowerCase()] = total;
-    });
-    
-    const salonEarningDocRef = doc(db, "salon_earnings", dateStr);
-    await setDoc(salonEarningDocRef, salonEarningUpdate, { merge: true });
-};
 
     onSnapshot(collection(db, "users"), (snapshot) => {
         const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));

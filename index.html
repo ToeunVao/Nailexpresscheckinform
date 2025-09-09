@@ -380,39 +380,17 @@
                         </select>
                     </div>
 
-<!-- REPLACE the old card grid with this new structure -->
-<!-- Staff Summary Cards -->
-<div class="space-y-6 mb-8">
-    <!-- Top Row: Big Cards -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="dashboard-card bg-pink-100 p-8">
-            <h4 class="font-bold text-pink-800">My Earning</h4>
-            <p id="my-earning-card" class="text-4xl font-bold text-pink-600">$0</p>
-        </div>
-        <div class="dashboard-card bg-green-100 p-8">
-            <h4 class="font-bold text-green-800">My Total Payout (70%)</h4>
-            <p id="my-total-payout-card" class="text-4xl font-bold text-green-600">$0</p>
-        </div>
-    </div>
-    <!-- Bottom Row: Small Cards -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
-        <div class="dashboard-card bg-yellow-100">
-            <h4 class="font-bold text-yellow-800">My Cash Payout</h4>
-            <p id="my-cash-payout-card" class="text-3xl font-bold text-yellow-600">$0</p>
-        </div>
-        <div class="dashboard-card bg-blue-100">
-            <h4 class="font-bold text-blue-800">My Check Payout</h4>
-            <p id="my-check-payout-card" class="text-3xl font-bold text-blue-600">$0</p>
-        </div>
-        <div class="dashboard-card bg-teal-100">
-            <h4 class="font-bold text-teal-800">My Appointments</h4>
-            <p id="my-appointments-card" class="text-3xl font-bold text-teal-600">0</p>
-        </div>
-        <div class="dashboard-card bg-indigo-100">
-            <h4 class="font-bold text-indigo-800">My Clients</h4>
-            <p id="my-clients-card" class="text-3xl font-bold text-indigo-600">0</p>
-        </div>
-    </div>
+<!-- REPLACE the old admin summary cards with this new grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="dashboard-card bg-pink-100"><h4 class="font-bold text-pink-800">Total Salon Revenue</h4><p id="total-salon-revenue-card" class="text-3xl font-bold text-pink-600">$0</p></div>
+    <div class="dashboard-card bg-green-100"><h4 class="font-bold text-green-800">Total Cash</h4><p id="total-salon-cash-card" class="text-3xl font-bold text-green-600">$0</p></div>
+    <div class="dashboard-card bg-blue-100"><h4 class="font-bold text-blue-800">Top Earning Technician</h4><p id="top-earning-technician-card" class="text-xl font-bold text-blue-600">-</p></div>
+    <div class="dashboard-card bg-purple-100"><h4 class="font-bold text-purple-800">Top Booking Technician</h4><p id="top-booking-technician-card" class="text-xl font-bold text-purple-600">-</p></div>
+    <!-- New Cards -->
+    <div class="dashboard-card bg-teal-100"><h4 class="font-bold text-teal-800">Total Appointments</h4><p id="total-appointments-card" class="text-3xl font-bold text-teal-600">0</p></div>
+    <div class="dashboard-card bg-indigo-100"><h4 class="font-bold text-indigo-800">Total Clients</h4><p id="total-clients-card" class="text-3xl font-bold text-indigo-600">0</p></div>
+    <div class="dashboard-card bg-orange-100"><h4 class="font-bold text-orange-800">Total Gift Cards Sold</h4><p id="total-gift-card-card" class="text-3xl font-bold text-orange-600">0</p></div>
+    <div class="dashboard-card bg-red-100"><h4 class="font-bold text-red-800">Total Expense</h4><p id="total-expense-card" class="text-3xl font-bold text-red-600">$0</p></div>
 </div>
 <!-- ADD THIS ENTIRE NEW SECTION -->
 <!-- Upcoming Appointments List -->
@@ -492,31 +470,40 @@
         </select>
     </div>
 
-    <!-- Staff Summary Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="dashboard-card bg-pink-100">
+   <!-- REPLACE the old card grid with this new structure -->
+<!-- Staff Summary Cards -->
+<div class="space-y-6 mb-8">
+    <!-- Top Row: Big Cards -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="dashboard-card bg-pink-100 p-8">
             <h4 class="font-bold text-pink-800">My Earning</h4>
-            <p id="my-earning-card" class="text-3xl font-bold text-pink-600">$0</p>
+            <p id="my-earning-card" class="text-4xl font-bold text-pink-600">$0</p>
         </div>
-        <div class="dashboard-card bg-green-100">
+        <div class="dashboard-card bg-green-100 p-8">
             <h4 class="font-bold text-green-800">My Total Payout (70%)</h4>
-            <p id="my-total-payout-card" class="text-3xl font-bold text-green-600">$0</p>
+            <p id="my-total-payout-card" class="text-4xl font-bold text-green-600">$0</p>
         </div>
+    </div>
+    <!-- Bottom Row: Small Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
         <div class="dashboard-card bg-yellow-100">
-            <h4 class="font-bold text-yellow-800">My Cash Payout (30%)</h4>
+            <h4 class="font-bold text-yellow-800">My Cash Payout</h4>
             <p id="my-cash-payout-card" class="text-3xl font-bold text-yellow-600">$0</p>
         </div>
         <div class="dashboard-card bg-blue-100">
-            <h4 class="font-bold text-blue-800">My Check Payout (70%)</h4>
+            <h4 class="font-bold text-blue-800">My Check Payout</h4>
             <p id="my-check-payout-card" class="text-3xl font-bold text-blue-600">$0</p>
         </div>
-            <!-- New Cards -->
-    <div class="dashboard-card bg-teal-100"><h4 class="font-bold text-teal-800">Total Appointments</h4><p id="total-appointments-card" class="text-3xl font-bold text-teal-600">0</p></div>
-    <div class="dashboard-card bg-indigo-100"><h4 class="font-bold text-indigo-800">Total Clients</h4><p id="total-clients-card" class="text-3xl font-bold text-indigo-600">0</p></div>
-    <div class="dashboard-card bg-orange-100"><h4 class="font-bold text-orange-800">Total Gift Cards Sold</h4><p id="total-gift-card-card" class="text-3xl font-bold text-orange-600">0</p></div>
-    <div class="dashboard-card bg-red-100"><h4 class="font-bold text-red-800">Total Expense</h4><p id="total-expense-card" class="text-3xl font-bold text-red-600">$0</p></div>
-
+        <div class="dashboard-card bg-teal-100">
+            <h4 class="font-bold text-teal-800">My Appointments</h4>
+            <p id="my-appointments-card" class="text-3xl font-bold text-teal-600">0</p>
+        </div>
+        <div class="dashboard-card bg-indigo-100">
+            <h4 class="font-bold text-indigo-800">My Clients</h4>
+            <p id="my-clients-card" class="text-3xl font-bold text-indigo-600">0</p>
+        </div>
     </div>
+</div>
 <!-- ADD THIS ENTIRE NEW SECTION -->
 <!-- My Upcoming Appointments List -->
 <div class="mt-8 bg-white p-6 rounded-2xl shadow-lg">

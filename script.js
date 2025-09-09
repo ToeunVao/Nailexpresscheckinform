@@ -1752,6 +1752,38 @@ const updateMyEarningsChart = (data, filter, staffName) => {
     document.getElementById('checkout-cancel-btn').addEventListener('click', closeCheckoutModal);
     document.querySelector('.checkout-modal-overlay').addEventListener('click', closeCheckoutModal);
 
+    // ADD THIS ENTIRE NEW FUNCTION
+const updateSalonEarningsForDate = async (dateStr) => {
+    const date = new Date(dateStr + 'T00:00:00');
+    const startOfDay = Timestamp.fromDate(date);
+    const endOfDay = Timestamp.fromDate(new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999));
+
+    const q = query(collection(db, "earnings"), where("date", ">=", startOfDay), where("date", "<=", endOfDay));
+    const querySnapshot = await getDocs(q);
+
+    const dailyStaffTotals = {};
+    // Initialize all known staff with 0 to handle deletions correctly
+    techniciansAndStaff.forEach(tech => {
+        dailyStaffTotals[tech.name] = 0;
+    });
+
+    // Sum up the earnings for the day
+    querySnapshot.forEach(doc => {
+        const earningData = doc.data();
+        dailyStaffTotals[earningData.staffName] = (dailyStaffTotals[earningData.staffName] || 0) + earningData.earning;
+    });
+
+    const salonEarningUpdate = {};
+    Object.keys(dailyStaffTotals).forEach(staffName => {
+        salonEarningUpdate[staffName.toLowerCase()] = dailyStaffTotals[staffName];
+    });
+
+    // Add the date back in for filtering purposes
+    salonEarningUpdate.date = Timestamp.fromDate(date);
+
+    const salonEarningDocRef = doc(db, "salon_earnings", dateStr);
+    await setDoc(salonEarningDocRef, salonEarningUpdate, { merge: true });
+};
     onSnapshot(query(collection(db, "active_queue"), orderBy("checkInTimestamp", "asc")), (snapshot) => {
          allActiveClients = snapshot.docs.map(doc => ({ id: doc.id, checkInTime: doc.data().checkInTimestamp ? new Date(doc.data().checkInTimestamp.seconds * 1000).toLocaleString() : 'Pending...', services: (doc.data().services || []).join(', '), ...doc.data() }));
         const waitingClients = allActiveClients.filter(c => c.status === 'waiting');
@@ -1803,21 +1835,22 @@ const updateMyEarningsChart = (data, filter, staffName) => {
         }
     });
 
-    onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot) => {
-        allEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
-        if (currentUserRole === 'admin') {
-            const datesToUpdate = new Set();
-            snapshot.docChanges().forEach((change) => {
-                const dateStr = getLocalDateString(change.doc.data().date.toDate());
-                datesToUpdate.add(dateStr);
-            });
-            datesToUpdate.forEach(dateStr => updateSalonEarningsForDate(dateStr));
-        }
-    
-        renderAllStaffEarnings();
-        updateDashboard();
-    });
+// REPLACE the onSnapshot listener for "earnings" with this one
+onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot) => {
+    allEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    if (currentUserRole === 'admin') {
+        const datesToUpdate = new Set();
+        snapshot.docChanges().forEach((change) => {
+            const dateStr = getLocalDateString(change.doc.data().date.toDate());
+            datesToUpdate.add(dateStr);
+        });
+        datesToUpdate.forEach(dateStr => updateSalonEarningsForDate(dateStr));
+    }
+
+    renderAllStaffEarnings();
+    updateDashboard();
+});
 
     onSnapshot(query(collection(db, "salon_earnings"), orderBy("date", "desc")), (snapshot) => {
         allSalonEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -1984,7 +2017,29 @@ const setupReportDateFilters = (selectId, dateInputId, callback) => {
         } catch (err) { console.error("Error adding earning: ", err); alert("Could not add earning."); }
     });
 
+// REPLACE the old dashboard form listener with this one
+document.getElementById('dashboard-staff-earning-form-full').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const staffName = document.getElementById('dashboard-staff-name-full').value;
+    const earning = parseFloat(document.getElementById('dashboard-staff-earning-full').value);
+    const tip = parseFloat(document.getElementById('dashboard-staff-tip-full').value);
+    const dateStr = document.getElementById('dashboard-staff-earning-date-full').value;
 
+    if (isNaN(earning) || isNaN(tip) || !dateStr) { return alert('Please fill out all fields correctly.'); }
+
+    const date = new Date(dateStr + 'T12:00:00');
+
+    try {
+        await addDoc(collection(db, "earnings"), { staffName, earning, tip, date: Timestamp.fromDate(date) });
+        alert(`Earning for ${staffName} on ${dateStr} has been saved.`);
+        e.target.reset();
+        document.getElementById('dashboard-staff-earning-date-full').value = getLocalDateString();
+    } catch (err) {
+        console.error("Error saving earning entry: ", err);
+        alert("Could not save the earning entry.");
+    }
+});
+    
     document.getElementById('staff-earning-table').addEventListener('click', async (e) => {
         const deleteBtn = e.target.closest('.delete-earning-btn');
         const editBtn = e.target.closest('.edit-earning-btn');

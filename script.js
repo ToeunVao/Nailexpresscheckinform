@@ -2237,6 +2237,31 @@ const setupReportDateFilters = (selectId, dateInputId, callback) => {
         salonEarningTableHead.innerHTML = headHTML;
         salonEarningTableFoot.innerHTML = footHTML + commissionHTML + check70HTML + cash30HTML;
     };
+// ADD THIS ENTIRE NEW FUNCTION
+const updateSalonEarningsForDate = async (dateStr) => {
+    const date = new Date(dateStr + 'T00:00:00');
+    const startOfDay = Timestamp.fromDate(date);
+    const endOfDay = Timestamp.fromDate(new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999));
+
+    const q = query(collection(db, "earnings"), where("date", ">=", startOfDay), where("date", "<=", endOfDay));
+    const querySnapshot = await getDocs(q);
+
+    const dailyStaffTotals = {};
+    querySnapshot.forEach(doc => {
+        const earningData = doc.data();
+        dailyStaffTotals[earningData.staffName] = (dailyStaffTotals[earningData.staffName] || 0) + earningData.earning;
+    });
+
+    const salonEarningUpdate = {};
+    techniciansAndStaff.forEach(tech => {
+        const staffName = tech.name;
+        const total = dailyStaffTotals[staffName] || 0;
+        salonEarningUpdate[staffName.toLowerCase()] = total;
+    });
+    
+    const salonEarningDocRef = doc(db, "salon_earnings", dateStr);
+    await setDoc(salonEarningDocRef, salonEarningUpdate, { merge: true });
+};
 
     onSnapshot(collection(db, "users"), (snapshot) => {
         const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));

@@ -1066,7 +1066,7 @@ const updateAdminDashboard = () => {
 
     // Render Graph and Upcoming Appointments
     updateSalonRevenueChart(filteredSalonEarnings, filter);
-    renderUpcomingAppointments('admin-upcoming-appointments-list', allAppointments);
+    renderDetailedAppointmentsList('admin-upcoming-appointments-list', allAppointments);
 };
 
 // REPLACE the old updateStaffDashboard function with this one
@@ -1116,14 +1116,16 @@ const updateStaffDashboard = () => {
 };
 
     // ADD THIS ENTIRE NEW FUNCTION
-const renderUpcomingAppointments = (containerId, appointments, filterName = null) => {
+const renderDetailedAppointmentsList = (containerId, appointments, techFilter = 'All') => {
     const container = document.getElementById(containerId);
     if (!container) return;
 
     let filteredAppointments = appointments.filter(a => a.appointmentTimestamp.toDate() > new Date());
 
-    if (filterName) {
-        filteredAppointments = filteredAppointments.filter(a => a.technician === filterName);
+    if (techFilter !== 'All' && techFilter !== 'Any Technician') {
+        filteredAppointments = filteredAppointments.filter(appt => appt.technician === techFilter);
+    } else if (techFilter === 'Any Technician') {
+        filteredAppointments = filteredAppointments.filter(appt => appt.technician === 'Any Technician');
     }
 
     if (filteredAppointments.length === 0) {
@@ -1131,15 +1133,31 @@ const renderUpcomingAppointments = (containerId, appointments, filterName = null
         return;
     }
 
-    let tableHTML = '<table class="w-full text-sm text-left text-gray-600"><tbody>';
+    let tableHTML = `
+        <table class="w-full text-sm text-left text-gray-600">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
+                <tr>
+                    <th scope="col" class="px-6 py-3">Name</th>
+                    <th scope="col" class="px-6 py-3">Services</th>
+                    <th scope="col" class="px-6 py-3">Technician</th>
+                    <th scope="col" class="px-6 py-3">Group</th>
+                    <th scope="col" class="px-6 py-3">Date & Time</th>
+                    <th scope="col" class="px-6 py-3 text-center">Action</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
     filteredAppointments.sort((a, b) => a.appointmentTimestamp.seconds - b.appointmentTimestamp.seconds);
 
     filteredAppointments.forEach(appt => {
         tableHTML += `
             <tr class="border-b">
-                <td class="px-4 py-3 font-medium">${appt.name}</td>
-                <td class="px-4 py-3">${new Date(appt.appointmentTimestamp.seconds * 1000).toLocaleString()}</td>
-                <td class="px-4 py-3">${appt.technician}</td>
+                <td class="px-6 py-3 font-medium">${appt.name}</td>
+                <td class="px-6 py-3">${Array.isArray(appt.services) ? appt.services.join(', ') : appt.services}</td>
+                <td class="px-6 py-3">${appt.technician}</td>
+                <td class="px-6 py-3 text-center">${appt.people || 1}</td>
+                <td class="px-6 py-3">${new Date(appt.appointmentTimestamp.seconds * 1000).toLocaleString([], {dateStyle: 'short', timeStyle: 'short'})}</td>
+                <td class="px-6 py-3 text-center"><button data-id="${appt.id}" class="checkin-today-btn text-blue-500 hover:underline">Check In</button></td>
             </tr>
         `;
     });

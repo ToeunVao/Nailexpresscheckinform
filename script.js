@@ -2250,20 +2250,11 @@ document.getElementById('dashboard-staff-earning-form-full').addEventListener('s
         } catch(err) { console.error("Error updating salon earning:", err); alert("Could not update salon earning."); }
     });
 
-    const renderAllBookingsList = () => {
-        let filteredAppointments = [...allAppointments];
-        if (currentTechFilterCalendar !== 'All' && currentTechFilterCalendar !== 'Any Technician') { filteredAppointments = filteredAppointments.filter(appt => appt.technician === currentTechFilterCalendar); } 
-        else if (currentTechFilterCalendar === 'Any Technician') { filteredAppointments = allAppointments.filter(appt => appt.technician === 'Any Technician'); }
-        filteredAppointments.sort((a, b) => b.appointmentTimestamp.seconds - a.appointmentTimestamp.seconds);
-        todayCountSpan.textContent = filteredAppointments.length;
-        const tbody = document.querySelector('#today-bookings-table tbody');
-        tbody.innerHTML = filteredAppointments.length === 0 ? `<tr><td colspan="6" class="py-6 text-center text-gray-400">No bookings found.</td></tr>` : '';
-        filteredAppointments.forEach(appt => {
-            const row = tbody.insertRow();
-            row.className = 'bg-white border-b';
-            row.innerHTML = `<td class="px-6 py-3">${appt.name}</td><td class="px-6 py-3">${Array.isArray(appt.services) ? appt.services.join(', ') : appt.services}</td><td class="px-6 py-3">${appt.technician}</td><td class="px-6 py-3 text-center">${appt.people || 1}</td><td class="px-6 py-3">${new Date(appt.appointmentTimestamp.seconds * 1000).toLocaleString([], {dateStyle: 'short', timeStyle: 'short'})}</td><td class="px-6 py-3 text-center"><button data-id="${appt.id}" class="checkin-today-btn text-blue-500 hover:underline">Check In</button></td>`;
-        });
-    };
+// REPLACE the old renderAllBookingsList function with this one
+const renderAllBookingsList = () => {
+    todayCountSpan.textContent = allAppointments.filter(a => a.appointmentTimestamp.toDate() > new Date()).length;
+    renderDetailedAppointmentsList('today-bookings-table-container', allAppointments, currentTechFilterCalendar);
+};
 
     document.getElementById('today-btn').addEventListener('click', () => { document.getElementById('month-view').classList.add('hidden'); document.getElementById('month-nav').classList.add('hidden'); document.getElementById('list-view').classList.remove('hidden'); document.getElementById('today-btn').classList.add('hidden'); document.getElementById('month-view-btn').classList.remove('hidden'); renderAllBookingsList(); });
     document.getElementById('month-view-btn').addEventListener('click', () => { document.getElementById('list-view').classList.add('hidden'); document.getElementById('month-view-btn').classList.add('hidden'); document.getElementById('month-view').classList.remove('hidden'); document.getElementById('month-nav').classList.remove('hidden'); document.getElementById('today-btn').classList.remove('hidden'); });

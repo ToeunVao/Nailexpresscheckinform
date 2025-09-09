@@ -403,6 +403,28 @@
                                 <span id="dashboard-filtered-earning-total-tip" class="ml-2 bg-green-100 text-green-800 text-sm font-semibold px-2.5 py-0.5 rounded-full"></span>
                             </div>
                         </h3>
+                        <!-- Earning Submission Form (Admin Only) -->
+<form id="dashboard-staff-earning-form-full" class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8 items-end p-4 border-b">
+    <div>
+        <label for="dashboard-staff-earning-date-full" class="block text-sm font-medium text-gray-600 mb-1">Date</label>
+        <input type="date" id="dashboard-staff-earning-date-full" class="form-input w-full p-3 border border-gray-300 rounded-lg" required>
+    </div>
+    <div>
+        <label for="dashboard-staff-name-full" class="block text-sm font-medium text-gray-600 mb-1">Staff Name</label>
+        <select id="dashboard-staff-name-full" class="form-select w-full p-3 border border-gray-300 rounded-lg" required></select>
+    </div>
+    <div>
+        <label for="dashboard-staff-earning-full" class="block text-sm font-medium text-gray-600 mb-1">Earning</label>
+        <input type="number" step="0.01" id="dashboard-staff-earning-full" class="form-input w-full p-3 border border-gray-300 rounded-lg" placeholder="e.g., 100" required>
+    </div>
+    <div>
+        <label for="dashboard-staff-tip-full" class="block text-sm font-medium text-gray-600 mb-1">Tip</label>
+        <input type="number" step="0.01" id="dashboard-staff-tip-full" class="form-input w-full p-3 border border-gray-300 rounded-lg" placeholder="e.g., 20" required>
+    </div>
+    <div>
+        <button type="submit" class="w-full bg-pink-600 text-white font-bold py-3 px-6 rounded-full hover:bg-pink-700">Add Earning</button>
+    </div>
+</form>
                         <div class="flex justify-between items-center mb-4">
                             <div id="dashboard-tech-filter-container-earning" class="tech-filter-container flex gap-2 flex-wrap"><button class="tech-filter-btn px-3 py-1 rounded-full text-sm active" data-tech="All">All</button></div>
                             <div class="flex items-center gap-2">

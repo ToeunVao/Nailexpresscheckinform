@@ -1002,56 +1002,72 @@ const getDateRange = (filter, specificDate = null) => {
         }
     };
     
-    const updateAdminDashboard = () => {
-        const filter = document.getElementById('dashboard-date-filter').value;
-        const { startDate, endDate } = getDateRange(filter);
-        if (!startDate) return;
+    // REPLACE the old updateAdminDashboard function with this one
+const updateAdminDashboard = () => {
+    const filter = document.getElementById('dashboard-date-filter').value;
+    const { startDate, endDate } = getDateRange(filter);
+    if (!startDate) return;
 
-        const filteredSalonEarnings = allSalonEarnings.filter(e => {
-            const earnDate = e.date.toDate();
-            return earnDate >= startDate && earnDate <= endDate;
+    const filteredSalonEarnings = allSalonEarnings.filter(e => {
+        const earnDate = e.date.toDate();
+        return earnDate >= startDate && earnDate <= endDate;
+    });
+
+    const filteredAppointments = allAppointments.filter(a => {
+        const apptDate = a.appointmentTimestamp.toDate();
+        return apptDate >= startDate && apptDate <= endDate;
+    });
+
+    const filteredExpenses = allExpenses.filter(ex => {
+        const expDate = ex.date.toDate();
+        return expDate >= startDate && expDate <= endDate;
+    });
+
+    // Card Calculations
+    let totalRevenue = 0;
+    let totalCash = 0;
+    const techEarnings = {};
+
+    filteredSalonEarnings.forEach(earning => {
+        let dailyTotal = 0;
+        techniciansAndStaff.forEach(tech => {
+            const techNameLower = tech.name.toLowerCase();
+            const dailyEarning = earning[techNameLower] || 0;
+            dailyTotal += dailyEarning;
+            techEarnings[tech.name] = (techEarnings[tech.name] || 0) + dailyEarning;
         });
+        dailyTotal += earning.sellGiftCard || 0;
+        const dailyCash = dailyTotal - ((earning.totalCredit || 0) + (earning.check || 0) + (earning.returnGiftCard || 0) + (earning.venmo || 0) + (earning.square || 0));
+        totalRevenue += dailyTotal;
+        totalCash += dailyCash;
+    });
 
-        const filteredAppointments = allAppointments.filter(a => {
-            const apptDate = a.appointmentTimestamp.toDate();
-            return apptDate >= startDate && apptDate <= endDate;
-        });
-        
-        let totalRevenue = 0;
-        let totalCash = 0;
-        const techEarnings = {};
+    document.getElementById('total-salon-revenue-card').textContent = `$${totalRevenue.toFixed(2)}`;
+    document.getElementById('total-salon-cash-card').textContent = `$${totalCash.toFixed(2)}`;
 
-        filteredSalonEarnings.forEach(earning => {
-            let dailyTotal = 0;
-            techniciansAndStaff.forEach(tech => {
-                const techNameLower = tech.name.toLowerCase();
-                const dailyEarning = earning[techNameLower] || 0;
-                dailyTotal += dailyEarning;
-                techEarnings[tech.name] = (techEarnings[tech.name] || 0) + dailyEarning;
-            });
-            dailyTotal += earning.sellGiftCard || 0;
-            const dailyCash = dailyTotal - ((earning.totalCredit || 0) + (earning.check || 0) + (earning.returnGiftCard || 0) + (earning.venmo || 0) + (earning.square || 0));
-            totalRevenue += dailyTotal;
-            totalCash += dailyCash;
-        });
+    const topEarningTechnician = Object.keys(techEarnings).reduce((a, b) => techEarnings[a] > techEarnings[b] ? a : b, '-');
+    document.getElementById('top-earning-technician-card').textContent = topEarningTechnician;
 
-        document.getElementById('total-salon-revenue-card').textContent = `$${totalRevenue.toFixed(2)}`;
-        document.getElementById('total-salon-cash-card').textContent = `$${totalCash.toFixed(2)}`;
+    const techBookings = filteredAppointments.reduce((acc, curr) => {
+        if (curr.technician && curr.technician !== 'Any Technician') {
+            acc[curr.technician] = (acc[curr.technician] || 0) + 1;
+        }
+        return acc;
+    }, {});
+    const topBookingTechnician = Object.keys(techBookings).reduce((a, b) => techBookings[a] > techBookings[b] ? a : b, '-');
+    document.getElementById('top-booking-technician-card').textContent = topBookingTechnician;
 
-        const topEarningTechnician = Object.keys(techEarnings).reduce((a, b) => techEarnings[a] > techEarnings[b] ? a : b, '-');
-        document.getElementById('top-earning-technician-card').textContent = topEarningTechnician;
+    // New Card Calculations
+    document.getElementById('total-appointments-card').textContent = allAppointments.length;
+    document.getElementById('total-clients-card').textContent = allClients.length;
+    document.getElementById('total-gift-card-card').textContent = allGiftCards.length;
+    const totalExpense = filteredExpenses.reduce((sum, ex) => sum + ex.amount, 0);
+    document.getElementById('total-expense-card').textContent = `$${totalExpense.toFixed(2)}`;
 
-        const techBookings = filteredAppointments.reduce((acc, curr) => {
-            if (curr.technician && curr.technician !== 'Any Technician') {
-                acc[curr.technician] = (acc[curr.technician] || 0) + 1;
-            }
-            return acc;
-        }, {});
-        const topBookingTechnician = Object.keys(techBookings).reduce((a, b) => techBookings[a] > techBookings[b] ? a : b, '-');
-        document.getElementById('top-booking-technician-card').textContent = topBookingTechnician;
-
-        updateSalonRevenueChart(filteredSalonEarnings, filter);
-    };
+    // Render Graph and Upcoming Appointments
+    updateSalonRevenueChart(filteredSalonEarnings, filter);
+    renderUpcomingAppointments('admin-upcoming-appointments-list', allAppointments);
+};
 
 // REPLACE the old updateStaffDashboard function with this one
 const updateStaffDashboard = () => {
@@ -1096,14 +1112,42 @@ const updateStaffDashboard = () => {
         const earnDate = e.date.toDate();
         return e.staffName === currentUserName && earnDate >= startDate && earnDate <= endDate;
     });
-// --- Update the live total/tip counts ---
-   // const totalMainSpan = document.getElementById('staff-dashboard-filtered-earning-total-main');
-   // const totalTipSpan = document.getElementById('staff-dashboard-filtered-earning-total-tip');
-   // if(totalMainSpan) totalMainSpan.textContent = `Total ($${totalEarning.toFixed(2)})`;
-   // if(totalTipSpan) totalTipSpan.textContent = `Tip ($${totalTip.toFixed(2)})`;
-    
     renderStaffEarningsTable(myPayoutDetails, 'staff-dashboard-earning-table', 'staff-dashboard-total-earning', 'staff-dashboard-total-tip');
 };
+
+    // ADD THIS ENTIRE NEW FUNCTION
+const renderUpcomingAppointments = (containerId, appointments, filterName = null) => {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    let filteredAppointments = appointments.filter(a => a.appointmentTimestamp.toDate() > new Date());
+
+    if (filterName) {
+        filteredAppointments = filteredAppointments.filter(a => a.technician === filterName);
+    }
+
+    if (filteredAppointments.length === 0) {
+        container.innerHTML = '<p class="text-center text-gray-500 py-4">No upcoming appointments found.</p>';
+        return;
+    }
+
+    let tableHTML = '<table class="w-full text-sm text-left text-gray-600"><tbody>';
+    filteredAppointments.sort((a, b) => a.appointmentTimestamp.seconds - b.appointmentTimestamp.seconds);
+
+    filteredAppointments.forEach(appt => {
+        tableHTML += `
+            <tr class="border-b">
+                <td class="px-4 py-3 font-medium">${appt.name}</td>
+                <td class="px-4 py-3">${new Date(appt.appointmentTimestamp.seconds * 1000).toLocaleString()}</td>
+                <td class="px-4 py-3">${appt.technician}</td>
+            </tr>
+        `;
+    });
+
+    tableHTML += '</tbody></table>';
+    container.innerHTML = tableHTML;
+};
+    
 const updateSalonRevenueChart = (data, filter) => {
     const ctx = document.getElementById('salon-revenue-chart').getContext('2d');
     if (!ctx) return;

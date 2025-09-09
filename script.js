@@ -1054,21 +1054,22 @@ const getDateRange = (filter, specificDate = null) => {
     };
 
 // REPLACE the old updateStaffDashboard function with this one
+// REPLACE the old updateStaffDashboard function with this one
 const updateStaffDashboard = () => {
     const filter = document.getElementById('staff-dashboard-date-filter').value;
     const { startDate, endDate } = getDateRange(filter);
     if (!startDate) return;
 
-    // --- Calculations based on Salon Earnings for Cards & Graph ---
-    const mySalonEarnings = allSalonEarnings.filter(e => {
+    // --- Use the 'earnings' collection, which staff can read ---
+    const myEarnings = allEarnings.filter(e => {
         const earnDate = e.date.toDate();
-        return earnDate >= startDate && earnDate <= endDate;
+        return e.staffName === currentUserName && earnDate >= startDate && earnDate <= endDate;
     });
 
-    const staffNameLower = currentUserName.toLowerCase();
+    // --- Calculate totals for the summary cards ---
     let myTotalEarning = 0;
-    mySalonEarnings.forEach(earning => {
-        myTotalEarning += earning[staffNameLower] || 0;
+    myEarnings.forEach(earning => {
+        myTotalEarning += earning.earning || 0;
     });
 
     const myTotalPayout = myTotalEarning * 0.70;
@@ -1080,15 +1081,10 @@ const updateStaffDashboard = () => {
     document.getElementById('my-cash-payout-card').textContent = `$${myCashPayout.toFixed(2)}`;
     document.getElementById('my-check-payout-card').textContent = `$${myCheckPayout.toFixed(2)}`;
 
-    updateMyEarningsChart(mySalonEarnings, filter, currentUserName);
+    updateMyEarningsChart(myEarnings, filter);
 
-    // --- Payout Details Table (from 'earnings' collection) ---
-    const myPayoutDetails = allEarnings.filter(e => {
-        const earnDate = e.date.toDate();
-        return e.staffName === currentUserName && earnDate >= startDate && earnDate <= endDate;
-    });
-
-    renderStaffEarningsTable(myPayoutDetails, 'staff-dashboard-earning-table', 'staff-dashboard-total-earning', 'staff-dashboard-total-tip');
+    // --- Render the detailed earnings table at the bottom ---
+    renderStaffEarningsTable(myEarnings, 'staff-dashboard-earning-table', 'staff-dashboard-total-earning', 'staff-dashboard-total-tip');
 };
 const updateSalonRevenueChart = (data, filter) => {
     const ctx = document.getElementById('salon-revenue-chart').getContext('2d');
@@ -1161,11 +1157,10 @@ const updateSalonRevenueChart = (data, filter) => {
     salonRevenueChart = initializeChart(salonRevenueChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
 };
 // REPLACE the old updateMyEarningsChart function with this one
-const updateMyEarningsChart = (data, filter, staffName) => {
+const updateMyEarningsChart = (data, filter) => {
     const ctx = document.getElementById('my-earnings-chart').getContext('2d');
     if (!ctx) return;
 
-    const staffNameLower = staffName.toLowerCase();
     const labels = [];
     const datasets = {
         earning: { label: 'My Earning', data: [], backgroundColor: 'rgba(219, 39, 119, 0.5)', borderColor: 'rgba(219, 39, 119, 1)' },
@@ -1187,7 +1182,7 @@ const updateMyEarningsChart = (data, filter, staffName) => {
         if (!timeData[key]) {
             timeData[key] = { earning: 0 };
         }
-        timeData[key].earning += item[staffNameLower] || 0;
+        timeData[key].earning += item.earning || 0;
     });
 
     if (filter === 'today') {

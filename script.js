@@ -1075,46 +1075,38 @@ const updateStaffDashboard = () => {
     const { startDate, endDate } = getDateRange(filter);
     if (!startDate) return;
 
-    // --- Filter the main Salon Earnings report for the selected date range ---
-    const filteredSalonEarnings = allSalonEarnings.filter(e => {
+    // --- Use the 'earnings' collection, which staff can read ---
+    const myEarnings = allEarnings.filter(e => {
         const earnDate = e.date.toDate();
-        return earnDate >= startDate && earnDate <= endDate;
+        return e.staffName === currentUserName && earnDate >= startDate && earnDate <= endDate;
     });
 
-    const staffNameLower = currentUserName.toLowerCase();
+    // --- Calculate totals for the summary cards ---
     let myTotalEarning = 0;
-
-    // 1. Calculate "My Overall Earning" from the filtered salon report
-    filteredSalonEarnings.forEach(earning => {
-        myTotalEarning += earning[staffNameLower] || 0;
+    myEarnings.forEach(earning => {
+        myTotalEarning += earning.earning || 0;
     });
 
-    // 2. Calculate "My Total Payout" (70% of Earning)
     const myTotalPayout = myTotalEarning * 0.70;
-    // 3. Calculate "My Check Payout" (70% of the Payout)
     const myCheckPayout = myTotalPayout * 0.70;
-    // 4. Calculate "My Cash Payout" (30% of the Payout)
     const myCashPayout = myTotalPayout - myCheckPayout;
 
-    // Update the summary cards with the new totals
     document.getElementById('my-earning-card').textContent = `$${myTotalEarning.toFixed(2)}`;
     document.getElementById('my-total-payout-card').textContent = `$${myTotalPayout.toFixed(2)}`;
     document.getElementById('my-cash-payout-card').textContent = `$${myCashPayout.toFixed(2)}`;
     document.getElementById('my-check-payout-card').textContent = `$${myCheckPayout.toFixed(2)}`;
 
-    // Update the graph with the same data
-    updateMyEarningsChart(filteredSalonEarnings, filter, currentUserName);
- // --- Render the detailed earnings table at the bottom ---
+    updateMyEarningsChart(myEarnings, filter);
+
+    // --- Render the detailed earnings table at the bottom ---
     const { totalEarning, totalTip } = renderStaffEarningsTable(myEarnings, 'staff-dashboard-earning-table', 'staff-dashboard-total-earning', 'staff-dashboard-total-tip');
 
-    // --- This part remains the same: it shows the detailed entry list ---
-    const myPayoutDetails = allEarnings.filter(e => {
-        const earnDate = e.date.toDate();
-        return e.staffName === currentUserName && earnDate >= startDate && earnDate <= endDate;
-    });
-    renderStaffEarningsTable(myPayoutDetails, 'staff-dashboard-earning-table', 'staff-dashboard-total-earning', 'staff-dashboard-total-tip');
+    // --- Update the live total/tip counts ---
+    const totalMainSpan = document.getElementById('staff-dashboard-filtered-earning-total-main');
+    const totalTipSpan = document.getElementById('staff-dashboard-filtered-earning-total-tip');
+    if(totalMainSpan) totalMainSpan.textContent = `Total ($${totalEarning.toFixed(2)})`;
+    if(totalTipSpan) totalTipSpan.textContent = `Tip ($${totalTip.toFixed(2)})`;
 };
-
     // ADD THIS ENTIRE NEW FUNCTION
 const renderDetailedAppointmentsList = (containerId, appointments, techFilter = 'All') => {
     const container = document.getElementById(containerId);
@@ -1237,11 +1229,10 @@ const updateSalonRevenueChart = (data, filter) => {
     salonRevenueChart = initializeChart(salonRevenueChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
 };
 // REPLACE the old updateMyEarningsChart function with this one
-const updateMyEarningsChart = (data, filter, staffName) => {
+const updateMyEarningsChart = (data, filter) => {
     const ctx = document.getElementById('my-earnings-chart').getContext('2d');
     if (!ctx) return;
 
-    const staffNameLower = staffName.toLowerCase();
     const labels = [];
     const datasets = {
         earning: { label: 'My Earning', data: [], backgroundColor: 'rgba(219, 39, 119, 0.5)', borderColor: 'rgba(219, 39, 119, 1)' },
@@ -1263,7 +1254,7 @@ const updateMyEarningsChart = (data, filter, staffName) => {
         if (!timeData[key]) {
             timeData[key] = { earning: 0 };
         }
-        timeData[key].earning += item[staffNameLower] || 0;
+        timeData[key].earning += item.earning || 0;
     });
 
     const populateDatasets = (key) => {

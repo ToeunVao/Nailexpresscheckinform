@@ -948,7 +948,7 @@ function initMainApp(userRole, userName) {
         else { chartInstance = new Chart(ctx, { type, data, options }); }
         return chartInstance;
     };
-    
+  // REPLACE the old getDateRange function with this one
 const getDateRange = (filter, specificDate = null) => {
     const now = new Date();
     let startDate, endDate = new Date(now);
@@ -1052,6 +1052,7 @@ const getDateRange = (filter, specificDate = null) => {
         updateSalonRevenueChart(filteredSalonEarnings, filter);
     };
 
+// REPLACE the old updateStaffDashboard function with this one
 const updateStaffDashboard = () => {
     const filter = document.getElementById('staff-dashboard-date-filter').value;
     const { startDate, endDate } = getDateRange(filter);
@@ -1088,7 +1089,7 @@ const updateStaffDashboard = () => {
     
     renderStaffEarningsTable(myPayoutDetails, 'staff-dashboard-earning-table', 'staff-dashboard-total-earning', 'staff-dashboard-total-tip');
 };
-
+// REPLACE the old updateSalonRevenueChart function with this one
 const updateSalonRevenueChart = (data, filter) => {
     const ctx = document.getElementById('salon-revenue-chart').getContext('2d');
     if (!ctx) return;
@@ -1761,21 +1762,22 @@ const updateMyEarningsChart = (data, filter, staffName) => {
         }
     });
 
-    onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot) => {
-        allEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
-        if (currentUserRole === 'admin') {
-            const datesToUpdate = new Set();
-            snapshot.docChanges().forEach((change) => {
-                const dateStr = getLocalDateString(change.doc.data().date.toDate());
-                datesToUpdate.add(dateStr);
-            });
-            datesToUpdate.forEach(dateStr => updateSalonEarningsForDate(dateStr));
-        }
-    
-        renderAllStaffEarnings();
-        updateDashboard();
-    });
+// REPLACE the onSnapshot listener for "earnings" with this one
+onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot) => {
+    allEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    if (currentUserRole === 'admin') {
+        const datesToUpdate = new Set();
+        snapshot.docChanges().forEach((change) => {
+            const dateStr = getLocalDateString(change.doc.data().date.toDate());
+            datesToUpdate.add(dateStr);
+        });
+        datesToUpdate.forEach(dateStr => updateSalonEarningsForDate(dateStr));
+    }
+
+    renderAllStaffEarnings();
+    updateDashboard();
+});
 
     onSnapshot(query(collection(db, "salon_earnings"), orderBy("date", "desc")), (snapshot) => {
         allSalonEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -1905,6 +1907,7 @@ const updateMyEarningsChart = (data, filter, staffName) => {
     setupTechFilter('dashboard-tech-filter-container-earning', (tech) => { currentDashboardEarningTechFilter = tech; renderAllStaffEarnings(); });
     
     
+// REPLACE the old setupReportDateFilters function with this one
 const setupReportDateFilters = (selectId, dateInputId, callback) => {
     const select = document.getElementById(selectId);
     const dateInput = document.getElementById(dateInputId);

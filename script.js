@@ -1075,33 +1075,46 @@ const updateStaffDashboard = () => {
     const { startDate, endDate } = getDateRange(filter);
     if (!startDate) return;
 
-    // --- Use the 'earnings' collection, which staff can read ---
-    const myEarnings = allEarnings.filter(e => {
+    // --- Calculations based on Salon Earnings for Cards & Graph ---
+    const mySalonEarnings = allSalonEarnings.filter(e => {
         const earnDate = e.date.toDate();
-        return e.staffName === currentUserName && earnDate >= startDate && earnDate <= endDate;
+        return earnDate >= startDate && earnDate <= endDate;
     });
 
-    // --- Calculate totals for the summary cards ---
+    const staffNameLower = currentUserName.toLowerCase();
     let myTotalEarning = 0;
-    myEarnings.forEach(earning => {
-        myTotalEarning += earning.earning || 0;
+
+    // 1. Calculate "My Overall Earning" from the filtered salon report
+    mySalonEarnings.forEach(earning => {
+        myTotalEarning += earning[staffNameLower] || 0;
     });
 
+    // 2. Calculate "My Total Payout" (70% of Earning)
     const myTotalPayout = myTotalEarning * 0.70;
+    // 3. Calculate "My Check Payout" (70% of the Payout)
     const myCheckPayout = myTotalPayout * 0.70;
+    // 4. Calculate "My Cash Payout" (30% of the Payout)
     const myCashPayout = myTotalPayout - myCheckPayout;
 
+    // Update the summary cards with the new totals
     document.getElementById('my-earning-card').textContent = `$${myTotalEarning.toFixed(2)}`;
     document.getElementById('my-total-payout-card').textContent = `$${myTotalPayout.toFixed(2)}`;
     document.getElementById('my-cash-payout-card').textContent = `$${myCashPayout.toFixed(2)}`;
     document.getElementById('my-check-payout-card').textContent = `$${myCheckPayout.toFixed(2)}`;
 
-    updateMyEarningsChart(myEarnings, filter);
+    // Update the graph with the same salon data
+    updateMyEarningsChart(mySalonEarnings, filter, currentUserName);
 
-    // --- Render the detailed earnings table at the bottom ---
-    const { totalEarning, totalTip } = renderStaffEarningsTable(myEarnings, 'staff-dashboard-earning-table', 'staff-dashboard-total-earning', 'staff-dashboard-total-tip');
+    // --- This part shows the detailed entry list from the 'earnings' collection ---
+    const myPayoutDetails = allEarnings.filter(e => {
+        const earnDate = e.date.toDate();
+        return e.staffName === currentUserName && earnDate >= startDate && earnDate <= endDate;
+    });
 
-    // --- Update the live total/tip counts ---
+    // Capture the totals from the table rendering function
+    const { totalEarning, totalTip } = renderStaffEarningsTable(myPayoutDetails, 'staff-dashboard-earning-table', 'staff-dashboard-total-earning', 'staff-dashboard-total-tip');
+
+    // Update the live count spans for the detailed table
     const totalMainSpan = document.getElementById('staff-dashboard-filtered-earning-total-main');
     const totalTipSpan = document.getElementById('staff-dashboard-filtered-earning-total-tip');
     if(totalMainSpan) totalMainSpan.textContent = `Total ($${totalEarning.toFixed(2)})`;
@@ -1229,16 +1242,17 @@ const updateSalonRevenueChart = (data, filter) => {
     salonRevenueChart = initializeChart(salonRevenueChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
 };
 // REPLACE the old updateMyEarningsChart function with this one
-const updateMyEarningsChart = (data, filter) => {
+const updateMyEarningsChart = (data, filter, staffName) => {
     const ctx = document.getElementById('my-earnings-chart').getContext('2d');
     if (!ctx) return;
 
+    const staffNameLower = staffName.toLowerCase();
     const labels = [];
     const datasets = {
         earning: { label: 'My Earning', data: [], backgroundColor: 'rgba(219, 39, 119, 0.5)', borderColor: 'rgba(219, 39, 119, 1)' },
         payout: { label: 'My Total Payout (70%)', data: [], backgroundColor: 'rgba(16, 185, 129, 0.5)', borderColor: 'rgba(16, 185, 129, 1)' },
-        cash: { label: 'My Cash Payout (30%)', data: [], backgroundColor: 'rgba(245, 158, 11, 0.5)', borderColor: 'rgba(245, 158, 11, 1)' },
-        check: { label: 'My Check Payout (70%)', data: [], backgroundColor: 'rgba(59, 130, 246, 0.5)', borderColor: 'rgba(59, 130, 246, 1)' }
+        cash: { label: 'My Cash Payout', data: [], backgroundColor: 'rgba(245, 158, 11, 0.5)', borderColor: 'rgba(245, 158, 11, 1)' },
+        check: { label: 'My Check Payout', data: [], backgroundColor: 'rgba(59, 130, 246, 0.5)', borderColor: 'rgba(59, 130, 246, 1)' }
     };
 
     const timeData = {};
@@ -1254,39 +1268,32 @@ const updateMyEarningsChart = (data, filter) => {
         if (!timeData[key]) {
             timeData[key] = { earning: 0 };
         }
-        timeData[key].earning += item.earning || 0;
+        timeData[key].earning += item[staffNameLower] || 0;
     });
 
     const populateDatasets = (key) => {
         const earning = timeData[key]?.earning || 0;
-        const payout = earning * 0.7;
+        const payout = earning * 0.70;
+        const checkPayout = payout * 0.70;
+        const cashPayout = payout - checkPayout;
+
         datasets.earning.data.push(earning);
         datasets.payout.data.push(payout);
-        datasets.cash.data.push(payout * 0.3);
-        datasets.check.data.push(payout * 0.7);
+        datasets.cash.data.push(cashPayout);
+        datasets.check.data.push(checkPayout);
     };
 
     if (filter === 'today') {
-        for (let i = 0; i < 24; i++) {
-            labels.push(`${i}:00`);
-            populateDatasets(i);
-        }
+        for (let i = 0; i < 24; i++) { labels.push(`${i}:00`); populateDatasets(i); }
     } else if (filter === 'this_week') {
         labels.push('Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat');
-        for (let i = 0; i < 7; i++) {
-            populateDatasets(i);
-        }
+        for (let i = 0; i < 7; i++) { populateDatasets(i); }
     } else if (filter === 'this_month') {
         const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
-        for (let i = 1; i <= daysInMonth; i++) {
-            labels.push(i);
-            populateDatasets(i);
-        }
+        for (let i = 1; i <= daysInMonth; i++) { labels.push(i); populateDatasets(i); }
     } else if (filter === 'this_year') {
         labels.push('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
-        for (let i = 0; i < 12; i++) {
-            populateDatasets(i);
-        }
+        for (let i = 0; i < 12; i++) { populateDatasets(i); }
     }
 
     const chartConfig = {

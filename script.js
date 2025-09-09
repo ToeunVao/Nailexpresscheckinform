@@ -1090,7 +1090,6 @@ const updateStaffDashboard = () => {
 
     renderStaffEarningsTable(myPayoutDetails, 'staff-dashboard-earning-table', 'staff-dashboard-total-earning', 'staff-dashboard-total-tip');
 };
-
 const updateSalonRevenueChart = (data, filter) => {
     const ctx = document.getElementById('salon-revenue-chart').getContext('2d');
     if (!ctx) return;
@@ -1165,9 +1164,17 @@ const updateSalonRevenueChart = (data, filter) => {
 const updateMyEarningsChart = (data, filter, staffName) => {
     const ctx = document.getElementById('my-earnings-chart').getContext('2d');
     if (!ctx) return;
-    let labels = [], chartData = [];
-    let counts = {};
+
     const staffNameLower = staffName.toLowerCase();
+    const labels = [];
+    const datasets = {
+        earning: { label: 'My Earning', data: [], backgroundColor: 'rgba(219, 39, 119, 0.5)', borderColor: 'rgba(219, 39, 119, 1)' },
+        payout: { label: 'My Total Payout (70%)', data: [], backgroundColor: 'rgba(16, 185, 129, 0.5)', borderColor: 'rgba(16, 185, 129, 1)' },
+        cash: { label: 'My Cash Payout (30%)', data: [], backgroundColor: 'rgba(245, 158, 11, 0.5)', borderColor: 'rgba(245, 158, 11, 1)' },
+        check: { label: 'My Check Payout (70%)', data: [], backgroundColor: 'rgba(59, 130, 246, 0.5)', borderColor: 'rgba(59, 130, 246, 1)' }
+    };
+
+    const timeData = {};
 
     data.forEach(item => {
         const date = item.date.toDate();
@@ -1177,25 +1184,59 @@ const updateMyEarningsChart = (data, filter, staffName) => {
         else if (filter === 'this_month') key = date.getDate();
         else if (filter === 'this_year') key = date.getMonth();
 
-        counts[key] = (counts[key] || 0) + (item[staffNameLower] || 0);
+        if (!timeData[key]) {
+            timeData[key] = { earning: 0 };
+        }
+        timeData[key].earning += item[staffNameLower] || 0;
     });
 
     if (filter === 'today') {
-        labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
-        chartData = labels.map((_, i) => counts[i] || 0);
+        for (let i = 0; i < 24; i++) {
+            labels.push(`${i}:00`);
+            const earning = timeData[i]?.earning || 0;
+            const payout = earning * 0.7;
+            datasets.earning.data.push(earning);
+            datasets.payout.data.push(payout);
+            datasets.cash.data.push(payout * 0.3);
+            datasets.check.data.push(payout * 0.7);
+        }
     } else if (filter === 'this_week') {
-        labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        chartData = labels.map((_, i) => counts[i] || 0);
+        labels.push('Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat');
+        for (let i = 0; i < 7; i++) {
+            const earning = timeData[i]?.earning || 0;
+            const payout = earning * 0.7;
+            datasets.earning.data.push(earning);
+            datasets.payout.data.push(payout);
+            datasets.cash.data.push(payout * 0.3);
+            datasets.check.data.push(payout * 0.7);
+        }
     } else if (filter === 'this_month') {
         const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
-        labels = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-        chartData = labels.map(day => counts[day] || 0);
+        for (let i = 1; i <= daysInMonth; i++) {
+            labels.push(i);
+            const earning = timeData[i]?.earning || 0;
+            const payout = earning * 0.7;
+            datasets.earning.data.push(earning);
+            datasets.payout.data.push(payout);
+            datasets.cash.data.push(payout * 0.3);
+            datasets.check.data.push(payout * 0.7);
+        }
     } else if (filter === 'this_year') {
-        labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        chartData = labels.map((_, i) => counts[i] || 0);
+        labels.push('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
+        for (let i = 0; i < 12; i++) {
+            const earning = timeData[i]?.earning || 0;
+            const payout = earning * 0.7;
+            datasets.earning.data.push(earning);
+            datasets.payout.data.push(payout);
+            datasets.cash.data.push(payout * 0.3);
+            datasets.check.data.push(payout * 0.7);
+        }
     }
 
-    const chartConfig = { labels, datasets: [{ label: 'My Earning', data: chartData, backgroundColor: 'rgba(54, 162, 235, 0.5)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 1, tension: 0.1 }] };
+    const chartConfig = {
+        labels,
+        datasets: Object.values(datasets).map(ds => ({ ...ds, borderWidth: 1, tension: 0.1 }))
+    };
     myEarningsChart = initializeChart(myEarningsChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
 };
     document.getElementById('dashboard-date-filter').addEventListener('change', updateAdminDashboard);

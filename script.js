@@ -949,49 +949,51 @@ function initMainApp(userRole, userName) {
         return chartInstance;
     };
     
-const getDateRange = (filter, specificDate = null) => {
-    const now = new Date();
-    let startDate, endDate = new Date(now);
-
-    if (filter === 'daily') {
-        const dateToUse = specificDate ? new Date(specificDate + 'T00:00:00') : now;
-        startDate = new Date(dateToUse.getFullYear(), dateToUse.getMonth(), dateToUse.getDate());
-        endDate = new Date(dateToUse.getFullYear(), dateToUse.getMonth(), dateToUse.getDate(), 23, 59, 59, 999);
+    const getDateRange = (filter, specificDate = null) => {
+        const now = new Date();
+        let startDate, endDate = new Date(now);
+    
+        if (filter === 'daily') {
+            const dateToUse = specificDate ? new Date(specificDate + 'T00:00:00') : now;
+            startDate = new Date(dateToUse.getFullYear(), dateToUse.getMonth(), dateToUse.getDate());
+            endDate = new Date(dateToUse.getFullYear(), dateToUse.getMonth(), dateToUse.getDate(), 23, 59, 59, 999);
+            return { startDate, endDate };
+        }
+    
+        switch (filter) {
+            case 'this_week':
+                const firstDayOfWeek = now.getDate() - now.getDay();
+                startDate = new Date(now.setDate(firstDayOfWeek));
+                startDate.setHours(0, 0, 0, 0);
+                endDate = new Date(startDate);
+                endDate.setDate(startDate.getDate() + 6);
+                endDate.setHours(23, 59, 59, 999);
+                break;
+            case 'this_month':
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+                break;
+            case 'this_year':
+                startDate = new Date(now.getFullYear(), 0, 1);
+                endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+                break;
+             case 'last-year':
+                const lastYear = now.getFullYear() - 1;
+                startDate = new Date(lastYear, 0, 1);
+                endDate = new Date(lastYear, 11, 31, 23, 59, 59, 999);
+                break;
+            default: // Monthly filter
+                if (!isNaN(parseInt(filter))) {
+                    const month = parseInt(filter, 10);
+                    startDate = new Date(now.getFullYear(), month, 1);
+                    endDate = new Date(now.getFullYear(), month + 1, 0, 23, 59, 59, 999);
+                }
+                break;
+        }
         return { startDate, endDate };
-    }
+    };
+    
 
-    switch (filter) {
-        case 'this_week':
-            const firstDayOfWeek = now.getDate() - now.getDay();
-            startDate = new Date(now.setDate(firstDayOfWeek));
-            startDate.setHours(0, 0, 0, 0);
-            endDate = new Date(startDate);
-            endDate.setDate(startDate.getDate() + 6);
-            endDate.setHours(23, 59, 59, 999);
-            break;
-        case 'this_month':
-            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-            endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-            break;
-        case 'this_year':
-            startDate = new Date(now.getFullYear(), 0, 1);
-            endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
-            break;
-         case 'last-year':
-            const lastYear = now.getFullYear() - 1;
-            startDate = new Date(lastYear, 0, 1);
-            endDate = new Date(lastYear, 11, 31, 23, 59, 59, 999);
-            break;
-        default: // Monthly filter
-            if (!isNaN(parseInt(filter))) {
-                const month = parseInt(filter, 10);
-                startDate = new Date(now.getFullYear(), month, 1);
-                endDate = new Date(now.getFullYear(), month + 1, 0, 23, 59, 59, 999);
-            }
-            break;
-    }
-    return { startDate, endDate };
-};
     // --- NEW DASHBOARD LOGIC ---
     const updateDashboard = () => {
         if (currentUserRole === 'admin') {
@@ -1052,150 +1054,160 @@ const getDateRange = (filter, specificDate = null) => {
         updateSalonRevenueChart(filteredSalonEarnings, filter);
     };
 
-const updateStaffDashboard = () => {
-    const filter = document.getElementById('staff-dashboard-date-filter').value;
-    const { startDate, endDate } = getDateRange(filter);
-    if (!startDate) return;
+    const updateStaffDashboard = () => {
+        const filter = document.getElementById('staff-dashboard-date-filter').value;
+        const { startDate, endDate } = getDateRange(filter);
+        if(!startDate) return;
 
-    // --- Calculations based on Salon Earnings for Cards & Graph ---
-    const mySalonEarnings = allSalonEarnings.filter(e => {
-        const earnDate = e.date.toDate();
-        return earnDate >= startDate && earnDate <= endDate;
-    });
+        // --- Calculations based on Salon Earnings for Cards & Graph ---
+        const mySalonEarnings = allSalonEarnings.filter(e => {
+            const earnDate = e.date.toDate();
+            return earnDate >= startDate && earnDate <= endDate;
+        });
 
-    const staffNameLower = currentUserName.toLowerCase();
-    let myTotalEarning = 0;
-    mySalonEarnings.forEach(earning => {
-        myTotalEarning += earning[staffNameLower] || 0;
-    });
-    
-    const myTotalPayout = myTotalEarning * 0.70;
-    const myCheckPayout = myTotalPayout * 0.70;
-    const myCashPayout = myTotalPayout - myCheckPayout;
-
-    document.getElementById('my-earning-card').textContent = `$${myTotalEarning.toFixed(2)}`;
-    document.getElementById('my-total-payout-card').textContent = `$${myTotalPayout.toFixed(2)}`;
-    document.getElementById('my-cash-payout-card').textContent = `$${myCashPayout.toFixed(2)}`;
-    document.getElementById('my-check-payout-card').textContent = `$${myCheckPayout.toFixed(2)}`;
-    
-    updateMyEarningsChart(mySalonEarnings, filter, currentUserName);
-
-    // --- Payout Details Table (from 'earnings' collection) ---
-    const myPayoutDetails = allEarnings.filter(e => {
-        const earnDate = e.date.toDate();
-        return e.staffName === currentUserName && earnDate >= startDate && earnDate <= endDate;
-    });
-    
-    renderStaffEarningsTable(myPayoutDetails, 'staff-dashboard-earning-table', 'staff-dashboard-total-earning', 'staff-dashboard-total-tip');
-};
-
-const updateSalonRevenueChart = (data, filter) => {
-    const ctx = document.getElementById('salon-revenue-chart').getContext('2d');
-    if (!ctx) return;
-    
-    let labels = [];
-    let revenueData = [];
-    let cashData = [];
-    let revenueCounts = {};
-    let cashCounts = {};
-
-    data.forEach(item => {
-        const date = item.date.toDate();
-        let key;
-        if (filter === 'today') key = date.getHours();
-        else if (filter === 'this_week') key = date.getDay();
-        else if (filter === 'this_month') key = date.getDate();
-        else if (filter === 'this_year') key = date.getMonth();
-
-        let dailyTotal = 0;
-        techniciansAndStaff.forEach(tech => { dailyTotal += item[tech.name.toLowerCase()] || 0; });
-        dailyTotal += item.sellGiftCard || 0;
-
-        const dailyCash = dailyTotal - ((item.totalCredit || 0) + (item.check || 0) + (item.returnGiftCard || 0) + (item.venmo || 0) + (item.square || 0));
-
-        revenueCounts[key] = (revenueCounts[key] || 0) + dailyTotal;
-        cashCounts[key] = (cashCounts[key] || 0) + dailyCash;
-    });
-    
-    if (filter === 'today') {
-        labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
-        revenueData = labels.map((_, i) => revenueCounts[i] || 0);
-        cashData = labels.map((_, i) => cashCounts[i] || 0);
-    } else if (filter === 'this_week') {
-        labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        revenueData = labels.map((_, i) => revenueCounts[i] || 0);
-        cashData = labels.map((_, i) => cashCounts[i] || 0);
-    } else if (filter === 'this_month') {
-         const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
-         labels = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-         revenueData = labels.map(day => revenueCounts[day] || 0);
-         cashData = labels.map(day => cashCounts[day] || 0);
-    } else if (filter === 'this_year') {
-        labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        revenueData = labels.map((_, i) => revenueCounts[i] || 0);
-        cashData = labels.map((_, i) => cashCounts[i] || 0);
-    }
-
-    const chartConfig = { 
-        labels, 
-        datasets: [
-            { 
-                label: 'Total Revenue', 
-                data: revenueData, 
-                backgroundColor: 'rgba(219, 39, 119, 0.5)', 
-                borderColor: 'rgba(219, 39, 119, 1)', 
-                borderWidth: 1, 
-                tension: 0.1 
-            },
-            { 
-                label: 'Cash Revenue', 
-                data: cashData, 
-                backgroundColor: 'rgba(16, 185, 129, 0.5)', 
-                borderColor: 'rgba(16, 185, 129, 1)', 
-                borderWidth: 1, 
-                tension: 0.1 
-            }
-        ] 
-    };
-    salonRevenueChart = initializeChart(salonRevenueChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
-};
-// ADD THIS ENTIRE NEW FUNCTION
-const updateMyEarningsChart = (data, filter, staffName) => {
-    const ctx = document.getElementById('my-earnings-chart').getContext('2d');
-    if (!ctx) return;
-    let labels = [], chartData = [];
-    let counts = {};
-    const staffNameLower = staffName.toLowerCase();
-
-    data.forEach(item => {
-        const date = item.date.toDate();
-        let key;
-        if (filter === 'today') key = date.getHours();
-        else if (filter === 'this_week') key = date.getDay();
-        else if (filter === 'this_month') key = date.getDate();
-        else if (filter === 'this_year') key = date.getMonth();
+        const staffNameLower = currentUserName.toLowerCase();
+        let myTotalEarning = 0;
+        mySalonEarnings.forEach(earning => {
+            myTotalEarning += earning[staffNameLower] || 0;
+        });
         
-        counts[key] = (counts[key] || 0) + (item[staffNameLower] || 0);
-    });
-    
-    if (filter === 'today') {
-        labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
-        chartData = labels.map((_, i) => counts[i] || 0);
-    } else if (filter === 'this_week') {
-        labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        chartData = labels.map((_, i) => counts[i] || 0);
-    } else if (filter === 'this_month') {
-        const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
-        labels = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-        chartData = labels.map(day => counts[day] || 0);
-    } else if (filter === 'this_year') {
-        labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        chartData = labels.map((_, i) => counts[i] || 0);
-    }
+        const myTotalPayout = myTotalEarning * 0.70;
+        const myCheckPayout = myTotalPayout * 0.70;
+        const myCashPayout = myTotalPayout - myCheckPayout;
 
-    const chartConfig = { labels, datasets: [{ label: 'My Earning', data: chartData, backgroundColor: 'rgba(54, 162, 235, 0.5)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 1, tension: 0.1 }] };
-    myEarningsChart = initializeChart(myEarningsChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
-};
+        document.getElementById('my-earning-card').textContent = `$${myTotalEarning.toFixed(2)}`;
+        document.getElementById('my-total-payout-card').textContent = `$${myTotalPayout.toFixed(2)}`;
+        document.getElementById('my-cash-payout-card').textContent = `$${myCashPayout.toFixed(2)}`;
+        document.getElementById('my-check-payout-card').textContent = `$${myCheckPayout.toFixed(2)}`;
+        
+        updateMyEarningsChart(mySalonEarnings, filter, currentUserName);
+
+        // --- Payout Details Table (from 'earnings' collection) ---
+        const myPayoutDetails = allEarnings.filter(e => {
+            const earnDate = e.date.toDate();
+            return e.staffName === currentUserName && earnDate >= startDate && earnDate <= endDate;
+        });
+        
+        const {totalEarning, totalTip} = renderStaffEarningsTable(myPayoutDetails, 'staff-dashboard-earning-table', 'staff-dashboard-total-earning', 'staff-dashboard-total-tip');
+
+        const totalMainSpan = document.getElementById('staff-dashboard-filtered-earning-total-main');
+        const totalTipSpan = document.getElementById('staff-dashboard-filtered-earning-total-tip');
+        if(totalMainSpan) totalMainSpan.textContent = `Total ($${totalEarning.toFixed(2)})`;
+        if(totalTipSpan) totalTipSpan.textContent = `Tip ($${totalTip.toFixed(2)})`;
+    };
+
+
+    const updateSalonRevenueChart = (data, filter) => {
+        const ctx = document.getElementById('salon-revenue-chart').getContext('2d');
+        if (!ctx) return;
+        
+        let labels = [];
+        let revenueData = [];
+        let cashData = [];
+        let revenueCounts = {};
+        let cashCounts = {};
+    
+        data.forEach(item => {
+            const date = item.date.toDate();
+            let key;
+            if (filter === 'today') key = date.getHours();
+            else if (filter === 'this_week') key = date.getDay();
+            else if (filter === 'this_month') key = date.getDate();
+            else if (filter === 'this_year') key = date.getMonth();
+    
+            let dailyTotal = 0;
+            techniciansAndStaff.forEach(tech => { dailyTotal += item[tech.name.toLowerCase()] || 0; });
+            dailyTotal += item.sellGiftCard || 0;
+    
+            const dailyCash = dailyTotal - ((item.totalCredit || 0) + (item.check || 0) + (item.returnGiftCard || 0) + (item.venmo || 0) + (item.square || 0));
+    
+            revenueCounts[key] = (revenueCounts[key] || 0) + dailyTotal;
+            cashCounts[key] = (cashCounts[key] || 0) + dailyCash;
+        });
+        
+        if (filter === 'today') {
+            labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+            revenueData = labels.map((_, i) => revenueCounts[i] || 0);
+            cashData = labels.map((_, i) => cashCounts[i] || 0);
+        } else if (filter === 'this_week') {
+            labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            revenueData = labels.map((_, i) => revenueCounts[i] || 0);
+            cashData = labels.map((_, i) => cashCounts[i] || 0);
+        } else if (filter === 'this_month') {
+             const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+             labels = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+             revenueData = labels.map(day => revenueCounts[day] || 0);
+             cashData = labels.map(day => cashCounts[day] || 0);
+        } else if (filter === 'this_year') {
+            labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            revenueData = labels.map((_, i) => revenueCounts[i] || 0);
+            cashData = labels.map((_, i) => cashCounts[i] || 0);
+        }
+    
+        const chartConfig = { 
+            labels, 
+            datasets: [
+                { 
+                    label: 'Total Revenue', 
+                    data: revenueData, 
+                    backgroundColor: 'rgba(219, 39, 119, 0.5)', 
+                    borderColor: 'rgba(219, 39, 119, 1)', 
+                    borderWidth: 1, 
+                    tension: 0.1 
+                },
+                { 
+                    label: 'Cash Revenue', 
+                    data: cashData, 
+                    backgroundColor: 'rgba(16, 185, 129, 0.5)', 
+                    borderColor: 'rgba(16, 185, 129, 1)', 
+                    borderWidth: 1, 
+                    tension: 0.1 
+                }
+            ] 
+        };
+        salonRevenueChart = initializeChart(salonRevenueChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
+    };
+
+    const updateMyEarningsChart = (data, filter, staffName) => {
+        const ctx = document.getElementById('my-earnings-chart').getContext('2d');
+        if (!ctx) return;
+        let labels = [], chartData = [];
+        let counts = {};
+        const staffNameLower = staffName.toLowerCase();
+    
+        data.forEach(item => {
+            const date = item.date.toDate();
+            let key;
+            if (filter === 'today') key = date.getHours();
+            else if (filter === 'this_week') key = date.getDay();
+            else if (filter === 'this_month') key = date.getDate();
+            else if (filter === 'this_year') key = date.getMonth();
+            
+            counts[key] = (counts[key] || 0) + (item[staffNameLower] || 0);
+        });
+        
+        if (filter === 'today') {
+            labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+            chartData = labels.map((_, i) => counts[i] || 0);
+        } else if (filter === 'this_week') {
+            labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            chartData = labels.map((_, i) => counts[i] || 0);
+        } else if (filter === 'this_month') {
+            const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+            labels = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+            chartData = labels.map(day => counts[day] || 0);
+        } else if (filter === 'this_year') {
+            labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            chartData = labels.map((_, i) => counts[i] || 0);
+        }
+    
+        const chartConfig = { labels, datasets: [{ label: 'My Earning', data: chartData, backgroundColor: 'rgba(54, 162, 235, 0.5)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 1, tension: 0.1 }] };
+        myEarningsChart = initializeChart(myEarningsChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
+    };
+
+    document.getElementById('dashboard-date-filter').addEventListener('change', updateAdminDashboard);
+    document.getElementById('staff-dashboard-date-filter').addEventListener('change', updateStaffDashboard);
+    
     // END NEW DASHBOARD LOGIC
 
     const loadAndRenderServices = async () => {
@@ -1356,7 +1368,7 @@ const updateMyEarningsChart = (data, filter, staffName) => {
 
     const renderStaffEarningsTable = (earnings, tableId, totalEarningId, totalTipId) => {
         const tbody = document.querySelector(`#${tableId} tbody`);
-        if (!tbody) return;
+        if (!tbody) return { totalEarning: 0, totalTip: 0 };
         
         const colspan = userRole === 'admin' ? 5 : 4;
         tbody.innerHTML = earnings.length === 0 ? `<tr><td colspan="${colspan}" class="py-6 text-center text-gray-400">No earnings found.</td></tr>` : '';
@@ -1763,7 +1775,6 @@ const updateMyEarningsChart = (data, filter, staffName) => {
 
     onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot) => {
         allEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
         if (currentUserRole === 'admin') {
             const datesToUpdate = new Set();
             snapshot.docChanges().forEach((change) => {
@@ -1772,7 +1783,6 @@ const updateMyEarningsChart = (data, filter, staffName) => {
             });
             datesToUpdate.forEach(dateStr => updateSalonEarningsForDate(dateStr));
         }
-    
         renderAllStaffEarnings();
         updateDashboard();
     });
@@ -1905,23 +1915,23 @@ const updateMyEarningsChart = (data, filter, staffName) => {
     setupTechFilter('dashboard-tech-filter-container-earning', (tech) => { currentDashboardEarningTechFilter = tech; renderAllStaffEarnings(); });
     
     
-const setupReportDateFilters = (selectId, dateInputId, callback) => {
-    const select = document.getElementById(selectId);
-    const dateInput = document.getElementById(dateInputId);
-    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-    select.innerHTML = `<option value="daily">Daily</option>`;
-    months.forEach((month, index) => { select.innerHTML += `<option value="${index}">${month}</option>`; });
-    select.innerHTML += `<option value="this-year">This Year</option><option value="last-year">Last Year</option>`;
-    
-    select.addEventListener('change', (e) => { 
-        const range = e.target.value; 
-        dateInput.style.display = range === 'daily' ? 'block' : 'none'; 
-        callback(dateInput.value, range); 
-    });
-    dateInput.addEventListener('input', (e) => { 
-        callback(e.target.value, select.value); 
-    });
-};
+    const setupReportDateFilters = (selectId, dateInputId, callback) => {
+        const select = document.getElementById(selectId);
+        const dateInput = document.getElementById(dateInputId);
+        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        select.innerHTML = `<option value="daily">Daily</option>`;
+        months.forEach((month, index) => { select.innerHTML += `<option value="${index}">${month}</option>`; });
+        select.innerHTML += `<option value="this-year">This Year</option><option value="last-year">Last Year</option>`;
+        
+        select.addEventListener('change', (e) => { 
+            const range = e.target.value; 
+            dateInput.style.display = range === 'daily' ? 'block' : 'none'; 
+            callback(dateInput.value, range); 
+        });
+        dateInput.addEventListener('input', (e) => { 
+            callback(e.target.value, select.value); 
+        });
+    };
 
     setupReportDateFilters('earning-range-filter', 'earning-date-filter', (date, range) => { currentEarningDateFilter = date; currentEarningRangeFilter = range; renderAllStaffEarnings(); });
     setupReportDateFilters('dashboard-earning-range-filter', 'dashboard-earning-date-filter', (date, range) => { currentDashboardEarningDateFilter = date; currentDashboardEarningRangeFilter = range; renderAllStaffEarnings(); });
@@ -1942,19 +1952,19 @@ const setupReportDateFilters = (selectId, dateInputId, callback) => {
         } catch (err) { console.error("Error adding earning: ", err); alert("Could not add earning."); }
     });
 
+    const staffEarningTables = ['staff-earning-table', 'dashboard-staff-earning-table-full'];
+    staffEarningTables.forEach(tableId => {
+        const table = document.getElementById(tableId);
+        if (table) {
+            table.addEventListener('click', async (e) => {
+                const deleteBtn = e.target.closest('.delete-earning-btn');
+                const editBtn = e.target.closest('.edit-earning-btn');
+                if(deleteBtn) { showConfirmModal("Delete this earning entry?", async () => { await deleteDoc(doc(db, "earnings", deleteBtn.dataset.id)); }); } 
+                else if (editBtn) { const earning = allEarnings.find(e => e.id === editBtn.dataset.id); if (earning) { openEditEarningModal(earning); } }
+            });
+        }
+    });
 
-    document.getElementById('staff-earning-table').addEventListener('click', async (e) => {
-        const deleteBtn = e.target.closest('.delete-earning-btn');
-        const editBtn = e.target.closest('.edit-earning-btn');
-        if(deleteBtn) { showConfirmModal("Delete this earning entry?", async () => { await deleteDoc(doc(db, "earnings", deleteBtn.dataset.id)); }); } 
-        else if (editBtn) { const earning = allEarnings.find(e => e.id === editBtn.dataset.id); if (earning) { openEditEarningModal(earning); } }
-    });
-     document.getElementById('dashboard-staff-earning-table-full').addEventListener('click', async (e) => {
-        const deleteBtn = e.target.closest('.delete-earning-btn');
-        const editBtn = e.target.closest('.edit-earning-btn');
-        if(deleteBtn) { showConfirmModal("Delete this earning entry?", async () => { await deleteDoc(doc(db, "earnings", deleteBtn.dataset.id)); }); } 
-        else if (editBtn) { const earning = allEarnings.find(e => e.id === editBtn.dataset.id); if (earning) { openEditEarningModal(earning); } }
-    });
 
     document.getElementById('salon-earning-form').addEventListener('submit', async (e) => {
         e.preventDefault();

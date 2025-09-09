@@ -949,11 +949,12 @@ function initMainApp(userRole, userName) {
         return chartInstance;
     };
     
+// REPLACE the old getDateRange function with this one
 const getDateRange = (filter, specificDate = null) => {
     const now = new Date();
     let startDate, endDate = new Date(now);
 
-    if (filter === 'daily') {
+    if (filter === 'daily' || filter === 'today') {
         const dateToUse = specificDate ? new Date(specificDate + 'T00:00:00') : now;
         startDate = new Date(dateToUse.getFullYear(), dateToUse.getMonth(), dateToUse.getDate());
         endDate = new Date(dateToUse.getFullYear(), dateToUse.getMonth(), dateToUse.getDate(), 23, 59, 59, 999);
@@ -1052,10 +1053,11 @@ const getDateRange = (filter, specificDate = null) => {
         updateSalonRevenueChart(filteredSalonEarnings, filter);
     };
 
+// REPLACE the old updateStaffDashboard function with this one
 const updateStaffDashboard = () => {
     const filter = document.getElementById('staff-dashboard-date-filter').value;
     const { startDate, endDate } = getDateRange(filter);
-    if(!startDate) return;
+    if (!startDate) return;
 
     // --- Calculations based on Salon Earnings for Cards & Graph ---
     const mySalonEarnings = allSalonEarnings.filter(e => {
@@ -1068,7 +1070,7 @@ const updateStaffDashboard = () => {
     mySalonEarnings.forEach(earning => {
         myTotalEarning += earning[staffNameLower] || 0;
     });
-    
+
     const myTotalPayout = myTotalEarning * 0.70;
     const myCheckPayout = myTotalPayout * 0.70;
     const myCashPayout = myTotalPayout - myCheckPayout;
@@ -1077,7 +1079,7 @@ const updateStaffDashboard = () => {
     document.getElementById('my-total-payout-card').textContent = `$${myTotalPayout.toFixed(2)}`;
     document.getElementById('my-cash-payout-card').textContent = `$${myCashPayout.toFixed(2)}`;
     document.getElementById('my-check-payout-card').textContent = `$${myCheckPayout.toFixed(2)}`;
-    
+
     updateMyEarningsChart(mySalonEarnings, filter, currentUserName);
 
     // --- Payout Details Table (from 'earnings' collection) ---
@@ -1085,7 +1087,7 @@ const updateStaffDashboard = () => {
         const earnDate = e.date.toDate();
         return e.staffName === currentUserName && earnDate >= startDate && earnDate <= endDate;
     });
-    
+
     renderStaffEarningsTable(myPayoutDetails, 'staff-dashboard-earning-table', 'staff-dashboard-total-earning', 'staff-dashboard-total-tip');
 };
 
@@ -1159,7 +1161,7 @@ const updateSalonRevenueChart = (data, filter) => {
     };
     salonRevenueChart = initializeChart(salonRevenueChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
 };
-// ADD THIS ENTIRE NEW FUNCTION
+// REPLACE the old updateMyEarningsChart function with this one
 const updateMyEarningsChart = (data, filter, staffName) => {
     const ctx = document.getElementById('my-earnings-chart').getContext('2d');
     if (!ctx) return;
@@ -1174,10 +1176,10 @@ const updateMyEarningsChart = (data, filter, staffName) => {
         else if (filter === 'this_week') key = date.getDay();
         else if (filter === 'this_month') key = date.getDate();
         else if (filter === 'this_year') key = date.getMonth();
-        
+
         counts[key] = (counts[key] || 0) + (item[staffNameLower] || 0);
     });
-    
+
     if (filter === 'today') {
         labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
         chartData = labels.map((_, i) => counts[i] || 0);

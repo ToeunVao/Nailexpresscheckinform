@@ -785,7 +785,7 @@ function initMainApp(userRole, userName) {
         staffDashboardView.classList.remove('hidden');
         const welcomeHeading = document.getElementById('staff-welcome-heading');
         if (welcomeHeading) {
-            welcomeHeading.textContent = `Welcome, ${userName}!`;
+            welcomeHeading.textContent = `My Earning Details`;
         }
     }
 
@@ -948,7 +948,7 @@ function initMainApp(userRole, userName) {
         else { chartInstance = new Chart(ctx, { type, data, options }); }
         return chartInstance;
     };
-  // REPLACE the old getDateRange function with this one
+    
 const getDateRange = (filter, specificDate = null) => {
     const now = new Date();
     let startDate, endDate = new Date(now);
@@ -1052,11 +1052,10 @@ const getDateRange = (filter, specificDate = null) => {
         updateSalonRevenueChart(filteredSalonEarnings, filter);
     };
 
-// REPLACE the old updateStaffDashboard function with this one
 const updateStaffDashboard = () => {
     const filter = document.getElementById('staff-dashboard-date-filter').value;
     const { startDate, endDate } = getDateRange(filter);
-    if (!startDate) return;
+    if(!startDate) return;
 
     // --- Calculations based on Salon Earnings for Cards & Graph ---
     const mySalonEarnings = allSalonEarnings.filter(e => {
@@ -1089,7 +1088,7 @@ const updateStaffDashboard = () => {
     
     renderStaffEarningsTable(myPayoutDetails, 'staff-dashboard-earning-table', 'staff-dashboard-total-earning', 'staff-dashboard-total-tip');
 };
-// REPLACE the old updateSalonRevenueChart function with this one
+
 const updateSalonRevenueChart = (data, filter) => {
     const ctx = document.getElementById('salon-revenue-chart').getContext('2d');
     if (!ctx) return;
@@ -1197,6 +1196,9 @@ const updateMyEarningsChart = (data, filter, staffName) => {
     const chartConfig = { labels, datasets: [{ label: 'My Earning', data: chartData, backgroundColor: 'rgba(54, 162, 235, 0.5)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 1, tension: 0.1 }] };
     myEarningsChart = initializeChart(myEarningsChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
 };
+    document.getElementById('dashboard-date-filter').addEventListener('change', updateAdminDashboard);
+    document.getElementById('staff-dashboard-date-filter').addEventListener('change', updateStaffDashboard);
+    
     // END NEW DASHBOARD LOGIC
 
     const loadAndRenderServices = async () => {
@@ -1710,31 +1712,7 @@ const updateMyEarningsChart = (data, filter, staffName) => {
     });
     document.getElementById('checkout-cancel-btn').addEventListener('click', closeCheckoutModal);
     document.querySelector('.checkout-modal-overlay').addEventListener('click', closeCheckoutModal);
-	
-const updateSalonEarningsForDate = async (dateStr) => {
-    const date = new Date(dateStr + 'T00:00:00');
-    const startOfDay = Timestamp.fromDate(date);
-    const endOfDay = Timestamp.fromDate(new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999));
 
-    const q = query(collection(db, "earnings"), where("date", ">=", startOfDay), where("date", "<=", endOfDay));
-    const querySnapshot = await getDocs(q);
-
-    const dailyStaffTotals = {};
-    querySnapshot.forEach(doc => {
-        const earningData = doc.data();
-        dailyStaffTotals[earningData.staffName] = (dailyStaffTotals[earningData.staffName] || 0) + earningData.earning;
-    });
-
-    const salonEarningUpdate = {};
-    techniciansAndStaff.forEach(tech => {
-        const staffName = tech.name;
-        const total = dailyStaffTotals[staffName] || 0;
-        salonEarningUpdate[staffName.toLowerCase()] = total;
-    });
-
-    const salonEarningDocRef = doc(db, "salon_earnings", dateStr);
-    await setDoc(salonEarningDocRef, salonEarningUpdate, { merge: true });
-};
     onSnapshot(query(collection(db, "active_queue"), orderBy("checkInTimestamp", "asc")), (snapshot) => {
          allActiveClients = snapshot.docs.map(doc => ({ id: doc.id, checkInTime: doc.data().checkInTimestamp ? new Date(doc.data().checkInTimestamp.seconds * 1000).toLocaleString() : 'Pending...', services: (doc.data().services || []).join(', '), ...doc.data() }));
         const waitingClients = allActiveClients.filter(c => c.status === 'waiting');
@@ -1786,22 +1764,21 @@ const updateSalonEarningsForDate = async (dateStr) => {
         }
     });
 
-// REPLACE the onSnapshot listener for "earnings" with this one
-onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot) => {
-    allEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-    if (currentUserRole === 'admin') {
-        const datesToUpdate = new Set();
-        snapshot.docChanges().forEach((change) => {
-            const dateStr = getLocalDateString(change.doc.data().date.toDate());
-            datesToUpdate.add(dateStr);
-        });
-        datesToUpdate.forEach(dateStr => updateSalonEarningsForDate(dateStr));
-    }
-
-    renderAllStaffEarnings();
-    updateDashboard();
-});
+    onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot) => {
+        allEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+        if (currentUserRole === 'admin') {
+            const datesToUpdate = new Set();
+            snapshot.docChanges().forEach((change) => {
+                const dateStr = getLocalDateString(change.doc.data().date.toDate());
+                datesToUpdate.add(dateStr);
+            });
+            datesToUpdate.forEach(dateStr => updateSalonEarningsForDate(dateStr));
+        }
+    
+        renderAllStaffEarnings();
+        updateDashboard();
+    });
 
     onSnapshot(query(collection(db, "salon_earnings"), orderBy("date", "desc")), (snapshot) => {
         allSalonEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -1931,7 +1908,6 @@ onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot
     setupTechFilter('dashboard-tech-filter-container-earning', (tech) => { currentDashboardEarningTechFilter = tech; renderAllStaffEarnings(); });
     
     
-// REPLACE the old setupReportDateFilters function with this one
 const setupReportDateFilters = (selectId, dateInputId, callback) => {
     const select = document.getElementById(selectId);
     const dateInput = document.getElementById(dateInputId);

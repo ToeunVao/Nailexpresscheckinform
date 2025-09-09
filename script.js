@@ -1097,10 +1097,10 @@ const updateStaffDashboard = () => {
         return e.staffName === currentUserName && earnDate >= startDate && earnDate <= endDate;
     });
 // --- Update the live total/tip counts ---
-    const totalMainSpan = document.getElementById('staff-dashboard-filtered-earning-total-main');
-    const totalTipSpan = document.getElementById('staff-dashboard-filtered-earning-total-tip');
-    if(totalMainSpan) totalMainSpan.textContent = `Total ($${totalEarning.toFixed(2)})`;
-    if(totalTipSpan) totalTipSpan.textContent = `Tip ($${totalTip.toFixed(2)})`;
+   // const totalMainSpan = document.getElementById('staff-dashboard-filtered-earning-total-main');
+   // const totalTipSpan = document.getElementById('staff-dashboard-filtered-earning-total-tip');
+   // if(totalMainSpan) totalMainSpan.textContent = `Total ($${totalEarning.toFixed(2)})`;
+   // if(totalTipSpan) totalTipSpan.textContent = `Tip ($${totalTip.toFixed(2)})`;
     
     renderStaffEarningsTable(myPayoutDetails, 'staff-dashboard-earning-table', 'staff-dashboard-total-earning', 'staff-dashboard-total-tip');
 };

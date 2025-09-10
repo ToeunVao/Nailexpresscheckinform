@@ -1193,21 +1193,29 @@
                                 </div>
                                
                                 <!-- Existing Cards Table -->
-</div> <!-- <<< ADD THIS CLOSING TAG HERE -->
-
-<div class="mt-8"> <!-- This is the start of the Existing Cards table -->
-                                    <h4 class="text-lg font-semibold text-gray-700 mb-2">Existing Gift Cards</h4>
-                                    <div class="overflow-x-auto">
-                                        <table id="gift-cards-table-admin" class="w-full text-sm text-left text-gray-600">
-                                            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                                                <tr><th class="px-6 py-3">Date</th><th class="px-6 py-3">Code</th><th class="px-6 py-3">Balance</th><th class="px-6 py-3">Recipient</th><th class="px-6 py-3 text-center">Action</th></tr>
-                                            </thead>
-                                            <tbody></tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+</div> <!-- <<< ADD THIS CLOSING TAG HERE --><!-- REPLACE the old "Existing Gift Cards" section with this new one -->
+<div class="mt-8">
+    <h4 class="text-lg font-semibold text-gray-700 mb-2">Existing Gift Cards</h4>
+    <div class="overflow-x-auto">
+        <table id="gift-cards-table-admin" class="w-full text-sm text-left text-gray-600">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-6 py-3">Date</th>
+                    <th scope="col" class="px-6 py-3">Code</th>
+                    <th scope="col" class="px-6 py-3">Initial</th>
+                    <th scope="col" class="px-6 py-3">Balance</th>
+                    <th scope="col" class="px-6 py-3">Recipient</th>
+                    <th scope="col" class="px-6 py-3">Sender</th>
+                    <th scope="col" class="px-6 py-3">Status</th>
+                    <th scope="col" class="px-6 py-3 text-center">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- JS will populate this -->
+            </tbody>
+        </table>
+    </div>
+</div>
                         <!-- Promotions Management Content -->
                         <div id="promotions-management-content" class="sub-tab-content hidden">
                             <h3 class="text-xl font-semibold text-gray-700 mb-4">Manage Promotions</h3>

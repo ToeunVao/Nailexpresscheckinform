@@ -2206,31 +2206,47 @@ document.getElementById('dashboard-staff-earning-form-full').addEventListener('s
         setTimeout(() => { printWindow.print(); printWindow.close(); }, 250);
     });
 
-    const openEditEarningModal = (earning) => {
-        editEarningForm.reset();
-        document.getElementById('edit-earning-id').value = earning.id;
-        document.getElementById('edit-staff-earning-date').value = new Date(earning.date.seconds * 1000).toISOString().split('T')[0];
-        document.getElementById('edit-staff-name').value = earning.staffName;
-        document.getElementById('edit-staff-earning').value = earning.earning;
-        document.getElementById('edit-staff-tip').value = earning.tip;
-        editEarningModal.classList.remove('hidden'); editEarningModal.classList.add('flex');
-    };
+// REPLACE the old openEditEarningModal function with this one
+const openEditEarningModal = (earning) => {
+    editEarningForm.reset();
+    document.getElementById('edit-earning-id').value = earning.id;
+    document.getElementById('edit-staff-earning-date').value = new Date(earning.date.seconds * 1000).toISOString().split('T')[0];
+    document.getElementById('edit-staff-name').value = earning.staffName;
+    document.getElementById('edit-staff-earning-service').value = earning.service || ''; // Populate service
+    document.getElementById('edit-staff-earning').value = earning.earning;
+    document.getElementById('edit-staff-tip').value = earning.tip;
+
+    // Populate the service datalist for autocomplete
+    const serviceList = document.getElementById('edit-staff-earning-services-list');
+    if (serviceList) {
+        serviceList.innerHTML = Object.keys(servicesData).flatMap(category => 
+            servicesData[category].map(service => `<option value="${service.name}"></option>`)
+        ).join('');
+    }
+
+    editEarningModal.classList.remove('hidden'); 
+    editEarningModal.classList.add('flex');
+};
     const closeEditEarningModal = () => { editEarningModal.classList.add('hidden'); editEarningModal.classList.remove('flex'); };
     document.getElementById('edit-earning-cancel-btn').addEventListener('click', closeEditEarningModal);
     document.querySelector('.edit-earning-modal-overlay').addEventListener('click', closeEditEarningModal);
 
-    editEarningForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const earningId = document.getElementById('edit-earning-id').value;
-        if (!earningId) return;
-        try {
-            await updateDoc(doc(db, "earnings", earningId), {
-                staffName: document.getElementById('edit-staff-name').value, earning: parseFloat(document.getElementById('edit-staff-earning').value),
-                tip: parseFloat(document.getElementById('edit-staff-tip').value), date: Timestamp.fromDate(new Date(document.getElementById('edit-staff-earning-date').value + 'T12:00:00'))
-            });
-            closeEditEarningModal();
-        } catch(err) { console.error("Error updating earning:", err); alert("Could not update earning."); }
-    });
+// REPLACE the old editEarningForm submit listener with this one
+editEarningForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const earningId = document.getElementById('edit-earning-id').value;
+    if (!earningId) return;
+    try {
+        await updateDoc(doc(db, "earnings", earningId), {
+            staffName: document.getElementById('edit-staff-name').value,
+            service: document.getElementById('edit-staff-earning-service').value, // Save the service
+            earning: parseFloat(document.getElementById('edit-staff-earning').value),
+            tip: parseFloat(document.getElementById('edit-staff-tip').value), 
+            date: Timestamp.fromDate(new Date(document.getElementById('edit-staff-earning-date').value + 'T12:00:00'))
+        });
+        closeEditEarningModal();
+    } catch(err) { console.error("Error updating earning:", err); alert("Could not update earning."); }
+});
 
     const openEditSalonEarningModal = (earning) => {
         editSalonEarningForm.reset();

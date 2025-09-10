@@ -1077,7 +1077,7 @@ const updateStaffDashboard = () => {
     const { startDate, endDate } = getDateRange(filter);
     if (!startDate) return;
 
-    // --- Calculations based on Salon Earnings for Cards & Graph ---
+    // --- Calculations for Cards & Graph (This part remains the same) ---
     const mySalonEarnings = allSalonEarnings.filter(e => {
         const earnDate = e.date.toDate();
         return earnDate >= startDate && earnDate <= endDate;
@@ -1085,38 +1085,45 @@ const updateStaffDashboard = () => {
 
     const staffNameLower = currentUserName.toLowerCase();
     let myTotalEarning = 0;
-
-    // 1. Calculate "My Overall Earning" from the filtered salon report
     mySalonEarnings.forEach(earning => {
         myTotalEarning += earning[staffNameLower] || 0;
     });
 
-    // 2. Calculate "My Total Payout" (70% of Earning)
     const myTotalPayout = myTotalEarning * 0.70;
-    // 3. Calculate "My Check Payout" (70% of the Payout)
     const myCheckPayout = myTotalPayout * 0.70;
-    // 4. Calculate "My Cash Payout" (30% of the Payout)
     const myCashPayout = myTotalPayout - myCheckPayout;
 
-    // Update the summary cards with the new totals
     document.getElementById('my-earning-card').textContent = `$${myTotalEarning.toFixed(2)}`;
     document.getElementById('my-total-payout-card').textContent = `$${myTotalPayout.toFixed(2)}`;
     document.getElementById('my-cash-payout-card').textContent = `$${myCashPayout.toFixed(2)}`;
     document.getElementById('my-check-payout-card').textContent = `$${myCheckPayout.toFixed(2)}`;
 
-    // Update the graph with the same salon data
     updateMyEarningsChart(mySalonEarnings, filter, currentUserName);
 
-    // --- This part shows the detailed entry list from the 'earnings' collection ---
-    const myPayoutDetails = allEarnings.filter(e => {
-        const earnDate = e.date.toDate();
-        return e.staffName === currentUserName && earnDate >= startDate && earnDate <= endDate;
-    });
+    // --- NEW: Logic for the Earning Details Table ---
+    const detailsDateFilter = document.getElementById('staff-details-date-filter').value;
+    let myPayoutDetails = allEarnings.filter(e => e.staffName === currentUserName);
 
-    // Capture the totals from the table rendering function
+    // If a specific date is chosen in the new filter, use it
+    if (detailsDateFilter) {
+        const specificDate = new Date(detailsDateFilter + 'T00:00:00');
+        const startOfDay = new Date(specificDate.getFullYear(), specificDate.getMonth(), specificDate.getDate());
+        const endOfDay = new Date(specificDate.getFullYear(), specificDate.getMonth(), specificDate.getDate(), 23, 59, 59, 999);
+        myPayoutDetails = myPayoutDetails.filter(e => {
+            const earnDate = e.date.toDate();
+            return earnDate >= startOfDay && earnDate <= endOfDay;
+        });
+    }
+
+    // Update the title with the client count
+    const clientCount = myPayoutDetails.length;
+    const detailsTitle = document.getElementById('staff-details-title');
+    if (detailsTitle) {
+        detailsTitle.textContent = `My Earning Details (${clientCount} Client${clientCount === 1 ? '' : 's'})`;
+    }
+
+    // Render the table and update its live totals
     const { totalEarning, totalTip } = renderStaffEarningsTable(myPayoutDetails, 'staff-dashboard-earning-table', 'staff-dashboard-total-earning', 'staff-dashboard-total-tip');
-
-    // Update the live count spans for the detailed table
     const totalMainSpan = document.getElementById('staff-dashboard-filtered-earning-total-main');
     const totalTipSpan = document.getElementById('staff-dashboard-filtered-earning-total-tip');
     if(totalMainSpan) totalMainSpan.textContent = `Total ($${totalEarning.toFixed(2)})`;
@@ -2336,7 +2343,9 @@ const renderAllBookingsList = () => {
     document.querySelector('.gemini-sms-modal-overlay').addEventListener('click', () => { geminiSmsModal.classList.add('hidden'); geminiSmsModal.classList.remove('flex'); });
     
     document.getElementById('floating-booking-btn').addEventListener('click', () => { openAddAppointmentModal(getLocalDateString()); });
-
+// ADD THIS NEW LINE
+document.getElementById('staff-details-date-filter').addEventListener('change', updateStaffDashboard);
+    
     const addUserForm = document.getElementById('add-user-form');
     const usersTableBody = document.querySelector('#users-table tbody');
     const renderUsers = (users) => {

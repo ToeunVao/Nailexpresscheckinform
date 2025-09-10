@@ -1025,6 +1025,11 @@ const updateAdminDashboard = () => {
         return expDate >= startDate && expDate <= endDate;
     });
 
+    const filteredGiftCards = allGiftCards.filter(gc => {
+        const gcDate = gc.createdAt.toDate();
+        return gcDate >= startDate && gcDate <= endDate;
+    });
+
     // Card Calculations
     let totalRevenue = 0;
     let totalCash = 0;
@@ -1062,7 +1067,10 @@ const updateAdminDashboard = () => {
     // New Card Calculations
     document.getElementById('total-appointments-card').textContent = allAppointments.length;
     document.getElementById('total-clients-card').textContent = allClients.length;
-    document.getElementById('total-gift-card-card').textContent = allGiftCards.length;
+
+    const totalGiftCardValue = filteredGiftCards.reduce((sum, gc) => sum + gc.amount, 0);
+    document.getElementById('total-gift-card-card').textContent = `$${totalGiftCardValue.toFixed(2)}`;
+
     const totalExpense = filteredExpenses.reduce((sum, ex) => sum + ex.amount, 0);
     document.getElementById('total-expense-card').textContent = `$${totalExpense.toFixed(2)}`;
 

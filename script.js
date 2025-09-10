@@ -936,7 +936,18 @@ function initMainApp(userRole, userName) {
     let aggregatedClients = [], allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [], allInventoryUsage = [], allGiftCards = [], allPromotions = [];
     let techniciansAndStaff = [], technicians = [];
     let allExpenseCategories = [], allPaymentAccounts = [], allSuppliers = [];
-
+// ADD THIS ENTIRE NEW BLOCK for the lightbox
+const nailIdeaLightbox = document.getElementById('nail-idea-lightbox');
+const lightboxCloseBtn = document.getElementById('lightbox-close-btn');
+const lightboxPrevBtn = document.getElementById('lightbox-prev-btn');
+const lightboxNextBtn = document.getElementById('lightbox-next-btn');
+const lightboxImage = document.getElementById('lightbox-image');
+const lightboxTitle = document.getElementById('lightbox-title');
+const lightboxShape = document.getElementById('lightbox-shape');
+const lightboxColor = document.getElementById('lightbox-color');
+const lightboxCategories = document.getElementById('lightbox-categories');
+let currentLightboxIndex = 0;
+let currentGalleryData = [];
     
     let confirmCallback = null;
     const showConfirmModal = (message, onConfirm) => { confirmModalMessage.textContent = message; confirmCallback = onConfirm; confirmModal.classList.remove('hidden'); confirmModal.classList.add('flex'); };
@@ -2975,31 +2986,101 @@ imageSourceRadios.forEach(radio => {
         const shareBtn = e.target.closest('.share-nail-idea-btn');
         if (shareBtn) { const ideaId = shareBtn.dataset.id; const idea = allNailIdeas.find(i => i.id === ideaId); if (idea) { openShareModal(idea); } }
     };
+    // ADD THIS ENTIRE NEW BLOCK for the lightbox functions
+const openLightbox = (index) => {
+    if (index < 0 || index >= currentGalleryData.length) return;
+
+    currentLightboxIndex = index;
+    const idea = currentGalleryData[index];
+
+    lightboxImage.src = idea.imageURL;
+    lightboxTitle.textContent = idea.name;
+    lightboxShape.textContent = idea.shape || 'N/A';
+    lightboxColor.textContent = idea.color || 'N/A';
+
+    lightboxCategories.innerHTML = idea.categories.map(cat => 
+        `<span class="bg-pink-100 text-pink-700 text-xs font-semibold px-2 py-1 rounded-full">${cat}</span>`
+    ).join('');
+
+    lightboxPrevBtn.classList.toggle('hidden', index === 0);
+    lightboxNextBtn.classList.toggle('hidden', index === currentGalleryData.length - 1);
+
+    nailIdeaLightbox.classList.remove('hidden');
+    nailIdeaLightbox.classList.add('flex');
+};
+
+const closeLightbox = () => {
+    nailIdeaLightbox.classList.add('hidden');
+    nailIdeaLightbox.classList.remove('flex');
+};
+
+const showNextImage = () => {
+    openLightbox(currentLightboxIndex + 1);
+};
+
+const showPrevImage = () => {
+    openLightbox(currentLightboxIndex - 1);
+};
+// REPLACE the old galleryClickHandler listeners with this new block
+const galleryClickHandler = (e) => {
+    const shareBtn = e.target.closest('.share-nail-idea-btn');
+    const img = e.target.closest('img[data-index]');
+
+    if (shareBtn) { 
+        const ideaId = shareBtn.dataset.id; 
+        const idea = allNailIdeas.find(i => i.id === ideaId); 
+        if (idea) { openShareModal(idea); }
+    } else if (img) {
+        const index = parseInt(img.dataset.index, 10);
+        openLightbox(index);
+    }
+};
+
+document.getElementById('nails-idea-gallery').addEventListener('click', galleryClickHandler);
+document.getElementById('nails-idea-landing').addEventListener('click', galleryClickHandler);
+
+    // ADD THIS NEW BLOCK for the lightbox buttons
+lightboxCloseBtn.addEventListener('click', closeLightbox);
+lightboxNextBtn.addEventListener('click', showNextImage);
+lightboxPrevBtn.addEventListener('click', showPrevImage);
+
+// Add keyboard navigation
+document.addEventListener('keydown', (e) => {
+    if (!nailIdeaLightbox.classList.contains('hidden')) {
+        if (e.key === 'ArrowRight') showNextImage();
+        if (e.key === 'ArrowLeft') showPrevImage();
+        if (e.key === 'Escape') closeLightbox();
+    }
+});
     
-    document.getElementById('nails-idea-gallery').addEventListener('click', galleryClickHandler);
-    document.getElementById('nails-idea-landing').addEventListener('click', galleryClickHandler);
+    // REPLACE the old renderNailIdeasGallery function with this one
+const renderNailIdeasGallery = (ideas) => {
+    const landingGallery = document.querySelector('#nails-idea-landing .columns-2');
+    const appGallery = document.getElementById('nails-idea-gallery');
+    currentGalleryData = ideas; // Store the current set of ideas for the lightbox
 
-
-    const renderNailIdeasGallery = (ideas) => {
-        const landingGallery = document.querySelector('#nails-idea-landing .columns-2');
-        const appGallery = document.getElementById('nails-idea-gallery');
-        
-        const renderTo = (container, isLanding) => {
-            if (!container) return;
-            container.innerHTML = '';
-            if (ideas.length === 0) { container.innerHTML = '<p class="text-gray-500 col-span-full text-center">No nail ideas found. Check back later!</p>'; return; }
-            const ideasToRender = isLanding ? ideas.slice(0, 8) : ideas;
-            ideasToRender.forEach(idea => {
-                const ideaEl = document.createElement('div');
-                ideaEl.className = 'break-inside-avoid mb-4 relative gallery-item';
-                ideaEl.innerHTML = `<img class="w-full rounded-lg shadow-md" src="${idea.imageURL}" alt="${idea.name}"><div class="overlay absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center rounded-lg"><button data-id="${idea.id}" class="share-nail-idea-btn text-white text-3xl"><i class="fas fa-share-alt"></i></button></div>${!isLanding ? `<div class="p-2"><h5 class="font-bold text-sm">${idea.name}</h5><p class="text-xs text-gray-600">${idea.categories.join(', ')}</p></div>` : ''}`;
-                container.appendChild(ideaEl);
-            });
-        };
-
-        renderTo(landingGallery, true);
-        renderTo(appGallery, false);
+    const renderTo = (container, isLanding) => {
+        if (!container) return;
+        container.innerHTML = '';
+        if (ideas.length === 0) { container.innerHTML = '<p class="text-gray-500 col-span-full text-center">No nail ideas found. Check back later!</p>'; return; }
+        const ideasToRender = isLanding ? ideas.slice(0, 8) : ideas;
+        ideasToRender.forEach((idea, index) => {
+            const ideaEl = document.createElement('div');
+            ideaEl.className = 'break-inside-avoid mb-4 relative gallery-item group';
+            // Note: The share button is now separate from the clickable image
+            ideaEl.innerHTML = `
+                <img class="w-full rounded-lg shadow-md cursor-pointer" src="${idea.imageURL}" alt="${idea.name}" data-index="${index}">
+                <div class="absolute top-2 right-2 bg-black/40 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                   <button data-id="${idea.id}" class="share-nail-idea-btn text-white text-lg"><i class="fas fa-share-alt"></i></button>
+                </div>
+                ${!isLanding ? `<div class="p-2"><h5 class="font-bold text-sm">${idea.name}</h5><p class="text-xs text-gray-600">${idea.categories.join(', ')}</p></div>` : ''}`;
+            container.appendChild(ideaEl);
+        });
     };
+
+    renderTo(landingGallery, true);
+    renderTo(appGallery, false);
+};
 
     const renderNailIdeasAdminTable = (ideas) => {
         nailIdeasTableBody.innerHTML = '';

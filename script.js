@@ -2100,22 +2100,26 @@ document.getElementById('staff-earning-form').addEventListener('submit', async (
 });
 
 // REPLACE the old dashboard form listener with this one
+// REPLACE the old dashboard form listener with this one
 document.getElementById('dashboard-staff-earning-form-full').addEventListener('submit', async (e) => {
     e.preventDefault();
     const staffName = document.getElementById('dashboard-staff-name-full').value;
+    const service = document.getElementById('dashboard-staff-earning-service').value; // Get service value
     const earning = parseFloat(document.getElementById('dashboard-staff-earning-full').value);
     const tip = parseFloat(document.getElementById('dashboard-staff-tip-full').value);
     const dateStr = document.getElementById('dashboard-staff-earning-date-full').value;
 
-    if (isNaN(earning) || isNaN(tip) || !dateStr) { return alert('Please fill out all fields correctly.'); }
+    if (isNaN(earning) || isNaN(tip) || !dateStr || !service) { return alert('Please fill out all fields correctly.'); }
 
     const date = new Date(dateStr + 'T12:00:00');
 
     try {
-        await addDoc(collection(db, "earnings"), { staffName, earning, tip, date: Timestamp.fromDate(date) });
+        // Add service to the data being saved
+        await addDoc(collection(db, "earnings"), { staffName, service, earning, tip, date: Timestamp.fromDate(date) });
         alert(`Earning for ${staffName} on ${dateStr} has been saved.`);
         e.target.reset();
         document.getElementById('dashboard-staff-earning-date-full').value = getLocalDateString();
+        document.getElementById('dashboard-staff-name-full').value = 'TJ'; // Reset default to TJ
     } catch (err) {
         console.error("Error saving earning entry: ", err);
         alert("Could not save the earning entry.");
@@ -2366,20 +2370,25 @@ const populateTechnicianFilters = () => {
     const techSelects = document.querySelectorAll('#appointment-technician-select, #technician-name-select, #staff-name, #edit-staff-name, #checkin-technician-select, #dashboard-staff-name-full');
     const techContainers = document.querySelectorAll('.tech-filter-container');
 
-    // --- Populate the new Service autocomplete list ---
+    const serviceOptionsHTML = Object.keys(servicesData).flatMap(category => 
+        servicesData[category].map(service => `<option value="${service.name}"></option>`)
+    ).join('');
+
     const staffEarningServiceList = document.getElementById('staff-earning-services-list');
     if (staffEarningServiceList) {
-        staffEarningServiceList.innerHTML = Object.keys(servicesData).flatMap(category => 
-            servicesData[category].map(service => `<option value="${service.name}"></option>`)
-        ).join('');
+        staffEarningServiceList.innerHTML = serviceOptionsHTML;
     }
-    // --- End of new code block ---
+    const dashboardServiceList = document.getElementById('dashboard-staff-earning-services-list');
+    if (dashboardServiceList) {
+        dashboardServiceList.innerHTML = serviceOptionsHTML;
+    }
 
     techContainers.forEach(container => {
         const userList = container.id.includes('earning') ? techniciansAndStaff : technicians;
         container.querySelectorAll('.dynamic-tech-btn').forEach(btn => btn.remove());
         userList.forEach(tech => { const btn = document.createElement('button'); btn.className = 'tech-filter-btn dynamic-tech-btn px-3 py-1 rounded-full text-sm'; btn.dataset.tech = tech.name; btn.textContent = tech.name; container.appendChild(btn); });
     });
+
     techSelects.forEach(select => {
         if (!select) return; 
         const userList = (select.id.includes('staff-name')) ? techniciansAndStaff : technicians;
@@ -2389,8 +2398,7 @@ const populateTechnicianFilters = () => {
         userList.forEach(tech => { select.appendChild(new Option(tech.name, tech.name)); });
          if(select.id === 'technician-name-select') { select.appendChild(new Option("Other", "other")); }
 
-         // --- Set "TJ" as default for the main report form ---
-         if (select.id === 'staff-name') {
+         if (select.id === 'staff-name' || select.id === 'dashboard-staff-name-full') {
             select.value = 'TJ';
          }
     });
@@ -2421,7 +2429,6 @@ const populateTechnicianFilters = () => {
     salonEarningTableHead.innerHTML = headHTML;
     salonEarningTableFoot.innerHTML = footHTML + commissionHTML + check70HTML + cash30HTML;
 };
-
     // ADD THIS ENTIRE NEW FUNCTION FOR LOAD TECHNICIAN IN LANDING PAGE 
 const updatePublicTechnicianList = async (users) => {
     try {

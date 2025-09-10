@@ -1472,38 +1472,40 @@ const updateMyEarningsChart = (data, filter, staffName) => {
         return filtered;
     };
 
-    const renderStaffEarningsTable = (earnings, tableId, totalEarningId, totalTipId) => {
-        const tbody = document.querySelector(`#${tableId} tbody`);
-        if (!tbody) return;
-        
-        const colspan = userRole === 'admin' ? 5 : 4;
-        tbody.innerHTML = earnings.length === 0 ? `<tr><td colspan="${colspan}" class="py-6 text-center text-gray-400">No earnings found.</td></tr>` : '';
-        
-        earnings.sort((a, b) => b.date.seconds - a.date.seconds).forEach(earning => {
-            const row = tbody.insertRow();
-            row.className = 'bg-white border-b';
-            let rowHTML = `
-                <td class="px-6 py-4">${new Date(earning.date.seconds * 1000).toLocaleDateString()}</td>
-                <td class="px-6 py-4 font-medium text-gray-900">${earning.staffName}</td>
-                <td class="px-6 py-4">$${earning.earning.toFixed(2)}</td>
-                <td class="px-6 py-4">$${earning.tip.toFixed(2)}</td>
-            `;
-            if (userRole === 'admin') {
-                rowHTML += `<td class="px-6 py-4 text-center space-x-2"><button data-id="${earning.id}" class="edit-earning-btn text-blue-500 hover:text-blue-700" title="Edit Earning"><i class="fas fa-edit text-lg"></i></button><button data-id="${earning.id}" class="delete-earning-btn text-red-500 hover:text-red-700" title="Delete Earning"><i class="fas fa-trash-alt text-lg"></i></button></td>`;
-            }
-            row.innerHTML = rowHTML;
-        });
+    // REPLACE the old renderStaffEarningsTable function with this one
+const renderStaffEarningsTable = (earnings, tableId, totalEarningId, totalTipId) => {
+    const tbody = document.querySelector(`#${tableId} tbody`);
+    if (!tbody) return;
 
-        const totalEarning = earnings.reduce((sum, e) => sum + e.earning, 0);
-        const totalTip = earnings.reduce((sum, e) => sum + e.tip, 0);
-        
-        const totalEarningEl = document.getElementById(totalEarningId);
-        const totalTipEl = document.getElementById(totalTipId);
-        if(totalEarningEl) totalEarningEl.textContent = `$${totalEarning.toFixed(2)}`;
-        if(totalTipEl) totalTipEl.textContent = `$${totalTip.toFixed(2)}`;
+    const colspan = userRole === 'admin' ? 6 : 5; // Increased colspan for new column
+    tbody.innerHTML = earnings.length === 0 ? `<tr><td colspan="${colspan}" class="py-6 text-center text-gray-400">No earnings found.</td></tr>` : '';
 
-        return { totalEarning, totalTip };
-    };
+    earnings.sort((a, b) => b.date.seconds - a.date.seconds).forEach(earning => {
+        const row = tbody.insertRow();
+        row.className = 'bg-white border-b';
+        let rowHTML = `
+            <td class="px-6 py-4">${new Date(earning.date.seconds * 1000).toLocaleDateString()}</td>
+            <td class="px-6 py-4 font-medium text-gray-900">${earning.staffName}</td>
+            <td class="px-6 py-4">${earning.service || ''}</td> <!-- Display the service -->
+            <td class="px-6 py-4">$${earning.earning.toFixed(2)}</td>
+            <td class="px-6 py-4">$${earning.tip.toFixed(2)}</td>
+        `;
+        if (userRole === 'admin') {
+            rowHTML += `<td class="px-6 py-4 text-center space-x-2"><button data-id="${earning.id}" class="edit-earning-btn text-blue-500 hover:text-blue-700" title="Edit Earning"><i class="fas fa-edit text-lg"></i></button><button data-id="${earning.id}" class="delete-earning-btn text-red-500 hover:text-red-700" title="Delete Earning"><i class="fas fa-trash-alt text-lg"></i></button></td>`;
+        }
+        row.innerHTML = rowHTML;
+    });
+
+    const totalEarning = earnings.reduce((sum, e) => sum + e.earning, 0);
+    const totalTip = earnings.reduce((sum, e) => sum + e.tip, 0);
+
+    const totalEarningEl = document.getElementById(totalEarningId);
+    const totalTipEl = document.getElementById(totalTipId);
+    if(totalEarningEl) totalEarningEl.textContent = `$${totalEarning.toFixed(2)}`;
+    if(totalTipEl) totalTipEl.textContent = `$${totalTip.toFixed(2)}`;
+
+    return { totalEarning, totalTip };
+};
 
      const renderAllStaffEarnings = () => {
         // Render for Report Page
@@ -2079,19 +2081,23 @@ const setupReportDateFilters = (selectId, dateInputId, callback) => {
     setupReportDateFilters('salon-earning-range-filter', 'salon-earning-date-filter', (date, range) => { currentSalonEarningDateFilter = date; currentSalonEarningRangeFilter = range; renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, date, range)); });
     
     
-    document.getElementById('staff-earning-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const staffName = document.getElementById('staff-name').value;
-        const earning = parseFloat(document.getElementById('staff-earning').value);
-        const tip = parseFloat(document.getElementById('staff-tip').value);
-        const date = document.getElementById('staff-earning-date').value;
-        if (isNaN(earning) || isNaN(tip) || !date) { return alert('Please fill out all fields correctly.'); }
-        try {
-            await addDoc(collection(db, "earnings"), { staffName, earning, tip, date: Timestamp.fromDate(new Date(date + 'T12:00:00')) });
-            e.target.reset();
-            document.getElementById('staff-earning-date').value = getLocalDateString();
-        } catch (err) { console.error("Error adding earning: ", err); alert("Could not add earning."); }
-    });
+   // REPLACE the old staff-earning-form listener with this one
+document.getElementById('staff-earning-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const staffName = document.getElementById('staff-name').value;
+    const service = document.getElementById('staff-earning-service').value; // Get service value
+    const earning = parseFloat(document.getElementById('staff-earning').value);
+    const tip = parseFloat(document.getElementById('staff-tip').value);
+    const date = document.getElementById('staff-earning-date').value;
+    if (isNaN(earning) || isNaN(tip) || !date || !service) { return alert('Please fill out all fields correctly.'); }
+    try {
+        // Add service to the data being saved
+        await addDoc(collection(db, "earnings"), { staffName, service, earning, tip, date: Timestamp.fromDate(new Date(date + 'T12:00:00')) });
+        e.target.reset();
+        document.getElementById('staff-earning-date').value = getLocalDateString();
+        document.getElementById('staff-name').value = 'TJ'; // Reset default to TJ
+    } catch (err) { console.error("Error adding earning: ", err); alert("Could not add earning."); }
+});
 
 // REPLACE the old dashboard form listener with this one
 document.getElementById('dashboard-staff-earning-form-full').addEventListener('submit', async (e) => {
@@ -2355,51 +2361,66 @@ document.getElementById('staff-details-date-filter').addEventListener('change', 
             row.innerHTML = `<td class="px-6 py-4">${user.name}</td><td class="px-6 py-4">${user.email}</td><td class="px-6 py-4">${user.phone}</td><td class="px-6 py-4">${user.role}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${user.id}" class="edit-user-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${user.id}" class="delete-user-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
         });
     };
-    
-    const populateTechnicianFilters = () => {
-        const techSelects = document.querySelectorAll('#appointment-technician-select, #technician-name-select, #staff-name, #edit-staff-name, #checkin-technician-select, #dashboard-staff-name-full');
-        const techContainers = document.querySelectorAll('.tech-filter-container');
-        techContainers.forEach(container => {
-            const userList = container.id.includes('earning') ? techniciansAndStaff : technicians;
-            container.querySelectorAll('.dynamic-tech-btn').forEach(btn => btn.remove());
-            userList.forEach(tech => { const btn = document.createElement('button'); btn.className = 'tech-filter-btn dynamic-tech-btn px-3 py-1 rounded-full text-sm'; btn.dataset.tech = tech.name; btn.textContent = tech.name; container.appendChild(btn); });
-        });
-        techSelects.forEach(select => {
-            if (!select) return; 
-            const userList = (select.id.includes('staff-name')) ? techniciansAndStaff : technicians;
-            const firstOption = select.options[0];
-            select.innerHTML = '';
-            if(firstOption && (firstOption.value === 'Any Technician' || firstOption.value === '')) { select.appendChild(firstOption); }
-            userList.forEach(tech => { select.appendChild(new Option(tech.name, tech.name)); });
-             if(select.id === 'technician-name-select') { select.appendChild(new Option("Other", "other")); }
-        });
-        const salonEarningInputs = document.getElementById('salon-earning-inputs');
-        const salonEarningTableHead = document.getElementById('salon-earning-table-head');
-        const salonEarningTableFoot = document.getElementById('salon-earning-table-foot');
-        salonEarningInputs.innerHTML = '';
-        let headHTML = '<tr><th scope="col" class="px-6 py-3">Date</th>';
-        let footHTML = `<tr><td class="px-6 py-3 text-right font-bold">Total:</td>`;
-        techniciansAndStaff.forEach(tech => {
-            const techNameLower = tech.name.toLowerCase();
-            salonEarningInputs.innerHTML += `<div><label for="salon-earning-${techNameLower}" class="block text-sm font-medium text-gray-600">${tech.name}</label><input type="number" step="0.01" id="salon-earning-${techNameLower}" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount"></div>`;
-            headHTML += `<th scope="col" class="px-6 py-3">${tech.name}</th>`;
-            footHTML += `<td id="total-${techNameLower}" class="px-6 py-3"></td>`;
-        });
-        headHTML += `<th scope="col" class="px-6 py-3">Sell GC</th><th scope="col" class="px-6 py-3">Return GC</th><th scope="col" class="px-6 py-3">Check</th><th scope="col" class="px-6 py-3">No of Credit</th><th scope="col" class="px-6 py-3">Total Credit</th><th scope="col" class="px-6 py-3">Venmo</th><th scope="col" class="px-6 py-3">Square</th><th scope="col" class="px-6 py-3 font-bold">Total</th><th scope="col" class="px-6 py-3 font-bold">Cash</th><th scope="col" class="px-6 py-3 text-center">Action</th></tr>`;
-        footHTML += `<td id="total-sell-gc" class="px-6 py-3"></td><td id="total-return-gc" class="px-6 py-3"></td><td id="total-check" class="px-6 py-3"></td><td id="total-no-credit" class="px-6 py-3"></td><td id="total-total-credit" class="px-6 py-3"></td><td id="total-venmo" class="px-6 py-3"></td><td id="total-square" class="px-6 py-3"></td><td id="total-total" class="px-6 py-3 font-bold"></td><td id="total-cash" class="px-6 py-3 font-bold"></td><td class="px-6 py-3"></td></tr>`;
-        let commissionHTML = `<tr class="text-center"><td class="px-6 py-3 text-right font-bold border-t-2 border-gray-300">Commission 70%:</td>`, check70HTML = `<tr class="text-center"><td class="px-6 py-3 text-right font-bold">70% of Check:</td>`, cash30HTML = `<tr class="text-center"><td class="px-6 py-3 text-right font-bold">30% of Cash:</td>`;
-        techniciansAndStaff.forEach(tech => {
-            const techNameLower = tech.name.toLowerCase();
-            commissionHTML += `<td id="commission-${techNameLower}" class="px-6 py-3 border-t-2 border-gray-300"></td>`;
-            check70HTML += `<td id="check70-${techNameLower}" class="px-6 py-3"></td>`;
-            cash30HTML += `<td id="cash30-${techNameLower}" class="px-6 py-3"></td>`;
-        });
-        commissionHTML += `<td class="border-t-2 border-gray-300" colspan="10"></td></tr>`;
-        check70HTML += `<td colspan="10"></td></tr>`;
-        cash30HTML += `<td colspan="10"></td></tr>`;
-        salonEarningTableHead.innerHTML = headHTML;
-        salonEarningTableFoot.innerHTML = footHTML + commissionHTML + check70HTML + cash30HTML;
-    };
+  // REPLACE the old populateTechnicianFilters function with this one
+const populateTechnicianFilters = () => {
+    const techSelects = document.querySelectorAll('#appointment-technician-select, #technician-name-select, #staff-name, #edit-staff-name, #checkin-technician-select, #dashboard-staff-name-full');
+    const techContainers = document.querySelectorAll('.tech-filter-container');
+
+    // --- Populate the new Service autocomplete list ---
+    const staffEarningServiceList = document.getElementById('staff-earning-services-list');
+    if (staffEarningServiceList) {
+        staffEarningServiceList.innerHTML = Object.keys(servicesData).flatMap(category => 
+            servicesData[category].map(service => `<option value="${service.name}"></option>`)
+        ).join('');
+    }
+    // --- End of new code block ---
+
+    techContainers.forEach(container => {
+        const userList = container.id.includes('earning') ? techniciansAndStaff : technicians;
+        container.querySelectorAll('.dynamic-tech-btn').forEach(btn => btn.remove());
+        userList.forEach(tech => { const btn = document.createElement('button'); btn.className = 'tech-filter-btn dynamic-tech-btn px-3 py-1 rounded-full text-sm'; btn.dataset.tech = tech.name; btn.textContent = tech.name; container.appendChild(btn); });
+    });
+    techSelects.forEach(select => {
+        if (!select) return; 
+        const userList = (select.id.includes('staff-name')) ? techniciansAndStaff : technicians;
+        const firstOption = select.options[0];
+        select.innerHTML = '';
+        if(firstOption && (firstOption.value === 'Any Technician' || firstOption.value === '')) { select.appendChild(firstOption); }
+        userList.forEach(tech => { select.appendChild(new Option(tech.name, tech.name)); });
+         if(select.id === 'technician-name-select') { select.appendChild(new Option("Other", "other")); }
+
+         // --- Set "TJ" as default for the main report form ---
+         if (select.id === 'staff-name') {
+            select.value = 'TJ';
+         }
+    });
+    const salonEarningInputs = document.getElementById('salon-earning-inputs');
+    const salonEarningTableHead = document.getElementById('salon-earning-table-head');
+    const salonEarningTableFoot = document.getElementById('salon-earning-table-foot');
+    salonEarningInputs.innerHTML = '';
+    let headHTML = '<tr><th scope="col" class="px-6 py-3">Date</th>';
+    let footHTML = `<tr><td class="px-6 py-3 text-right font-bold">Total:</td>`;
+    techniciansAndStaff.forEach(tech => {
+        const techNameLower = tech.name.toLowerCase();
+        salonEarningInputs.innerHTML += `<div><label for="salon-earning-${techNameLower}" class="block text-sm font-medium text-gray-600">${tech.name}</label><input type="number" step="0.01" id="salon-earning-${techNameLower}" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount"></div>`;
+        headHTML += `<th scope="col" class="px-6 py-3">${tech.name}</th>`;
+        footHTML += `<td id="total-${techNameLower}" class="px-6 py-3"></td>`;
+    });
+    headHTML += `<th scope="col" class="px-6 py-3">Sell GC</th><th scope="col" class="px-6 py-3">Return GC</th><th scope="col" class="px-6 py-3">Check</th><th scope="col" class="px-6 py-3">No of Credit</th><th scope="col" class="px-6 py-3">Total Credit</th><th scope="col" class="px-6 py-3">Venmo</th><th scope="col" class="px-6 py-3">Square</th><th scope="col" class="px-6 py-3 font-bold">Total</th><th scope="col" class="px-6 py-3 font-bold">Cash</th><th scope="col" class="px-6 py-3 text-center">Action</th></tr>`;
+    footHTML += `<td id="total-sell-gc" class="px-6 py-3"></td><td id="total-return-gc" class="px-6 py-3"></td><td id="total-check" class="px-6 py-3"></td><td id="total-no-credit" class="px-6 py-3"></td><td id="total-total-credit" class="px-6 py-3"></td><td id="total-venmo" class="px-6 py-3"></td><td id="total-square" class="px-6 py-3"></td><td id="total-total" class="px-6 py-3 font-bold"></td><td id="total-cash" class="px-6 py-3 font-bold"></td><td class="px-6 py-3"></td></tr>`;
+    let commissionHTML = `<tr class="text-center"><td class="px-6 py-3 text-right font-bold border-t-2 border-gray-300">Commission 70%:</td>`, check70HTML = `<tr class="text-center"><td class="px-6 py-3 text-right font-bold">70% of Check:</td>`, cash30HTML = `<tr class="text-center"><td class="px-6 py-3 text-right font-bold">30% of Cash:</td>`;
+    techniciansAndStaff.forEach(tech => {
+        const techNameLower = tech.name.toLowerCase();
+        commissionHTML += `<td id="commission-${techNameLower}" class="px-6 py-3 border-t-2 border-gray-300"></td>`;
+        check70HTML += `<td id="check70-${techNameLower}" class="px-6 py-3"></td>`;
+        cash30HTML += `<td id="cash30-${techNameLower}" class="px-6 py-3"></td>`;
+    });
+    commissionHTML += `<td class="border-t-2 border-gray-300" colspan="10"></td></tr>`;
+    check70HTML += `<td colspan="10"></td></tr>`;
+    cash30HTML += `<td colspan="10"></td></tr>`;
+    salonEarningTableHead.innerHTML = headHTML;
+    salonEarningTableFoot.innerHTML = footHTML + commissionHTML + check70HTML + cash30HTML;
+};
 
     // ADD THIS ENTIRE NEW FUNCTION FOR LOAD TECHNICIAN IN LANDING PAGE 
 const updatePublicTechnicianList = async (users) => {

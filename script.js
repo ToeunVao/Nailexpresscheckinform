@@ -3225,12 +3225,17 @@ addNailIdeaForm.addEventListener('submit', async (e) => {
         } else if (deleteBtn) {
             const ideaId = deleteBtn.dataset.id;
             showConfirmModal("Delete this nail idea? This will also delete the image.", async () => {
-                const ideaToDelete = allNailIdeas.find(i => i.id === ideaId);
-                if (ideaToDelete.imageURL) {
-                    const imageRef = ref(storage, ideaToDelete.imageURL);
-                    await deleteObject(imageRef).catch(err => console.error("Error deleting image from storage", err));
-                }
-                await deleteDoc(doc(db, "nail_ideas", ideaId));
+               // REPLACE the old delete logic with this new version
+const ideaToDelete = allNailIdeas.find(i => i.id === ideaId);
+if (ideaToDelete) {
+    // NEW LINE: Only try to delete from storage if it's a Firebase URL
+    if (ideaToDelete.imageURL && ideaToDelete.imageURL.includes('firebasestorage')) {
+        const imageRef = ref(storage, ideaToDelete.imageURL);
+        await deleteObject(imageRef).catch(err => console.error("Error deleting image from storage", err));
+    }
+    // This line will now run for all items, whether they had an uploaded image or a URL
+    await deleteDoc(doc(db, "nail_ideas", ideaId));
+}
             });
         }
     });

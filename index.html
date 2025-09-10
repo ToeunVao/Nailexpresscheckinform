@@ -1502,9 +1502,14 @@
                                 <div><label for="nail-idea-color" class="block text-sm font-medium text-gray-600">Color
                                         Code</label><input type="text" id="nail-idea-color"
                                         class="form-input w-full mt-1" placeholder="e.g., #FFC0CB, Red"></div>
-                                <div><label for="nail-idea-shape" class="block text-sm font-medium text-gray-600">Nail
-                                        Shape</label><input type="text" id="nail-idea-shape"
-                                        class="form-input w-full mt-1" placeholder="e.g., Almond, Square"></div>
+                               <!-- REPLACE the old Nail Shape input with this new block -->
+<div>
+    <label for="nail-idea-shape" class="block text-sm font-medium text-gray-600">Nail Shape</label>
+    <input type="text" id="nail-idea-shape" list="nail-shapes-list" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" placeholder="e.g., Almond, Square">
+    <datalist id="nail-shapes-list">
+        <!-- JS will populate this with existing shapes -->
+    </datalist>
+</div>
                                 <div class="md:col-span-2"><label for="nail-idea-categories"
                                         class="block text-sm font-medium text-gray-600">Categories</label><input
                                         type="text" id="nail-idea-categories" class="form-input w-full mt-1"

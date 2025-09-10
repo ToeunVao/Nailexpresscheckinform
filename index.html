@@ -1099,8 +1099,29 @@
                                 <div><label for="nail-idea-color" class="block text-sm font-medium text-gray-600">Color Code</label><input type="text" id="nail-idea-color" class="form-input w-full mt-1" placeholder="e.g., #FFC0CB, Red"></div>
                                 <div><label for="nail-idea-shape" class="block text-sm font-medium text-gray-600">Nail Shape</label><input type="text" id="nail-idea-shape" class="form-input w-full mt-1" placeholder="e.g., Almond, Square"></div>
                                 <div class="md:col-span-2"><label for="nail-idea-categories" class="block text-sm font-medium text-gray-600">Categories</label><input type="text" id="nail-idea-categories" class="form-input w-full mt-1" placeholder="e.g., minimalist, glitter, holiday (comma-separated)"></div>
-                                <div class="md:col-span-3"><label for="nail-idea-image" class="block text-sm font-medium text-gray-600">Image</label><input type="file" id="nail-idea-image" class="form-input w-full mt-1 text-sm" accept="image/*"></div>
-                                <div class="self-end flex gap-2">
+                              <!-- REPLACE the old image input with this new block -->
+<div class="md:col-span-3">
+    <label class="block text-sm font-medium text-gray-600">Image Source</label>
+    <div class="flex items-center space-x-4 mt-2">
+        <label class="flex items-center">
+            <input type="radio" name="imageSource" value="upload" class="form-radio" checked>
+            <span class="ml-2">Upload File</span>
+        </label>
+        <label class="flex items-center">
+            <input type="radio" name="imageSource" value="url" class="form-radio">
+            <span class="ml-2">From URL</span>
+        </label>
+    </div>
+</div>
+<div id="nail-idea-file-upload-container" class="md:col-span-3">
+    <label for="nail-idea-image" class="block text-sm font-medium text-gray-600">Image File</label>
+    <input type="file" id="nail-idea-image" class="form-input w-full mt-1 text-sm" accept="image/*">
+</div>
+<div id="nail-idea-url-container" class="md:col-span-3 hidden">
+    <label for="nail-idea-image-url" class="block text-sm font-medium text-gray-600">Image URL</label>
+    <input type="url" id="nail-idea-image-url" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" placeholder="https://example.com/image.jpg">
+</div>
+                                 <div class="self-end flex gap-2">
                                     <button type="submit" id="add-nail-idea-btn" class="w-full bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">Add Idea</button>
                                     <button type="button" id="cancel-edit-nail-idea-btn" class="w-full bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 hidden">Cancel</button>
                                 </div>

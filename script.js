@@ -468,15 +468,17 @@ function initLandingPage() {
         peopleSelect.appendChild(new Option(i, i));
     }
 
-    const technicianSelect = document.getElementById('appointment-technician-select-landing');
-    onSnapshot(collection(db, "users"), (snapshot) => {
-        const users = snapshot.docs.map(doc => doc.data());
-        const technicians = users.filter(user => user.role === 'technician');
+// REPLACE the onSnapshot in initLandingPage with this getDoc
+const technicianSelect = document.getElementById('appointment-technician-select-landing');
+getDoc(doc(db, "public_data", "technicians")).then(docSnap => {
+    if (docSnap.exists()) {
+        const techNames = docSnap.data().names || [];
         technicianSelect.innerHTML = '<option>Any Technician</option>';
-        technicians.forEach(tech => {
-            technicianSelect.appendChild(new Option(tech.name, tech.name));
+        techNames.forEach(name => {
+            technicianSelect.appendChild(new Option(name, name));
         });
-    });
+    }
+});
     
     const step1 = document.getElementById('booking-step-1');
     const step2 = document.getElementById('booking-step-2');
@@ -2390,14 +2392,35 @@ const renderAllBookingsList = () => {
         salonEarningTableFoot.innerHTML = footHTML + commissionHTML + check70HTML + cash30HTML;
     };
 
-    onSnapshot(collection(db, "users"), (snapshot) => {
-        const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        techniciansAndStaff = users.filter(user => user.role === 'technician' || user.role === 'staff');
-        technicians = users.filter(user => user.role === 'technician');
-        renderUsers(users);
-        populateTechnicianFilters();
-    });
+    // ADD THIS ENTIRE NEW FUNCTION FOR LOAD TECHNICIAN IN LANDING PAGE 
+const updatePublicTechnicianList = async (users) => {
+    try {
+        const technicians = users
+            .filter(user => user.role === 'technician')
+            .map(user => user.name);
 
+        const publicDataRef = doc(db, "public_data", "technicians");
+        await setDoc(publicDataRef, { names: technicians });
+        console.log("Public technician list updated.");
+    } catch (error) {
+        console.error("Error updating public technician list:", error);
+    }
+};
+    
+
+// REPLACE the old "users" onSnapshot listener with this one
+onSnapshot(collection(db, "users"), (snapshot) => {
+    const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    techniciansAndStaff = users.filter(user => user.role === 'technician' || user.role === 'staff');
+    technicians = users.filter(user => user.role === 'technician');
+    renderUsers(users);
+    populateTechnicianFilters();
+
+    // If the current user is an admin, update the public list
+    if (currentUserRole === 'admin') {
+        updatePublicTechnicianList(users);
+    }
+});
     addUserForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const userId = document.getElementById('edit-user-id').value;

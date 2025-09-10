@@ -3018,7 +3018,7 @@ const showNextImage = () => {
 const showPrevImage = () => {
     openLightbox(currentLightboxIndex - 1);
 };
-// REPLACE the old galleryClickHandler listeners with this new block
+// REPLACE the old galleryClickHandler listeners with this new block ok
 const galleryClickHandler = (e) => {
     const shareBtn = e.target.closest('.share-nail-idea-btn');
     const img = e.target.closest('img[data-index]');
@@ -3049,7 +3049,15 @@ document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') closeLightbox();
     }
 });
-    
+
+    // ADD THIS NEW BLOCK to close the lightbox on overlay click
+nailIdeaLightbox.addEventListener('click', (e) => {
+    // If the click is on the dark background itself (the overlay)
+    // and not on the content inside it, close the modal.
+    if (e.target === nailIdeaLightbox) {
+        closeLightbox();
+    }
+});
     // REPLACE the old renderNailIdeasGallery function with this one
 const renderNailIdeasGallery = (ideas) => {
     const landingGallery = document.querySelector('#nails-idea-landing .columns-2');

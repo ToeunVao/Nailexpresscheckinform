@@ -1487,6 +1487,12 @@
             <div class="space-y-4">
                 <div><label for="edit-staff-earning-date" class="block text-sm font-medium text-gray-600 mb-1">Date</label><input type="date" id="edit-staff-earning-date" class="form-input w-full p-3 border border-gray-300 rounded-lg" required></div>
                 <div><label for="edit-staff-name" class="block text-sm font-medium text-gray-600 mb-1">Staff Name</label><select id="edit-staff-name" class="form-select w-full p-3 border border-gray-300 rounded-lg" required></select></div>
+                <!-- ADD THIS ENTIRE NEW BLOCK FOR THE SERVICE FIELD -->
+<div>
+    <label for="edit-staff-earning-service" class="block text-sm font-medium text-gray-600 mb-1">Service</label>
+    <input type="text" id="edit-staff-earning-service" list="edit-staff-earning-services-list" class="form-input w-full p-3 border border-gray-300 rounded-lg" placeholder="Type or select service" required>
+    <datalist id="edit-staff-earning-services-list"></datalist>
+</div>
                 <div><label for="edit-staff-earning" class="block text-sm font-medium text-gray-600 mb-1">Earning</label><input type="number" step="0.01" id="edit-staff-earning" class="form-input w-full p-3 border border-gray-300 rounded-lg" required></div>
                 <div><label for="edit-staff-tip" class="block text-sm font-medium text-gray-600 mb-1">Tip</label><input type="number" step="0.01" id="edit-staff-tip" class="form-input w-full p-3 border border-gray-300 rounded-lg" required></div>
             </div>

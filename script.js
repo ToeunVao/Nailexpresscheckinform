@@ -1136,6 +1136,8 @@ const updateStaffDashboard = () => {
     const totalTipSpan = document.getElementById('staff-dashboard-filtered-earning-total-tip');
     if(totalMainSpan) totalMainSpan.textContent = `Total ($${totalEarning.toFixed(2)})`;
     if(totalTipSpan) totalTipSpan.textContent = `Tip ($${totalTip.toFixed(2)})`;
+    // --- THIS IS THE NEW LINE THAT FIXES THE PROBLEM ---
+    renderDetailedAppointmentsList('staff-upcoming-appointments-list', allAppointments, currentUserName);
 };
     // ADD THIS ENTIRE NEW FUNCTION
 const renderDetailedAppointmentsList = (containerId, appointments, techFilter = 'All') => {

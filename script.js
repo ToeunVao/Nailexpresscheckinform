@@ -3619,6 +3619,10 @@ clientProfileModal.querySelector('.modal-overlay').addEventListener('click', () 
     currentEarningDateFilter = todayString;
     renderAllStaffEarnings();
     const dashboardEarningDateFilter = document.getElementById('dashboard-earning-date-filter');
+    // ADD THESE TWO LINES
+const dashboardEarningSubmitDateInput = document.getElementById('dashboard-staff-earning-date-full');
+if (dashboardEarningSubmitDateInput) dashboardEarningSubmitDateInput.value = todayString;
+    
     dashboardEarningDateFilter.value = todayString;
     currentDashboardEarningDateFilter = todayString;
     

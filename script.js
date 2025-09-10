@@ -2393,6 +2393,9 @@ const renderAllBookingsList = () => {
     document.getElementById('floating-booking-btn').addEventListener('click', () => { openAddAppointmentModal(getLocalDateString()); });
 // ADD THIS NEW LINE
 document.getElementById('staff-details-date-filter').addEventListener('change', updateStaffDashboard);
+    // ADD THIS NEW LINE to set the default date
+document.getElementById('staff-details-date-filter').value = todayString;
+    
     const addUserForm = document.getElementById('add-user-form');
     const usersTableBody = document.querySelector('#users-table tbody');
     const renderUsers = (users) => {

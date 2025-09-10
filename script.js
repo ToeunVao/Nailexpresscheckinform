@@ -3105,6 +3105,12 @@ const renderNailIdeasGallery = (ideas) => {
 
     onSnapshot(query(collection(db, "nail_ideas"), orderBy("createdAt", "desc")), (snapshot) => {
         allNailIdeas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // ADD THIS NEW BLOCK to populate the Nail Shape datalist
+const shapesDatalist = document.getElementById('nail-shapes-list');
+if (shapesDatalist) {
+    const uniqueShapes = [...new Set(allNailIdeas.map(idea => idea.shape).filter(Boolean))];
+    shapesDatalist.innerHTML = uniqueShapes.map(shape => `<option value="${shape}"></option>`).join('');
+}
         const shapes = [...new Set(allNailIdeas.map(i => i.shape).filter(Boolean))];
         const categories = [...new Set(allNailIdeas.flatMap(i => i.categories).filter(Boolean))];
         const shapeFilter = document.getElementById('nail-idea-shape-filter');

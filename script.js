@@ -2982,10 +2982,7 @@ imageSourceRadios.forEach(radio => {
     document.getElementById('share-close-btn').addEventListener('click', closeShareModal);
     document.querySelector('.share-modal-overlay').addEventListener('click', closeShareModal);
     
-    const galleryClickHandler = (e) => {
-        const shareBtn = e.target.closest('.share-nail-idea-btn');
-        if (shareBtn) { const ideaId = shareBtn.dataset.id; const idea = allNailIdeas.find(i => i.id === ideaId); if (idea) { openShareModal(idea); } }
-    };
+
     // ADD THIS ENTIRE NEW BLOCK for the lightbox functions
 const openLightbox = (index) => {
     if (index < 0 || index >= currentGalleryData.length) return;

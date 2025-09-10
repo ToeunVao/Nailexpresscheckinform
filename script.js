@@ -2994,7 +2994,7 @@ const openLightbox = (index) => {
     lightboxTitle.textContent = idea.name;
     lightboxShape.textContent = idea.shape || 'N/A';
     lightboxColor.textContent = idea.color || 'N/A';
-
+    lightboxDescription.textContent = idea.description || ''; // ADD THIS LINE
     lightboxCategories.innerHTML = idea.categories.map(cat => 
         `<span class="bg-pink-100 text-pink-700 text-xs font-semibold px-2 py-1 rounded-full">${cat}</span>`
     ).join('');
@@ -3159,12 +3159,13 @@ addNailIdeaForm.addEventListener('submit', async (e) => {
             finalImageURL = imageUrl;
         }
 
-        const ideaData = {
-            name: document.getElementById('nail-idea-name').value,
-            color: document.getElementById('nail-idea-color').value,
-            shape: document.getElementById('nail-idea-shape').value,
-            categories: document.getElementById('nail-idea-categories').value.split(',').map(s => s.trim()).filter(Boolean),
-        };
+       const ideaData = {
+    name: document.getElementById('nail-idea-name').value,
+    description: document.getElementById('nail-idea-description').value, // ADD THIS LINE
+    color: document.getElementById('nail-idea-color').value,
+    shape: document.getElementById('nail-idea-shape').value,
+    categories: document.getElementById('nail-idea-categories').value.split(',').map(s => s.trim()).filter(Boolean),
+};
 
         if (ideaId) { // Editing an existing idea
             const existingIdea = allNailIdeas.find(i => i.id === ideaId);
@@ -3203,6 +3204,7 @@ addNailIdeaForm.addEventListener('submit', async (e) => {
     const resetNailIdeaForm = () => {
         addNailIdeaForm.reset();
         document.getElementById('edit-nail-idea-id').value = '';
+        document.getElementById('nail-idea-description').value = ''; // ADD THIS LINE
         document.getElementById('add-nail-idea-btn').textContent = 'Add Idea';
         document.getElementById('cancel-edit-nail-idea-btn').classList.add('hidden');
     };
@@ -3218,7 +3220,9 @@ addNailIdeaForm.addEventListener('submit', async (e) => {
                 document.getElementById('nail-idea-name').value = idea.name;
                 document.getElementById('nail-idea-color').value = idea.color;
                 document.getElementById('nail-idea-shape').value = idea.shape;
+                document.getElementById('nail-idea-description').value = idea.description || ''; // ADD THIS LINE
                 document.getElementById('nail-idea-categories').value = idea.categories.join(', ');
+                
                 document.getElementById('add-nail-idea-btn').textContent = 'Update Idea';
                 document.getElementById('cancel-edit-nail-idea-btn').classList.remove('hidden');
             }

@@ -946,6 +946,7 @@ const lightboxTitle = document.getElementById('lightbox-title');
 const lightboxShape = document.getElementById('lightbox-shape');
 const lightboxColor = document.getElementById('lightbox-color');
 const lightboxCategories = document.getElementById('lightbox-categories');
+const lightboxDescription = document.getElementById('lightbox-description'); // ADD THIS LINE
 let currentLightboxIndex = 0;
 let currentGalleryData = [];
     

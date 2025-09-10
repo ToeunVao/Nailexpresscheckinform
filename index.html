@@ -836,9 +836,15 @@
                                     <span id="filtered-earning-total-tip" class="ml-2 bg-green-100 text-green-800 text-sm font-semibold px-2.5 py-0.5 rounded-full"></span>
                                 </div>
                             </h3>
-                            <form id="staff-earning-form" class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8 items-end">
+                            <form id="staff-earning-form" class="grid grid-cols-1 md:grid-cols-6 gap-6 mb-8 items-end">
                                 <div><label for="staff-earning-date" class="block text-sm font-medium text-gray-600 mb-1">Date</label><input type="date" id="staff-earning-date" class="form-input w-full p-3 border border-gray-300 rounded-lg" required></div>
                                 <div><label for="staff-name" class="block text-sm font-medium text-gray-600 mb-1">Staff Name</label><select id="staff-name" class="form-select w-full p-3 border border-gray-300 rounded-lg" required></select></div>
+                               <!-- ADD THIS ENTIRE NEW BLOCK -->
+<div>
+    <label for="staff-earning-service" class="block text-sm font-medium text-gray-600 mb-1">Service</label>
+    <input type="text" id="staff-earning-service" list="staff-earning-services-list" class="form-input w-full p-3 border border-gray-300 rounded-lg" placeholder="Type or select service" required>
+    <datalist id="staff-earning-services-list"></datalist>
+</div>
                                 <div><label for="staff-earning" class="block text-sm font-medium text-gray-600 mb-1">Earning</label><input type="number" step="0.01" id="staff-earning" class="form-input w-full p-3 border border-gray-300 rounded-lg" placeholder="e.g., 100" required></div>
                                 <div><label for="staff-tip" class="block text-sm font-medium text-gray-600 mb-1">Tip</label><input type="number" step="0.01" id="staff-tip" class="form-input w-full p-3 border border-gray-300 rounded-lg" placeholder="e.g., 20" required></div>
                                 <div><button type="submit" class="w-full bg-pink-600 text-white font-bold py-3 px-6 rounded-full hover:bg-pink-700">Add Earning</button></div>

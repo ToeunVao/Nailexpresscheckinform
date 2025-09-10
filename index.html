@@ -520,13 +520,18 @@
 
     <!-- Staff Earning Report Table -->
     <div class="mt-8 bg-white p-6 rounded-2xl shadow-lg">
-        <h3 class="text-xl font-bold text-gray-700 border-b pb-3 mb-6 flex justify-between items-center">
-            <span id="staff-welcome-heading">My Earning Details</span>
-            <div class="flex gap-4">
-                <span id="staff-dashboard-filtered-earning-total-main" class="ml-2 bg-pink-100 text-pink-800 text-sm font-semibold px-2.5 py-0.5 rounded-full"></span>
-                <span id="staff-dashboard-filtered-earning-total-tip" class="ml-2 bg-green-100 text-green-800 text-sm font-semibold px-2.5 py-0.5 rounded-full"></span>
-            </div>
-        </h3>
+        <!-- REPLACE the old h3 block with this new one -->
+<h3 class="text-xl font-bold text-gray-700 border-b pb-3 mb-6 flex justify-between items-center flex-wrap">
+    <span id="staff-details-title">My Earning Details</span>
+    <div class="flex items-center gap-4">
+        <span id="staff-dashboard-filtered-earning-total-main" class="ml-2 bg-pink-100 text-pink-800 text-sm font-semibold px-2.5 py-0.5 rounded-full"></span>
+        <span id="staff-dashboard-filtered-earning-total-tip" class="ml-2 bg-green-100 text-green-800 text-sm font-semibold px-2.5 py-0.5 rounded-full"></span>
+        <div class="flex items-center gap-2">
+            <label for="staff-details-date-filter" class="text-sm font-medium">Date:</label>
+            <input type="date" id="staff-details-date-filter" class="p-2 border border-gray-300 rounded-lg">
+        </div>
+    </div>
+</h3>
         <div class="overflow-x-auto max-h-96">
             <table id="staff-dashboard-earning-table" class="w-full text-sm text-left text-gray-600">
                 <thead class="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">

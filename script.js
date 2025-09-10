@@ -2936,7 +2936,26 @@ onSnapshot(collection(db, "users"), (snapshot) => {
     const nailsIdeaGallery = document.getElementById('nails-idea-gallery');
     const addNailIdeaForm = document.getElementById('add-nail-idea-form');
     const nailIdeasTableBody = document.querySelector('#nail-ideas-table tbody');
+// ADD THIS ENTIRE NEW BLOCK for the radio button logic
+const imageSourceRadios = document.querySelectorAll('input[name="imageSource"]');
+const fileUploadContainer = document.getElementById('nail-idea-file-upload-container');
+const urlContainer = document.getElementById('nail-idea-url-container');
+const fileInput = document.getElementById('nail-idea-image');
+const urlInput = document.getElementById('nail-idea-image-url');
 
+imageSourceRadios.forEach(radio => {
+    radio.addEventListener('change', () => {
+        if (radio.value === 'upload') {
+            fileUploadContainer.classList.remove('hidden');
+            urlContainer.classList.add('hidden');
+            urlInput.value = ''; // Clear the URL input
+        } else {
+            fileUploadContainer.classList.add('hidden');
+            urlContainer.classList.remove('hidden');
+            fileInput.value = ''; // Clear the file input
+        }
+    });
+});
     const openShareModal = (idea) => {
         const salonUrl = "http://www.nailsxpressky.com";
         const shareText = `Check out this amazing nail design: ${idea.name}!`;
@@ -3014,34 +3033,80 @@ onSnapshot(collection(db, "users"), (snapshot) => {
     document.getElementById('nail-idea-shape-filter').addEventListener('change', applyNailIdeaFilters);
     document.getElementById('nail-idea-category-filter').addEventListener('change', applyNailIdeaFilters);
 
-    addNailIdeaForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const ideaId = document.getElementById('edit-nail-idea-id').value;
-        const file = document.getElementById('nail-idea-image').files[0];
-        if (!ideaId && !file) { alert('Please select an image to upload.'); return; }
-        const btn = document.getElementById('add-nail-idea-btn');
-        btn.disabled = true;
-        btn.textContent = 'Saving...';
-        try {
-            let imageURL = null;
+   // REPLACE the old addNailIdeaForm listener with this one
+addNailIdeaForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const ideaId = document.getElementById('edit-nail-idea-id').value;
+    const imageSource = document.querySelector('input[name="imageSource"]:checked').value;
+    const file = document.getElementById('nail-idea-image').files[0];
+    const imageUrl = document.getElementById('nail-idea-image-url').value;
+    let finalImageURL = null;
+
+    const btn = document.getElementById('add-nail-idea-btn');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    try {
+        if (imageSource === 'upload') {
+            if (!ideaId && !file) {
+                alert('Please select an image to upload.');
+                btn.disabled = false; btn.textContent = 'Add Idea';
+                return;
+            }
             if (file) {
                 const storageRef = ref(storage, `nail_ideas/${Date.now()}_${file.name}`);
                 await uploadBytes(storageRef, file);
-                imageURL = await getDownloadURL(storageRef);
+                finalImageURL = await getDownloadURL(storageRef);
             }
-            const ideaData = { name: document.getElementById('nail-idea-name').value, color: document.getElementById('nail-idea-color').value, shape: document.getElementById('nail-idea-shape').value, categories: document.getElementById('nail-idea-categories').value.split(',').map(s => s.trim()).filter(Boolean), };
-            if (ideaId) {
-                const existingIdea = allNailIdeas.find(i => i.id === ideaId);
-                if (imageURL) {
-                    ideaData.imageURL = imageURL;
-                    if (existingIdea.imageURL) { try { const oldImageRef = ref(storage, existingIdea.imageURL); await deleteObject(oldImageRef); } catch (storageError) { console.warn("Could not delete old image, it might not exist:", storageError); } }
+        } else { // imageSource === 'url'
+            if (!imageUrl) {
+                alert('Please enter an image URL.');
+                btn.disabled = false; btn.textContent = 'Add Idea';
+                return;
+            }
+            finalImageURL = imageUrl;
+        }
+
+        const ideaData = {
+            name: document.getElementById('nail-idea-name').value,
+            color: document.getElementById('nail-idea-color').value,
+            shape: document.getElementById('nail-idea-shape').value,
+            categories: document.getElementById('nail-idea-categories').value.split(',').map(s => s.trim()).filter(Boolean),
+        };
+
+        if (ideaId) { // Editing an existing idea
+            const existingIdea = allNailIdeas.find(i => i.id === ideaId);
+            if (finalImageURL) { // If a new image (URL or upload) was provided
+                ideaData.imageURL = finalImageURL;
+                // If the old image was an upload, delete it from storage
+                if (existingIdea.imageURL && existingIdea.imageURL.includes('firebasestorage')) {
+                    try {
+                        const oldImageRef = ref(storage, existingIdea.imageURL);
+                        await deleteObject(oldImageRef);
+                    } catch (storageError) {
+                        console.warn("Could not delete old image, it might not exist:", storageError);
+                    }
                 }
-                await updateDoc(doc(db, "nail_ideas", ideaId), ideaData);
-            } else { ideaData.imageURL = imageURL; ideaData.createdAt = serverTimestamp(); await addDoc(collection(db, "nail_ideas"), ideaData); }
-            resetNailIdeaForm();
-        } catch (error) { console.error("Error saving nail idea:", error); alert("Could not save nail idea."); } 
-        finally { btn.disabled = false; btn.textContent = 'Add Idea'; }
-    });
+            }
+            await updateDoc(doc(db, "nail_ideas", ideaId), ideaData);
+        } else { // Adding a new idea
+            ideaData.imageURL = finalImageURL;
+            ideaData.createdAt = serverTimestamp();
+            await addDoc(collection(db, "nail_ideas"), ideaData);
+        }
+
+        resetNailIdeaForm();
+
+    } catch (error) {
+        console.error("Error saving nail idea:", error);
+        alert("Could not save nail idea.");
+    } finally {
+        btn.disabled = false;
+        // Ensure the text is correct for adding vs. editing
+        const buttonText = document.getElementById('edit-nail-idea-id').value ? 'Update Idea' : 'Add Idea';
+        btn.textContent = buttonText;
+    }
+});
 
     const resetNailIdeaForm = () => {
         addNailIdeaForm.reset();

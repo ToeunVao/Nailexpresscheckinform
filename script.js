@@ -941,7 +941,9 @@ function initMainApp(userRole, userName) {
     let currentDashboardEarningTechFilter = 'All', currentDashboardEarningDateFilter = '', currentDashboardEarningRangeFilter = 'daily';
     let currentSalonEarningDateFilter = '', currentSalonEarningRangeFilter = String(new Date().getMonth()), currentExpenseMonthFilter = '';
 
-    let aggregatedClients = [], allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [], allInventoryUsage = [], allGiftCards = [], allPromotions = [];
+   // ... other variables
+let aggregatedClients = [], allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [], allInventoryUsage = [], allGiftCards = [], allPromotions = [], allServicesList = [];
+// ... more variables
     let techniciansAndStaff = [], technicians = [];
     let allExpenseCategories = [], allPaymentAccounts = [], allSuppliers = [];
 // ADD THIS ENTIRE NEW BLOCK for the lightbox
@@ -1469,10 +1471,29 @@ const updateMyEarningsChart = (data, filter, staffName) => {
     
     // END NEW DASHBOARD LOGIC
 
-    const loadAndRenderServices = async () => {
+const loadAndRenderServices = async () => {
         const servicesSnapshot = await getDocs(collection(db, "services"));
         servicesData = {};
         servicesSnapshot.forEach(doc => { servicesData[doc.id] = doc.data().items; });
+
+        // --- ADD THIS NEW BLOCK ---
+        allServicesList = []; // Reset the list
+        Object.values(servicesData).forEach(categoryItems => {
+            categoryItems.forEach(service => {
+                if (service.name && service.price) {
+                    // Extract the number from a price string like "$50"
+                    const priceValue = parseFloat(service.price.replace(/[^0-9.]/g, ''));
+                    if (!isNaN(priceValue)) {
+                        allServicesList.push({
+                            name: service.name,
+                            price: priceValue
+                        });
+                    }
+                }
+            });
+        });
+        // --- END OF NEW BLOCK ---
+
         renderCheckInServices();
     };
 
@@ -2261,6 +2282,22 @@ setupReportDateFilters('staff-dashboard-range-filter', 'staff-dashboard-date-fil
     if (staffDashboardFilter) {
         staffDashboardFilter.value = currentMonthValue;
     }   
+    // --- Autocomplete for Dashboard Earning Form ---
+const dashboardServiceInput = document.getElementById('dashboard-staff-earning-service');
+const dashboardEarningInput = document.getElementById('dashboard-staff-earning-full');
+
+if (dashboardServiceInput && dashboardEarningInput) {
+    // Use 'change' event to fire when an option is selected or input loses focus
+    dashboardServiceInput.addEventListener('change', (e) => {
+        const selectedServiceName = e.target.value;
+        const service = allServicesList.find(s => s.name === selectedServiceName);
+
+        if (service) {
+            dashboardEarningInput.value = service.price.toFixed(2);
+        }
+    });
+}
+    
    // REPLACE the old staff-earning-form listener with this one
 document.getElementById('staff-earning-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -2286,7 +2323,7 @@ document.getElementById('dashboard-staff-earning-form-full').addEventListener('s
     const staffName = document.getElementById('dashboard-staff-name-full').value;
     const service = document.getElementById('dashboard-staff-earning-service').value; // Get service value
     const earning = parseFloat(document.getElementById('dashboard-staff-earning-full').value);
-    const tip = parseFloat(document.getElementById('dashboard-staff-tip-full').value);
+    const tip = parseFloat(document.getElementById('dashboard-staff-tip-full').value) || 0;
     const dateStr = document.getElementById('dashboard-staff-earning-date-full').value;
 
     if (isNaN(earning) || isNaN(tip) || !dateStr || !service) { return alert('Please fill out all fields correctly.'); }

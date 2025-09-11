@@ -1239,7 +1239,30 @@ const { startDate, endDate } = getDateRange(currentStaffDashboardRangeFilter, cu
     document.getElementById('my-total-payout-card').textContent = `$${myTotalPayout.toFixed(2)}`;
     document.getElementById('my-cash-payout-card').textContent = `$${myCashPayout.toFixed(2)}`;
     document.getElementById('my-check-payout-card').textContent = `$${myCheckPayout.toFixed(2)}`;
+// --- ADD THIS NEW BLOCK FOR APPOINTMENT & CLIENT COUNTS ---
+// Filter for upcoming appointments assigned to the current staff member
+const myUpcomingAppointments = allAppointments.filter(appt => 
+    appt.technician === currentUserName && appt.appointmentTimestamp.toDate() > new Date()
+);
 
+// Count unique clients served by the current staff member from their history
+const myClientNames = new Set(
+    allFinishedClients
+        .filter(client => client.technician === currentUserName)
+        .map(client => client.name)
+);
+
+// Update the dashboard cards with the new counts
+const myAppointmentsCard = document.getElementById('my-appointments-card');
+if (myAppointmentsCard) {
+    myAppointmentsCard.textContent = myUpcomingAppointments.length;
+}
+
+const myClientsCard = document.getElementById('my-clients-card');
+if (myClientsCard) {
+    myClientsCard.textContent = myClientNames.size;
+}
+// --- END OF NEW BLOCK ---
     updateMyEarningsChart(mySalonEarnings, currentStaffDashboardRangeFilter, currentUserName);
 
     // --- NEW: Logic for the Earning Details Table ---

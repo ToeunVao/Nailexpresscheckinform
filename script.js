@@ -1015,7 +1015,93 @@ const getDateRange = (filter, specificDate = null) => {
             updateStaffDashboard();
         }
     };
-    
+ const updateStaffEarningsReport = (filteredData) => {
+    const staffContainer = document.getElementById('staff-earning-cards-container');
+    const ctx = document.getElementById('staff-earnings-chart')?.getContext('2d');
+
+    if (!staffContainer || !ctx) return;
+
+    // Calculate total earnings for each staff member (excluding admin)
+    const staffTotals = {};
+    const staffExcludingAdmins = techniciansAndStaff.filter(user => user.role !== 'admin');
+
+    staffExcludingAdmins.forEach(staff => {
+        staffTotals[staff.name] = 0; // Initialize
+    });
+
+    filteredData.forEach(earning => {
+        staffExcludingAdmins.forEach(staff => {
+            const staffNameLower = staff.name.toLowerCase();
+            if (earning[staffNameLower]) {
+                staffTotals[staff.name] += earning[staffNameLower];
+            }
+        });
+    });
+
+    // Render Staff Earning Cards
+    staffContainer.innerHTML = '';
+    if (staffExcludingAdmins.length === 0) {
+        staffContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">No staff found.</p>';
+    } else {
+        staffExcludingAdmins.forEach(staff => {
+            const totalEarning = staffTotals[staff.name] || 0;
+            const cardHTML = `
+                <div class="dashboard-card bg-gray-100 p-4">
+                    <h4 class="font-bold text-gray-800 truncate">${staff.name}</h4>
+                    <p class="text-2xl font-bold text-gray-600">$${totalEarning.toFixed(2)}</p>
+                </div>
+            `;
+            staffContainer.innerHTML += cardHTML;
+        });
+    }
+
+    // Render Staff Earnings Chart
+    const labels = Object.keys(staffTotals);
+    const data = Object.values(staffTotals);
+
+    const chartConfig = {
+        labels,
+        datasets: [{
+            label: 'Total Earnings',
+            data: data,
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.5)',
+                'rgba(54, 162, 235, 0.5)',
+                'rgba(255, 206, 86, 0.5)',
+                'rgba(75, 192, 192, 0.5)',
+                'rgba(153, 102, 255, 0.5)',
+                'rgba(255, 159, 64, 0.5)'
+            ],
+            borderColor: [
+                'rgba(255, 99, 132, 1)',
+                'rgba(54, 162, 235, 1)',
+                'rgba(255, 206, 86, 1)',
+                'rgba(75, 192, 192, 1)',
+                'rgba(153, 102, 255, 1)',
+                'rgba(255, 159, 64, 1)'
+            ],
+            borderWidth: 1
+        }]
+    };
+
+    const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    };
+
+    staffEarningsChart = initializeChart(staffEarningsChart, ctx, 'bar', chartConfig, chartOptions);
+};
+        
     // REPLACE the old updateAdminDashboard function with this one
 const updateAdminDashboard = () => {
     const filter = document.getElementById('dashboard-date-filter').value;
@@ -1137,93 +1223,7 @@ const updateStaffDashboard = () => {
         });
     }
 
-    const updateStaffEarningsReport = (filteredData) => {
-    const staffContainer = document.getElementById('staff-earning-cards-container');
-    const ctx = document.getElementById('staff-earnings-chart')?.getContext('2d');
-
-    if (!staffContainer || !ctx) return;
-
-    // Calculate total earnings for each staff member (excluding admin)
-    const staffTotals = {};
-    const staffExcludingAdmins = techniciansAndStaff.filter(user => user.role !== 'admin');
-
-    staffExcludingAdmins.forEach(staff => {
-        staffTotals[staff.name] = 0; // Initialize
-    });
-
-    filteredData.forEach(earning => {
-        staffExcludingAdmins.forEach(staff => {
-            const staffNameLower = staff.name.toLowerCase();
-            if (earning[staffNameLower]) {
-                staffTotals[staff.name] += earning[staffNameLower];
-            }
-        });
-    });
-
-    // Render Staff Earning Cards
-    staffContainer.innerHTML = '';
-    if (staffExcludingAdmins.length === 0) {
-        staffContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">No staff found.</p>';
-    } else {
-        staffExcludingAdmins.forEach(staff => {
-            const totalEarning = staffTotals[staff.name] || 0;
-            const cardHTML = `
-                <div class="dashboard-card bg-gray-100 p-4">
-                    <h4 class="font-bold text-gray-800 truncate">${staff.name}</h4>
-                    <p class="text-2xl font-bold text-gray-600">$${totalEarning.toFixed(2)}</p>
-                </div>
-            `;
-            staffContainer.innerHTML += cardHTML;
-        });
-    }
-
-    // Render Staff Earnings Chart
-    const labels = Object.keys(staffTotals);
-    const data = Object.values(staffTotals);
-
-    const chartConfig = {
-        labels,
-        datasets: [{
-            label: 'Total Earnings',
-            data: data,
-            backgroundColor: [
-                'rgba(255, 99, 132, 0.5)',
-                'rgba(54, 162, 235, 0.5)',
-                'rgba(255, 206, 86, 0.5)',
-                'rgba(75, 192, 192, 0.5)',
-                'rgba(153, 102, 255, 0.5)',
-                'rgba(255, 159, 64, 0.5)'
-            ],
-            borderColor: [
-                'rgba(255, 99, 132, 1)',
-                'rgba(54, 162, 235, 1)',
-                'rgba(255, 206, 86, 1)',
-                'rgba(75, 192, 192, 1)',
-                'rgba(153, 102, 255, 1)',
-                'rgba(255, 159, 64, 1)'
-            ],
-            borderWidth: 1
-        }]
-    };
-
-    const chartOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                display: false
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true
-            }
-        }
-    };
-
-    staffEarningsChart = initializeChart(staffEarningsChart, ctx, 'bar', chartConfig, chartOptions);
-};
-    
+   
     // Update the title with the client count
     const clientCount = myPayoutDetails.length;
     const detailsTitle = document.getElementById('staff-details-title');

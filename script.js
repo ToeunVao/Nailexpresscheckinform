@@ -2326,7 +2326,7 @@ document.getElementById('dashboard-staff-earning-form-full').addEventListener('s
     const tip = parseFloat(document.getElementById('dashboard-staff-tip-full').value) || 0;
     const dateStr = document.getElementById('dashboard-staff-earning-date-full').value;
 
-    if (isNaN(earning) || isNaN(tip) || !dateStr || !service) { return alert('Please fill out all fields correctly.'); }
+   if (isNaN(earning) || !dateStr) { return alert('Please make sure the Date and Earning fields are filled out correctly.'); }
 
     const date = new Date(dateStr + 'T12:00:00');
 

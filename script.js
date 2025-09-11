@@ -764,6 +764,11 @@ function initClientDashboard(clientId, clientData) {
 
 // --- MAIN CHECK-IN APP SCRIPT ---
 function initMainApp(userRole, userName) {
+     // Personalize the header subtitle
+    const appSubtitle = document.getElementById('app-subtitle');
+    if (appSubtitle) {
+        appSubtitle.textContent = `Welcome, ${userName}!`;
+    }
     const dashboardContent = document.getElementById('dashboard-content');
     const mainAppContainer = document.getElementById('main-app-container');
     const logoLink = document.getElementById('logo-link');

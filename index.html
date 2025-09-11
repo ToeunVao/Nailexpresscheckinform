@@ -1079,17 +1079,21 @@
                                 </div>
                             </form>
                             <div class="flex justify-end items-center mb-4 gap-2">
-                                <button id="export-salon-earnings-btn"
-                                    class="bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600"><i
-                                        class="fas fa-file-excel mr-2"></i>Export</button>
-                                <button id="print-salon-earnings-btn"
-                                    class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600"><i
-                                        class="fas fa-print mr-2"></i>Print</button>
-                                <select id="salon-earning-range-filter"
-                                    class="form-select p-2 border border-gray-300 rounded-lg"></select>
-                                <input type="date" id="salon-earning-date-filter"
-                                    class="p-2 border border-gray-300 rounded-lg hidden">
-                            </div>
+    <input type="file" id="import-salon-earnings-input" class="hidden" accept=".xlsx, .xls">
+    <button id="import-salon-earnings-btn"
+        class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600"><i
+            class="fas fa-file-import mr-2"></i>Import</button>
+    <button id="export-salon-earnings-btn"
+        class="bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600"><i
+            class="fas fa-file-excel mr-2"></i>Export</button>
+    <button id="print-salon-earnings-btn"
+        class="bg-indigo-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-600"><i
+            class="fas fa-print mr-2"></i>Print</button>
+    <select id="salon-earning-range-filter"
+        class="form-select p-2 border border-gray-300 rounded-lg"></select>
+    <input type="date" id="salon-earning-date-filter"
+        class="p-2 border border-gray-300 rounded-lg hidden">
+</div>
                             <div class="overflow-x-auto">
                                 <table id="salon-earning-table" class="w-full text-sm text-left text-gray-600">
                                     <thead id="salon-earning-table-head"

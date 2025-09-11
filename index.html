@@ -474,16 +474,13 @@
 
                 <!-- Admin Dashboard View -->
                 <div id="admin-dashboard-view" class="hidden">
-                    <div class="flex justify-end items-center mb-6">
-                        <label for="dashboard-date-filter" class="text-sm font-medium text-gray-700 mr-2">Date
-                            Range:</label>
-                        <select id="dashboard-date-filter" class="form-select p-2 border border-gray-300 rounded-lg">
-                            <option value="today">Today</option>
-                            <option value="this_week">This Week</option>
-                            <option value="this_month" selected>This Month</option>
-                            <option value="this_year">This Year</option>
-                        </select>
-                    </div>
+                  <div class="flex justify-end items-center mb-6 gap-2">
+    <label class="text-sm font-medium text-gray-700">Date Range:</label>
+    <select id="dashboard-range-filter"
+        class="form-select p-2 border border-gray-300 rounded-lg"></select>
+    <input type="date" id="dashboard-date-filter"
+        class="p-2 border border-gray-300 rounded-lg hidden">
+</div>
 
                     <!-- Summary Cards -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -646,17 +643,13 @@
 
                 <!-- Staff Dashboard View -->
                 <div id="staff-dashboard-view" class="hidden">
-                    <div class="flex justify-end items-center mb-6">
-                        <label for="staff-dashboard-date-filter" class="text-sm font-medium text-gray-700 mr-2">Date
-                            Range:</label>
-                        <select id="staff-dashboard-date-filter"
-                            class="form-select p-2 border border-gray-300 rounded-lg">
-                            <option value="today">Today</option>
-                            <option value="this_week">This Week</option>
-                            <option value="this_month" selected>This Month</option>
-                            <option value="this_year">This Year</option>
-                        </select>
-                    </div>
+                    <div class="flex justify-end items-center mb-6 gap-2">
+    <label class="text-sm font-medium text-gray-700">Date Range:</label>
+    <select id="staff-dashboard-range-filter"
+        class="form-select p-2 border border-gray-300 rounded-lg"></select>
+    <input type="date" id="staff-dashboard-date-filter"
+        class="p-2 border border-gray-300 rounded-lg hidden">
+</div>
 
                     <!-- Staff Summary Cards -->
                     <div class="space-y-6 mb-8">

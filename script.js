@@ -1110,6 +1110,7 @@ const colorPalette = [
         
     // REPLACE the old updateAdminDashboard function with this one
 const updateAdminDashboard = () => {
+    const filter = document.getElementById('dashboard-date-filter').value;
     const { startDate, endDate } = getDateRange(currentDashboardRangeFilter, currentDashboardDateFilter);
     if (!startDate) return;
 
@@ -1186,6 +1187,7 @@ const updateAdminDashboard = () => {
 
 // REPLACE the old updateStaffDashboard function with this one
 const updateStaffDashboard = () => {
+const filter = document.getElementById('staff-dashboard-date-filter').value;
 const { startDate, endDate } = getDateRange(currentStaffDashboardRangeFilter, currentStaffDashboardDateFilter);
     if (!startDate) return;
 

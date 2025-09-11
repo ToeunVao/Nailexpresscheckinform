@@ -2360,7 +2360,84 @@ document.getElementById('dashboard-staff-earning-form-full').addEventListener('s
         XLSX.utils.book_append_sheet(workbook, worksheet, "Salon Earnings");
         XLSX.writeFile(workbook, "Salon_Earning_Report.xlsx");
     });
-    
+
+    const importSalonEarningsBtn = document.getElementById('import-salon-earnings-btn');
+    const importSalonEarningsInput = document.getElementById('import-salon-earnings-input');
+
+    // When the "Import" button is clicked, trigger the hidden file input
+    importSalonEarningsBtn.addEventListener('click', () => {
+        importSalonEarningsInput.click();
+    });
+
+    // When a file is selected in the hidden input, process it
+    importSalonEarningsInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const importedData = XLSX.utils.sheet_to_json(firstSheet);
+
+                if (importedData.length === 0) {
+                    alert('No data found in the Excel file.');
+                    return;
+                }
+
+                const batch = writeBatch(db);
+                let processedCount = 0;
+
+                for (const row of importedData) {
+                    // Ensure there's a valid date
+                    if (!row.Date || !(row.Date instanceof Date)) {
+                        console.warn('Skipping row due to invalid or missing date:', row);
+                        continue;
+                    }
+
+                    const date = row.Date;
+                    // Format the date as YYYY-MM-DD for the document ID
+                    const docId = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                    
+                    const salonEarningData = {
+                        date: Timestamp.fromDate(date),
+                        sellGiftCard: parseFloat(row['Sell GC']) || 0,
+                        returnGiftCard: parseFloat(row['Return GC']) || 0,
+                        check: parseFloat(row['Check']) || 0,
+                        noOfCredit: parseInt(row['No of Credit']) || 0,
+                        totalCredit: parseFloat(row['Total Credit']) || 0,
+                        venmo: parseFloat(row['Venmo']) || 0,
+                        square: parseFloat(row['Square']) || 0,
+                    };
+
+                    // Add earnings for each staff member found in the row
+                    techniciansAndStaff.forEach(tech => {
+                        const techName = tech.name;
+                        if (row[techName] !== undefined && !isNaN(parseFloat(row[techName]))) {
+                            salonEarningData[techName.toLowerCase()] = parseFloat(row[techName]);
+                        }
+                    });
+
+                    const docRef = doc(db, "salon_earnings", docId);
+                    batch.set(docRef, salonEarningData, { merge: true });
+                    processedCount++;
+                }
+
+                await batch.commit();
+                alert(`${processedCount} records imported successfully! The data will now appear in your report.`);
+
+            } catch (error) {
+                console.error("Error importing salon earnings:", error);
+                alert("An error occurred during the import. Please check the console for details and ensure your file format is correct.");
+            } finally {
+                // Reset the input so you can upload the same file again if needed
+                e.target.value = '';
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    });
     document.getElementById('print-salon-earnings-btn').addEventListener('click', () => {
         const printWindow = window.open('', '_blank', 'height=600,width=800');
         printWindow.document.write('<html><head><title>Salon Earning Report</title><script src="https://cdn.tailwindcss.com"><\/script><style>body{padding:20px;font-family:"Poppins",sans-serif}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background-color:#f2f2f2}</style></head><body><h1>Salon Earning Report</h1>');

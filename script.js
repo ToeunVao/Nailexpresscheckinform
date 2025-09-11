@@ -764,6 +764,41 @@ function initClientDashboard(clientId, clientData) {
 
 // --- MAIN CHECK-IN APP SCRIPT ---
 function initMainApp(userRole, userName) {
+       // --- ADD THIS ENTIRE NEW BLOCK FOR MOBILE MENU ---
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const mobileSidebar = document.getElementById('mobile-sidebar');
+    const mobileSidebarCloseBtn = document.getElementById('mobile-sidebar-close-btn');
+    const mobileSidebarOverlay = document.getElementById('mobile-sidebar-overlay');
+    const mobileNavLinksContainer = document.getElementById('mobile-nav-links');
+    const topNavContainer = document.getElementById('top-nav');
+
+    // Function to open the sidebar
+    const openSidebar = () => {
+        mobileSidebar.classList.remove('translate-x-full');
+        mobileSidebarOverlay.classList.remove('hidden');
+    };
+
+    // Function to close the sidebar
+    const closeSidebar = () => {
+        mobileSidebar.classList.add('translate-x-full');
+        mobileSidebarOverlay.classList.add('hidden');
+    };
+    
+    // Copy nav links from desktop to mobile sidebar
+    mobileNavLinksContainer.innerHTML = topNavContainer.innerHTML;
+
+    // Add event listeners
+    mobileMenuBtn.addEventListener('click', openSidebar);
+    mobileSidebarCloseBtn.addEventListener('click', closeSidebar);
+    mobileSidebarOverlay.addEventListener('click', closeSidebar);
+    
+    // Add listener to close sidebar when a nav link is clicked
+    mobileNavLinksContainer.addEventListener('click', (e) => {
+        if (e.target.closest('.top-nav-btn')) {
+            closeSidebar();
+        }
+    });
+    // --- END OF NEW BLOCK ---
      // Personalize the header subtitle
     const appSubtitle = document.getElementById('app-subtitle');
     if (appSubtitle) {

@@ -1319,9 +1319,9 @@ const renderDetailedAppointmentsList = (containerId, appointments, techFilter = 
 };
     
 const updateSalonRevenueChart = (data, filter) => {
-    const ctx = document.getElementById('salon-revenue-chart').getContext('2d');
+    const ctx = document.getElementById('salon-revenue-chart')?.getContext('2d');
     if (!ctx) return;
-    
+
     let labels = [];
     let revenueData = [];
     let cashData = [];
@@ -1331,10 +1331,15 @@ const updateSalonRevenueChart = (data, filter) => {
     data.forEach(item => {
         const date = item.date.toDate();
         let key;
-        if (filter === 'today') key = date.getHours();
-        else if (filter === 'this_week') key = date.getDay();
-        else if (filter === 'this_month') key = date.getDate();
-        else if (filter === 'this_year') key = date.getMonth();
+
+        // NEW: Updated logic to handle the new filter values
+        if (filter === 'daily') {
+            key = date.getHours();
+        } else if (filter === 'this-year' || filter === 'last-year') {
+            key = date.getMonth();
+        } else if (!isNaN(parseInt(filter))) { // Handles month filters (e.g., '0' for Jan, '1' for Feb)
+            key = date.getDate();
+        }
 
         let dailyTotal = 0;
         techniciansAndStaff.forEach(tech => { dailyTotal += item[tech.name.toLowerCase()] || 0; });
@@ -1342,49 +1347,47 @@ const updateSalonRevenueChart = (data, filter) => {
 
         const dailyCash = dailyTotal - ((item.totalCredit || 0) + (item.check || 0) + (item.returnGiftCard || 0) + (item.venmo || 0) + (item.square || 0));
 
-        revenueCounts[key] = (revenueCounts[key] || 0) + dailyTotal;
-        cashCounts[key] = (cashCounts[key] || 0) + dailyCash;
+        if (key !== undefined) {
+             revenueCounts[key] = (revenueCounts[key] || 0) + dailyTotal;
+             cashCounts[key] = (cashCounts[key] || 0) + dailyCash;
+        }
     });
-    
-    if (filter === 'today') {
+
+    // NEW: Updated logic to build the chart labels and data correctly
+    if (filter === 'daily') {
         labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
         revenueData = labels.map((_, i) => revenueCounts[i] || 0);
         cashData = labels.map((_, i) => cashCounts[i] || 0);
-    } else if (filter === 'this_week') {
-        labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        revenueData = labels.map((_, i) => revenueCounts[i] || 0);
-        cashData = labels.map((_, i) => cashCounts[i] || 0);
-    } else if (filter === 'this_month') {
-         const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
-         labels = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-         revenueData = labels.map(day => revenueCounts[day] || 0);
-         cashData = labels.map(day => cashCounts[day] || 0);
-    } else if (filter === 'this_year') {
+    } else if (filter === 'this-year' || filter === 'last-year') {
         labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         revenueData = labels.map((_, i) => revenueCounts[i] || 0);
         cashData = labels.map((_, i) => cashCounts[i] || 0);
+    } else if (!isNaN(parseInt(filter))) {
+        const year = new Date().getFullYear();
+        const month = parseInt(filter);
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        labels = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+        revenueData = labels.map(day => revenueCounts[day] || 0);
+        cashData = labels.map(day => cashCounts[day] || 0);
     }
 
-    const chartConfig = { 
-        labels, 
-        datasets: [
-            { 
-                label: 'Total Revenue', 
-                data: revenueData, 
-                backgroundColor: 'rgba(219, 39, 119, 0.5)', 
-                borderColor: 'rgba(219, 39, 119, 1)', 
-                borderWidth: 1, 
-                tension: 0.1 
-            },
-            { 
-                label: 'Cash Revenue', 
-                data: cashData, 
-                backgroundColor: 'rgba(16, 185, 129, 0.5)', 
-                borderColor: 'rgba(16, 185, 129, 1)', 
-                borderWidth: 1, 
-                tension: 0.1 
-            }
-        ] 
+    const chartConfig = {
+        labels,
+        datasets: [{
+            label: 'Total Revenue',
+            data: revenueData,
+            backgroundColor: 'rgba(219, 39, 119, 0.5)',
+            borderColor: 'rgba(219, 39, 119, 1)',
+            borderWidth: 1,
+            tension: 0.1
+        }, {
+            label: 'Cash Revenue',
+            data: cashData,
+            backgroundColor: 'rgba(16, 185, 129, 0.5)',
+            borderColor: 'rgba(16, 185, 129, 1)',
+            borderWidth: 1,
+            tension: 0.1
+        }]
     };
     salonRevenueChart = initializeChart(salonRevenueChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
 };

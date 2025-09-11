@@ -930,8 +930,8 @@ function initMainApp(userRole, userName) {
 
     let currentTechFilterCalendar = 'All', currentTechFilterActive = 'All', currentTechFilterProcessing = 'All', currentTechFilterFinished = 'All', currentFinishedDateFilter = '';
     let currentEarningTechFilter = 'All', currentEarningDateFilter = '', currentEarningRangeFilter = 'daily',
-    currentDashboardDateFilter = '', currentDashboardRangeFilter = 'daily',
-    currentStaffDashboardDateFilter = '', currentStaffDashboardRangeFilter = 'daily';
+    currentDashboardDateFilter = '', currentDashboardRangeFilter = String(new Date().getMonth()),
+    currentStaffDashboardDateFilter = '', currentStaffDashboardRangeFilter = String(new Date().getMonth());
     
     let currentDashboardEarningTechFilter = 'All', currentDashboardEarningDateFilter = '', currentDashboardEarningRangeFilter = 'daily';
     let currentSalonEarningDateFilter = '', currentSalonEarningRangeFilter = String(new Date().getMonth()), currentExpenseMonthFilter = '';
@@ -2201,7 +2201,16 @@ setupReportDateFilters('salon-earning-range-filter', 'salon-earning-date-filter'
 // ADD THESE TWO NEW LINES
 setupReportDateFilters('dashboard-range-filter', 'dashboard-date-filter', (date, range) => { currentDashboardRangeFilter = range; currentDashboardDateFilter = date; updateAdminDashboard(); });
 setupReportDateFilters('staff-dashboard-range-filter', 'staff-dashboard-date-filter', (date, range) => { currentStaffDashboardRangeFilter = range; currentStaffDashboardDateFilter = date; updateStaffDashboard(); });
-    
+ // --- Set Default Dashboard Filters to Current Month ---
+    const currentMonthValue = String(new Date().getMonth());
+    const adminDashboardFilter = document.getElementById('dashboard-range-filter');
+    if (adminDashboardFilter) {
+        adminDashboardFilter.value = currentMonthValue;
+    }
+    const staffDashboardFilter = document.getElementById('staff-dashboard-range-filter');
+    if (staffDashboardFilter) {
+        staffDashboardFilter.value = currentMonthValue;
+    }   
    // REPLACE the old staff-earning-form listener with this one
 document.getElementById('staff-earning-form').addEventListener('submit', async (e) => {
     e.preventDefault();

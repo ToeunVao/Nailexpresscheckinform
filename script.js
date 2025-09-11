@@ -2124,7 +2124,7 @@ onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot
         document.getElementById(button.id.replace('-tab', '-content')).classList.remove('hidden');
     });
 
-    const setupSubTabs = (tabsId, contentClass) => {
+   const setupSubTabs = (tabsId, contentClass) => {
         document.getElementById(tabsId).addEventListener('click', (e) => {
             const button = e.target.closest('button');
             if (!button) return;
@@ -2134,6 +2134,20 @@ onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot
             const targetContent = document.getElementById(button.id.replace('-tab', '-content'));
             if (targetContent) {
                 targetContent.classList.remove('hidden');
+            }
+
+            // ADDED: Logic to render the correct report when its tab is clicked
+            if (tabsId === 'reports-sub-tabs') {
+                switch (button.id) {
+                    case 'salon-earning-report-tab':
+                        // Manually trigger render with the current filter state
+                        renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, currentSalonEarningDateFilter, currentSalonEarningRangeFilter));
+                        break;
+                    case 'staff-earning-report-tab':
+                        // Manually trigger render with the current filter state
+                        renderAllStaffEarnings();
+                        break;
+                }
             }
         });
     };

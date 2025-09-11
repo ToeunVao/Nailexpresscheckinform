@@ -1235,10 +1235,27 @@ const { startDate, endDate } = getDateRange(currentStaffDashboardRangeFilter, cu
     const myCheckPayout = myTotalPayout * 0.70;
     const myCashPayout = myTotalPayout - myCheckPayout;
 
-    document.getElementById('my-earning-card').textContent = `$${myTotalEarning.toFixed(2)}`;
+   document.getElementById('my-earning-card').textContent = `$${myTotalEarning.toFixed(2)}`;
     document.getElementById('my-total-payout-card').textContent = `$${myTotalPayout.toFixed(2)}`;
     document.getElementById('my-cash-payout-card').textContent = `$${myCashPayout.toFixed(2)}`;
     document.getElementById('my-check-payout-card').textContent = `$${myCheckPayout.toFixed(2)}`;
+
+    // --- ADD THIS NEW BLOCK FOR THE TIPS CARD ---
+    // Filter all earnings data for the current user and date range
+    const myFilteredEarnings = allEarnings.filter(e => {
+        const earnDate = e.date.toDate();
+        return e.staffName === currentUserName && earnDate >= startDate && earnDate <= endDate;
+    });
+
+    // Sum up the tips from the filtered earnings
+    const myTotalTips = myFilteredEarnings.reduce((sum, e) => sum + (e.tip || 0), 0);
+    
+    // Update the new "My Tips" card
+    const myTipsCard = document.getElementById('my-tips-card');
+    if (myTipsCard) {
+        myTipsCard.textContent = `$${myTotalTips.toFixed(2)}`;
+    }
+    // --- END OF NEW BLOCK ---
 // --- ADD THIS NEW BLOCK FOR APPOINTMENT & CLIENT COUNTS ---
 // Filter for upcoming appointments assigned to the current staff member
 const myUpcomingAppointments = allAppointments.filter(appt => 

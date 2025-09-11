@@ -1059,18 +1059,39 @@ const colorPalette = [
         staffContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">No staff found.</p>';
     } else {
         staffExcludingAdmins.forEach((staff, index) => {
+            // --- Calculations ---
             const totalEarning = staffTotals[staff.name] || 0;
+            const commission = totalEarning * 0.70;
+            const checkPayout = commission * 0.70;
+            const cashPayout = commission * 0.30; // This is the remaining 30% of the commission
+
+            // --- HTML Template ---
             const colorTheme = colorPalette[index % colorPalette.length];
             const cardHTML = `
-                <div class="dashboard-card ${colorTheme.card} p-4">
-                    <h4 class="font-bold ${colorTheme.text} truncate">${staff.name}</h4>
-                    <p class="text-2xl font-bold text-gray-700">$${totalEarning.toFixed(2)}</p>
+                <div class="dashboard-card ${colorTheme.card} p-4 flex flex-col">
+                    <div>
+                        <h4 class="font-bold ${colorTheme.text} truncate">${staff.name}</h4>
+                        <p class="text-2xl font-bold text-gray-700 mb-2">$${totalEarning.toFixed(2)}</p>
+                    </div>
+                    <div class="mt-auto space-y-1 text-xs text-gray-600 border-t border-gray-400/20 pt-2">
+                        <div class="flex justify-between">
+                            <span>Commission (70%):</span>
+                            <span class="font-semibold text-gray-800">$${commission.toFixed(2)}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Check Payout (70%):</span>
+                            <span class="font-semibold text-gray-800">$${checkPayout.toFixed(2)}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Cash Payout (30%):</span>
+                            <span class="font-semibold text-gray-800">$${cashPayout.toFixed(2)}</span>
+                        </div>
+                    </div>
                 </div>
             `;
             staffContainer.innerHTML += cardHTML;
         });
     }
-
     // Render Staff Earnings Chart using the new palette
     const labels = Object.keys(staffTotals);
     const data = Object.values(staffTotals);

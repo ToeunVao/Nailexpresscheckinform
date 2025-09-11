@@ -1396,9 +1396,8 @@ const updateSalonRevenueChart = (data, filter) => {
     };
     salonRevenueChart = initializeChart(salonRevenueChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
 };
-// REPLACE the old updateMyEarningsChart function with this one
 const updateMyEarningsChart = (data, filter, staffName) => {
-    const ctx = document.getElementById('my-earnings-chart').getContext('2d');
+    const ctx = document.getElementById('my-earnings-chart')?.getContext('2d');
     if (!ctx) return;
 
     const staffNameLower = staffName.toLowerCase();
@@ -1415,15 +1414,22 @@ const updateMyEarningsChart = (data, filter, staffName) => {
     data.forEach(item => {
         const date = item.date.toDate();
         let key;
-        if (filter === 'today') key = date.getHours();
-        else if (filter === 'this_week') key = date.getDay();
-        else if (filter === 'this_month') key = date.getDate();
-        else if (filter === 'this_year') key = date.getMonth();
 
-        if (!timeData[key]) {
-            timeData[key] = { earning: 0 };
+        // CORRECTED: Logic now handles the new filter values
+        if (filter === 'daily') {
+            key = date.getHours();
+        } else if (filter === 'this-year' || filter === 'last-year') {
+            key = date.getMonth();
+        } else if (!isNaN(parseInt(filter))) { // Handles month numbers
+            key = date.getDate();
         }
-        timeData[key].earning += item[staffNameLower] || 0;
+        
+        if (key !== undefined) {
+            if (!timeData[key]) {
+                timeData[key] = { earning: 0 };
+            }
+            timeData[key].earning += item[staffNameLower] || 0;
+        }
     });
 
     const populateDatasets = (key) => {
@@ -1438,18 +1444,19 @@ const updateMyEarningsChart = (data, filter, staffName) => {
         datasets.check.data.push(checkPayout);
     };
 
-    if (filter === 'today') {
+    // CORRECTED: Logic to build labels based on new filter values
+    if (filter === 'daily') {
         for (let i = 0; i < 24; i++) { labels.push(`${i}:00`); populateDatasets(i); }
-    } else if (filter === 'this_week') {
-        labels.push('Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat');
-        for (let i = 0; i < 7; i++) { populateDatasets(i); }
-    } else if (filter === 'this_month') {
-        const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
-        for (let i = 1; i <= daysInMonth; i++) { labels.push(i); populateDatasets(i); }
-    } else if (filter === 'this_year') {
+    } else if (filter === 'this-year' || filter === 'last-year') {
         labels.push('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
         for (let i = 0; i < 12; i++) { populateDatasets(i); }
+    } else if (!isNaN(parseInt(filter))) {
+        const year = new Date().getFullYear();
+        const month = parseInt(filter);
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        for (let i = 1; i <= daysInMonth; i++) { labels.push(i); populateDatasets(i); }
     }
+
 
     const chartConfig = {
         labels,

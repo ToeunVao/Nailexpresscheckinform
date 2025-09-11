@@ -1015,7 +1015,13 @@ const getDateRange = (filter, specificDate = null) => {
             updateStaffDashboard();
         }
     };
- const updateStaffEarningsReport = (filteredData) => {
+// Add this new array right before the function
+const cardColors = [
+    'bg-pink-100', 'bg-blue-100', 'bg-green-100', 'bg-yellow-100',
+    'bg-purple-100', 'bg-teal-100', 'bg-indigo-100', 'bg-orange-100'
+];
+
+    const updateStaffEarningsReport = (filteredData) => {
     const staffContainer = document.getElementById('staff-earning-cards-container');
     const ctx = document.getElementById('staff-earnings-chart')?.getContext('2d');
 
@@ -1038,15 +1044,17 @@ const getDateRange = (filter, specificDate = null) => {
         });
     });
 
-    // Render Staff Earning Cards
+// Render Staff Earning Cards
     staffContainer.innerHTML = '';
     if (staffExcludingAdmins.length === 0) {
         staffContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">No staff found.</p>';
     } else {
-        staffExcludingAdmins.forEach(staff => {
+        staffExcludingAdmins.forEach((staff, index) => {
             const totalEarning = staffTotals[staff.name] || 0;
+            // Pick a color from our palette based on the staff's index
+            const colorClass = cardColors[index % cardColors.length];
             const cardHTML = `
-                <div class="dashboard-card bg-gray-100 p-4">
+                <div class="dashboard-card ${colorClass} p-4">
                     <h4 class="font-bold text-gray-800 truncate">${staff.name}</h4>
                     <p class="text-2xl font-bold text-gray-600">$${totalEarning.toFixed(2)}</p>
                 </div>

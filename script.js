@@ -929,7 +929,10 @@ function initMainApp(userRole, userName) {
     let currentYear = new Date().getFullYear();
 
     let currentTechFilterCalendar = 'All', currentTechFilterActive = 'All', currentTechFilterProcessing = 'All', currentTechFilterFinished = 'All', currentFinishedDateFilter = '';
-    let currentEarningTechFilter = 'All', currentEarningDateFilter = '', currentEarningRangeFilter = 'daily';
+    let currentEarningTechFilter = 'All', currentEarningDateFilter = '', currentEarningRangeFilter = 'daily',
+    currentDashboardDateFilter = '', currentDashboardRangeFilter = 'daily',
+    currentStaffDashboardDateFilter = '', currentStaffDashboardRangeFilter = 'daily';
+    
     let currentDashboardEarningTechFilter = 'All', currentDashboardEarningDateFilter = '', currentDashboardEarningRangeFilter = 'daily';
     let currentSalonEarningDateFilter = '', currentSalonEarningRangeFilter = String(new Date().getMonth()), currentExpenseMonthFilter = '';
 
@@ -1107,8 +1110,7 @@ const colorPalette = [
         
     // REPLACE the old updateAdminDashboard function with this one
 const updateAdminDashboard = () => {
-    const filter = document.getElementById('dashboard-date-filter').value;
-    const { startDate, endDate } = getDateRange(filter);
+    const { startDate, endDate } = getDateRange(currentDashboardRangeFilter, currentDashboardDateFilter);
     if (!startDate) return;
 
     const filteredSalonEarnings = allSalonEarnings.filter(e => {
@@ -1184,8 +1186,7 @@ const updateAdminDashboard = () => {
 
 // REPLACE the old updateStaffDashboard function with this one
 const updateStaffDashboard = () => {
-    const filter = document.getElementById('staff-dashboard-date-filter').value;
-    const { startDate, endDate } = getDateRange(filter);
+const { startDate, endDate } = getDateRange(currentStaffDashboardRangeFilter, currentStaffDashboardDateFilter);
     if (!startDate) return;
 
     // --- Calculations for Cards & Graph (This part remains the same) ---
@@ -2192,8 +2193,12 @@ const setupReportDateFilters = (selectId, dateInputId, callback) => {
 
     setupReportDateFilters('earning-range-filter', 'earning-date-filter', (date, range) => { currentEarningDateFilter = date; currentEarningRangeFilter = range; renderAllStaffEarnings(); });
     setupReportDateFilters('dashboard-earning-range-filter', 'dashboard-earning-date-filter', (date, range) => { currentDashboardEarningDateFilter = date; currentDashboardEarningRangeFilter = range; renderAllStaffEarnings(); });
-    setupReportDateFilters('salon-earning-range-filter', 'salon-earning-date-filter', (date, range) => { currentSalonEarningDateFilter = date; currentSalonEarningRangeFilter = range; renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, date, range)); });
-    
+// ... existing filter setups
+setupReportDateFilters('salon-earning-range-filter', 'salon-earning-date-filter', (date, range) => { currentSalonEarningDateFilter = date; currentSalonEarningRangeFilter = range; renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, date, range)); });
+
+// ADD THESE TWO NEW LINES
+setupReportDateFilters('dashboard-range-filter', 'dashboard-date-filter', (date, range) => { currentDashboardRangeFilter = range; currentDashboardDateFilter = date; updateAdminDashboard(); });
+setupReportDateFilters('staff-dashboard-range-filter', 'staff-dashboard-date-filter', (date, range) => { currentStaffDashboardRangeFilter = range; currentStaffDashboardDateFilter = date; updateStaffDashboard(); });
     
    // REPLACE the old staff-earning-form listener with this one
 document.getElementById('staff-earning-form').addEventListener('submit', async (e) => {

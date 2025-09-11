@@ -1015,10 +1015,16 @@ const getDateRange = (filter, specificDate = null) => {
             updateStaffDashboard();
         }
     };
-// Add this new array right before the function
-const cardColors = [
-    'bg-pink-100', 'bg-blue-100', 'bg-green-100', 'bg-yellow-100',
-    'bg-purple-100', 'bg-teal-100', 'bg-indigo-100', 'bg-orange-100'
+// DELETE the old cardColors array and REPLACE it with this new palette
+const colorPalette = [
+    { card: 'bg-pink-100', text: 'text-pink-800', bg: 'rgba(255, 99, 132, 0.5)', border: 'rgba(255, 99, 132, 1)' },
+    { card: 'bg-blue-100', text: 'text-blue-800', bg: 'rgba(54, 162, 235, 0.5)', border: 'rgba(54, 162, 235, 1)' },
+    { card: 'bg-green-100', text: 'text-green-800', bg: 'rgba(75, 192, 192, 0.5)', border: 'rgba(75, 192, 192, 1)' },
+    { card: 'bg-yellow-100', text: 'text-yellow-800', bg: 'rgba(255, 206, 86, 0.5)', border: 'rgba(255, 206, 86, 1)' },
+    { card: 'bg-purple-100', text: 'text-purple-800', bg: 'rgba(153, 102, 255, 0.5)', border: 'rgba(153, 102, 255, 1)' },
+    { card: 'bg-teal-100', text: 'text-teal-800', bg: 'rgba(32, 201, 151, 0.5)', border: 'rgba(32, 201, 151, 1)' },
+    { card: 'bg-indigo-100', text: 'text-indigo-800', bg: 'rgba(79, 70, 229, 0.5)', border: 'rgba(79, 70, 229, 1)' },
+    { card: 'bg-orange-100', text: 'text-orange-800', bg: 'rgba(255, 159, 64, 0.5)', border: 'rgba(255, 159, 64, 1)' }
 ];
 
     const updateStaffEarningsReport = (filteredData) => {
@@ -1044,50 +1050,39 @@ const cardColors = [
         });
     });
 
-// Render Staff Earning Cards
+    // Render Staff Earning Cards using the new palette
     staffContainer.innerHTML = '';
     if (staffExcludingAdmins.length === 0) {
         staffContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">No staff found.</p>';
     } else {
         staffExcludingAdmins.forEach((staff, index) => {
             const totalEarning = staffTotals[staff.name] || 0;
-            // Pick a color from our palette based on the staff's index
-            const colorClass = cardColors[index % cardColors.length];
+            const colorTheme = colorPalette[index % colorPalette.length];
             const cardHTML = `
-                <div class="dashboard-card ${colorClass} p-4">
-                    <h4 class="font-bold text-gray-800 truncate">${staff.name}</h4>
-                    <p class="text-2xl font-bold text-gray-600">$${totalEarning.toFixed(2)}</p>
+                <div class="dashboard-card ${colorTheme.card} p-4">
+                    <h4 class="font-bold ${colorTheme.text} truncate">${staff.name}</h4>
+                    <p class="text-2xl font-bold text-gray-700">$${totalEarning.toFixed(2)}</p>
                 </div>
             `;
             staffContainer.innerHTML += cardHTML;
         });
     }
 
-    // Render Staff Earnings Chart
+    // Render Staff Earnings Chart using the new palette
     const labels = Object.keys(staffTotals);
     const data = Object.values(staffTotals);
+
+    // Dynamically create color arrays that match the cards
+    const backgroundColors = labels.map((_, index) => colorPalette[index % colorPalette.length].bg);
+    const borderColors = labels.map((_, index) => colorPalette[index % colorPalette.length].border);
 
     const chartConfig = {
         labels,
         datasets: [{
             label: 'Total Earnings',
             data: data,
-            backgroundColor: [
-                'rgba(255, 99, 132, 0.5)',
-                'rgba(54, 162, 235, 0.5)',
-                'rgba(255, 206, 86, 0.5)',
-                'rgba(75, 192, 192, 0.5)',
-                'rgba(153, 102, 255, 0.5)',
-                'rgba(255, 159, 64, 0.5)'
-            ],
-            borderColor: [
-                'rgba(255, 99, 132, 1)',
-                'rgba(54, 162, 235, 1)',
-                'rgba(255, 206, 86, 1)',
-                'rgba(75, 192, 192, 1)',
-                'rgba(153, 102, 255, 1)',
-                'rgba(255, 159, 64, 1)'
-            ],
+            backgroundColor: backgroundColors,
+            borderColor: borderColors,
             borderWidth: 1
         }]
     };

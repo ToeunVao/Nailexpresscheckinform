@@ -3489,6 +3489,8 @@ const openLightbox = (index) => {
     const idea = currentGalleryData[index];
 
     lightboxImage.src = idea.imageURL;
+    currentRotation = 0; // ADD THIS LINE TO RESET ROTATION
+    lightboxImage.style.transform = `rotate(0deg)`; // AND THIS LINE TO RESET THE STYLE
     lightboxTitle.textContent = idea.name;
     lightboxShape.textContent = idea.shape || 'N/A';
     lightboxColor.textContent = idea.color || 'N/A';
@@ -3503,7 +3505,29 @@ const openLightbox = (index) => {
     nailIdeaLightbox.classList.remove('hidden');
     nailIdeaLightbox.classList.add('flex');
 };
+// --- ADD THESE TWO NEW FUNCTIONS ---
+const toggleFullScreen = () => {
+    const lightbox = document.getElementById('nail-idea-lightbox');
+    const icon = document.getElementById('lightbox-fullscreen-btn').querySelector('i');
+    if (!document.fullscreenElement) {
+        lightbox.requestFullscreen().catch(err => {
+            alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+        });
+        icon.classList.replace('fa-expand', 'fa-compress');
+    } else {
+        document.exitFullscreen();
+        icon.classList.replace('fa-compress', 'fa-expand');
+    }
+};
 
+const rotateImage = () => {
+    currentRotation += 90;
+    if (currentRotation >= 360) {
+        currentRotation = 0;
+    }
+    document.getElementById('lightbox-image').style.transform = `rotate(${currentRotation}deg)`;
+};
+// --- END OF NEW FUNCTIONS ---
 const closeLightbox = () => {
     nailIdeaLightbox.classList.add('hidden');
     nailIdeaLightbox.classList.remove('flex');
@@ -3538,7 +3562,10 @@ document.getElementById('nails-idea-landing').addEventListener('click', galleryC
 lightboxCloseBtn.addEventListener('click', closeLightbox);
 lightboxNextBtn.addEventListener('click', showNextImage);
 lightboxPrevBtn.addEventListener('click', showPrevImage);
-
+// ADD THESE TWO NEW LISTENERS
+document.getElementById('lightbox-fullscreen-btn').addEventListener('click', toggleFullScreen);
+document.getElementById('lightbox-rotate-btn').addEventListener('click', rotateImage);
+// END OF NEW LISTENERS
 // Add keyboard navigation
 document.addEventListener('keydown', (e) => {
     if (!nailIdeaLightbox.classList.contains('hidden')) {

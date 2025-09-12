@@ -854,7 +854,14 @@ function initMainApp(userRole, userName) {
     // Populate both the desktop and mobile navigation containers
     topNavContainer.innerHTML = navHTML;
     mobileNavLinksContainer.innerHTML = navHTML;
-
+   // --- ADD THIS NEW BLOCK TO ADD THE LOGOUT BUTTON ---
+    const mobileLogoutButtonHTML = `
+        <button id="mobile-logout-btn" class="top-nav-btn mt-4 w-full text-left bg-pink-100 text-pink-700">
+            <i class="fas fa-sign-out-alt mr-2"></i>Logout
+        </button>
+    `;
+    mobileNavLinksContainer.insertAdjacentHTML('beforeend', mobileLogoutButtonHTML);
+    // --- END OF NEW BLOCK ---
     // Add event listeners
     if (mobileMenuBtn) {
         mobileMenuBtn.addEventListener('click', openSidebar);
@@ -878,6 +885,14 @@ function initMainApp(userRole, userName) {
                 }
                 closeSidebar();
             }
+        });
+    }
+     // --- ADD THIS NEW BLOCK TO MAKE THE LOGOUT BUTTON WORK ---
+    const mobileLogoutBtn = document.getElementById('mobile-logout-btn');
+    if (mobileLogoutBtn) {
+        mobileLogoutBtn.addEventListener('click', () => {
+            signOut(auth);
+            closeSidebar(); // Also close the sidebar on logout
         });
     }
     // --- END: MOBILE MENU LOGIC ---

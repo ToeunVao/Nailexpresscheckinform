@@ -37,33 +37,25 @@
     <!-- Login/Landing Page Content (Hidden initially) -->
     <div id="landing-page-content" style="display: none;">
         <!-- Header -->
-        <header class="bg-white shadow-md">
-            <div class="container mx-auto max-w-7xl p-4 flex justify-between items-center">
-                <div class="flex items-center gap-4">
-                    <div id="logo-link" class="cursor-pointer">
-                        <h1 class="text-2xl font-bold text-pink-700">Nails Express</h1>
-                        <p id="app-subtitle" class="text-sm text-gray-500">Nails salon & Spa</p>
-                    </div>
-                    <div id="notification-bell" class="relative cursor-pointer">
-                        <i class="fas fa-bell text-xl text-gray-600"></i>
-                        <span id="notification-count" class="notification-badge">0</span>
-                        <div id="notification-dropdown" class="notification-dropdown hidden">
-                            </div>
-                    </div>
-                </div>
-                <nav id="top-nav" class="hidden md:flex items-center gap-2 text-sm font-semibold text-gray-600">
-                    </nav>
-                <div class="flex items-center gap-4">
-                    <div class="text-right hidden md:block">
-                        <div id="live-clock" class="clock text-3xl font-bold text-gray-800"></div>
-                        <div id="live-date" class="text-sm text-gray-500"></div>
-                    </div>
-                    <button id="sign-out-btn"
-                        class="bg-pink-100 text-pink-700 font-semibold py-2 px-4 rounded-lg hover:bg-pink-200 transition-colors hidden sm:block">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </button>
-                    <button id="mobile-menu-btn" class="md:hidden text-2xl text-gray-600">
-                        <i class="fas fa-bars"></i>
+        <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50">
+            <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+                <div id="landing-logo">
+    <h2 class="text-2xl font-bold text-pink-700 tracking-wider"><a href="#">NailsXpress</a></h2>
+    <p class="text-xs text-gray-500 -mt-1">Nails salon & Spa</p>
+</div>
+                <nav id="landing-nav" class="hidden md:flex space-x-8 text-sm font-semibold text-gray-600">
+                    <a href="#promotions-landing" class="hover:text-pink-600 nav-item-promotions">Promotions</a>
+                    <a href="#nails-idea-landing" class="hover:text-pink-600 nav-item-nails-idea">Nails Idea</a>
+                    <a href="#gift-card-landing" class="hover:text-pink-600 nav-item-gift-card">Gift Cards</a>
+                    <a href="#booking-landing" class="hover:text-pink-600">Booking</a>
+                    <a href="#about-landing" class="hover:text-pink-600">About Us</a>
+                    <a href="#contact-landing" class="hover:text-pink-600">Contact Us</a>
+                </nav>
+                <div class="flex items-center space-x-4">
+                    <button id="user-icon"
+                        class="text-gray-600 hover:text-pink-600 flex items-center space-x-2 text-sm font-semibold">
+                        <i class="fas fa-user"></i>
+                        <span>Log In</span>
                     </button>
                 </div>
             </div>

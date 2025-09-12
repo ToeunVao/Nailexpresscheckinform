@@ -1105,7 +1105,7 @@ topNav.addEventListener('click', (e) => {
     let currentSalonEarningDateFilter = '', currentSalonEarningRangeFilter = String(new Date().getMonth()), currentExpenseMonthFilter = '';
 
    // ... other variables
-let aggregatedClients = [], allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [], allInventoryUsage = [], allGiftCards = [], allPromotions = [], allServicesList = [], technicianColorMap = {};
+let aggregatedClients = [], allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [], allInventoryUsage = [], allGiftCards = [], allPromotions = [], allServicesList = [], technicianColorMap = {}, sentReminderIds = [];
 // ... more variables
     let techniciansAndStaff = [], technicians = [];
     let allExpenseCategories = [], allPaymentAccounts = [], allSuppliers = [];
@@ -2270,13 +2270,16 @@ const updateSalonEarningsForDate = async (dateStr) => {
 
      onSnapshot(query(collection(db, "appointments"), orderBy("appointmentTimestamp", "asc")), (snapshot) => {
         snapshot.docChanges().forEach((change) => {
-            if (change.type === "added" && initialAppointmentsLoaded) {
-                 const data = change.doc.data();
-                 if (data.appointmentTimestamp.seconds > appLoadTimestamp.seconds) {
-                    const apptTime = new Date(data.appointmentTimestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    addNotification('booking', `New booking for ${data.name} at ${apptTime}`);
-                 }
-            }
+if (change.type === "added" && initialAppointmentsLoaded) {
+    const data = change.doc.data();
+    if (data.appointmentTimestamp.seconds > appLoadTimestamp.seconds) {
+        const apptTime = new Date(data.appointmentTimestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        // Create a clean service string
+        const serviceString = Array.isArray(data.services) ? data.services[0] : data.services;
+        // Update the notification message format
+        addNotification('booking', `New booking from ${data.name} for ${serviceString} at ${apptTime}`);
+    }
+}
         });
         
         allAppointments = snapshot.docs.map(doc => ({ id: doc.id, appointmentTime: doc.data().appointmentTimestamp ? new Date(doc.data().appointmentTimestamp.seconds * 1000).toLocaleString() : 'N/A', ...doc.data() }));
@@ -2530,7 +2533,32 @@ if (dashboardServiceInput && dashboardEarningInput) {
         enableSwipeableTabs('#check-in-section', '#main-tabs');
         enableSwipeableTabs('#reports-content', '#reports-sub-tabs');
         enableSwipeableTabs('#admin-content', '#admin-sub-tabs');
-    
+    // --- PASTE THE NEW REMINDER LOGIC HERE ---
+        const checkAppointmentReminders = () => {
+            const now = new Date();
+            allAppointments.forEach(appt => {
+                if (sentReminderIds.includes(appt.id)) {
+                    return; // Reminder already sent for this appointment
+                }
+
+                const apptTime = appt.appointmentTimestamp.toDate();
+                const timeDifferenceMinutes = (apptTime.getTime() - now.getTime()) / 60000;
+
+                // If the appointment is between 0 and 60 minutes from now
+                if (timeDifferenceMinutes > 0 && timeDifferenceMinutes <= 60) {
+                    const timeString = apptTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const serviceString = Array.isArray(appt.services) ? appt.services[0] : appt.services;
+                    
+                    addNotification('reminder', `Reminder: ${appt.name}'s appointment for ${serviceString} is at ${timeString}.`);
+                    
+                    sentReminderIds.push(appt.id); // Mark reminder as sent
+                }
+            });
+        };
+
+        // Check for reminders every minute
+        setInterval(checkAppointmentReminders, 60000);
+        // --- END OF NEW BLOCK ---
    // REPLACE the old staff-earning-form listener with this one
 document.getElementById('staff-earning-form').addEventListener('submit', async (e) => {
     e.preventDefault();

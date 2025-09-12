@@ -2452,9 +2452,9 @@ document.getElementById('staff-earning-form').addEventListener('submit', async (
     const staffName = document.getElementById('staff-name').value;
     const service = document.getElementById('staff-earning-service').value; // Get service value
     const earning = parseFloat(document.getElementById('staff-earning').value);
-    const tip = parseFloat(document.getElementById('staff-tip').value);
+    const tip = parseFloat(document.getElementById('staff-tip').value) || 0; // If blank, default to 0
     const date = document.getElementById('staff-earning-date').value;
-    if (isNaN(earning) || isNaN(tip) || !date || !service) { return alert('Please fill out all fields correctly.'); }
+    if (isNaN(earning) || !date ) { return alert('Please ensure Date, and Earning fields are filled out correctly.'); } // Tip is now optional
     try {
         // Add service to the data being saved
         await addDoc(collection(db, "earnings"), { staffName, service, earning, tip, date: Timestamp.fromDate(new Date(date + 'T12:00:00')) });

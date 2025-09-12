@@ -831,7 +831,30 @@ function initMainApp(userRole, userName) {
     };
     
     // Copy nav links from desktop to mobile sidebar
-    mobileNavLinksContainer.innerHTML = topNavContainer.innerHTML;
+   // --- Build and Populate Navigation Links ---
+    let navHTML = `
+        <button class="top-nav-btn relative" data-target="check-in">
+            Check-in
+            <span id="check-in-nav-count" class="absolute -top-1 -right-1 bg-pink-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center hidden">0</span>
+        </button>
+        <button class="top-nav-btn relative" data-target="booking">
+            Booking
+            <span id="booking-nav-count" class="absolute -top-1 -right-1 bg-blue-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center hidden">0</span>
+        </button>
+        <button class="top-nav-btn" data-target="nails-idea">Nails Idea</button>
+    `;
+
+    // Add admin-only links if the user is an admin
+    if (userRole === 'admin') {
+        navHTML += `
+            <button class="top-nav-btn" data-target="report">Report</button>
+            <button class="top-nav-btn" data-target="setting">Setting</button>
+        `;
+    }
+    
+    // Populate both the desktop and mobile navigation containers
+    topNavContainer.innerHTML = navHTML;
+    mobileNavLinksContainer.innerHTML = navHTML;
 
     // Add event listeners
     mobileMenuBtn.addEventListener('click', openSidebar);

@@ -47,11 +47,11 @@ body { font-family: 'Poppins', sans-serif; background-color: #FEFBF9; }
         }
         .calendar-day { min-height: 100px; cursor: pointer; }
         .calendar-day:hover { background-color: #fdf2f8; }
-        .appointment-entry {
-            background-color: #fce7f3; color: #be185d; padding: 4px; border-radius: 4px;
-            font-size: 12px; margin-bottom: 2px; cursor: pointer; overflow: hidden;
-            text-overflow: ellipsis; white-space: nowrap;
-        }
+.appointment-entry {
+    border-radius: 4px;
+    cursor: pointer;
+    overflow: hidden;
+}
         .tech-filter-btn.active { background-color: #db2777; color: white; }
 
         /* Service Accordion on Landing Page */

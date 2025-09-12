@@ -1105,7 +1105,7 @@ topNav.addEventListener('click', (e) => {
     let currentSalonEarningDateFilter = '', currentSalonEarningRangeFilter = String(new Date().getMonth()), currentExpenseMonthFilter = '';
 
    // ... other variables
-let aggregatedClients = [], allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [], allInventoryUsage = [], allGiftCards = [], allPromotions = [], allServicesList = [];
+let aggregatedClients = [], allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [], allInventoryUsage = [], allGiftCards = [], allPromotions = [], allServicesList = [], technicianColorMap = {};
 // ... more variables
     let techniciansAndStaff = [], technicians = [];
     let allExpenseCategories = [], allPaymentAccounts = [], allSuppliers = [];
@@ -2424,10 +2424,18 @@ let filteredAppointments = allAppointments;
                 if (dayCell) {
                     const timeString = apptDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
                     const serviceString = Array.isArray(appt.services) ? appt.services[0] : appt.services;
+                    
+                    // --- Get the color for the assigned technician ---
+                    const technicianName = appt.technician;
+                    let colorTheme = { card: 'bg-gray-100', text: 'text-gray-800' }; // Default for "Any Technician"
+                    if (technicianName && technicianColorMap[technicianName]) {
+                        colorTheme = technicianColorMap[technicianName];
+                    }
+                    // --- End of color logic ---
 
                     const entryHTML = `
-                        <div class="appointment-entry bg-pink-100 text-pink-800 p-1" data-id="${appt.id}" data-type="appointment">
-                            <p class="font-semibold text-xs truncate">${timeString} - ${appt.name}</p>
+                        <div class="appointment-entry ${colorTheme.card} p-1" data-id="${appt.id}" data-type="appointment">
+                            <p class="font-semibold text-xs ${colorTheme.text} truncate">${timeString} - ${appt.name}</p>
                             <p class="text-xs text-gray-600 truncate">${serviceString || 'Service not specified'}</p>
                         </div>`;
                     
@@ -2985,6 +2993,13 @@ onSnapshot(collection(db, "users"), (snapshot) => {
     const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     techniciansAndStaff = users.filter(user => user.role === 'technician' || user.role === 'staff');
     technicians = users.filter(user => user.role === 'technician');
+    // --- ADD THIS NEW BLOCK TO CREATE THE COLOR MAP ---
+    technicianColorMap = {};
+    technicians.forEach((tech, index) => {
+        // Assign a color from the palette to each technician
+        technicianColorMap[tech.name] = colorPalette[index % colorPalette.length];
+    });
+    // --- END OF NEW BLOCK ---
     renderUsers(users);
     populateTechnicianFilters();
 

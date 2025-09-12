@@ -810,7 +810,7 @@ const enableSwipeableTabs = (contentContainerSelector, tabsListSelector) => {
 };
 // --- MAIN CHECK-IN APP SCRIPT ---
 function initMainApp(userRole, userName) {
-       // --- ADD THIS ENTIRE NEW BLOCK FOR MOBILE MENU ---
+    // --- START: MOBILE MENU LOGIC (REPLACE YOUR OLD BLOCK WITH THIS) ---
     const mobileMenuBtn = document.getElementById('mobile-menu-btn');
     const mobileSidebar = document.getElementById('mobile-sidebar');
     const mobileSidebarCloseBtn = document.getElementById('mobile-sidebar-close-btn');
@@ -830,8 +830,7 @@ function initMainApp(userRole, userName) {
         mobileSidebarOverlay.classList.add('hidden');
     };
     
-    // Copy nav links from desktop to mobile sidebar
-   // --- Build and Populate Navigation Links ---
+    // Build and Populate Navigation Links
     let navHTML = `
         <button class="top-nav-btn relative" data-target="check-in">
             Check-in
@@ -857,16 +856,31 @@ function initMainApp(userRole, userName) {
     mobileNavLinksContainer.innerHTML = navHTML;
 
     // Add event listeners
-    mobileMenuBtn.addEventListener('click', openSidebar);
-    mobileSidebarCloseBtn.addEventListener('click', closeSidebar);
-    mobileSidebarOverlay.addEventListener('click', closeSidebar);
+    if (mobileMenuBtn) {
+        mobileMenuBtn.addEventListener('click', openSidebar);
+    }
+    if (mobileSidebarCloseBtn) {
+        mobileSidebarCloseBtn.addEventListener('click', closeSidebar);
+    }
+    if (mobileSidebarOverlay) {
+        mobileSidebarOverlay.addEventListener('click', closeSidebar);
+    }
     
     // Add listener to close sidebar when a nav link is clicked
-    mobileNavLinksContainer.addEventListener('click', (e) => {
-        if (e.target.closest('.top-nav-btn')) {
-            closeSidebar();
-        }
-    });
+    if (mobileNavLinksContainer) {
+        mobileNavLinksContainer.addEventListener('click', (e) => {
+            if (e.target.closest('.top-nav-btn')) {
+                // We need to find the corresponding desktop button to click it
+                const target = e.target.closest('.top-nav-btn').dataset.target;
+                const desktopButton = topNavContainer.querySelector(`[data-target="${target}"]`);
+                if (desktopButton) {
+                    desktopButton.click();
+                }
+                closeSidebar();
+            }
+        });
+    }
+    // --- END: MOBILE MENU LOGIC ---
     // --- END OF NEW BLOCK ---
      // Personalize the header subtitle
     const appSubtitle = document.getElementById('app-subtitle');

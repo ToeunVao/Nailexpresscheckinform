@@ -973,23 +973,53 @@ function initMainApp(userRole, userName) {
         topNav.querySelectorAll('.top-nav-btn').forEach(btn => btn.classList.remove('active'));
     });
 
-    topNav.addEventListener('click', (e) => {
-        const button = e.target.closest('.top-nav-btn');
-        if (!button) return;
-        const target = button.dataset.target;
-        topNav.querySelectorAll('.top-nav-btn').forEach(btn => btn.classList.remove('active'));
-        button.classList.add('active');
-        dashboardContent.classList.add('hidden');
-        mainAppContainer.classList.remove('hidden');
-        allMainSections.forEach(section => section.classList.add('hidden'));
-        switch (target) {
-            case 'check-in': document.getElementById('check-in-section').classList.remove('hidden'); document.getElementById('check-in-tab').click(); break;
-            case 'booking': document.getElementById('calendar-content').classList.remove('hidden'); break;
-            case 'nails-idea': document.getElementById('nails-idea-content').classList.remove('hidden'); break;
-            case 'report': document.getElementById('reports-content').classList.remove('hidden'); document.getElementById('salon-earning-report-tab').click(); break;
-            case 'setting': document.getElementById('admin-content').classList.remove('hidden'); document.getElementById('user-management-tab').click(); break;
-        }
+// NEW Reusable Navigation Function
+const navigateToSection = (target) => {
+    // De-activate all buttons in both desktop and mobile nav
+    document.querySelectorAll('#top-nav .top-nav-btn, #mobile-nav-links .top-nav-btn').forEach(btn => {
+        btn.classList.remove('active');
     });
+
+    // Activate the correct buttons in both navs
+    const desktopBtn = topNavContainer.querySelector(`[data-target="${target}"]`);
+    if (desktopBtn) desktopBtn.classList.add('active');
+    const mobileBtn = mobileNavLinksContainer.querySelector(`[data-target="${target}"]`);
+    if (mobileBtn) mobileBtn.classList.add('active');
+
+    // Switch the main content view
+    dashboardContent.classList.add('hidden');
+    mainAppContainer.classList.remove('hidden');
+    allMainSections.forEach(section => section.classList.add('hidden'));
+
+    switch (target) {
+        case 'check-in':
+            document.getElementById('check-in-section').classList.remove('hidden');
+            document.getElementById('check-in-tab').click();
+            break;
+        case 'booking':
+            document.getElementById('calendar-content').classList.remove('hidden');
+            break;
+        case 'nails-idea':
+            document.getElementById('nails-idea-content').classList.remove('hidden');
+            break;
+        case 'report':
+            document.getElementById('reports-content').classList.remove('hidden');
+            document.getElementById('salon-earning-report-tab').click();
+            break;
+        case 'setting':
+            document.getElementById('admin-content').classList.remove('hidden');
+            document.getElementById('user-management-tab').click();
+            break;
+    }
+};
+
+// NEW Simplified Desktop Nav Listener
+topNav.addEventListener('click', (e) => {
+    const button = e.target.closest('.top-nav-btn');
+    if (button) {
+        navigateToSection(button.dataset.target);
+    }
+});
     
     notificationBell.addEventListener('click', () => {
         notificationDropdown.classList.toggle('hidden');

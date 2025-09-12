@@ -760,8 +760,54 @@ function initClientDashboard(clientId, clientData) {
     });
 
     setupClientTabs();
-}
+    // ADD THIS LINE
+enableSwipeableTabs('#client-dashboard-content > main', '#client-dashboard-tabs');
 
+}
+// ADD THIS ENTIRE NEW FUNCTION
+const enableSwipeableTabs = (contentContainerSelector, tabsListSelector) => {
+    const contentContainer = document.querySelector(contentContainerSelector);
+    const tabsList = document.querySelector(tabsListSelector);
+    if (!contentContainer || !tabsList) return;
+
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    contentContainer.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    contentContainer.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+    });
+
+    function handleSwipe() {
+        const swipeThreshold = 50; // Minimum pixels for a swipe
+        const swipeDistance = touchEndX - touchStartX;
+
+        if (Math.abs(swipeDistance) < swipeThreshold) {
+            return; // Not a long enough swipe
+        }
+
+        const tabButtons = Array.from(tabsList.querySelectorAll('button.tab-btn, button.sub-tab-btn'));
+        const currentIndex = tabButtons.findIndex(btn => btn.classList.contains('active'));
+        
+        if (currentIndex === -1) return;
+
+        if (swipeDistance < 0) { // Swiped left
+            const nextIndex = currentIndex + 1;
+            if (nextIndex < tabButtons.length) {
+                tabButtons[nextIndex].click();
+            }
+        } else { // Swiped right
+            const prevIndex = currentIndex - 1;
+            if (prevIndex >= 0) {
+                tabButtons[prevIndex].click();
+            }
+        }
+    }
+};
 // --- MAIN CHECK-IN APP SCRIPT ---
 function initMainApp(userRole, userName) {
        // --- ADD THIS ENTIRE NEW BLOCK FOR MOBILE MENU ---
@@ -2372,6 +2418,10 @@ if (dashboardServiceInput && dashboardEarningInput) {
         }
     });
 }
+         // --- ACTIVATE SWIPEABLE TABS ---
+        enableSwipeableTabs('#check-in-section', '#main-tabs');
+        enableSwipeableTabs('#reports-content', '#reports-sub-tabs');
+        enableSwipeableTabs('#admin-content', '#admin-sub-tabs');
     
    // REPLACE the old staff-earning-form listener with this one
 document.getElementById('staff-earning-form').addEventListener('submit', async (e) => {

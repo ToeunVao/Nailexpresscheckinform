@@ -51,6 +51,7 @@ body { font-family: 'Poppins', sans-serif; background-color: #FEFBF9; }
     border-radius: 4px;
     cursor: pointer;
     overflow: hidden;
+   margin-bottom: 4px;
 }
         .tech-filter-btn.active { background-color: #db2777; color: white; }
 

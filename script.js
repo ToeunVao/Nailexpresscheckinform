@@ -2452,11 +2452,21 @@ let filteredAppointments = allAppointments;
     }
     document.getElementById('prev-month-btn').addEventListener('click', () => { currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(currentYear, currentMonth, currentTechFilterCalendar); });
     document.getElementById('next-month-btn').addEventListener('click', () => { currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; } renderCalendar(currentYear, currentMonth, currentTechFilterCalendar); });
-    calendarGrid.addEventListener('click', (e) => {
+calendarGrid.addEventListener('click', (e) => {
+        const appointmentEntry = e.target.closest('.appointment-entry');
         const dayCell = e.target.closest('.calendar-day');
-        if (!dayCell) return;
-        if (e.target.classList.contains('appointment-entry')) { const client = allAppointments.find(a => a.id === e.target.dataset.id); openViewDetailModal(client, "Booking Detail"); } 
-        else { openAddAppointmentModal(dayCell.dataset.date); }
+
+        // First, check if the click was inside an appointment entry
+        if (appointmentEntry) {
+            const client = allAppointments.find(a => a.id === appointmentEntry.dataset.id);
+            if (client) {
+                openViewDetailModal(client, "Booking Detail");
+            }
+        } 
+        // If not, then check if the click was on an empty part of a day cell
+        else if (dayCell) {
+            openAddAppointmentModal(dayCell.dataset.date);
+        }
     });
 
     const setupTechFilter = (containerId, callback) => {

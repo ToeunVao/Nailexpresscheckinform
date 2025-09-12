@@ -228,3 +228,13 @@ body { font-family: 'Poppins', sans-serif; background-color: #FEFBF9; }
                 color-adjust: exact !important;
             }
         }
+/* Add this to the end of your style.css file */
+.scrollable-tabs {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+    overflow-x: auto;
+    flex-wrap: nowrap !important;
+}
+.scrollable-tabs::-webkit-scrollbar {
+    display: none;  /* Safari and Chrome */
+}

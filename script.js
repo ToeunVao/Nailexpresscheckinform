@@ -2407,14 +2407,32 @@ onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot
             dayCell.innerHTML = `<div class="font-bold">${day}</div><div id="day-${day}" class="appointments"></div>`;
             calendarGrid.appendChild(dayCell);
         }
-        let filteredAppointments = allAppointments;
-        if (technicianFilter !== 'All' && technicianFilter !== 'Any Technician') { filteredAppointments = allAppointments.filter(appt => appt.technician === technicianFilter); } 
-        else if (technicianFilter === 'Any Technician') { filteredAppointments = allAppointments.filter(appt => appt.technician === 'Any Technician'); }
+let filteredAppointments = allAppointments;
+        if (technicianFilter !== 'All' && technicianFilter !== 'Any Technician') {
+            filteredAppointments = allAppointments.filter(appt => appt.technician === technicianFilter);
+        } else if (technicianFilter === 'Any Technician') {
+            filteredAppointments = allAppointments.filter(appt => appt.technician === 'Any Technician');
+        }
+
+        // Sort appointments by time to display them chronologically
+        filteredAppointments.sort((a, b) => a.appointmentTimestamp.seconds - b.appointmentTimestamp.seconds);
+
         filteredAppointments.forEach(appt => {
             const apptDate = new Date(appt.appointmentTimestamp.seconds * 1000);
-             if (apptDate.getFullYear() === year && apptDate.getMonth() === month) {
+            if (apptDate.getFullYear() === year && apptDate.getMonth() === month) {
                 const dayCell = document.getElementById(`day-${apptDate.getDate()}`);
-                if (dayCell) { dayCell.insertAdjacentHTML('beforeend', `<div class="appointment-entry bg-blue-100 text-blue-700" data-id="${appt.id}" data-type="appointment">${appt.name}</div>`); }
+                if (dayCell) {
+                    const timeString = apptDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+                    const serviceString = Array.isArray(appt.services) ? appt.services[0] : appt.services;
+
+                    const entryHTML = `
+                        <div class="appointment-entry bg-pink-100 text-pink-800 p-1" data-id="${appt.id}" data-type="appointment">
+                            <p class="font-semibold text-xs truncate">${timeString} - ${appt.name}</p>
+                            <p class="text-xs text-gray-600 truncate">${serviceString || 'Service not specified'}</p>
+                        </div>`;
+                    
+                    dayCell.insertAdjacentHTML('beforeend', entryHTML);
+                }
             }
         });
         if(calendarCountSpan) {

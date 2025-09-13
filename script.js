@@ -2686,7 +2686,10 @@ document.getElementById('staff-earning-form').addEventListener('submit', async (
     try {
         // Add service to the data being saved
         await addDoc(collection(db, "earnings"), { staffName, service, earning, tip, date: Timestamp.fromDate(new Date(date + 'T12:00:00')) });
-        e.target.reset();
+        // Manually clear only the fields that need it
+document.getElementById('staff-earning-service').value = '';
+document.getElementById('staff-earning').value = '';
+document.getElementById('staff-tip').value = '';
         document.getElementById('staff-earning-date').value = getLocalDateString();
         document.getElementById('staff-name').value = 'TJ'; // Reset default to TJ
     } catch (err) { console.error("Error adding earning: ", err); alert("Could not add earning."); }
@@ -2710,7 +2713,10 @@ document.getElementById('dashboard-staff-earning-form-full').addEventListener('s
         // Add service to the data being saved
         await addDoc(collection(db, "earnings"), { staffName, service, earning, tip, date: Timestamp.fromDate(date) });
         alert(`Earning for ${staffName} on ${dateStr} has been saved.`);
-        e.target.reset();
+        // Manually clear only the fields that need it
+document.getElementById('dashboard-staff-earning-service').value = '';
+document.getElementById('dashboard-staff-earning-full').value = '';
+document.getElementById('dashboard-staff-tip-full').value = '';
         document.getElementById('dashboard-staff-earning-date-full').value = getLocalDateString();
         document.getElementById('dashboard-staff-name-full').value = 'TJ'; // Reset default to TJ
     } catch (err) {

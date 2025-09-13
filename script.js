@@ -879,7 +879,37 @@ function initClientDashboard(clientId, clientData) {
     setupClientTabs();
 
 }
+ const populateExpenseDropdowns = () => {
+        const categorySelect = document.getElementById('expense-category');
+        const supplierSelect = document.getElementById('expense-supplier');
+        const paymentSelect = document.getElementById('expense-payment-account');
+        const populate = (select, data) => { const first = select.options[0]; select.innerHTML = ''; select.appendChild(first); data.forEach(item => select.appendChild(new Option(item.name, item.name))); };
+        populate(categorySelect, allExpenseCategories);
+        populate(supplierSelect, allSuppliers);
+        populate(paymentSelect, allPaymentAccounts);
+    };
 
+    const populateExpenseMonthFilter = () => {
+        const months = [...new Set(allExpenses.map(exp => { const d = new Date(exp.date.seconds * 1000); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }))].sort().reverse();
+        expenseMonthFilter.innerHTML = '<option value="all">All Months</option>';
+        months.forEach(monthYear => { const [year, month] = monthYear.split('-'); expenseMonthFilter.innerHTML += `<option value="${monthYear}">${new Date(year, month - 1, 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</option>`; });
+        expenseMonthFilter.value = currentExpenseMonthFilter || 'all';
+    };
+
+    const renderExpenses = () => {
+        let filtered = allExpenses;
+        if (currentExpenseMonthFilter && currentExpenseMonthFilter !== 'all') {
+            const [year, month] = currentExpenseMonthFilter.split('-').map(Number);
+            filtered = allExpenses.filter(exp => { const d = new Date(exp.date.seconds * 1000); return d.getFullYear() === year && d.getMonth() + 1 === month; });
+        }
+        expenseTableBody.innerHTML = filtered.length === 0 ? `<tr><td colspan="8" class="py-6 text-center text-gray-400">No expenses found.</td></tr>` : '';
+        filtered.forEach(exp => {
+            const row = expenseTableBody.insertRow();
+            row.className = 'bg-white border-b';
+            row.innerHTML = `<td class="px-6 py-4">${new Date(exp.date.seconds * 1000).toLocaleDateString()}</td><td class="px-6 py-4">${exp.name}</td><td class="px-6 py-4">${exp.category || ''}</td><td class="px-6 py-4">${exp.supplier || ''}</td><td class="px-6 py-4">${exp.paymentAccount || ''}</td><td class="px-6 py-4">${exp.attachmentURL ? `<a href="${exp.attachmentURL}" target="_blank" class="text-blue-500 hover:underline">View</a>` : 'N/A'}</td><td class="px-6 py-4 text-right">$${exp.amount.toFixed(2)}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${exp.id}" class="edit-expense-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${exp.id}" class="delete-expense-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
+        });
+        totalExpenseEl.textContent = `$${filtered.reduce((sum, exp) => sum + exp.amount, 0).toFixed(2)}`;
+    };
 // --- MAIN CHECK-IN APP SCRIPT ---
 function initMainApp(userRole, userName) {
     // --- START: MOBILE MENU LOGIC (REPLACE YOUR OLD BLOCK WITH THIS) ---

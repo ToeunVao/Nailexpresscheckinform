@@ -4407,35 +4407,52 @@ const renderGiftCardsAdminTable = (cards) => {
 
         document.getElementById('close-edit-gift-card-modal-btn').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));
     editGiftCardModal.querySelector('.modal-overlay').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));
+   
     const setupGiftCardTableListener = (tableId) => {
-    const table = document.getElementById(tableId);
-    if (table) {
-        table.addEventListener('click', (e) => {
-            const editBtn = e.target.closest('.edit-gift-card-btn');
-            if (editBtn) {
-                const card = allGiftCards.find(c => c.id === editBtn.dataset.id);
-                if(card) openEditGiftCardModal(card);
-            }
+        const table = document.getElementById(tableId);
+        if (table) {
+            table.addEventListener('click', (e) => {
+                // Find all possible buttons that could have been clicked first
+                const activateBtn = e.target.closest('.activate-gift-card-btn');
+                const editBtn = e.target.closest('.edit-gift-card-btn');
+                const deleteBtn = e.target.closest('.delete-gift-card-btn');
 
-            const deleteBtn = e.target.closest('.delete-gift-card-btn');
-            if (deleteBtn) {
-                const cardId = deleteBtn.dataset.id;
-                const card = allGiftCards.find(c => c.id === cardId);
-                if (card) {
-                    showConfirmModal(`Are you sure you want to delete gift card ${card.code}? This action cannot be undone.`, async () => {
-                        try {
-                            await deleteDoc(doc(db, "gift_cards", cardId));
-                            alert(`Gift card ${card.code} has been deleted.`);
-                        } catch (error) {
-                            console.error("Error deleting gift card:", error);
-                            alert("Could not delete the gift card.");
-                        }
-                    });
+                // Now use a clean if/else if chain
+                if (activateBtn) {
+                    const cardId = activateBtn.dataset.id;
+                    const card = allGiftCards.find(c => c.id === cardId);
+                    if (card) {
+                        showConfirmModal(`Activate gift card ${card.code} for $${card.amount.toFixed(2)}?`, async () => {
+                            try {
+                                await updateDoc(doc(db, "gift_cards", cardId), { status: 'Active' });
+                                alert('Gift card has been activated!');
+                            } catch (error) {
+                                console.error("Error activating gift card:", error);
+                                alert("Could not activate the gift card.");
+                            }
+                        }, 'Activate');
+                    }
+                } else if (editBtn) {
+                    const card = allGiftCards.find(c => c.id === editBtn.dataset.id);
+                    if (card) openEditGiftCardModal(card);
+                } else if (deleteBtn) {
+                    const cardId = deleteBtn.dataset.id;
+                    const card = allGiftCards.find(c => c.id === cardId);
+                    if (card) {
+                        showConfirmModal(`Are you sure you want to delete gift card ${card.code}? This action cannot be undone.`, async () => {
+                            try {
+                                await deleteDoc(doc(db, "gift_cards", cardId));
+                                alert(`Gift card ${card.code} has been deleted.`);
+                            } catch (error) {
+                                console.error("Error deleting gift card:", error);
+                                alert("Could not delete the gift card.");
+                            }
+                        });
+                    }
                 }
-            }
-        });
-    }
-};
+            });
+        }
+    };
 setupGiftCardTableListener('gift-cards-table');
 setupGiftCardTableListener('gift-cards-table-admin');
     document.getElementById('close-client-profile-modal-btn').addEventListener('click', () => clientProfileModal.classList.add('hidden'));

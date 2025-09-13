@@ -331,6 +331,16 @@ const updateLandingGiftCardPreview = () => {
 
     document.getElementById('landing-gc-preview-amount').textContent = `$${amount.toFixed(2)}`;
     document.getElementById('landing-gc-total-amount').textContent = `$${(amount * quantity).toFixed(2)}`;
+        // --- ADD THIS NEW BLOCK TO DISPLAY THE EXPIRATION DATE ---
+    const expiryDate = new Date();
+    expiryDate.setMonth(expiryDate.getMonth() + 6);
+    const formattedExpiryDate = expiryDate.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    });
+    document.getElementById('landing-gc-preview-expiry').textContent = `Expires: ${formattedExpiryDate}`;
+    // --- END OF NEW BLOCK ---
 };
 
 const initializeLandingGiftCardDesigner = () => {
@@ -404,68 +414,49 @@ purchaseForm.addEventListener('submit', async (e) => {
     submitBtn.textContent = 'Processing...';
 
     try {
-        // Step 1: Attempt to create a new client account.
-        // NOTE: In a real-world app, you would send a verification email or use a more secure method.
-        // Using the phone number as a password is for demonstration purposes.
-        try {
-            const userCredential = await createUserWithEmailAndPassword(auth, buyerEmail, buyerPhone);
-            const user = userCredential.user;
-            // Create a corresponding document in the 'clients' collection
-            await setDoc(doc(db, "clients", user.uid), {
-                name: buyerName,
-                email: buyerEmail,
-                phone: buyerPhone,
-                role: 'client',
-                createdAt: serverTimestamp()
-            });
-        } catch (error) {
-            if (error.code === 'auth/email-already-in-use') {
-                // This is okay, the user already has an account. We can proceed.
-                console.log("User already exists, proceeding with gift card purchase.");
-            } else {
-                // For other errors (e.g., invalid email), stop the process.
-                throw error;
+            // REMOVED: Automatic account creation logic to fix permission errors.
+
+            // Step 1: Create the gift card(s)
+            alert('Redirecting to a secure payment page...'); // Simulate payment
+            
+            const batch = writeBatch(db);
+            const expiryDate = new Date();
+            expiryDate.setMonth(expiryDate.getMonth() + 6); // Set expiry to 6 months from now
+
+            for (let i = 0; i < quantity; i++) {
+                const cardData = {
+                    amount: amount,
+                    balance: amount,
+                    history: [],
+                    recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerName,
+                    senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerName,
+                    code: `GC-${Date.now()}-${i}`,
+                    status: 'Active',
+                    type: 'E-Gift',
+                    // CORRECTED: Associate the card with the anonymous user ID, not the buyer's email.
+                    createdBy: anonymousUserId, 
+                    buyerInfo: { name: buyerName, email: buyerEmail, phone: buyerPhone },
+                    createdAt: serverTimestamp(),
+                    expiresAt: Timestamp.fromDate(expiryDate)
+                };
+                const newCardRef = doc(collection(db, "gift_cards"));
+                batch.set(newCardRef, cardData);
             }
+
+            await batch.commit();
+
+            // CORRECTED: Simplified success message.
+            alert(`Success! Your purchase of ${quantity} gift card(s) for $${amount.toFixed(2)} each has been processed.`);
+            purchaseForm.reset();
+            purchaseModal.classList.add('hidden');
+
+        } catch (error) {
+            console.error("Error during gift card purchase:", error);
+            alert(`Could not process your request. Error: ${error.message}`);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Proceed to Payment';
         }
-
-        // Step 2: Create the gift card(s)
-        alert('Redirecting to a secure payment page...'); // Simulate payment
-
-        const batch = writeBatch(db);
-        const expiryDate = new Date();
-        expiryDate.setMonth(expiryDate.getMonth() + 6); // Set expiry to 6 months from now
-
-        for (let i = 0; i < quantity; i++) {
-            const cardData = {
-                amount: amount,
-                balance: amount,
-                history: [],
-                recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerName,
-                senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerName,
-                code: `GC-${Date.now()}-${i}`,
-                status: 'Active',
-                type: 'E-Gift',
-                createdBy: buyerEmail, // Link card to the buyer
-                createdAt: serverTimestamp(),
-                expiresAt: Timestamp.fromDate(expiryDate)
-            };
-            const newCardRef = doc(collection(db, "gift_cards"));
-            batch.set(newCardRef, cardData);
-        }
-
-        await batch.commit();
-
-        alert(`Success! ${quantity} gift card(s) for $${amount.toFixed(2)} each have been processed. An account has been created for ${buyerEmail}.`);
-        purchaseForm.reset();
-        purchaseModal.classList.add('hidden');
-
-    } catch (error) {
-        console.error("Error during gift card purchase/account creation:", error);
-        alert(`Could not process your request. Error: ${error.message}`);
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Proceed to Payment';
-    }
 });
     
     const lockoutMessageDiv = document.getElementById('login-lockout-message');

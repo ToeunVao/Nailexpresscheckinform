@@ -24,7 +24,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="style.css">
-
+   
 </head>
 
 <body class="bg-gray-100">
@@ -40,9 +40,9 @@
         <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50">
             <div class="container mx-auto px-6 py-4 flex justify-between items-center">
                 <div id="landing-logo">
-    <h2 class="text-2xl font-bold text-pink-700 tracking-wider"><a href="#">NailsXpress</a></h2>
-    <p class="text-xs text-gray-500 -mt-1">Nails salon & Spa</p>
-</div>
+                    <h2 class="text-2xl font-bold text-pink-700 tracking-wider"><a href="#">NailsXpress</a></h2>
+                    <p class="text-xs text-gray-500 -mt-1">Nails salon & Spa</p>
+                </div>
                 <nav id="landing-nav" class="hidden md:flex space-x-8 text-sm font-semibold text-gray-600">
                     <a href="#promotions-landing" class="hover:text-pink-600 nav-item-promotions">Promotions</a>
                     <a href="#nails-idea-landing" class="hover:text-pink-600 nav-item-nails-idea">Nails Idea</a>
@@ -60,8 +60,6 @@
                 </div>
             </div>
         </header>
-
-        <main class="container mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
 
         <!-- Hero Section -->
         <section class="hero-section-new relative">
@@ -353,11 +351,13 @@
                         <i class="fas fa-bell text-xl text-gray-600"></i>
                         <span id="notification-count" class="notification-badge">0</span>
                         <div id="notification-dropdown" class="notification-dropdown hidden">
-                            </div>
+                            <!-- Notifications will be inserted here -->
+                        </div>
                     </div>
                 </div>
                 <nav id="top-nav" class="hidden md:flex items-center gap-2 text-sm font-semibold text-gray-600">
-                    </nav>
+                    <!-- Desktop nav links are dynamically inserted here -->
+                </nav>
                 <div class="flex items-center gap-4">
                     <div class="text-right hidden md:block">
                         <div id="live-clock" class="clock text-3xl font-bold text-gray-800"></div>
@@ -381,8 +381,10 @@
                 <button id="mobile-sidebar-close-btn" class="text-gray-600 hover:text-gray-900 text-2xl">&times;</button>
             </div>
             <nav id="mobile-nav-links" class="p-4 flex flex-col space-y-2">
-                </nav>
+                <!-- Mobile nav links are dynamically inserted here -->
+            </nav>
         </div>
+        
         <main class="container mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
             <!-- DASHBOARD CONTENT -->
             <div id="dashboard-content">
@@ -390,12 +392,12 @@
                 <!-- Admin Dashboard View -->
                 <div id="admin-dashboard-view" class="hidden">
                   <div class="flex justify-end items-center mb-6 gap-2">
-    <label class="text-sm font-medium text-gray-700">Date Range:</label>
-    <select id="dashboard-range-filter"
-        class="form-select p-2 border border-gray-300 rounded-lg"></select>
-    <input type="date" id="dashboard-date-filter"
-        class="p-2 border border-gray-300 rounded-lg hidden">
-</div>
+                    <label class="text-sm font-medium text-gray-700">Date Range:</label>
+                    <select id="dashboard-range-filter"
+                        class="form-select p-2 border border-gray-300 rounded-lg"></select>
+                    <input type="date" id="dashboard-date-filter"
+                        class="p-2 border border-gray-300 rounded-lg hidden">
+                </div>
 
                     <!-- Summary Cards -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -507,8 +509,8 @@
                                 <label for="dashboard-staff-tip-full"
                                     class="block text-sm font-medium text-gray-600 mb-1">Tip</label>
                                <input type="number" step="0.01" id="dashboard-staff-tip-full"
-    class="form-input w-full p-3 border border-gray-300 rounded-lg"
-    placeholder="e.g., 20">
+                                    class="form-input w-full p-3 border border-gray-300 rounded-lg"
+                                    placeholder="e.g., 20">
                             </div>
                             <div>
                                 <button type="submit"
@@ -559,14 +561,15 @@
                 <!-- Staff Dashboard View -->
                 <div id="staff-dashboard-view" class="hidden">
                     <div class="flex justify-end items-center mb-6 gap-2">
-    <label class="text-sm font-medium text-gray-700">Date Range:</label>
-    <select id="staff-dashboard-range-filter"
-        class="form-select p-2 border border-gray-300 rounded-lg"></select>
-    <input type="date" id="staff-dashboard-date-filter"
-        class="p-2 border border-gray-300 rounded-lg hidden">
-</div>
+                        <label class="text-sm font-medium text-gray-700">Date Range:</label>
+                        <select id="staff-dashboard-range-filter"
+                            class="form-select p-2 border border-gray-300 rounded-lg"></select>
+                        <input type="date" id="staff-dashboard-date-filter"
+                            class="p-2 border border-gray-300 rounded-lg hidden">
+                    </div>
 
                   <div class="space-y-6 mb-8">
+                        <!-- Top Row: Big Cards -->
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             <div class="dashboard-card bg-pink-100 p-8">
                                 <h4 class="font-bold text-pink-800">My Earning</h4>
@@ -581,6 +584,7 @@
                                 <p id="my-cash-payout-card" class="text-3xl font-bold text-yellow-600">$0</p>
                             </div>
                         </div>
+                        <!-- Bottom Row: Small Cards -->
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
                             <div class="dashboard-card bg-blue-100">
                                 <h4 class="font-bold text-blue-800">My Check Payout</h4>
@@ -875,10 +879,8 @@
                         </div>
                         <div id="list-view" class="hidden">
                             <div id="today-bookings-table-container" class="overflow-x-auto">
-                                <table id="today-bookings-table" class="w-full text-sm text-left text-gray-600">
-                                    <tbody></tbody>
-                                </table>
-                             </div>
+                                <!-- Table content will be injected by JS -->
+                            </div>
                         </div>
                         <div id="month-view">
                             <div class="grid grid-cols-7 text-center font-semibold mb-2">
@@ -1047,7 +1049,7 @@
                                         class="block text-sm font-medium text-gray-600 mb-1">Service</label>
                                     <input type="text" id="staff-earning-service" list="staff-earning-services-list"
                                         class="form-input w-full p-3 border border-gray-300 rounded-lg"
-                                        placeholder="Type or select service" required>
+                                        placeholder="Type or select service">
                                     <datalist id="staff-earning-services-list"></datalist>
                                 </div>
                                 <div><label for="staff-earning"
@@ -1059,7 +1061,7 @@
                                         class="block text-sm font-medium text-gray-600 mb-1">Tip</label><input
                                         type="number" step="0.01" id="staff-tip"
                                         class="form-input w-full p-3 border border-gray-300 rounded-lg"
-                                        placeholder="e.g., 20" required></div>
+                                        placeholder="e.g., 20"></div>
                                 <div><button type="submit"
                                         class="w-full bg-pink-600 text-white font-bold py-3 px-6 rounded-full hover:bg-pink-700">Add
                                         Earning</button></div>
@@ -1711,8 +1713,7 @@
                                                 Hours</button>
                                         </div>
                                     </form>
-                        <!-- ADD THIS ENTIRE NEW FORM BLOCK -->
-                        <h3 class="text-xl font-semibold text-gray-700 mt-8 mb-4">Gift Card Payment Guide</h3>
+                                     <h3 class="text-xl font-semibold text-gray-700 mt-8 mb-4">Gift Card Payment Guide</h3>
                         <form id="payment-guide-form" class="p-4 border rounded-lg bg-gray-50 space-y-4">
                             <div>
                                 <label for="gift-card-payment-guide-textarea"
@@ -1727,7 +1728,6 @@
                                     class="bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">Save Guide</button>
                             </div>
                         </form>
-                        <!-- END OF NEW BLOCK -->
                                     <h3 class="text-xl font-semibold text-gray-700 mb-4">Frontend Feature
                                         Management</h3>
                                     <div id="feature-toggles-form" class="p-4 border rounded-lg bg-gray-50 space-y-4">
@@ -1887,20 +1887,23 @@
                     </div>
                 </div>
             </div>
+            </div> <!-- This closes the white card div -->
         </main>
 
         <footer class="bg-white mt-8">
-            <div class="container mx-auto max-w-7xl p-4 flex justify-between items-center text-sm text-gray-500">
-                <div>Design with ❤️ by Nails Express</div>
+            <div
+                class="container mx-auto max-w-7xl p-4 flex flex-col sm:flex-row justify-between items-center text-sm text-gray-500">
+                <div class="mb-2 sm:mb-0">Design with ❤️ by Nails Express</div>
                 <div class="hidden md:block">&copy; <span id="copyright-year"></span> Nails Express. All rights reserved.</div>
             </div>
         </footer>
+
+    </div>
 
         <button id="floating-booking-btn"
             class="fixed bottom-6 right-6 bg-pink-600 text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center text-2xl hover:bg-pink-700 transition-colors z-40">
             <i class="fas fa-plus"></i>
         </button>
-    </div>
 
     <!-- ========= MODALS (Moved to top level) ========= -->
     <div id="service-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
@@ -2378,106 +2381,6 @@
             </div>
         </div>
     </div>
-
-    <div id="nail-idea-lightbox"
-        class="fixed inset-0 z-[80] hidden items-center justify-center bg-black bg-opacity-80 p-4">
-        <div class="relative w-full max-w-4xl h-full flex items-center justify-center">
-            <button id="lightbox-close-btn" class="absolute top-0 right-0 mt-4 mr-4 text-white text-3xl z-50">&times;</button>
-
-        <button id="lightbox-fullscreen-btn" class="absolute top-12 right-0 mt-5 mr-4 text-white text-xl z-50"><i class="fas fa-expand"></i></button>
-        <button id="lightbox-rotate-btn" class="absolute top-20 right-0 mt-6 mr-4 text-white text-xl z-50"><i class="fas fa-sync-alt"></i></button>
-        
-            <button id="lightbox-prev-btn"
-                class="absolute left-0 top-1/2 -translate-y-1/2 bg-white/20 text-white text-4xl p-2 rounded-full hover:bg-white/40 z-50">
-                &#10094;
-            </button>
-            <div class="flex flex-col lg:flex-row h-full max-h-[85vh] w-full bg-white rounded-lg overflow-hidden shadow-2xl">
-                <div class="w-full lg:w-2/3 h-64 lg:h-full bg-gray-900 flex items-center justify-center">
-                    <img id="lightbox-image" src="" alt="Nail Art" class="max-h-full max-w-full object-contain">
-                </div>
-                <div class="w-full lg:w-1/3 p-6 overflow-y-auto">
-                    <h3 id="lightbox-title" class="text-2xl font-bold text-pink-700 mb-2"></h3>
-                    <div class="space-y-3 text-sm">
-                        <div>
-                            <p class="font-semibold text-gray-500">Shape</p>
-                            <p id="lightbox-shape" class="text-gray-800"></p>
-                        </div>
-                        <div>
-                            <p class="font-semibold text-gray-500">Color</p>
-                            <p id="lightbox-color" class="text-gray-800"></p>
-                        </div>
-                        <div>
-                            <p class="font-semibold text-gray-500">Categories</p>
-                            <p id="lightbox-categories" class="text-gray-800 flex flex-wrap gap-2"></p>
-                        </div>
-                        <div class="border-t pt-3 mt-3">
-                            <p class="font-semibold text-gray-500">Description</p>
-                            <p id="lightbox-description" class="text-gray-800 mt-1 text-sm whitespace-pre-wrap"></p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <button id="lightbox-next-btn"
-                class="absolute right-0 top-1/2 -translate-y-1/2 bg-white/20 text-white text-4xl p-2 rounded-full hover:bg-white/40 z-50">
-                &#10095;
-            </button>
-        </div>
-    </div>
-
-    <div id="signup-login-modal" class="modal hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
-        <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
-        <div class="relative bg-white w-full max-w-md p-8 rounded-2xl shadow-xl m-4">
-            <button id="close-signup-login-modal-btn"
-                class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i
-                    class="fas fa-times fa-lg"></i></button>
-            <h2 class="text-2xl font-bold text-center text-pink-700 mb-2">Nails Express Login</h2>
-            <div class="mb-4 border-b border-gray-200">
-                <ul class="flex flex-wrap -mb-px text-sm font-medium text-center">
-                    <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg active"
-                            id="login-tab-btn" type="button">Log In</button></li>
-                    <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg"
-                            id="signup-tab-btn" type="button">Sign Up</button></li>
-                </ul>
-            </div>
-            <div id="login-form-container">
-                <form id="landing-login-form" class="space-y-4">
-                    <div><label for="landing-email" class="block text-sm font-medium text-gray-600">Email</label><input
-                            type="email" id="landing-email"
-                            class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg"
-                            placeholder="Enter your email" required></div>
-                    <div><label for="landing-password"
-                            class="block text-sm font-medium text-gray-600">Password</label><input type="password"
-                            id="landing-password" class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg"
-                            placeholder="Enter your password" required></div>
-                    <div id="login-lockout-message" class="hidden text-sm text-red-600"></div>
-                    <div><button type="submit" id="landing-login-btn"
-                            class="w-full bg-pink-600 text-white font-bold py-3 rounded-lg flex items-center justify-center"><span
-                                class="btn-text">Log In</span><i
-                                class="fas fa-spinner fa-spin ml-2 hidden"></i></button></div>
-                </form>
-            </div>
-            <div id="signup-form-container" class="hidden">
-                <form id="landing-signup-form" class="space-y-4">
-                    <div><label for="signup-name" class="block text-sm font-medium text-gray-600">Full
-                            Name</label><input type="text" id="signup-name"
-                            class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg"
-                            placeholder="Enter your full name" required></div>
-                    <div><label for="signup-email" class="block text-sm font-medium text-gray-600">Email</label><input
-                            type="email" id="signup-email"
-                            class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg"
-                            placeholder="Enter your email" required></div>
-                    <div><label for="signup-password"
-                            class="block text-sm font-medium text-gray-600">Password</label><input type="password"
-                            id="signup-password" class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg"
-                            placeholder="Create a password" required></div>
-                    <div><button type="submit" id="landing-signup-btn"
-                            class="w-full bg-pink-600 text-white font-bold py-3 rounded-lg flex items-center justify-center"><span
-                                class="btn-text">Sign Up</span><i
-                                class="fas fa-spinner fa-spin ml-2 hidden"></i></button></div>
-                </form>
-            </div>
-        </div>
-    </div>
 <!-- REPLACE THE OLD #gift-card-modal WITH THIS NEW ONE -->
 <div id="gift-card-purchase-modal" class="modal hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
     <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
@@ -2550,7 +2453,7 @@
                                     <span>FROM: <span id="landing-gc-preview-from" class="font-normal"></span></span>
                                 </div>
                                 <p class="mt-2 text-center font-mono tracking-widest text-sm">CODE-PREVIEW</p>
-                                <p id="landing-gc-preview-expiry" class="mt-1 text-center text-[10px] opacity-80"></p>
+                               <p id="landing-gc-preview-expiry" class="mt-1 text-center text-[10px] opacity-80"></p>
                             </div>
                         </div>
                     </div>
@@ -2560,13 +2463,10 @@
                         <span>Total:</span>
                         <span id="landing-gc-total-amount" class="font-bold text-xl">$0.00</span>
                     </div>
-                     <!-- ADD THIS NEW PAYMENT GUIDE DIV -->
-                        <div id="landing-gc-payment-guide" class="text-sm text-gray-600 bg-gray-100 p-3 rounded-lg border">
+                    <div id="landing-gc-payment-guide" class="text-sm text-gray-600 bg-gray-100 p-3 rounded-lg border">
                             <!-- Payment guide from settings will be loaded here -->
                         </div>
-                        <!-- The button you just changed is right below this -->
-                            
-                   <button type="submit" id="landing-gc-submit-btn" class="w-full bg-pink-600 text-white font-bold py-3 px-12 rounded-full hover:bg-pink-700">
+<button type="submit" id="landing-gc-submit-btn" class="w-full bg-pink-600 text-white font-bold py-3 px-12 rounded-full hover:bg-pink-700">
     Buy Gift Card Now
 </button>
                 </div>
@@ -2574,7 +2474,60 @@
         </form>
     </div>
 </div>
-
+    <div id="signup-login-modal" class="modal hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
+        <div class="relative bg-white w-full max-w-md p-8 rounded-2xl shadow-xl m-4">
+            <button id="close-signup-login-modal-btn"
+                class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i
+                    class="fas fa-times fa-lg"></i></button>
+            <h2 class="text-2xl font-bold text-center text-pink-700 mb-2">Nails Express Login</h2>
+            <div class="mb-4 border-b border-gray-200">
+                <ul class="flex flex-wrap -mb-px text-sm font-medium text-center">
+                    <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg active"
+                            id="login-tab-btn" type="button">Log In</button></li>
+                    <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg"
+                            id="signup-tab-btn" type="button">Sign Up</button></li>
+                </ul>
+            </div>
+            <div id="login-form-container">
+                <form id="landing-login-form" class="space-y-4">
+                    <div><label for="landing-email" class="block text-sm font-medium text-gray-600">Email</label><input
+                            type="email" id="landing-email"
+                            class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg"
+                            placeholder="Enter your email" required></div>
+                    <div><label for="landing-password"
+                            class="block text-sm font-medium text-gray-600">Password</label><input type="password"
+                            id="landing-password" class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg"
+                            placeholder="Enter your password" required></div>
+                    <div id="login-lockout-message" class="hidden text-sm text-red-600"></div>
+                    <div><button type="submit" id="landing-login-btn"
+                            class="w-full bg-pink-600 text-white font-bold py-3 rounded-lg flex items-center justify-center"><span
+                                class="btn-text">Log In</span><i
+                                class="fas fa-spinner fa-spin ml-2 hidden"></i></button></div>
+                </form>
+            </div>
+            <div id="signup-form-container" class="hidden">
+                <form id="landing-signup-form" class="space-y-4">
+                    <div><label for="signup-name" class="block text-sm font-medium text-gray-600">Full
+                            Name</label><input type="text" id="signup-name"
+                            class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg"
+                            placeholder="Enter your full name" required></div>
+                    <div><label for="signup-email" class="block text-sm font-medium text-gray-600">Email</label><input
+                            type="email" id="signup-email"
+                            class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg"
+                            placeholder="Enter your email" required></div>
+                    <div><label for="signup-password"
+                            class="block text-sm font-medium text-gray-600">Password</label><input type="password"
+                            id="signup-password" class="form-input w-full p-3 mt-1 border border-gray-300 rounded-lg"
+                            placeholder="Create a password" required></div>
+                    <div><button type="submit" id="landing-signup-btn"
+                            class="w-full bg-pink-600 text-white font-bold py-3 rounded-lg flex items-center justify-center"><span
+                                class="btn-text">Sign Up</span><i
+                                class="fas fa-spinner fa-spin ml-2 hidden"></i></button></div>
+                </form>
+            </div>
+        </div>
+    </div>
     <div id="landing-booking-service-modal" class="modal hidden fixed inset-0 z-[70] flex items-center justify-center">
         <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
         <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">

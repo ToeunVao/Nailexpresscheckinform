@@ -25,6 +25,12 @@ const clientDashboardContent = document.getElementById('client-dashboard-content
 const policyModal = document.getElementById('policy-modal');
 const addAppointmentModal = document.getElementById('add-appointment-modal');
 const addAppointmentForm = document.getElementById('add-appointment-form');
+// PASTE THE CUT LINES HERE
+const confirmModal = document.getElementById('confirm-modal');
+const confirmModalMessage = document.getElementById('confirm-modal-message');
+const confirmConfirmBtn = document.getElementById('confirm-confirm-btn');
+const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
+// ... the rest of the script continues
 let mainAppInitialized = false;
 let clientDashboardInitialized = false;
 let landingPageInitialized = false;
@@ -1175,10 +1181,6 @@ topNav.addEventListener('click', (e) => {
     const clientFormModal = document.getElementById('client-form-modal');
     const clientForm = document.getElementById('client-form');
     const geminiSmsModal = document.getElementById('gemini-sms-modal');
-    const confirmModal = document.getElementById('confirm-modal');
-    const confirmModalMessage = document.getElementById('confirm-modal-message');
-    const confirmConfirmBtn = document.getElementById('confirm-confirm-btn');
-    const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
     const logUsageModal = document.getElementById('log-usage-modal');
     const logUsageForm = document.getElementById('log-usage-form');
     const shareModal = document.getElementById('share-modal');

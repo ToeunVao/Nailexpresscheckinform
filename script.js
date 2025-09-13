@@ -25,10 +25,12 @@ const clientDashboardContent = document.getElementById('client-dashboard-content
 const policyModal = document.getElementById('policy-modal');
 const addAppointmentModal = document.getElementById('add-appointment-modal');
 const addAppointmentForm = document.getElementById('add-appointment-form');
+// PASTE THE CUT LINES HERE
 const confirmModal = document.getElementById('confirm-modal');
 const confirmModalMessage = document.getElementById('confirm-modal-message');
 const confirmConfirmBtn = document.getElementById('confirm-confirm-btn');
 const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
+// ... the rest of the script continues
 let mainAppInitialized = false;
 let clientDashboardInitialized = false;
 let landingPageInitialized = false;
@@ -44,9 +46,6 @@ let currentUserId = null;
 let initialAppointmentsLoaded = false;
 let initialInventoryLoaded = false;
 let allFinishedClients = [], allAppointments = [], allClients = [], allActiveClients = [], servicesData = {};
-let sentReminderIds = [];
-let currentRotation = 0;
-let allServicesList = [], technicianColorMap = {};
 
 const giftCardBackgrounds = {
     'General': [
@@ -66,16 +65,6 @@ const giftCardBackgrounds = {
     ]
 };
 
-const colorPalette = [
-    { card: 'bg-pink-100', text: 'text-pink-800', bg: 'rgba(255, 99, 132, 0.5)', border: 'rgba(255, 99, 132, 1)' },
-    { card: 'bg-blue-100', text: 'text-blue-800', bg: 'rgba(54, 162, 235, 0.5)', border: 'rgba(54, 162, 235, 1)' },
-    { card: 'bg-green-100', text: 'text-green-800', bg: 'rgba(75, 192, 192, 0.5)', border: 'rgba(75, 192, 192, 1)' },
-    { card: 'bg-yellow-100', text: 'text-yellow-800', bg: 'rgba(255, 206, 86, 0.5)', border: 'rgba(255, 206, 86, 1)' },
-    { card: 'bg-purple-100', text: 'text-purple-800', bg: 'rgba(153, 102, 255, 0.5)', border: 'rgba(153, 102, 255, 1)' },
-    { card: 'bg-teal-100', text: 'text-teal-800', bg: 'rgba(32, 201, 151, 0.5)', border: 'rgba(32, 201, 151, 1)' },
-    { card: 'bg-indigo-100', text: 'text-indigo-800', bg: 'rgba(79, 70, 229, 0.5)', border: 'rgba(79, 70, 229, 1)' },
-    { card: 'bg-orange-100', text: 'text-orange-800', bg: 'rgba(255, 159, 64, 0.5)', border: 'rgba(255, 159, 64, 1)' }
-];
 
 // --- Global Helper Functions ---
 const getLocalDateString = (date = new Date()) => {
@@ -323,123 +312,123 @@ function initLandingPage() {
     const landingLoginForm = document.getElementById('landing-login-form');
     const landingSignupForm = document.getElementById('landing-signup-form');
     const addAppointmentFormLanding = document.getElementById('add-appointment-form-landing');
-    
     // --- NEW E-COMMERCE GIFT CARD LOGIC ---
-    const purchaseModal = document.getElementById('gift-card-purchase-modal');
-    const buyGiftCardBtn = document.getElementById('buy-gift-card-btn');
-    const closePurchaseModalBtn = document.getElementById('close-gift-card-purchase-modal-btn');
-    const purchaseForm = document.getElementById('landing-gift-card-form');
-    const previewCard = document.getElementById('landing-gc-preview-card');
+const purchaseModal = document.getElementById('gift-card-purchase-modal');
+const buyGiftCardBtn = document.getElementById('buy-gift-card-btn');
+const closePurchaseModalBtn = document.getElementById('close-gift-card-purchase-modal-btn');
+const purchaseForm = document.getElementById('landing-gift-card-form');
     const paymentGuideDisplay = document.getElementById('landing-gc-payment-guide');
-
-    const updateLandingGiftCardPreview = () => {
-        const showTo = document.getElementById('gc-show-to').checked;
-        const showFrom = document.getElementById('gc-show-from').checked;
-        
-        document.getElementById('gc-to-wrapper').style.display = showTo ? '' : 'none';
-        document.getElementById('gc-from-wrapper').style.display = showFrom ? '' : 'none';
-
-        document.getElementById('landing-gc-preview-to').parentElement.style.display = showTo ? '' : 'none';
-        document.getElementById('landing-gc-preview-from').parentElement.style.display = showFrom ? '' : 'none';
-
-        document.getElementById('landing-gc-preview-to').textContent = document.getElementById('gc-to').value || 'Recipient';
-        document.getElementById('landing-gc-preview-from').textContent = document.getElementById('gc-from').value || 'Sender';
-        
-        const amount = parseFloat(document.getElementById('gc-amount').value) || 0;
-        const quantity = parseInt(document.getElementById('gc-quantity').value, 10) || 0;
-        
-        document.getElementById('landing-gc-preview-amount').textContent = `$${amount.toFixed(2)}`;
-        document.getElementById('landing-gc-total-amount').textContent = `$${(amount * quantity).toFixed(2)}`;
-
-        const expiryDate = new Date();
-        expiryDate.setMonth(expiryDate.getMonth() + 6);
-        const formattedExpiryDate = expiryDate.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        });
-        document.getElementById('landing-gc-preview-expiry').textContent = `Expires: ${formattedExpiryDate}`;
-    };
-    
-    const initializeLandingGiftCardDesigner = () => {
-        purchaseForm.reset();
-        document.getElementById('gc-quantity').value = 1;
-
-        const backgroundTabs = document.getElementById('landing-gc-background-tabs');
-        const backgroundOptions = document.getElementById('landing-gc-background-options');
-
-        backgroundTabs.innerHTML = Object.keys(giftCardBackgrounds).map(cat => 
-            `<button type="button" data-category="${cat}" class="px-3 py-1 text-sm font-medium rounded-t-lg">${cat}</button>`
-        ).join('');
-        
-        const firstTab = backgroundTabs.querySelector('button');
-        if(firstTab) {
-             firstTab.classList.add('bg-gray-200', 'border-gray-300', 'border-b-0');
-             backgroundOptions.innerHTML = giftCardBackgrounds[firstTab.dataset.category].map(url => 
-                `<button type="button" data-bg="${url}" class="w-full h-16 bg-cover bg-center rounded-md border-2 border-transparent hover:border-pink-400" style="background-image: url('${url}')"></button>`
-             ).join('');
-             previewCard.style.backgroundImage = `url('${giftCardBackgrounds[firstTab.dataset.category][0]}')`;
-        }
-        updateLandingGiftCardPreview();
-    };
-
-    buyGiftCardBtn.addEventListener('click', () => {
-        // Load payment guide text into the purchase form
-        getDoc(doc(db, "settings", "paymentGuide")).then(docSnap => {
-            if (docSnap.exists() && docSnap.data().text) {
-                paymentGuideDisplay.innerHTML = `<p class="font-semibold mb-2">How to Pay:</p><p>${docSnap.data().text.replace(/\n/g, '<br>')}</p>`;
-            } else {
-                paymentGuideDisplay.textContent = 'Please contact the salon to complete your payment.';
-            }
-        });
-        initializeLandingGiftCardDesigner();
-        purchaseModal.classList.remove('hidden');
-    });
-    closePurchaseModalBtn.addEventListener('click', () => purchaseModal.classList.add('hidden'));
-    purchaseModal.querySelector('.modal-overlay').addEventListener('click', () => purchaseModal.classList.add('hidden'));
-    
-    purchaseForm.addEventListener('input', updateLandingGiftCardPreview);
-
-    document.getElementById('landing-gc-background-tabs').addEventListener('click', e => {
-        const tab = e.target.closest('button');
-        if (tab) {
-             document.getElementById('landing-gc-background-tabs').querySelectorAll('button').forEach(t => t.classList.remove('bg-gray-200', 'border-gray-300', 'border-b-0'));
-             tab.classList.add('bg-gray-200', 'border-gray-300', 'border-b-0');
-             const backgroundOptions = document.getElementById('landing-gc-background-options');
-             backgroundOptions.innerHTML = giftCardBackgrounds[tab.dataset.category].map(url => 
-                `<button type="button" data-bg="${url}" class="w-full h-16 bg-cover bg-center rounded-md border-2 border-transparent hover:border-pink-400" style="background-image: url('${url}')"></button>`
-             ).join('');
-             previewCard.style.backgroundImage = `url('${giftCardBackgrounds[tab.dataset.category][0]}')`;
+    // Load payment guide text into the purchase form
+    getDoc(doc(db, "settings", "paymentGuide")).then(docSnap => {
+        if (docSnap.exists() && docSnap.data().text) {
+            paymentGuideDisplay.innerHTML = `<p class="font-semibold mb-2">How to Pay:</p><p>${docSnap.data().text.replace(/\n/g, '<br>')}</p>`;
+        } else {
+            paymentGuideDisplay.textContent = 'Please contact the salon to complete your payment.';
         }
     });
+const previewCard = document.getElementById('landing-gc-preview-card');
 
-    document.getElementById('landing-gc-background-options').addEventListener('click', (e) => {
-        const target = e.target.closest('button');
-        if (target && target.dataset.bg) {
-            document.getElementById('landing-gc-background-options').querySelectorAll('button').forEach(btn => btn.classList.remove('ring-2', 'ring-pink-500'));
-            target.classList.add('ring-2', 'ring-pink-500');
-            previewCard.style.backgroundImage = `url('${target.dataset.bg}')`;
-        }
+const updateLandingGiftCardPreview = () => {
+    const showTo = document.getElementById('gc-show-to').checked;
+    const showFrom = document.getElementById('gc-show-from').checked;
+
+    document.getElementById('gc-to-wrapper').style.display = showTo ? '' : 'none';
+    document.getElementById('gc-from-wrapper').style.display = showFrom ? '' : 'none';
+
+    document.getElementById('landing-gc-preview-to').parentElement.style.display = showTo ? '' : 'none';
+    document.getElementById('landing-gc-preview-from').parentElement.style.display = showFrom ? '' : 'none';
+
+    document.getElementById('landing-gc-preview-to').textContent = document.getElementById('gc-to').value || 'Recipient';
+    document.getElementById('landing-gc-preview-from').textContent = document.getElementById('gc-from').value || 'Sender';
+
+    const amount = parseFloat(document.getElementById('gc-amount').value) || 0;
+    const quantity = parseInt(document.getElementById('gc-quantity').value, 10) || 0;
+
+    document.getElementById('landing-gc-preview-amount').textContent = `$${amount.toFixed(2)}`;
+    document.getElementById('landing-gc-total-amount').textContent = `$${(amount * quantity).toFixed(2)}`;
+        // --- ADD THIS NEW BLOCK TO DISPLAY THE EXPIRATION DATE ---
+    const expiryDate = new Date();
+    expiryDate.setMonth(expiryDate.getMonth() + 6);
+    const formattedExpiryDate = expiryDate.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
     });
+    document.getElementById('landing-gc-preview-expiry').textContent = `Expires: ${formattedExpiryDate}`;
+    // --- END OF NEW BLOCK ---
+};
 
-    purchaseForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const buyerName = document.getElementById('gc-buyer-name').value;
-        const buyerPhone = document.getElementById('gc-buyer-phone').value;
-        const buyerEmail = document.getElementById('gc-buyer-email').value;
-        const amount = parseFloat(document.getElementById('gc-amount').value);
-        const quantity = parseInt(document.getElementById('gc-quantity').value, 10);
+const initializeLandingGiftCardDesigner = () => {
+    purchaseForm.reset();
+    document.getElementById('gc-quantity').value = 1;
 
-        if (!buyerName || !buyerPhone || !buyerEmail || isNaN(amount) || amount <= 0 || isNaN(quantity) || quantity <= 0) {
-            alert('Please fill out all user and gift card information correctly.');
-            return;
-        }
+    const backgroundTabs = document.getElementById('landing-gc-background-tabs');
+    const backgroundOptions = document.getElementById('landing-gc-background-options');
 
-        const submitBtn = document.getElementById('landing-gc-submit-btn');
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Processing...';
+    backgroundTabs.innerHTML = Object.keys(giftCardBackgrounds).map(cat => 
+        `<button type="button" data-category="${cat}" class="px-3 py-1 text-sm font-medium rounded-t-lg">${cat}</button>`
+    ).join('');
 
-        try {
+    const firstTab = backgroundTabs.querySelector('button');
+    if(firstTab) {
+         firstTab.classList.add('bg-gray-200', 'border-gray-300', 'border-b-0');
+         backgroundOptions.innerHTML = giftCardBackgrounds[firstTab.dataset.category].map(url => 
+            `<button type="button" data-bg="${url}" class="w-full h-16 bg-cover bg-center rounded-md border-2 border-transparent hover:border-pink-400" style="background-image: url('${url}')"></button>`
+         ).join('');
+         previewCard.style.backgroundImage = `url('${giftCardBackgrounds[firstTab.dataset.category][0]}')`;
+    }
+    updateLandingGiftCardPreview();
+};
+
+buyGiftCardBtn.addEventListener('click', () => {
+    initializeLandingGiftCardDesigner();
+    purchaseModal.classList.remove('hidden');
+});
+closePurchaseModalBtn.addEventListener('click', () => purchaseModal.classList.add('hidden'));
+purchaseModal.querySelector('.modal-overlay').addEventListener('click', () => purchaseModal.classList.add('hidden'));
+
+purchaseForm.addEventListener('input', updateLandingGiftCardPreview);
+
+document.getElementById('landing-gc-background-tabs').addEventListener('click', e => {
+    const tab = e.target.closest('button');
+    if (tab) {
+         document.getElementById('landing-gc-background-tabs').querySelectorAll('button').forEach(t => t.classList.remove('bg-gray-200', 'border-gray-300', 'border-b-0'));
+         tab.classList.add('bg-gray-200', 'border-gray-300', 'border-b-0');
+         const backgroundOptions = document.getElementById('landing-gc-background-options');
+         backgroundOptions.innerHTML = giftCardBackgrounds[tab.dataset.category].map(url => 
+            `<button type="button" data-bg="${url}" class="w-full h-16 bg-cover bg-center rounded-md border-2 border-transparent hover:border-pink-400" style="background-image: url('${url}')"></button>`
+         ).join('');
+         previewCard.style.backgroundImage = `url('${giftCardBackgrounds[tab.dataset.category][0]}')`;
+    }
+});
+
+document.getElementById('landing-gc-background-options').addEventListener('click', (e) => {
+    const target = e.target.closest('button');
+    if (target && target.dataset.bg) {
+        document.getElementById('landing-gc-background-options').querySelectorAll('button').forEach(btn => btn.classList.remove('ring-2', 'ring-pink-500'));
+        target.classList.add('ring-2', 'ring-pink-500');
+        previewCard.style.backgroundImage = `url('${target.dataset.bg}')`;
+    }
+});
+
+purchaseForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const buyerName = document.getElementById('gc-buyer-name').value;
+    const buyerPhone = document.getElementById('gc-buyer-phone').value;
+    const buyerEmail = document.getElementById('gc-buyer-email').value;
+    const amount = parseFloat(document.getElementById('gc-amount').value);
+    const quantity = parseInt(document.getElementById('gc-quantity').value, 10);
+
+    if (!buyerName || !buyerPhone || !buyerEmail || isNaN(amount) || amount <= 0 || isNaN(quantity) || quantity <= 0) {
+        alert('Please fill out all user and gift card information correctly.');
+        return;
+    }
+
+    const submitBtn = document.getElementById('landing-gc-submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Processing...';
+
+   try {
             alert('Your gift card request will be submitted. Please follow the payment instructions to activate your card.');
 
             const batch = writeBatch(db);
@@ -478,7 +467,7 @@ function initLandingPage() {
             submitBtn.disabled = false;
             submitBtn.textContent = 'Buy Gift Card Now';
         }
-    });
+});
     
     const lockoutMessageDiv = document.getElementById('login-lockout-message');
 
@@ -511,6 +500,50 @@ function initLandingPage() {
         loginTabBtn.classList.remove('active');
         signupFormContainer.classList.remove('hidden');
         loginFormContainer.classList.add('hidden');
+    });
+
+    const openGiftCardModal = () => { giftCardModal.classList.remove('hidden'); giftCardModal.classList.add('flex'); };
+    const closeGiftCardModal = () => { giftCardModal.classList.add('hidden'); giftCardModal.classList.remove('flex'); };
+    buyGiftCardBtn.addEventListener('click', openGiftCardModal);
+    closeGiftCardModalBtn.addEventListener('click', closeGiftCardModal);
+    giftCardModal.querySelector('.modal-overlay').addEventListener('click', closeGiftCardModal);
+    
+    const giftCardAmountSelect = document.getElementById('gift-card-amount');
+    const customAmountInput = document.getElementById('gift-card-custom-amount');
+    giftCardAmountSelect.addEventListener('change', () => {
+        if (giftCardAmountSelect.value === 'custom') {
+            customAmountInput.classList.remove('hidden');
+            customAmountInput.required = true;
+        } else {
+            customAmountInput.classList.add('hidden');
+            customAmountInput.required = false;
+        }
+    });
+
+    giftCardForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const amount = giftCardAmountSelect.value === 'custom' 
+            ? parseFloat(customAmountInput.value) 
+            : parseInt(giftCardAmountSelect.value, 10);
+
+        if (isNaN(amount) || amount <= 0) {
+            alert('Please enter a valid amount.');
+            return;
+        }
+
+      const giftCardData = { amount: amount, balance: amount, history: [], recipientName: document.getElementById('gift-card-recipient-name').value, recipientEmail: document.getElementById('gift-card-recipient-email').value, senderName: document.getElementById('gift-card-sender-name').value, message: document.getElementById('gift-card-message').value, code: `GC-${Date.now()}${[...Array(4)].map(() => Math.floor(Math.random() * 10)).join('')}`, status: 'Active', createdBy: anonymousUserId, createdAt: serverTimestamp() };
+        
+        try {
+            alert('Redirecting to a secure payment page...');
+            await addDoc(collection(db, "gift_cards"), giftCardData);
+            alert(`Success! Gift card for $${amount} has been sent to ${giftCardData.recipientEmail}.`);
+            giftCardForm.reset();
+            closeGiftCardModal();
+
+        } catch (error) {
+            console.error("Error purchasing gift card:", error);
+            alert("Could not process the gift card purchase. Please try again.");
+        }
     });
 
     landingLoginForm.addEventListener('submit', async (e) => {
@@ -886,115 +919,10 @@ function initClientDashboard(clientId, clientData) {
     });
 
     setupClientTabs();
-enableSwipeableTabs('#client-dashboard-content > main', '#client-dashboard-tabs');
+
 }
 
 // --- MAIN CHECK-IN APP SCRIPT ---
-const setupAdminFeatures = (userRole) => {
-    // This function will only be called if userRole is 'admin'
-    
-    // Admin Dashboard Listeners
-    setupReportDateFilters('dashboard-range-filter', 'dashboard-date-filter', (date, range) => {
-        currentDashboardDateFilter = range === 'daily' ? date : '';
-        currentDashboardRangeFilter = range;
-        updateAdminDashboard();
-    });
-
-    const dashboardStaffEarningForm = document.getElementById('dashboard-staff-earning-form-full');
-    if (dashboardStaffEarningForm) {
-        dashboardStaffEarningForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const staffName = document.getElementById('dashboard-staff-name-full').value;
-            const service = document.getElementById('dashboard-staff-earning-service').value;
-            const earning = parseFloat(document.getElementById('dashboard-staff-earning-full').value);
-            const tip = parseFloat(document.getElementById('dashboard-staff-tip-full').value) || 0;
-            const dateStr = document.getElementById('dashboard-staff-earning-date-full').value;
-
-            if (isNaN(earning) || !dateStr) {
-                return alert('Please make sure the Date and Earning fields are filled out correctly.');
-            }
-            const date = new Date(dateStr + 'T12:00:00');
-            try {
-                await addDoc(collection(db, "earnings"), { staffName, service, earning, tip, date: Timestamp.fromDate(date) });
-                document.getElementById('dashboard-staff-earning-service').value = '';
-                document.getElementById('dashboard-staff-earning-full').value = '';
-                document.getElementById('dashboard-staff-tip-full').value = '';
-            } catch (err) {
-                console.error("Error saving earning entry: ", err);
-                alert("Could not save the earning entry.");
-            }
-        });
-    }
-
-    const dashboardStaffEarningTable = document.getElementById('dashboard-staff-earning-table-full');
-    if (dashboardStaffEarningTable) {
-        dashboardStaffEarningTable.addEventListener('click', async (e) => {
-            const deleteBtn = e.target.closest('.delete-earning-btn');
-            const editBtn = e.target.closest('.edit-earning-btn');
-            if (deleteBtn) {
-                showConfirmModal("Delete this earning entry?", async () => {
-                    await deleteDoc(doc(db, "earnings", deleteBtn.dataset.id));
-                });
-            } else if (editBtn) {
-                const earning = allEarnings.find(e => e.id === editBtn.dataset.id);
-                if (earning) { openEditEarningModal(earning); }
-            }
-        });
-    }
-
-    // Report Page Listeners (for admin)
-    const salonEarningForm = document.getElementById('salon-earning-form');
-    if (salonEarningForm) {
-        salonEarningForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const date = document.getElementById('salon-earning-date').value;
-            if (!date) { return alert('Please select a date.'); }
-            const salonEarningData = { date: Timestamp.fromDate(new Date(date + 'T12:00:00')), sellGiftCard: parseFloat(document.getElementById('sell-gift-card').value) || 0, returnGiftCard: parseFloat(document.getElementById('return-gift-card').value) || 0, check: parseFloat(document.getElementById('check-payment').value) || 0, noOfCredit: parseInt(document.getElementById('no-of-credit').value) || 0, totalCredit: parseFloat(document.getElementById('total-credit').value) || 0, venmo: parseFloat(document.getElementById('venmo-payment').value) || 0, square: parseFloat(document.getElementById('square-payment').value) || 0 };
-            techniciansAndStaff.forEach(tech => { const input = document.getElementById(`salon-earning-${tech.name.toLowerCase()}`); if(input) { salonEarningData[tech.name.toLowerCase()] = parseFloat(input.value) || 0; } });
-            try {
-                await setDoc(doc(db, "salon_earnings", date), salonEarningData, { merge: true });
-                e.target.reset();
-                document.getElementById('salon-earning-date').value = getLocalDateString();
-            } catch (err) { console.error("Error adding salon earning: ", err); alert("Could not add salon earning."); }
-        });
-    }
-
-    const salonEarningTable = document.getElementById('salon-earning-table');
-    if (salonEarningTable) {
-        salonEarningTable.addEventListener('click', async (e) => {
-            const deleteBtn = e.target.closest('.delete-salon-earning-btn');
-            const editBtn = e.target.closest('.edit-salon-earning-btn');
-            if (deleteBtn) {
-                showConfirmModal("Delete this salon earning entry?", async () => {
-                    await deleteDoc(doc(db, "salon_earnings", deleteBtn.dataset.id));
-                });
-            } else if (editBtn) {
-                const earning = allSalonEarnings.find(e => e.id === editBtn.dataset.id);
-                if (earning) { openEditSalonEarningModal(earning); }
-            }
-        });
-    }
-
-    // Settings Page Listeners
-    loadAndRenderSalonHours();
-    loadSettings();
-    loadFeatureToggles();
-    setupAdminSettingsListeners();
-};
-
-const setupStaffFeatures = (userRole) => {
-    setupReportDateFilters('staff-dashboard-range-filter', 'staff-dashboard-date-filter', (date, range) => {
-        currentStaffDashboardDateFilter = range === 'daily' ? date : '';
-        currentStaffDashboardRangeFilter = range;
-        updateStaffDashboard();
-    });
-
-    const staffDetailsDateFilter = document.getElementById('staff-details-date-filter');
-    if(staffDetailsDateFilter) {
-        staffDetailsDateFilter.addEventListener('change', updateStaffDashboard);
-    }
-};
-
 function initMainApp(userRole, userName) {
     // --- START: MOBILE MENU LOGIC (REPLACE YOUR OLD BLOCK WITH THIS) ---
     const mobileMenuBtn = document.getElementById('mobile-menu-btn');
@@ -1060,16 +988,19 @@ function initMainApp(userRole, userName) {
     }
     
     // Add listener to close sidebar when a nav link is clicked
-   // NEW Simplified Mobile Nav Listener
-if (mobileNavLinksContainer) {
-    mobileNavLinksContainer.addEventListener('click', (e) => {
-        const button = e.target.closest('.top-nav-btn');
-        if (button) {
-            navigateToSection(button.dataset.target);
-            closeSidebar();
-        }
-    });
-}
+    if (mobileNavLinksContainer) {
+        mobileNavLinksContainer.addEventListener('click', (e) => {
+            if (e.target.closest('.top-nav-btn')) {
+                // We need to find the corresponding desktop button to click it
+                const target = e.target.closest('.top-nav-btn').dataset.target;
+                const desktopButton = topNavContainer.querySelector(`[data-target="${target}"]`);
+                if (desktopButton) {
+                    desktopButton.click();
+                }
+                closeSidebar();
+            }
+        });
+    }
      // --- ADD THIS NEW BLOCK TO MAKE THE LOGOUT BUTTON WORK ---
     const mobileLogoutBtn = document.getElementById('mobile-logout-btn');
     if (mobileLogoutBtn) {
@@ -1098,16 +1029,18 @@ if (mobileNavLinksContainer) {
     const appLoadTimestamp = Timestamp.now();
     const adminDashboardView = document.getElementById('admin-dashboard-view');
     const staffDashboardView = document.getElementById('staff-dashboard-view');
-  
+
     // Role-based Dashboard View
     if (userRole === 'admin') {
         adminDashboardView.classList.remove('hidden');
         staffDashboardView.classList.add('hidden');
-        setupAdminFeatures(userRole);
     } else {
         adminDashboardView.classList.add('hidden');
         staffDashboardView.classList.remove('hidden');
-        setupStaffFeatures(userRole);
+        const welcomeHeading = document.getElementById('staff-welcome-heading');
+        if (welcomeHeading) {
+            welcomeHeading.textContent = `My Earning Details`;
+        }
     }
 
     const updateNavCounts = () => {
@@ -1269,15 +1202,17 @@ topNav.addEventListener('click', (e) => {
     let currentMonth = new Date().getMonth();
     let currentYear = new Date().getFullYear();
 
-   let currentEarningTechFilter = 'All', currentEarningDateFilter = '', currentEarningRangeFilter = 'daily',
+    let currentTechFilterCalendar = 'All', currentTechFilterActive = 'All', currentTechFilterProcessing = 'All', currentTechFilterFinished = 'All', currentFinishedDateFilter = '';
+    let currentEarningTechFilter = 'All', currentEarningDateFilter = '', currentEarningRangeFilter = 'daily',
     currentDashboardDateFilter = '', currentDashboardRangeFilter = String(new Date().getMonth()),
     currentStaffDashboardDateFilter = '', currentStaffDashboardRangeFilter = String(new Date().getMonth());
-let currentDashboardEarningTechFilter = 'All', currentDashboardEarningDateFilter = '', currentDashboardEarningRangeFilter = 'daily';
-let currentAdminDashboardDateFilter = '', currentAdminDashboardRangeFilter = String(new Date().getMonth());
-let currentStaffDashboardRangeFilter = String(new Date().getMonth());
     
+    let currentDashboardEarningTechFilter = 'All', currentDashboardEarningDateFilter = '', currentDashboardEarningRangeFilter = 'daily';
     let currentSalonEarningDateFilter = '', currentSalonEarningRangeFilter = String(new Date().getMonth()), currentExpenseMonthFilter = '';
 
+   // ... other variables
+let aggregatedClients = [], allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [], allInventoryUsage = [], allGiftCards = [], allPromotions = [], allServicesList = [], technicianColorMap = {}, sentReminderIds = [];
+// ... more variables
     let techniciansAndStaff = [], technicians = [];
     let allExpenseCategories = [], allPaymentAccounts = [], allSuppliers = [];
 // ADD THIS ENTIRE NEW BLOCK for the lightbox
@@ -1296,21 +1231,21 @@ let currentGalleryData = [];
     
     let confirmCallback = null;
     const showConfirmModal = (message, onConfirm, confirmText = 'Delete') => {
-    confirmModalMessage.textContent = message;
-    confirmCallback = onConfirm;
-    confirmConfirmBtn.textContent = confirmText;
+        confirmModalMessage.textContent = message;
+        confirmCallback = onConfirm;
+        confirmConfirmBtn.textContent = confirmText;
 
-    // Also update the button color for better user experience
-    confirmConfirmBtn.classList.remove('bg-red-600', 'bg-green-600'); // Reset colors
-    if (confirmText.toLowerCase() === 'activate') {
-        confirmConfirmBtn.classList.add('bg-green-600');
-    } else {
-        confirmConfirmBtn.classList.add('bg-red-600'); // Default to red for delete
-    }
+        // Also update the button color for better user experience
+        confirmConfirmBtn.classList.remove('bg-red-600', 'bg-green-600'); // Reset colors
+        if (confirmText.toLowerCase() === 'activate') {
+            confirmConfirmBtn.classList.add('bg-green-600');
+        } else {
+            confirmConfirmBtn.classList.add('bg-red-600'); // Default to red for delete
+        }
 
-    confirmModal.classList.remove('hidden');
-    confirmModal.classList.add('flex');
-};
+        confirmModal.classList.remove('hidden');
+        confirmModal.classList.add('flex');
+    };
      const closeConfirmModal = () => { confirmModal.classList.add('hidden'); confirmModal.classList.remove('flex'); confirmCallback = null; };
     confirmConfirmBtn.addEventListener('click', () => { if (confirmCallback) { confirmCallback(); } closeConfirmModal(); });
     confirmCancelBtn.addEventListener('click', closeConfirmModal);
@@ -1327,38 +1262,42 @@ const getDateRange = (filter, specificDate = null) => {
     const now = new Date();
     let startDate, endDate = new Date(now);
 
-    if (filter === 'daily') {
+    if (filter === 'daily' || filter === 'today') {
         const dateToUse = specificDate ? new Date(specificDate + 'T00:00:00') : now;
         startDate = new Date(dateToUse.getFullYear(), dateToUse.getMonth(), dateToUse.getDate());
         endDate = new Date(dateToUse.getFullYear(), dateToUse.getMonth(), dateToUse.getDate(), 23, 59, 59, 999);
-    } else {
-        switch (filter) {
-            case 'this_week':
-                const firstDayOfWeek = now.getDate() - now.getDay();
-                startDate = new Date(now.setDate(firstDayOfWeek));
-                startDate.setHours(0, 0, 0, 0);
-                endDate = new Date(startDate);
-                endDate.setDate(startDate.getDate() + 6);
-                endDate.setHours(23, 59, 59, 999);
-                break;
-            case 'this_month':
-                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-                endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-                break;
-            case 'this-year':
-            case 'last-year':
-                const year = filter === 'this-year' ? now.getFullYear() : now.getFullYear() - 1;
-                startDate = new Date(year, 0, 1);
-                endDate = new Date(year, 11, 31, 23, 59, 59, 999);
-                break;
-            default: // Monthly filter
-                if (!isNaN(parseInt(filter))) {
-                    const month = parseInt(filter, 10);
-                    startDate = new Date(now.getFullYear(), month, 1);
-                    endDate = new Date(now.getFullYear(), month + 1, 0, 23, 59, 59, 999);
-                }
-                break;
-        }
+        return { startDate, endDate };
+    }
+
+    switch (filter) {
+        case 'this_week':
+            const firstDayOfWeek = now.getDate() - now.getDay();
+            startDate = new Date(now.setDate(firstDayOfWeek));
+            startDate.setHours(0, 0, 0, 0);
+            endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + 6);
+            endDate.setHours(23, 59, 59, 999);
+            break;
+        case 'this_month':
+            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+            break;
+        case 'this_year':
+            startDate = new Date(now.getFullYear(), 0, 1);
+            endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+            break;
+         case 'last-year':
+            const lastYear = now.getFullYear() - 1;
+            startDate = new Date(lastYear, 0, 1);
+            endDate = new Date(lastYear, 11, 31, 23, 59, 59, 999);
+            break;
+        default: // Monthly filter
+            if (!isNaN(parseInt(filter))) {
+                const month = parseInt(filter, 10);
+                startDate = new Date(now.getFullYear(), month, 1);
+                endDate = new Date(now.getFullYear(), month + 1, 0, 23, 59, 59, 999);
+            }
+            break;
     }
     return { startDate, endDate };
 };
@@ -1370,6 +1309,17 @@ const getDateRange = (filter, specificDate = null) => {
             updateStaffDashboard();
         }
     };
+// DELETE the old cardColors array and REPLACE it with this new palette
+const colorPalette = [
+    { card: 'bg-pink-100', text: 'text-pink-800', bg: 'rgba(255, 99, 132, 0.5)', border: 'rgba(255, 99, 132, 1)' },
+    { card: 'bg-blue-100', text: 'text-blue-800', bg: 'rgba(54, 162, 235, 0.5)', border: 'rgba(54, 162, 235, 1)' },
+    { card: 'bg-green-100', text: 'text-green-800', bg: 'rgba(75, 192, 192, 0.5)', border: 'rgba(75, 192, 192, 1)' },
+    { card: 'bg-yellow-100', text: 'text-yellow-800', bg: 'rgba(255, 206, 86, 0.5)', border: 'rgba(255, 206, 86, 1)' },
+    { card: 'bg-purple-100', text: 'text-purple-800', bg: 'rgba(153, 102, 255, 0.5)', border: 'rgba(153, 102, 255, 1)' },
+    { card: 'bg-teal-100', text: 'text-teal-800', bg: 'rgba(32, 201, 151, 0.5)', border: 'rgba(32, 201, 151, 1)' },
+    { card: 'bg-indigo-100', text: 'text-indigo-800', bg: 'rgba(79, 70, 229, 0.5)', border: 'rgba(79, 70, 229, 1)' },
+    { card: 'bg-orange-100', text: 'text-orange-800', bg: 'rgba(255, 159, 64, 0.5)', border: 'rgba(255, 159, 64, 1)' }
+];
 
     const updateStaffEarningsReport = (filteredData) => {
     const staffContainer = document.getElementById('staff-earning-cards-container');
@@ -1472,6 +1422,7 @@ const getDateRange = (filter, specificDate = null) => {
         
     // REPLACE the old updateAdminDashboard function with this one
 const updateAdminDashboard = () => {
+    const filter = document.getElementById('dashboard-date-filter').value;
     const { startDate, endDate } = getDateRange(currentDashboardRangeFilter, currentDashboardDateFilter);
     if (!startDate) return;
 
@@ -1541,13 +1492,14 @@ const updateAdminDashboard = () => {
 
     // Render Graph and Upcoming Appointments
    updateSalonRevenueChart(filteredSalonEarnings, currentDashboardRangeFilter);
-    updateStaffEarningsReport(filteredSalonEarnings); 
+    updateStaffEarningsReport(filteredSalonEarnings); // <-- ADD THIS LINE
     renderDetailedAppointmentsList('admin-upcoming-appointments-list', allAppointments);
 };
 
 
 // REPLACE the old updateStaffDashboard function with this one
 const updateStaffDashboard = () => {
+const filter = document.getElementById('staff-dashboard-date-filter').value;
 const { startDate, endDate } = getDateRange(currentStaffDashboardRangeFilter, currentStaffDashboardDateFilter);
     if (!startDate) return;
 
@@ -1643,8 +1595,58 @@ if (myClientsCard) {
     const totalTipSpan = document.getElementById('staff-dashboard-filtered-earning-total-tip');
     if(totalMainSpan) totalMainSpan.textContent = `Total ($${totalEarning.toFixed(2)})`;
     if(totalTipSpan) totalTipSpan.textContent = `Tip ($${totalTip.toFixed(2)})`;
-    
+    // --- THIS IS THE NEW LINE THAT FIXES THE PROBLEM ---
     renderDetailedAppointmentsList('staff-upcoming-appointments-list', allAppointments, currentUserName);
+};
+    // ADD THIS ENTIRE NEW FUNCTION
+const renderDetailedAppointmentsList = (containerId, appointments, techFilter = 'All') => {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    let filteredAppointments = appointments.filter(a => a.appointmentTimestamp.toDate() > new Date());
+
+    if (techFilter !== 'All' && techFilter !== 'Any Technician') {
+        filteredAppointments = filteredAppointments.filter(appt => appt.technician === techFilter);
+    } else if (techFilter === 'Any Technician') {
+        filteredAppointments = filteredAppointments.filter(appt => appt.technician === 'Any Technician');
+    }
+
+    if (filteredAppointments.length === 0) {
+        container.innerHTML = '<p class="text-center text-gray-500 py-4">No upcoming appointments found.</p>';
+        return;
+    }
+
+    let tableHTML = `
+        <table class="w-full text-sm text-left text-gray-600">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
+                <tr>
+                    <th scope="col" class="px-6 py-3">Name</th>
+                    <th scope="col" class="px-6 py-3">Services</th>
+                    <th scope="col" class="px-6 py-3">Technician</th>
+                    <th scope="col" class="px-6 py-3">Group</th>
+                    <th scope="col" class="px-6 py-3">Date & Time</th>
+                    <th scope="col" class="px-6 py-3 text-center">Action</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+    filteredAppointments.sort((a, b) => a.appointmentTimestamp.seconds - b.appointmentTimestamp.seconds);
+
+    filteredAppointments.forEach(appt => {
+        tableHTML += `
+            <tr class="border-b">
+                <td class="px-6 py-3 font-medium">${appt.name}</td>
+                <td class="px-6 py-3">${Array.isArray(appt.services) ? appt.services.join(', ') : appt.services}</td>
+                <td class="px-6 py-3">${appt.technician}</td>
+                <td class="px-6 py-3 text-center">${appt.people || 1}</td>
+                <td class="px-6 py-3">${new Date(appt.appointmentTimestamp.seconds * 1000).toLocaleString([], {dateStyle: 'short', timeStyle: 'short'})}</td>
+                <td class="px-6 py-3 text-center"><button data-id="${appt.id}" class="checkin-today-btn text-blue-500 hover:underline">Check In</button></td>
+            </tr>
+        `;
+    });
+
+    tableHTML += '</tbody></table>';
+    container.innerHTML = tableHTML;
 };
     
 const updateSalonRevenueChart = (data, filter) => {
@@ -1788,6 +1790,9 @@ const updateMyEarningsChart = (data, filter, staffName) => {
     };
     myEarningsChart = initializeChart(myEarningsChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
 };
+    document.getElementById('dashboard-date-filter').addEventListener('change', updateAdminDashboard);
+    document.getElementById('staff-dashboard-date-filter').addEventListener('change', updateStaffDashboard);
+    
     // END NEW DASHBOARD LOGIC
 
 const loadAndRenderServices = async () => {
@@ -1979,7 +1984,8 @@ const renderStaffEarningsTable = (earnings, tableId, totalEarningId, totalTipId)
         let rowHTML = `
             <td class="px-6 py-4">${new Date(earning.date.seconds * 1000).toLocaleDateString()}</td>
             <td class="px-6 py-4 font-medium text-gray-900">${earning.staffName}</td>
-            <td class="px-6 py-4">${earning.service || ''}</td> <td class="px-6 py-4">$${earning.earning.toFixed(2)}</td>
+            <td class="px-6 py-4">${earning.service || ''}</td> <!-- Display the service -->
+            <td class="px-6 py-4">$${earning.earning.toFixed(2)}</td>
             <td class="px-6 py-4">$${earning.tip.toFixed(2)}</td>
         `;
         if (userRole === 'admin') {
@@ -2011,15 +2017,13 @@ const renderStaffEarningsTable = (earnings, tableId, totalEarningId, totalTipId)
 
 
         // Render for Dashboard Page
-        if (currentUserRole === 'admin') {
-            const dashboardFiltered = applyEarningFilters(allEarnings, currentDashboardEarningTechFilter, currentDashboardEarningDateFilter, currentDashboardEarningRangeFilter, userRole, userName);
-            const { totalEarning: dashTotalEarning, totalTip: dashTotalTip } = renderStaffEarningsTable(dashboardFiltered, 'dashboard-staff-earning-table-full', 'dashboard-total-earning', 'dashboard-total-tip');
+        const dashboardFiltered = applyEarningFilters(allEarnings, currentDashboardEarningTechFilter, currentDashboardEarningDateFilter, currentDashboardEarningRangeFilter, userRole, userName);
+        const { totalEarning: dashTotalEarning, totalTip: dashTotalTip } = renderStaffEarningsTable(dashboardFiltered, 'dashboard-staff-earning-table-full', 'dashboard-total-earning', 'dashboard-total-tip');
 
-            const dashTotalMainSpan = document.getElementById('dashboard-filtered-earning-total-main');
-            const dashTotalTipSpan = document.getElementById('dashboard-filtered-earning-total-tip');
-            if(dashTotalMainSpan) dashTotalMainSpan.textContent = `Total ($${dashTotalEarning.toFixed(2)})`;
-            if(dashTotalTipSpan) dashTotalTipSpan.textContent = `Tip ($${dashTotalTip.toFixed(2)})`;
-        }
+        const dashTotalMainSpan = document.getElementById('dashboard-filtered-earning-total-main');
+        const dashTotalTipSpan = document.getElementById('dashboard-filtered-earning-total-tip');
+        if(dashTotalMainSpan) dashTotalMainSpan.textContent = `Total ($${dashTotalEarning.toFixed(2)})`;
+        if(dashTotalTipSpan) dashTotalTipSpan.textContent = `Tip ($${dashTotalTip.toFixed(2)})`;
      };
     
     const applySalonEarningFilters = (earnings, dateFilter, rangeFilter) => {
@@ -2429,32 +2433,48 @@ onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot
 
     onSnapshot(query(collection(db, "salon_earnings"), orderBy("date", "desc")), (snapshot) => {
         allSalonEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        if (currentUserRole === 'admin') {
-            renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, currentSalonEarningDateFilter, currentSalonEarningRangeFilter));
-        }
+        renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, currentSalonEarningDateFilter, currentSalonEarningRangeFilter));
         updateDashboard();
     });
 
     onSnapshot(query(collection(db, "expenses"), orderBy("date", "desc")), (snapshot) => {
         allExpenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        if (currentUserRole === 'admin') {
-            populateExpenseMonthFilter();
-            renderExpenses();
-        }
+        populateExpenseMonthFilter();
+        renderExpenses();
     });
 
     onSnapshot(query(collection(db, "clients"), orderBy("name")), (snapshot) => {
         allClients = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        if (currentUserRole === 'admin') {
-            renderClientsList();
-        }
+        renderClientsList();
     });
 
     document.getElementById('search-active').addEventListener('input', (e) => { renderActiveClients(applyClientFilters(allActiveClients.filter(c => c.status === 'waiting'), e.target.value.toLowerCase(), currentTechFilterActive, null)); });
     document.getElementById('search-processing').addEventListener('input', (e) => { renderProcessingClients(applyClientFilters(allActiveClients.filter(c => c.status === 'processing'), e.target.value.toLowerCase(), currentTechFilterProcessing, null)); });
     document.getElementById('search-finished').addEventListener('input', (e) => { renderFinishedClients(applyClientFilters(allFinishedClients, e.target.value.toLowerCase(), currentTechFilterFinished, currentFinishedDateFilter)); });
     document.getElementById('finished-date-filter').addEventListener('input', (e) => { currentFinishedDateFilter = e.target.value; renderFinishedClients(applyClientFilters(allFinishedClients, document.getElementById('search-finished').value.toLowerCase(), currentTechFilterFinished, currentFinishedDateFilter)); });
+    document.getElementById('search-clients-list').addEventListener('input', () => renderClientsList());
+    document.getElementById('search-gift-cards').addEventListener('input', (e) => {
+    const searchTerm = e.target.value.toLowerCase();
+    const filtered = allGiftCards.filter(card => 
+        card.code.toLowerCase().includes(searchTerm) || 
+        card.recipientName.toLowerCase().includes(searchTerm)
+    );
+    renderGiftCardsAdminTable(filtered);
+});
+    document.getElementById('search-gift-cards').addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const filtered = allGiftCards.filter(card => card.code.toLowerCase().includes(searchTerm) || card.recipientName.toLowerCase().includes(searchTerm));
+        renderGiftCardsAdminTable(filtered);
+    });
     
+    document.getElementById('export-clients-btn').addEventListener('click', () => {
+        const dataToExport = aggregatedClients.map(c => ({ Name: c.name, Phone: c.phone || '', DOB: c.dob || '', 'Favorite Tech': c.favoriteTech || '', 'Favorite Color': c.favoriteColor || '', 'Last Visit': c.lastVisit ? new Date(c.lastVisit).toLocaleDateString() : '' }));
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Clients");
+        XLSX.writeFile(workbook, "clients_list.xlsx");
+    });
+
     document.getElementById('full-name').addEventListener('input', (e) => { const client = allFinishedClients.find(c => c.name === e.target.value); if (client) { document.getElementById('phone-number').value = client.phone; } });
     document.getElementById('phone-number').addEventListener('input', (e) => { const client = allFinishedClients.find(c => c.phone === e.target.value); if (client) { document.getElementById('full-name').value = client.name; } });
 
@@ -2494,8 +2514,63 @@ onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot
             }
         });
     };
-    
-    
+    setupSubTabs('reports-sub-tabs', 'sub-tab-content');
+    setupSubTabs('admin-sub-tabs', 'sub-tab-content');
+
+
+    function renderCalendar(year, month, technicianFilter = 'All') {
+        monthYearDisplay.textContent = `${new Date(year, month).toLocaleString('default', { month: 'long' })} ${year}`;
+        calendarGrid.innerHTML = '';
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        for (let i = 0; i < firstDay; i++) { calendarGrid.insertAdjacentHTML('beforeend', '<div></div>'); }
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dayCell = document.createElement('div');
+            dayCell.className = 'calendar-day border p-2';
+            dayCell.dataset.date = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            dayCell.innerHTML = `<div class="font-bold">${day}</div><div id="day-${day}" class="appointments"></div>`;
+            calendarGrid.appendChild(dayCell);
+        }
+let filteredAppointments = allAppointments;
+        if (technicianFilter !== 'All' && technicianFilter !== 'Any Technician') {
+            filteredAppointments = allAppointments.filter(appt => appt.technician === technicianFilter);
+        } else if (technicianFilter === 'Any Technician') {
+            filteredAppointments = allAppointments.filter(appt => appt.technician === 'Any Technician');
+        }
+
+        // Sort appointments by time to display them chronologically
+        filteredAppointments.sort((a, b) => a.appointmentTimestamp.seconds - b.appointmentTimestamp.seconds);
+
+        filteredAppointments.forEach(appt => {
+            const apptDate = new Date(appt.appointmentTimestamp.seconds * 1000);
+            if (apptDate.getFullYear() === year && apptDate.getMonth() === month) {
+                const dayCell = document.getElementById(`day-${apptDate.getDate()}`);
+                if (dayCell) {
+                    const timeString = apptDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+                    const serviceString = Array.isArray(appt.services) ? appt.services[0] : appt.services;
+                    
+                    // --- Get the color for the assigned technician ---
+                    const technicianName = appt.technician;
+                    let colorTheme = { card: 'bg-gray-100', text: 'text-gray-800' }; // Default for "Any Technician"
+                    if (technicianName && technicianColorMap[technicianName]) {
+                        colorTheme = technicianColorMap[technicianName];
+                    }
+                    // --- End of color logic ---
+
+                    const entryHTML = `
+                        <div class="appointment-entry ${colorTheme.card} p-1" data-id="${appt.id}" data-type="appointment">
+                            <p class="font-semibold text-xs ${colorTheme.text} truncate">${timeString} - ${appt.name}</p>
+                            <p class="text-xs text-gray-600 truncate">${serviceString || 'Service not specified'}</p>
+                        </div>`;
+                    
+                    dayCell.insertAdjacentHTML('beforeend', entryHTML);
+                }
+            }
+        });
+        if(calendarCountSpan) {
+            calendarCountSpan.textContent = calendarGrid.querySelectorAll('.appointment-entry').length;
+        }
+    }
     document.getElementById('prev-month-btn').addEventListener('click', () => { currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(currentYear, currentMonth, currentTechFilterCalendar); });
     document.getElementById('next-month-btn').addEventListener('click', () => { currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; } renderCalendar(currentYear, currentMonth, currentTechFilterCalendar); });
 calendarGrid.addEventListener('click', (e) => {
@@ -2516,17 +2591,405 @@ calendarGrid.addEventListener('click', (e) => {
     });
 
     const setupTechFilter = (containerId, callback) => {
-        const container = document.getElementById(containerId);
-        if(!container) return;
-         container.addEventListener('click', (e) => {
+         document.getElementById(containerId).addEventListener('click', (e) => {
             if (e.target.classList.contains('tech-filter-btn')) {
-                container.querySelectorAll('.tech-filter-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll(`#${containerId} .tech-filter-btn`).forEach(btn => btn.classList.remove('active'));
                 e.target.classList.add('active');
                 callback(e.target.dataset.tech);
             }
         });
     };
+
+    setupTechFilter('tech-filter-container-active', (tech) => { currentTechFilterActive = tech; renderActiveClients(applyClientFilters(allActiveClients.filter(c => c.status === 'waiting'), document.getElementById('search-active').value.toLowerCase(), currentTechFilterActive, null)); });
+    setupTechFilter('tech-filter-container-processing', (tech) => { currentTechFilterProcessing = tech; renderProcessingClients(applyClientFilters(allActiveClients.filter(c => c.status === 'processing'), document.getElementById('search-processing').value.toLowerCase(), currentTechFilterProcessing, null)); });
+    setupTechFilter('tech-filter-container-finished', (tech) => { currentTechFilterFinished = tech; renderFinishedClients(applyClientFilters(allFinishedClients, document.getElementById('search-finished').value.toLowerCase(), currentTechFilterFinished, currentFinishedDateFilter)); });
+    setupTechFilter('tech-filter-container-calendar', (tech) => { currentTechFilterCalendar = tech; if (!document.getElementById('list-view').classList.contains('hidden')) { renderAllBookingsList(); } else { renderCalendar(currentYear, currentMonth, currentTechFilterCalendar); } });
     
+    setupTechFilter('tech-filter-container-earning', (tech) => { currentEarningTechFilter = tech; renderAllStaffEarnings(); });
+    setupTechFilter('dashboard-tech-filter-container-earning', (tech) => { currentDashboardEarningTechFilter = tech; renderAllStaffEarnings(); });
+    
+    
+const setupReportDateFilters = (selectId, dateInputId, callback) => {
+    const select = document.getElementById(selectId);
+    const dateInput = document.getElementById(dateInputId);
+    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    select.innerHTML = `<option value="daily">Daily</option>`;
+    months.forEach((month, index) => { select.innerHTML += `<option value="${index}">${month}</option>`; });
+    select.innerHTML += `<option value="this-year">This Year</option><option value="last-year">Last Year</option>`;
+    
+    select.addEventListener('change', (e) => { 
+        const range = e.target.value; 
+        dateInput.style.display = range === 'daily' ? 'block' : 'none'; 
+        callback(dateInput.value, range); 
+    });
+    dateInput.addEventListener('input', (e) => { 
+        callback(e.target.value, select.value); 
+    });
+};
+
+    setupReportDateFilters('earning-range-filter', 'earning-date-filter', (date, range) => { currentEarningDateFilter = date; currentEarningRangeFilter = range; renderAllStaffEarnings(); });
+    setupReportDateFilters('dashboard-earning-range-filter', 'dashboard-earning-date-filter', (date, range) => { currentDashboardEarningDateFilter = date; currentDashboardEarningRangeFilter = range; renderAllStaffEarnings(); });
+// ... existing filter setups
+setupReportDateFilters('salon-earning-range-filter', 'salon-earning-date-filter', (date, range) => { currentSalonEarningDateFilter = date; currentSalonEarningRangeFilter = range; renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, date, range)); });
+
+// ADD THESE TWO NEW LINES
+setupReportDateFilters('dashboard-range-filter', 'dashboard-date-filter', (date, range) => { currentDashboardRangeFilter = range; currentDashboardDateFilter = date; updateAdminDashboard(); });
+setupReportDateFilters('staff-dashboard-range-filter', 'staff-dashboard-date-filter', (date, range) => { currentStaffDashboardRangeFilter = range; currentStaffDashboardDateFilter = date; updateStaffDashboard(); });
+ // --- Set Default Dashboard Filters to Current Month ---
+    const currentMonthValue = String(new Date().getMonth());
+    const adminDashboardFilter = document.getElementById('dashboard-range-filter');
+    if (adminDashboardFilter) {
+        adminDashboardFilter.value = currentMonthValue;
+    }
+    const staffDashboardFilter = document.getElementById('staff-dashboard-range-filter');
+    if (staffDashboardFilter) {
+        staffDashboardFilter.value = currentMonthValue;
+    }   
+    // --- Autocomplete for Dashboard Earning Form ---
+const dashboardServiceInput = document.getElementById('dashboard-staff-earning-service');
+const dashboardEarningInput = document.getElementById('dashboard-staff-earning-full');
+
+if (dashboardServiceInput && dashboardEarningInput) {
+    // Use 'change' event to fire when an option is selected or input loses focus
+    dashboardServiceInput.addEventListener('change', (e) => {
+        const selectedServiceName = e.target.value;
+        const service = allServicesList.find(s => s.name === selectedServiceName);
+
+        if (service) {
+            dashboardEarningInput.value = service.price.toFixed(2);
+        }
+    });
+}
+    // --- PASTE THE NEW REMINDER LOGIC HERE ---
+        const checkAppointmentReminders = () => {
+            const now = new Date();
+            allAppointments.forEach(appt => {
+                if (sentReminderIds.includes(appt.id)) {
+                    return; // Reminder already sent for this appointment
+                }
+
+                const apptTime = appt.appointmentTimestamp.toDate();
+                const timeDifferenceMinutes = (apptTime.getTime() - now.getTime()) / 60000;
+
+                // If the appointment is between 0 and 60 minutes from now
+                if (timeDifferenceMinutes > 0 && timeDifferenceMinutes <= 60) {
+                    const timeString = apptTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const serviceString = Array.isArray(appt.services) ? appt.services[0] : appt.services;
+                    
+                    addNotification('reminder', `Reminder: ${appt.name}'s appointment for ${serviceString} is at ${timeString}.`);
+                    
+                    sentReminderIds.push(appt.id); // Mark reminder as sent
+                }
+            });
+        };
+
+        // Check for reminders every minute
+        setInterval(checkAppointmentReminders, 60000);
+        // --- END OF NEW BLOCK ---
+   // REPLACE the old staff-earning-form listener with this one
+document.getElementById('staff-earning-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const staffName = document.getElementById('staff-name').value;
+    const service = document.getElementById('staff-earning-service').value; // Get service value
+    const earning = parseFloat(document.getElementById('staff-earning').value);
+    const tip = parseFloat(document.getElementById('staff-tip').value) || 0; // If blank, default to 0
+    const date = document.getElementById('staff-earning-date').value;
+    if (isNaN(earning) || !date ) { return alert('Please ensure Date, and Earning fields are filled out correctly.'); } // Tip is now optional
+    try {
+        // Add service to the data being saved
+        await addDoc(collection(db, "earnings"), { staffName, service, earning, tip, date: Timestamp.fromDate(new Date(date + 'T12:00:00')) });
+        // Manually clear only the fields that need it
+document.getElementById('staff-earning-service').value = '';
+document.getElementById('staff-earning').value = '';
+document.getElementById('staff-tip').value = '';
+        document.getElementById('staff-earning-date').value = getLocalDateString();
+        document.getElementById('staff-name').value = 'TJ'; // Reset default to TJ
+    } catch (err) { console.error("Error adding earning: ", err); alert("Could not add earning."); }
+});
+
+// REPLACE the old dashboard form listener with this one
+// REPLACE the old dashboard form listener with this one
+document.getElementById('dashboard-staff-earning-form-full').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const staffName = document.getElementById('dashboard-staff-name-full').value;
+    const service = document.getElementById('dashboard-staff-earning-service').value; // Get service value
+    const earning = parseFloat(document.getElementById('dashboard-staff-earning-full').value);
+    const tip = parseFloat(document.getElementById('dashboard-staff-tip-full').value) || 0;
+    const dateStr = document.getElementById('dashboard-staff-earning-date-full').value;
+
+   if (isNaN(earning) || !dateStr) { return alert('Please make sure the Date and Earning fields are filled out correctly.'); }
+
+    const date = new Date(dateStr + 'T12:00:00');
+
+    try {
+        // Add service to the data being saved
+        await addDoc(collection(db, "earnings"), { staffName, service, earning, tip, date: Timestamp.fromDate(date) });
+        alert(`Earning for ${staffName} on ${dateStr} has been saved.`);
+        // Manually clear only the fields that need it
+document.getElementById('dashboard-staff-earning-service').value = '';
+document.getElementById('dashboard-staff-earning-full').value = '';
+document.getElementById('dashboard-staff-tip-full').value = '';
+        document.getElementById('dashboard-staff-earning-date-full').value = getLocalDateString();
+        document.getElementById('dashboard-staff-name-full').value = 'TJ'; // Reset default to TJ
+    } catch (err) {
+        console.error("Error saving earning entry: ", err);
+        alert("Could not save the earning entry.");
+    }
+});
+    
+    document.getElementById('staff-earning-table').addEventListener('click', async (e) => {
+        const deleteBtn = e.target.closest('.delete-earning-btn');
+        const editBtn = e.target.closest('.edit-earning-btn');
+        if(deleteBtn) { showConfirmModal("Delete this earning entry?", async () => { await deleteDoc(doc(db, "earnings", deleteBtn.dataset.id)); }); } 
+        else if (editBtn) { const earning = allEarnings.find(e => e.id === editBtn.dataset.id); if (earning) { openEditEarningModal(earning); } }
+    });
+     document.getElementById('dashboard-staff-earning-table-full').addEventListener('click', async (e) => {
+        const deleteBtn = e.target.closest('.delete-earning-btn');
+        const editBtn = e.target.closest('.edit-earning-btn');
+        if(deleteBtn) { showConfirmModal("Delete this earning entry?", async () => { await deleteDoc(doc(db, "earnings", deleteBtn.dataset.id)); }); } 
+        else if (editBtn) { const earning = allEarnings.find(e => e.id === editBtn.dataset.id); if (earning) { openEditEarningModal(earning); } }
+    });
+
+    document.getElementById('salon-earning-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const date = document.getElementById('salon-earning-date').value;
+        if (!date) { return alert('Please select a date.'); }
+        const salonEarningData = { date: Timestamp.fromDate(new Date(date + 'T12:00:00')), sellGiftCard: parseFloat(document.getElementById('sell-gift-card').value) || 0, returnGiftCard: parseFloat(document.getElementById('return-gift-card').value) || 0, check: parseFloat(document.getElementById('check-payment').value) || 0, noOfCredit: parseInt(document.getElementById('no-of-credit').value) || 0, totalCredit: parseFloat(document.getElementById('total-credit').value) || 0, venmo: parseFloat(document.getElementById('venmo-payment').value) || 0, square: parseFloat(document.getElementById('square-payment').value) || 0 };
+        techniciansAndStaff.forEach(tech => { const input = document.getElementById(`salon-earning-${tech.name.toLowerCase()}`); if(input) { salonEarningData[tech.name.toLowerCase()] = parseFloat(input.value) || 0; } });
+        try {
+            // Using set with merge to update if exists, create if not
+            await setDoc(doc(db, "salon_earnings", date), salonEarningData, { merge: true });
+            e.target.reset();
+            document.getElementById('salon-earning-date').value = getLocalDateString();
+        } catch (err) { console.error("Error adding salon earning: ", err); alert("Could not add salon earning."); }
+    });
+
+    document.getElementById('salon-earning-table').addEventListener('click', async (e) => {
+        const deleteBtn = e.target.closest('.delete-salon-earning-btn');
+        const editBtn = e.target.closest('.edit-salon-earning-btn');
+        if(deleteBtn) { showConfirmModal("Delete this salon earning entry?", async () => { await deleteDoc(doc(db, "salon_earnings", deleteBtn.dataset.id)); }); } 
+        else if (editBtn) { const earning = allSalonEarnings.find(e => e.id === editBtn.dataset.id); if (earning) { openEditSalonEarningModal(earning); } }
+    });
+    
+    document.getElementById('export-salon-earnings-btn').addEventListener('click', () => {
+        const filteredData = applySalonEarningFilters(allSalonEarnings, currentSalonEarningDateFilter, currentSalonEarningRangeFilter);
+        const dataForExport = filteredData.map(earning => {
+            let rowData = { Date: new Date(earning.date.seconds * 1000).toLocaleDateString() };
+            let total = 0;
+            techniciansAndStaff.forEach(tech => { const techEarning = earning[tech.name.toLowerCase()] || 0; rowData[tech.name] = techEarning; total += techEarning; });
+            total += (earning.sellGiftCard || 0);
+            const cash = total - ((earning.totalCredit || 0) + (earning.check || 0) + (earning.returnGiftCard || 0) + (earning.venmo || 0) + (earning.square || 0));
+            rowData["Sell GC"] = earning.sellGiftCard || 0; rowData["Return GC"] = earning.returnGiftCard || 0; rowData["Check"] = earning.check || 0; rowData["# Credit"] = earning.noOfCredit || 0;
+            rowData["Total Credit"] = earning.totalCredit || 0; rowData["Venmo"] = earning.venmo || 0; rowData["Square"] = earning.square || 0; rowData["Total"] = total; rowData["Cash"] = cash;
+            return rowData;
+        });
+        if (filteredData.length > 0) {
+            let totals = { Date: "Total:" };
+            let grandTotal = 0;
+            techniciansAndStaff.forEach(tech => { const techTotal = filteredData.reduce((sum, e) => sum + (e[tech.name.toLowerCase()] || 0), 0); totals[tech.name] = techTotal; grandTotal += techTotal; });
+            const otherFields = ["sellGiftCard", "returnGiftCard", "check", "noOfCredit", "totalCredit", "venmo", "square"];
+            otherFields.forEach(field => { totals[field] = filteredData.reduce((sum, e) => sum + (e[field] || 0), 0); });
+            grandTotal += totals.sellGiftCard;
+            totals.total = grandTotal;
+            totals.cash = grandTotal - (totals.totalCredit + totals.check + totals.returnGiftCard + totals.venmo + totals.square);
+            dataForExport.push({}, totals);
+            const commissionRow = { Date: "Commission 70%:" }, check70Row = { Date: "70% of Check:" }, cash30Row = { Date: "30% of Cash:" };
+            techniciansAndStaff.forEach(tech => {
+                const techTotal = totals[tech.name] || 0;
+                const commission70 = techTotal * 0.70, check70 = commission70 * 0.70, cash30 = commission70 - check70;
+                commissionRow[tech.name] = commission70; check70Row[tech.name] = check70; cash30Row[tech.name] = cash30;
+            });
+            dataForExport.push(commissionRow, check70Row, cash30Row);
+        }
+        const worksheet = XLSX.utils.json_to_sheet(dataForExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Salon Earnings");
+        XLSX.writeFile(workbook, "Salon_Earning_Report.xlsx");
+    });
+
+    const importSalonEarningsBtn = document.getElementById('import-salon-earnings-btn');
+    const importSalonEarningsInput = document.getElementById('import-salon-earnings-input');
+
+    // When the "Import" button is clicked, trigger the hidden file input
+    importSalonEarningsBtn.addEventListener('click', () => {
+        importSalonEarningsInput.click();
+    });
+
+    // When a file is selected in the hidden input, process it
+    importSalonEarningsInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const importedData = XLSX.utils.sheet_to_json(firstSheet);
+
+                if (importedData.length === 0) {
+                    alert('No data found in the Excel file.');
+                    return;
+                }
+
+                const batch = writeBatch(db);
+                let processedCount = 0;
+
+                for (const row of importedData) {
+                    // Ensure there's a valid date
+                    if (!row.Date || !(row.Date instanceof Date)) {
+                        console.warn('Skipping row due to invalid or missing date:', row);
+                        continue;
+                    }
+
+                    const date = row.Date;
+                    // Format the date as YYYY-MM-DD for the document ID
+                    const docId = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                    
+                    const salonEarningData = {
+                        date: Timestamp.fromDate(date),
+                        sellGiftCard: parseFloat(row['Sell GC']) || 0,
+                        returnGiftCard: parseFloat(row['Return GC']) || 0,
+                        check: parseFloat(row['Check']) || 0,
+                        noOfCredit: parseInt(row['No of Credit']) || 0,
+                        totalCredit: parseFloat(row['Total Credit']) || 0,
+                        venmo: parseFloat(row['Venmo']) || 0,
+                        square: parseFloat(row['Square']) || 0,
+                    };
+
+                    // Add earnings for each staff member found in the row
+                    techniciansAndStaff.forEach(tech => {
+                        const techName = tech.name;
+                        if (row[techName] !== undefined && !isNaN(parseFloat(row[techName]))) {
+                            salonEarningData[techName.toLowerCase()] = parseFloat(row[techName]);
+                        }
+                    });
+
+                    const docRef = doc(db, "salon_earnings", docId);
+                    batch.set(docRef, salonEarningData, { merge: true });
+                    processedCount++;
+                }
+
+                await batch.commit();
+                alert(`${processedCount} records imported successfully! The data will now appear in your report.`);
+
+            } catch (error) {
+                console.error("Error importing salon earnings:", error);
+                alert("An error occurred during the import. Please check the console for details and ensure your file format is correct.");
+            } finally {
+                // Reset the input so you can upload the same file again if needed
+                e.target.value = '';
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    });
+    document.getElementById('print-salon-earnings-btn').addEventListener('click', () => {
+        const printWindow = window.open('', '_blank', 'height=600,width=800');
+        printWindow.document.write('<html><head><title>Salon Earning Report</title><script src="https://cdn.tailwindcss.com"><\/script><style>body{padding:20px;font-family:"Poppins",sans-serif}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background-color:#f2f2f2}</style></head><body><h1>Salon Earning Report</h1>');
+        printWindow.document.write(document.getElementById('salon-earning-table').outerHTML);
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        printWindow.focus(); 
+        setTimeout(() => { printWindow.print(); printWindow.close(); }, 250);
+    });
+
+// REPLACE the old openEditEarningModal function with this one
+const openEditEarningModal = (earning) => {
+    editEarningForm.reset();
+    document.getElementById('edit-earning-id').value = earning.id;
+    document.getElementById('edit-staff-earning-date').value = new Date(earning.date.seconds * 1000).toISOString().split('T')[0];
+    document.getElementById('edit-staff-name').value = earning.staffName;
+    document.getElementById('edit-staff-earning-service').value = earning.service || ''; // Populate service
+    document.getElementById('edit-staff-earning').value = earning.earning;
+    document.getElementById('edit-staff-tip').value = earning.tip;
+
+    // Populate the service datalist for autocomplete
+    const serviceList = document.getElementById('edit-staff-earning-services-list');
+    if (serviceList) {
+        serviceList.innerHTML = Object.keys(servicesData).flatMap(category => 
+            servicesData[category].map(service => `<option value="${service.name}"></option>`)
+        ).join('');
+    }
+
+    editEarningModal.classList.remove('hidden'); 
+    editEarningModal.classList.add('flex');
+};
+    const closeEditEarningModal = () => { editEarningModal.classList.add('hidden'); editEarningModal.classList.remove('flex'); };
+    document.getElementById('edit-earning-cancel-btn').addEventListener('click', closeEditEarningModal);
+    document.querySelector('.edit-earning-modal-overlay').addEventListener('click', closeEditEarningModal);
+
+// REPLACE the old editEarningForm submit listener with this one
+editEarningForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const earningId = document.getElementById('edit-earning-id').value;
+    if (!earningId) return;
+    try {
+        await updateDoc(doc(db, "earnings", earningId), {
+            staffName: document.getElementById('edit-staff-name').value,
+            service: document.getElementById('edit-staff-earning-service').value, // Save the service
+            earning: parseFloat(document.getElementById('edit-staff-earning').value),
+            tip: parseFloat(document.getElementById('edit-staff-tip').value), 
+            date: Timestamp.fromDate(new Date(document.getElementById('edit-staff-earning-date').value + 'T12:00:00'))
+        });
+        closeEditEarningModal();
+    } catch(err) { console.error("Error updating earning:", err); alert("Could not update earning."); }
+});
+
+    const openEditSalonEarningModal = (earning) => {
+        editSalonEarningForm.reset();
+        document.getElementById('edit-salon-earning-id').value = earning.id;
+        document.getElementById('edit-salon-earning-date').value = new Date(earning.date.seconds * 1000).toISOString().split('T')[0];
+        const inputsContainer = document.getElementById('edit-salon-earning-inputs');
+        inputsContainer.innerHTML = '';
+        techniciansAndStaff.forEach(tech => {
+            const techNameLower = tech.name.toLowerCase();
+            inputsContainer.innerHTML += `<div><label for="edit-${techNameLower}-earning" class="block text-sm font-medium text-gray-600">${tech.name}</label><input type="number" step="0.01" id="edit-${techNameLower}-earning" value="${earning[techNameLower] || 0}" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount"></div>`;
+        });
+        document.getElementById('edit-sell-gift-card').value = earning.sellGiftCard || 0;
+        document.getElementById('edit-return-gift-card').value = earning.returnGiftCard || 0;
+        document.getElementById('edit-check-payment').value = earning.check || 0;
+        document.getElementById('edit-no-of-credit').value = earning.noOfCredit || 0;
+        document.getElementById('edit-total-credit').value = earning.totalCredit || 0;
+        document.getElementById('edit-venmo-payment').value = earning.venmo || 0;
+        document.getElementById('edit-square-payment').value = earning.square || 0;
+        editSalonEarningModal.classList.remove('hidden'); editSalonEarningModal.classList.add('flex');
+    };
+    const closeEditSalonEarningModal = () => { editSalonEarningModal.classList.add('hidden'); editSalonEarningModal.classList.remove('flex'); };
+    document.getElementById('edit-salon-earning-cancel-btn').addEventListener('click', closeEditSalonEarningModal);
+    document.querySelector('.edit-salon-earning-modal-overlay').addEventListener('click', closeEditSalonEarningModal);
+
+    editSalonEarningForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const earningId = document.getElementById('edit-salon-earning-id').value;
+        if (!earningId) return;
+        const updatedData = { date: Timestamp.fromDate(new Date(document.getElementById('edit-salon-earning-date').value + 'T12:00:00')), sellGiftCard: parseFloat(document.getElementById('edit-sell-gift-card').value) || 0, returnGiftCard: parseFloat(document.getElementById('edit-return-gift-card').value) || 0, check: parseFloat(document.getElementById('check-payment').value) || 0, noOfCredit: parseInt(document.getElementById('edit-no-of-credit').value) || 0, totalCredit: parseFloat(document.getElementById('edit-total-credit').value) || 0, venmo: parseFloat(document.getElementById('edit-venmo-payment').value) || 0, square: parseFloat(document.getElementById('edit-square-payment').value) || 0 };
+        techniciansAndStaff.forEach(tech => { const input = document.getElementById(`edit-${tech.name.toLowerCase()}-earning`); if(input) { updatedData[tech.name.toLowerCase()] = parseFloat(input.value) || 0; } });
+        try {
+            await updateDoc(doc(db, "salon_earnings", earningId), updatedData);
+            closeEditSalonEarningModal();
+        } catch(err) { console.error("Error updating salon earning:", err); alert("Could not update salon earning."); }
+    });
+
+// REPLACE the old renderAllBookingsList function with this one
+const renderAllBookingsList = () => {
+    todayCountSpan.textContent = allAppointments.filter(a => a.appointmentTimestamp.toDate() > new Date()).length;
+    renderDetailedAppointmentsList('today-bookings-table-container', allAppointments, currentTechFilterCalendar);
+};
+
+    document.getElementById('today-btn').addEventListener('click', () => { document.getElementById('month-view').classList.add('hidden'); document.getElementById('month-nav').classList.add('hidden'); document.getElementById('list-view').classList.remove('hidden'); document.getElementById('today-btn').classList.add('hidden'); document.getElementById('month-view-btn').classList.remove('hidden'); renderAllBookingsList(); });
+    document.getElementById('month-view-btn').addEventListener('click', () => { document.getElementById('list-view').classList.add('hidden'); document.getElementById('month-view-btn').classList.add('hidden'); document.getElementById('month-view').classList.remove('hidden'); document.getElementById('month-nav').classList.remove('hidden'); document.getElementById('today-btn').classList.remove('hidden'); });
+
+    document.getElementById('today-bookings-table').addEventListener('click', async (e) => {
+        if (e.target.classList.contains('checkin-today-btn')) {
+            const appointment = allAppointments.find(a => a.id === e.target.dataset.id);
+            if (!appointment) return;
+            try {
+                await addDoc(collection(db, "active_queue"), { name: appointment.name, phone: appointment.phone, people: appointment.people || 1, bookingType: 'Booked - Calendar', services: Array.isArray(appointment.services) ? appointment.services : [appointment.services], technician: appointment.technician, notes: appointment.notes || '', checkInTimestamp: serverTimestamp(), status: 'waiting' });
+                await deleteDoc(doc(db, "appointments", e.target.dataset.id));
+            } catch (err) { console.error("Error checking in from today's view:", err); alert("Could not check in this client."); }
+        }
+    });
 
     const clockEl = document.getElementById('live-clock'), dateEl = document.getElementById('live-date'), copyrightYear = document.getElementById('copyright-year');
     const updateTime = () => { const now = new Date(); clockEl.textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }); dateEl.textContent = now.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); copyrightYear.textContent = now.getFullYear(); };
@@ -2551,10 +3014,1733 @@ calendarGrid.addEventListener('click', (e) => {
         } catch (error) { console.error("Error generating SMS:", error); smsTextarea.value = "Error connecting to the AI service."; sendLink.classList.remove('pointer-events-none', 'opacity-50'); }
     }
 
+    document.getElementById('clients-list-report-content').addEventListener('click', (e) => {
+    const viewProfileBtn = e.target.closest('.view-client-profile-btn');
+    const editBtn = e.target.closest('.edit-client-btn');
+    const deleteBtn = e.target.closest('.delete-client-btn');
+
+    if (viewProfileBtn) { 
+        const client = aggregatedClients.find(c => c.id === viewProfileBtn.dataset.id); 
+        if(client) { 
+            openClientProfileModal(client); 
+        } else {
+            console.warn("Could not find client data for ID:", viewProfileBtn.dataset.id);
+        }
+    } 
+    else if (editBtn) { 
+        const client = aggregatedClients.find(c => c.id === editBtn.dataset.id); 
+        if(client) { 
+            openClientModal(client); 
+        } else {
+            console.warn("Could not find client data for ID:", editBtn.dataset.id);
+        }
+    } 
+    else if (deleteBtn) { 
+        const clientId = deleteBtn.dataset.id; 
+        const client = aggregatedClients.find(c => c.id === clientId); 
+        if (client) { 
+            showConfirmModal(`Delete all records for ${client.name}? This cannot be undone.`, async () => { 
+                try {
+                    await deleteDoc(doc(db, "clients", clientId)); 
+                    alert(`${client.name} has been deleted.`);
+                } catch (error) {
+                    console.error("Error deleting client:", error);
+                    alert("Could not delete the client.");
+                }
+            }); 
+        } else {
+             console.warn("Could not find client data for ID:", clientId);
+        }
+    }
+});
     document.getElementById('gemini-sms-close-btn').addEventListener('click', () => { geminiSmsModal.classList.add('hidden'); geminiSmsModal.classList.remove('flex'); });
     document.querySelector('.gemini-sms-modal-overlay').addEventListener('click', () => { geminiSmsModal.classList.add('hidden'); geminiSmsModal.classList.remove('flex'); });
     
     document.getElementById('floating-booking-btn').addEventListener('click', () => { openAddAppointmentModal(getLocalDateString()); });
-}
+// ADD THIS NEW LINE
+document.getElementById('staff-details-date-filter').addEventListener('change', updateStaffDashboard);
+    
+    const addUserForm = document.getElementById('add-user-form');
+    const usersTableBody = document.querySelector('#users-table tbody');
+    const renderUsers = (users) => {
+        usersTableBody.innerHTML = '';
+        users.forEach(user => {
+            const row = usersTableBody.insertRow();
+            row.innerHTML = `<td class="px-6 py-4">${user.name}</td><td class="px-6 py-4">${user.email}</td><td class="px-6 py-4">${user.phone}</td><td class="px-6 py-4">${user.role}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${user.id}" class="edit-user-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${user.id}" class="delete-user-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
+        });
+    };
+  // REPLACE the old populateTechnicianFilters function with this one
+const populateTechnicianFilters = () => {
+    const techSelects = document.querySelectorAll('#appointment-technician-select, #technician-name-select, #staff-name, #edit-staff-name, #checkin-technician-select, #dashboard-staff-name-full');
+    const techContainers = document.querySelectorAll('.tech-filter-container');
 
+    const serviceOptionsHTML = Object.keys(servicesData).flatMap(category => 
+        servicesData[category].map(service => `<option value="${service.name}"></option>`)
+    ).join('');
+
+    const staffEarningServiceList = document.getElementById('staff-earning-services-list');
+    if (staffEarningServiceList) {
+        staffEarningServiceList.innerHTML = serviceOptionsHTML;
+    }
+    const dashboardServiceList = document.getElementById('dashboard-staff-earning-services-list');
+    if (dashboardServiceList) {
+        dashboardServiceList.innerHTML = serviceOptionsHTML;
+    }
+
+    techContainers.forEach(container => {
+        const userList = container.id.includes('earning') ? techniciansAndStaff : technicians;
+        container.querySelectorAll('.dynamic-tech-btn').forEach(btn => btn.remove());
+        userList.forEach(tech => { const btn = document.createElement('button'); btn.className = 'tech-filter-btn dynamic-tech-btn px-3 py-1 rounded-full text-sm'; btn.dataset.tech = tech.name; btn.textContent = tech.name; container.appendChild(btn); });
+    });
+
+    techSelects.forEach(select => {
+        if (!select) return; 
+        const userList = (select.id.includes('staff-name')) ? techniciansAndStaff : technicians;
+        const firstOption = select.options[0];
+        select.innerHTML = '';
+        if(firstOption && (firstOption.value === 'Any Technician' || firstOption.value === '')) { select.appendChild(firstOption); }
+        userList.forEach(tech => { select.appendChild(new Option(tech.name, tech.name)); });
+         if(select.id === 'technician-name-select') { select.appendChild(new Option("Other", "other")); }
+
+         if (select.id === 'staff-name' || select.id === 'dashboard-staff-name-full') {
+            select.value = 'TJ';
+         }
+    });
+    const salonEarningInputs = document.getElementById('salon-earning-inputs');
+    const salonEarningTableHead = document.getElementById('salon-earning-table-head');
+    const salonEarningTableFoot = document.getElementById('salon-earning-table-foot');
+    salonEarningInputs.innerHTML = '';
+    let headHTML = '<tr><th scope="col" class="px-6 py-3">Date</th>';
+    let footHTML = `<tr><td class="px-6 py-3 text-right font-bold">Total:</td>`;
+    techniciansAndStaff.forEach(tech => {
+        const techNameLower = tech.name.toLowerCase();
+        salonEarningInputs.innerHTML += `<div><label for="salon-earning-${techNameLower}" class="block text-sm font-medium text-gray-600">${tech.name}</label><input type="number" step="0.01" id="salon-earning-${techNameLower}" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount"></div>`;
+        headHTML += `<th scope="col" class="px-6 py-3">${tech.name}</th>`;
+        footHTML += `<td id="total-${techNameLower}" class="px-6 py-3"></td>`;
+    });
+    headHTML += `<th scope="col" class="px-6 py-3">Sell GC</th><th scope="col" class="px-6 py-3">Return GC</th><th scope="col" class="px-6 py-3">Check</th><th scope="col" class="px-6 py-3">No of Credit</th><th scope="col" class="px-6 py-3">Total Credit</th><th scope="col" class="px-6 py-3">Venmo</th><th scope="col" class="px-6 py-3">Square</th><th scope="col" class="px-6 py-3 font-bold">Total</th><th scope="col" class="px-6 py-3 font-bold">Cash</th><th scope="col" class="px-6 py-3 text-center">Action</th></tr>`;
+    footHTML += `<td id="total-sell-gc" class="px-6 py-3"></td><td id="total-return-gc" class="px-6 py-3"></td><td id="total-check" class="px-6 py-3"></td><td id="total-no-credit" class="px-6 py-3"></td><td id="total-total-credit" class="px-6 py-3"></td><td id="total-venmo" class="px-6 py-3"></td><td id="total-square" class="px-6 py-3"></td><td id="total-total" class="px-6 py-3 font-bold"></td><td id="total-cash" class="px-6 py-3 font-bold"></td><td class="px-6 py-3"></td></tr>`;
+    let commissionHTML = `<tr class="text-center"><td class="px-6 py-3 text-right font-bold border-t-2 border-gray-300">Commission 70%:</td>`, check70HTML = `<tr class="text-center"><td class="px-6 py-3 text-right font-bold">70% of Check:</td>`, cash30HTML = `<tr class="text-center"><td class="px-6 py-3 text-right font-bold">30% of Cash:</td>`;
+    techniciansAndStaff.forEach(tech => {
+        const techNameLower = tech.name.toLowerCase();
+        commissionHTML += `<td id="commission-${techNameLower}" class="px-6 py-3 border-t-2 border-gray-300"></td>`;
+        check70HTML += `<td id="check70-${techNameLower}" class="px-6 py-3"></td>`;
+        cash30HTML += `<td id="cash30-${techNameLower}" class="px-6 py-3"></td>`;
+    });
+    commissionHTML += `<td class="border-t-2 border-gray-300" colspan="10"></td></tr>`;
+    check70HTML += `<td colspan="10"></td></tr>`;
+    cash30HTML += `<td colspan="10"></td></tr>`;
+    salonEarningTableHead.innerHTML = headHTML;
+    salonEarningTableFoot.innerHTML = footHTML + commissionHTML + check70HTML + cash30HTML;
+};
+    // ADD THIS ENTIRE NEW FUNCTION FOR LOAD TECHNICIAN IN LANDING PAGE 
+const updatePublicTechnicianList = async (users) => {
+    try {
+        const technicians = users
+            .filter(user => user.role === 'technician')
+            .map(user => user.name);
+
+        const publicDataRef = doc(db, "public_data", "technicians");
+        await setDoc(publicDataRef, { names: technicians });
+        console.log("Public technician list updated.");
+    } catch (error) {
+        console.error("Error updating public technician list:", error);
+    }
+};
+    
+
+// REPLACE the old "users" onSnapshot listener with this one
+onSnapshot(collection(db, "users"), (snapshot) => {
+    const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    techniciansAndStaff = users.filter(user => user.role === 'technician' || user.role === 'staff');
+    technicians = users.filter(user => user.role === 'technician');
+    // --- ADD THIS NEW BLOCK TO CREATE THE COLOR MAP ---
+    technicianColorMap = {};
+    technicians.forEach((tech, index) => {
+        // Assign a color from the palette to each technician
+        technicianColorMap[tech.name] = colorPalette[index % colorPalette.length];
+    });
+    // --- END OF NEW BLOCK ---
+    renderUsers(users);
+    populateTechnicianFilters();
+
+    // If the current user is an admin, update the public list
+    if (currentUserRole === 'admin') {
+        updatePublicTechnicianList(users);
+    }
+});
+    addUserForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const userId = document.getElementById('edit-user-id').value;
+        const name = document.getElementById('new-user-name').value, phone = document.getElementById('new-user-phone').value, email = document.getElementById('new-user-email').value, password = document.getElementById('new-user-password').value, role = document.getElementById('user-role').value;
+        if (userId) { await setDoc(doc(db, "users", userId), { name, phone, email, role }); alert("User updated."); } 
+        else {
+            if (!password || password.length < 6) { return alert("Password must be at least 6 characters."); }
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                await setDoc(doc(db, "users", userCredential.user.uid), { name, phone, email, role });
+                alert("User created!");
+            } catch (error) { console.error("Error creating user:", error); alert("Error creating user: " + error.message); }
+        }
+        addUserForm.reset();
+        document.getElementById('edit-user-id').value = '';
+        document.getElementById('new-user-email').disabled = false;
+        document.getElementById('new-user-password').required = true;
+    });
+
+    usersTableBody.addEventListener('click', async (e) => {
+        const editBtn = e.target.closest('.edit-user-btn');
+        const deleteBtn = e.target.closest('.delete-user-btn');
+        if (editBtn) {
+            const userDoc = await getDoc(doc(db, "users", editBtn.dataset.id));
+            if (userDoc.exists()) {
+                const user = userDoc.data();
+                document.getElementById('edit-user-id').value = editBtn.dataset.id;
+                document.getElementById('new-user-name').value = user.name;
+                document.getElementById('new-user-phone').value = user.phone;
+                document.getElementById('new-user-email').value = user.email;
+                document.getElementById('new-user-email').disabled = true;
+                document.getElementById('new-user-password').required = false;
+                document.getElementById('new-user-password').placeholder = "Leave blank to keep same password";
+                document.getElementById('user-role').value = user.role;
+            }
+        }
+        if (deleteBtn) { showConfirmModal("Delete this user?", async () => { await deleteDoc(doc(db, "users", deleteBtn.dataset.id)); alert("User role deleted. Login must be deleted from Firebase console."); }); }
+    });
+
+    const addProductForm = document.getElementById('add-product-form');
+    const inventoryTableBody = document.querySelector('#inventory-table tbody');
+    const productSupplierSelect = document.getElementById('product-supplier');
+    const inventoryReportTableBody = document.querySelector('#inventory-report-table tbody');
+
+    onSnapshot(query(collection(db, "inventory_usage"), orderBy("timestamp", "desc")), (snapshot) => {
+        allInventoryUsage = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    });
+
+
+    const renderInventoryReport = () => {
+        const lowStockItems = allInventory.filter(item => item.quantity <= item.lowStockAlert);
+        inventoryReportTableBody.innerHTML = '';
+
+        if(lowStockItems.length === 0) {
+            inventoryReportTableBody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-gray-400">No items are currently low on stock.</td></tr>`;
+            return;
+        }
+
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const thirtyDaysAgoTimestamp = Timestamp.fromDate(thirtyDaysAgo);
+
+        const recentUsage = allInventoryUsage.filter(usage => usage.timestamp >= thirtyDaysAgoTimestamp);
+
+        lowStockItems.forEach(item => {
+            const usageLast30d = recentUsage
+                .filter(usage => usage.productId === item.id)
+                .reduce((sum, usage) => sum + usage.quantityUsed, 0);
+            
+            const suggestedReorder = Math.max(0, usageLast30d - item.quantity);
+
+            const row = inventoryReportTableBody.insertRow();
+            row.className = 'bg-white border-b hover:bg-yellow-50';
+            row.innerHTML = `<td class="px-6 py-4 font-medium text-gray-900">${item.name}</td><td class="px-6 py-4 text-center text-red-600 font-bold">${item.quantity}</td><td class="px-6 py-4 text-center">${item.lowStockAlert}</td><td class="px-6 py-4 text-center">${usageLast30d}</td><td class="px-6 py-4 text-center font-bold text-blue-600">${suggestedReorder}</td>`;
+        });
+    };
+
+    document.getElementById('inventory-report-tab').addEventListener('click', renderInventoryReport);
+
+
+    const populateProductSupplierDropdown = () => {
+        const first = productSupplierSelect.options[0];
+        productSupplierSelect.innerHTML = '';
+        productSupplierSelect.appendChild(first);
+        allSuppliers.forEach(supplier => {
+            productSupplierSelect.appendChild(new Option(supplier.name, supplier.name));
+        });
+    };
+    
+    const renderInventory = () => {
+        inventoryTableBody.innerHTML = '';
+        allInventory.forEach(product => {
+            const row = inventoryTableBody.insertRow();
+            const isLowStock = product.quantity <= product.lowStockAlert;
+            row.className = isLowStock ? 'bg-yellow-100' : 'bg-white';
+            row.innerHTML = `<td class="px-6 py-4">${product.name} ${isLowStock ? '<span class="text-xs font-bold text-yellow-700 ml-2">LOW</span>' : ''}</td><td class="px-6 py-4">${product.category || ''}</td><td class="px-6 py-4">${product.supplier || ''}</td><td class="px-6 py-4 text-center">${product.quantity}</td><td class="px-6 py-4 text-right">$${product.price.toFixed(2)}</td><td class="px-6 py-4 text-right">$${(product.quantity * product.price).toFixed(2)}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${product.id}" class="edit-product-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${product.id}" class="delete-product-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
+        });
+        updateDashboard();
+    };
+
+
+    onSnapshot(query(collection(db, "inventory"), orderBy("name")), (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+            if ((change.type === "added" || change.type === "modified") && initialInventoryLoaded) {
+                const product = { id: change.doc.id, ...change.doc.data() };
+                if (currentUserRole === 'admin' && product.quantity <= product.lowStockAlert) {
+                     if (!notifications.some(n => n.itemId === product.id)) {
+                        addNotification('stock', `${product.name} is low in stock (${product.quantity} left).`, product.id);
+                    }
+                } else {
+                    const existingNotifIndex = notifications.findIndex(n => n.itemId === product.id);
+                    if (existingNotifIndex > -1) {
+                        notifications.splice(existingNotifIndex, 1);
+                        updateNotificationDisplay();
+                    }
+                }
+            }
+        });
+        initialInventoryLoaded = true;
+
+        allInventory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderInventory();
+    });
+
+    addProductForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const productId = document.getElementById('edit-product-id').value;
+        const productData = { name: document.getElementById('product-name').value, category: document.getElementById('product-category').value, supplier: document.getElementById('product-supplier').value, quantity: parseInt(document.getElementById('product-quantity').value, 10), price: parseFloat(document.getElementById('product-price').value), lowStockAlert: parseInt(document.getElementById('low-stock-alert').value, 10) };
+        try {
+            if (productId) { await updateDoc(doc(db, "inventory", productId), productData); } 
+            else { await addDoc(collection(db, "inventory"), productData); }
+            resetProductForm();
+        } catch (error) { console.error("Error saving product:", error); alert("Could not save product."); }
+    });
+
+    const resetProductForm = () => {
+        addProductForm.reset();
+        document.getElementById('edit-product-id').value = '';
+        document.getElementById('add-product-btn').textContent = 'Add Product';
+        document.getElementById('cancel-edit-product-btn').classList.add('hidden');
+    };
+    document.getElementById('cancel-edit-product-btn').addEventListener('click', resetProductForm);
+
+    inventoryTableBody.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-product-btn');
+        const deleteBtn = e.target.closest('.delete-product-btn');
+        if (editBtn) {
+            const product = allInventory.find(p => p.id === editBtn.dataset.id);
+            if (product) {
+                document.getElementById('edit-product-id').value = product.id;
+                document.getElementById('product-name').value = product.name;
+                document.getElementById('product-category').value = product.category || '';
+                document.getElementById('product-supplier').value = product.supplier || '';
+                document.getElementById('product-quantity').value = product.quantity;
+                document.getElementById('product-price').value = product.price;
+                document.getElementById('low-stock-alert').value = product.lowStockAlert || 10;
+                document.getElementById('add-product-btn').textContent = 'Update Product';
+                document.getElementById('cancel-edit-product-btn').classList.remove('hidden');
+            }
+        } else if (deleteBtn) {
+            showConfirmModal("Delete this product from inventory?", async () => {
+                await deleteDoc(doc(db, "inventory", deleteBtn.dataset.id));
+            });
+        }
+    });
+
+    const openLogUsageModal = () => {
+        const select = document.getElementById('log-usage-product-select');
+        select.innerHTML = '<option value="">Select a product...</option>';
+        allInventory.forEach(item => { select.appendChild(new Option(item.name, item.id)); });
+        logUsageModal.classList.remove('hidden'); logUsageModal.classList.add('flex');
+    };
+    const closeLogUsageModal = () => { logUsageForm.reset(); logUsageModal.classList.add('hidden'); logUsageModal.classList.remove('flex'); };
+    document.getElementById('log-usage-btn').addEventListener('click', openLogUsageModal);
+    document.getElementById('log-usage-cancel-btn').addEventListener('click', closeLogUsageModal);
+    document.querySelector('.log-usage-modal-overlay').addEventListener('click', closeLogUsageModal);
+
+    logUsageForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const productId = document.getElementById('log-usage-product-select').value;
+        const quantityUsed = parseInt(document.getElementById('log-usage-quantity').value, 10);
+        if (!productId || isNaN(quantityUsed) || quantityUsed <= 0) { alert('Please select a product and enter a valid quantity.'); return; }
+        const product = allInventory.find(p => p.id === productId);
+        if (!product) { alert('Product not found.'); return; }
+        if (product.quantity < quantityUsed) { alert(`Not enough stock. Only ${product.quantity} units available.`); return; }
+        try {
+            await addDoc(collection(db, "inventory_usage"), { productId: productId, productName: product.name, quantityUsed: quantityUsed, timestamp: serverTimestamp() });
+            const newQuantity = product.quantity - quantityUsed;
+            await updateDoc(doc(db, "inventory", productId), { quantity: newQuantity });
+            alert('Usage logged successfully.');
+            closeLogUsageModal();
+        } catch (error) { console.error("Error logging usage:", error); alert("Could not log usage."); }
+    });
+
+
+    const settingsForm = document.getElementById('settings-form');
+    const minBookingHoursInput = document.getElementById('min-booking-hours');
+    const maxLoginAttemptsInput = document.getElementById('max-login-attempts');
+    const loginLockoutMinutesInput = document.getElementById('login-lockout-minutes');
+    const featureTogglesForm = document.getElementById('feature-toggles-form');
+    const salonHoursForm = document.getElementById('salon-hours-form');
+
+    const loadAndRenderSalonHours = async () => {
+        const hoursContainer = document.getElementById('salon-hours-inputs');
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        let hoursData = {};
+        const docSnap = await getDoc(doc(db, "settings", "salonHours"));
+        if (docSnap.exists()) { hoursData = docSnap.data(); } 
+        else { days.forEach(day => { hoursData[day.toLowerCase()] = { isOpen: day !== 'Sunday', open: '09:00', close: '20:00' }; }); }
+        salonHours = hoursData;
+        hoursContainer.innerHTML = days.map(day => {
+            const dayLower = day.toLowerCase();
+            const dayData = hoursData[dayLower] || { isOpen: true, open: '09:00', close: '20:00' };
+            return `<div class="grid grid-cols-4 gap-2 items-center"><label class="font-semibold text-gray-700 col-span-1">${day}</label><div class="flex items-center gap-2"><input type="checkbox" id="is-open-${dayLower}" class="form-checkbox" ${dayData.isOpen ? 'checked' : ''}><label for="is-open-${dayLower}">Open</label></div><input type="time" value="${dayData.open}" class="form-input p-1 border rounded" ${!dayData.isOpen ? 'disabled' : ''}><input type="time" value="${dayData.close}" class="form-input p-1 border rounded" ${!dayData.isOpen ? 'disabled' : ''}></div>`;
+        }).join('');
+        days.forEach(day => {
+            const dayLower = day.toLowerCase();
+            const checkbox = document.getElementById(`is-open-${dayLower}`);
+            const timeInputs = checkbox.closest('.grid').querySelectorAll('input[type="time"]');
+            checkbox.addEventListener('change', () => { timeInputs.forEach(input => input.disabled = !checkbox.checked); });
+        });
+    };
+
+    salonHoursForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        const newHours = {};
+        days.forEach(day => {
+            const container = document.getElementById(`is-open-${day}`).closest('.grid');
+            const timeInputs = container.querySelectorAll('input[type="time"]');
+            newHours[day] = { isOpen: container.querySelector('input[type="checkbox"]').checked, open: timeInputs[0].value, close: timeInputs[1].value };
+        });
+        try { await setDoc(doc(db, "settings", "salonHours"), newHours); salonHours = newHours; alert("Salon hours saved!"); } 
+        catch (error) { console.error("Error saving salon hours:", error); alert("Could not save salon hours."); }
+    });
+
+
+    const loadFeatureToggles = async () => {
+        const settingsDoc = await getDoc(doc(db, "settings", "features"));
+        if (settingsDoc.exists()) {
+            const settings = settingsDoc.data();
+            document.getElementById('toggle-client-login').checked = settings.showClientLogin !== false;
+            document.getElementById('toggle-promotions').checked = settings.showPromotions !== false;
+            document.getElementById('toggle-gift-card').checked = settings.showGiftCards !== false;
+            document.getElementById('toggle-nails-idea').checked = settings.showNailArt !== false;
+        } else {
+            document.getElementById('toggle-client-login').checked = true;
+            document.getElementById('toggle-promotions').checked = true;
+            document.getElementById('toggle-gift-card').checked = true;
+            document.getElementById('toggle-nails-idea').checked = true;
+        }
+    };
+    
+    featureTogglesForm.addEventListener('change', async (e) => {
+        if (e.target.type === 'checkbox') {
+            const settings = { showClientLogin: document.getElementById('toggle-client-login').checked, showPromotions: document.getElementById('toggle-promotions').checked, showGiftCards: document.getElementById('toggle-gift-card').checked, showNailArt: document.getElementById('toggle-nails-idea').checked };
+            await setDoc(doc(db, "settings", "features"), settings, { merge: true });
+        }
+    });
+
+    const loadSettings = async () => { 
+        const bookingSnap = await getDoc(doc(db, "settings", "booking")); 
+        if (bookingSnap.exists()) { const data = bookingSnap.data(); minBookingHoursInput.value = data.minBookingHours || 2; } 
+        const securitySnap = await getDoc(doc(db, "settings", "security"));
+        if (securitySnap.exists()) { const data = securitySnap.data(); loginSecuritySettings = data; maxLoginAttemptsInput.value = data.maxAttempts || 5; loginLockoutMinutesInput.value = data.lockoutMinutes || 15; }
+    };
+    loadSettings();
+    loadFeatureToggles();
+    loadAndRenderSalonHours();
+// --- Setup for Payment Guide ---
+    const paymentGuideForm = document.getElementById('payment-guide-form');
+    const paymentGuideTextarea = document.getElementById('gift-card-payment-guide-textarea');
+
+    // Load existing guide
+    getDoc(doc(db, "settings", "paymentGuide")).then(docSnap => {
+        if (docSnap.exists()) {
+            paymentGuideTextarea.value = docSnap.data().text || '';
+        }
+    });
+
+    // Save new guide
+    paymentGuideForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            await setDoc(doc(db, "settings", "paymentGuide"), { text: paymentGuideTextarea.value });
+            alert("Payment guide saved successfully!");
+        } catch (error) {
+            console.error("Error saving payment guide:", error);
+            alert("Could not save payment guide.");
+        }
+    });
+    
+    settingsForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const hours = parseInt(minBookingHoursInput.value, 10);
+        const maxAttempts = parseInt(maxLoginAttemptsInput.value, 10);
+        const lockoutMinutes = parseInt(loginLockoutMinutesInput.value, 10);
+        if (isNaN(hours) || hours < 0 || isNaN(maxAttempts) || maxAttempts < 1 || isNaN(lockoutMinutes) || lockoutMinutes < 1) { return alert("Please enter valid, positive numbers for all settings."); }
+        try { await setDoc(doc(db, "settings", "booking"), { minBookingHours: hours }); await setDoc(doc(db, "settings", "security"), { maxAttempts: maxAttempts, lockoutMinutes: lockoutMinutes }); loginSecuritySettings = { maxAttempts, lockoutMinutes }; alert("Settings saved!"); } 
+        catch (error) { console.error("Error saving settings: ", error); alert("Could not save settings."); }
+    });
+
+    const setupSimpleCrud = (collectionName, formId, inputId, listId) => {
+        const form = document.getElementById(formId);
+        const input = document.getElementById(inputId);
+        const listContainer = document.getElementById(listId);
+        onSnapshot(collection(db, collectionName), (snapshot) => {
+            const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            if (collectionName === 'expense_categories') allExpenseCategories = items;
+            else if (collectionName === 'payment_accounts') allPaymentAccounts = items;
+            else if (collectionName === 'suppliers') allSuppliers = items;
+            listContainer.innerHTML = items.map(item => `<div class="flex justify-between items-center p-1 hover:bg-gray-100"><span>${item.name}</span><button data-id="${item.id}" class="delete-item-btn text-red-400 hover:text-red-600"><i class="fas fa-times-circle"></i></button></div>`).join('');
+            populateExpenseDropdowns();
+        });
+        form.addEventListener('submit', async (e) => { e.preventDefault(); const name = input.value.trim(); if (name) { await addDoc(collection(db, collectionName), { name }); input.value = ''; } });
+        listContainer.addEventListener('click', (e) => { const deleteBtn = e.target.closest('.delete-item-btn'); if (deleteBtn) { showConfirmModal("Delete this item?", async () => { await deleteDoc(doc(db, collectionName, deleteBtn.dataset.id)); }); } });
+    };
+
+    setupSimpleCrud('expense_categories', 'add-expense-category-form', 'new-expense-category-name', 'expense-categories-list');
+    setupSimpleCrud('payment_accounts', 'add-payment-account-form', 'new-payment-account-name', 'payment-accounts-list');
+
+    const addSupplierForm = document.getElementById('add-supplier-form');
+    const suppliersTableBody = document.querySelector('#suppliers-table tbody');
+    onSnapshot(collection(db, "suppliers"), (snapshot) => {
+        allSuppliers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        suppliersTableBody.innerHTML = '';
+        allSuppliers.forEach(s => { const row = suppliersTableBody.insertRow(); row.innerHTML = `<td class="px-6 py-4">${s.name}</td><td class="px-6 py-4">${s.phone || ''}</td><td class="px-6 py-4">${s.email || ''}</td><td class="px-6 py-4">${s.website ? `<a href="${s.website}" target="_blank" class="text-blue-500">Link</a>` : ''}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${s.id}" class="edit-supplier-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${s.id}" class="delete-supplier-btn text-red-500"><i class="fas fa-trash"></i></button></td>`; });
+        populateExpenseDropdowns();
+        populateProductSupplierDropdown();
+    });
+
+    addSupplierForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const supplierId = document.getElementById('edit-supplier-id').value;
+        const data = { name: document.getElementById('supplier-name').value, phone: document.getElementById('supplier-phone').value, email: document.getElementById('supplier-email').value, website: document.getElementById('supplier-website').value };
+        if (supplierId) { await updateDoc(doc(db, "suppliers", supplierId), data); } 
+        else { await addDoc(collection(db, "suppliers"), data); }
+        resetSupplierForm();
+    });
+
+    const resetSupplierForm = () => { addSupplierForm.reset(); document.getElementById('edit-supplier-id').value = ''; document.getElementById('add-supplier-btn').textContent = 'Add Supplier'; document.getElementById('cancel-edit-supplier-btn').classList.add('hidden'); };
+    document.getElementById('cancel-edit-supplier-btn').addEventListener('click', resetSupplierForm);
+
+    suppliersTableBody.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-supplier-btn');
+        const deleteBtn = e.target.closest('.delete-supplier-btn');
+        if (editBtn) {
+            const supplier = allSuppliers.find(s => s.id === editBtn.dataset.id);
+            if (supplier) { document.getElementById('edit-supplier-id').value = supplier.id; document.getElementById('supplier-name').value = supplier.name; document.getElementById('supplier-phone').value = supplier.phone || ''; document.getElementById('supplier-email').value = supplier.email || ''; document.getElementById('supplier-website').value = supplier.website || ''; document.getElementById('add-supplier-btn').textContent = 'Update'; document.getElementById('cancel-edit-supplier-btn').classList.remove('hidden'); }
+        } else if (deleteBtn) { showConfirmModal("Delete this supplier?", async () => { await deleteDoc(doc(db, "suppliers", deleteBtn.dataset.id)); }); }
+    });
+
+    const addExpenseForm = document.getElementById('add-expense-form');
+    const expenseMonthFilter = document.getElementById('expense-month-filter');
+    const expenseTableBody = document.querySelector('#expense-table tbody');
+    const totalExpenseEl = document.getElementById('total-expense');
+
+    const populateExpenseDropdowns = () => {
+        const categorySelect = document.getElementById('expense-category');
+        const supplierSelect = document.getElementById('expense-supplier');
+        const paymentSelect = document.getElementById('expense-payment-account');
+        const populate = (select, data) => { const first = select.options[0]; select.innerHTML = ''; select.appendChild(first); data.forEach(item => select.appendChild(new Option(item.name, item.name))); };
+        populate(categorySelect, allExpenseCategories);
+        populate(supplierSelect, allSuppliers);
+        populate(paymentSelect, allPaymentAccounts);
+    };
+
+    const populateExpenseMonthFilter = () => {
+        const months = [...new Set(allExpenses.map(exp => { const d = new Date(exp.date.seconds * 1000); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }))].sort().reverse();
+        expenseMonthFilter.innerHTML = '<option value="all">All Months</option>';
+        months.forEach(monthYear => { const [year, month] = monthYear.split('-'); expenseMonthFilter.innerHTML += `<option value="${monthYear}">${new Date(year, month - 1, 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</option>`; });
+        expenseMonthFilter.value = currentExpenseMonthFilter || 'all';
+    };
+
+    const renderExpenses = () => {
+        let filtered = allExpenses;
+        if (currentExpenseMonthFilter && currentExpenseMonthFilter !== 'all') {
+            const [year, month] = currentExpenseMonthFilter.split('-').map(Number);
+            filtered = allExpenses.filter(exp => { const d = new Date(exp.date.seconds * 1000); return d.getFullYear() === year && d.getMonth() + 1 === month; });
+        }
+        expenseTableBody.innerHTML = filtered.length === 0 ? `<tr><td colspan="8" class="py-6 text-center text-gray-400">No expenses found.</td></tr>` : '';
+        filtered.forEach(exp => {
+            const row = expenseTableBody.insertRow();
+            row.className = 'bg-white border-b';
+            row.innerHTML = `<td class="px-6 py-4">${new Date(exp.date.seconds * 1000).toLocaleDateString()}</td><td class="px-6 py-4">${exp.name}</td><td class="px-6 py-4">${exp.category || ''}</td><td class="px-6 py-4">${exp.supplier || ''}</td><td class="px-6 py-4">${exp.paymentAccount || ''}</td><td class="px-6 py-4">${exp.attachmentURL ? `<a href="${exp.attachmentURL}" target="_blank" class="text-blue-500 hover:underline">View</a>` : 'N/A'}</td><td class="px-6 py-4 text-right">$${exp.amount.toFixed(2)}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${exp.id}" class="edit-expense-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${exp.id}" class="delete-expense-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
+        });
+        totalExpenseEl.textContent = `$${filtered.reduce((sum, exp) => sum + exp.amount, 0).toFixed(2)}`;
+    };
+
+    expenseMonthFilter.addEventListener('change', (e) => { currentExpenseMonthFilter = e.target.value; renderExpenses(); });
+
+    addExpenseForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const expenseId = document.getElementById('edit-expense-id').value;
+        const file = document.getElementById('expense-attachment').files[0];
+        let attachmentURL = document.getElementById('current-attachment-info').dataset.url || null;
+        if (file) {
+            const storageRef = ref(storage, `expenses/${Date.now()}_${file.name}`);
+            await uploadBytes(storageRef, file);
+            attachmentURL = await getDownloadURL(storageRef);
+        }
+        const expenseData = {
+            name: document.getElementById('expense-name').value, amount: parseFloat(document.getElementById('expense-amount').value), date: Timestamp.fromDate(new Date(document.getElementById('expense-date').value + 'T12:00:00')),
+            category: document.getElementById('expense-category').value, supplier: document.getElementById('expense-supplier').value, paymentAccount: document.getElementById('expense-payment-account').value, attachmentURL
+        };
+        try {
+            if (expenseId) { await updateDoc(doc(db, "expenses", expenseId), expenseData); } 
+            else { await addDoc(collection(db, "expenses"), expenseData); }
+            resetExpenseForm();
+        } catch (error) { console.error("Error saving expense:", error); alert("Could not save expense."); }
+    });
+
+    const resetExpenseForm = () => { addExpenseForm.reset(); document.getElementById('edit-expense-id').value = ''; document.getElementById('expense-date').value = getLocalDateString(); document.getElementById('add-expense-btn').textContent = 'Add Expense'; document.getElementById('cancel-edit-expense-btn').classList.add('hidden'); document.getElementById('current-attachment-info').textContent = ''; document.getElementById('current-attachment-info').dataset.url = ''; };
+    document.getElementById('cancel-edit-expense-btn').addEventListener('click', resetExpenseForm);
+
+    expenseTableBody.addEventListener('click', (e) => {
+        const deleteBtn = e.target.closest('.delete-expense-btn');
+        const editBtn = e.target.closest('.edit-expense-btn');
+        if (deleteBtn) { showConfirmModal("Delete this expense?", async () => { await deleteDoc(doc(db, "expenses", deleteBtn.dataset.id)); }); } 
+        else if (editBtn) {
+            const expense = allExpenses.find(exp => exp.id === editBtn.dataset.id);
+            if (expense) {
+                document.getElementById('edit-expense-id').value = expense.id;
+                document.getElementById('expense-name').value = expense.name;
+                document.getElementById('expense-amount').value = expense.amount;
+                document.getElementById('expense-date').value = new Date(expense.date.seconds * 1000).toISOString().split('T')[0];
+                document.getElementById('expense-category').value = expense.category || '';
+                document.getElementById('expense-supplier').value = expense.supplier || '';
+                document.getElementById('expense-payment-account').value = expense.paymentAccount || '';
+                const attachmentInfo = document.getElementById('current-attachment-info');
+                attachmentInfo.textContent = expense.attachmentURL ? 'Current attachment exists.' : '';
+                attachmentInfo.dataset.url = expense.attachmentURL || '';
+                document.getElementById('add-expense-btn').textContent = 'Update Expense';
+                document.getElementById('cancel-edit-expense-btn').classList.remove('hidden');
+            }
+        }
+    });
+
+    const serviceCategoriesAdminContainer = document.getElementById('service-categories-admin');
+    const addCategoryForm = document.getElementById('add-category-form');
+    const addServiceForm = document.getElementById('add-service-form');
+    const editServiceSection = document.getElementById('edit-service-section');
+    const renderServiceAdmin = (services) => {
+        serviceCategoriesAdminContainer.innerHTML = '';
+        Object.entries(services).forEach(([categoryName, items]) => {
+            const categoryDiv = document.createElement('div');
+            categoryDiv.className = 'p-3 border rounded-lg';
+            categoryDiv.innerHTML = `<div class="flex justify-between items-center mb-2"><h4 class="font-bold">${categoryName}</h4><div><button class="add-service-to-category-btn text-green-500 mr-2" data-category="${categoryName}"><i class="fas fa-plus-circle"></i></button><button class="edit-category-btn text-blue-500 mr-2" data-category="${categoryName}"><i class="fas fa-edit"></i></button><button class="delete-category-btn text-red-500" data-category="${categoryName}"><i class="fas fa-trash"></i></button></div></div><ul class="service-list space-y-1 pl-4">${items.map((item, index) => `<li class="flex justify-between items-center text-sm"><span>${item.name} - ${item.price}</span><div><button class="edit-service-btn text-blue-500 mr-2" data-category="${categoryName}" data-index="${index}"><i class="fas fa-edit"></i></button><button class="delete-service-btn text-red-500" data-category="${categoryName}" data-index="${index}"><i class="fas fa-times-circle"></i></button></div></li>`).join('')}</ul>`;
+            serviceCategoriesAdminContainer.appendChild(categoryDiv);
+        });
+    };
+    onSnapshot(collection(db, "services"), (snapshot) => { servicesData = {}; snapshot.forEach(doc => { servicesData[doc.id] = doc.data().items; }); renderServiceAdmin(servicesData); renderCheckInServices(); });
+    addCategoryForm.addEventListener('submit', async (e) => { e.preventDefault(); const categoryName = document.getElementById('new-category-name').value; if (categoryName) { await setDoc(doc(db, "services", categoryName), { items: [] }); addCategoryForm.reset(); } });
+    serviceCategoriesAdminContainer.addEventListener('click', async (e) => {
+        const delCatBtn = e.target.closest('.delete-category-btn'), editCatBtn = e.target.closest('.edit-category-btn'), addSvcBtn = e.target.closest('.add-service-to-category-btn'), editSvcBtn = e.target.closest('.edit-service-btn'), delSvcBtn = e.target.closest('.delete-service-btn');
+        if (delCatBtn) { showConfirmModal(`Delete category "${delCatBtn.dataset.category}"?`, async () => { await deleteDoc(doc(db, "services", delCatBtn.dataset.category)); }); }
+        if (editCatBtn) { const oldName = editCatBtn.dataset.category; const newName = prompt("New category name:", oldName); if (newName && newName !== oldName) { const docSnap = await getDoc(doc(db, "services", oldName)); if (docSnap.exists()) { await setDoc(doc(db, "services", newName), docSnap.data()); await deleteDoc(doc(db, "services", oldName)); } } }
+        if (addSvcBtn) { addServiceForm.reset(); document.getElementById('edit-category-id').value = addSvcBtn.dataset.category; document.getElementById('edit-service-index').value = ''; document.getElementById('edit-service-title').textContent = `Add Service to ${addSvcBtn.dataset.category}`; editServiceSection.classList.remove('hidden'); }
+        if (editSvcBtn) { const category = editSvcBtn.dataset.category, index = editSvcBtn.dataset.index, service = servicesData[category][index]; addServiceForm.reset(); document.getElementById('edit-category-id').value = category; document.getElementById('edit-service-index').value = index; document.getElementById('service-prefix').value = service.p || ''; document.getElementById('service-name').value = service.name; document.getElementById('service-price').value = service.price; document.getElementById('edit-service-title').textContent = `Edit Service in ${category}`; editServiceSection.classList.remove('hidden'); }
+        if (delSvcBtn) { const category = delSvcBtn.dataset.category, index = parseInt(delSvcBtn.dataset.index, 10); showConfirmModal('Delete this service?', async () => { const updatedItems = [...servicesData[category]]; updatedItems.splice(index, 1); await updateDoc(doc(db, "services", category), { items: updatedItems }); }); }
+    });
+    addServiceForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const category = document.getElementById('edit-category-id').value, index = document.getElementById('edit-service-index').value;
+        const newService = { p: document.getElementById('service-prefix').value, name: document.getElementById('service-name').value, price: document.getElementById('service-price').value };
+        const updatedItems = [...servicesData[category]];
+        if (index !== '') { updatedItems[parseInt(index, 10)] = newService; } else { updatedItems.push(newService); }
+        await updateDoc(doc(db, "services", category), { items: updatedItems });
+        addServiceForm.reset(); editServiceSection.classList.add('hidden');
+    });
+
+    const nailsIdeaGallery = document.getElementById('nails-idea-gallery');
+    const addNailIdeaForm = document.getElementById('add-nail-idea-form');
+    const nailIdeasTableBody = document.querySelector('#nail-ideas-table tbody');
+// ADD THIS ENTIRE NEW BLOCK for the radio button logic
+const imageSourceRadios = document.querySelectorAll('input[name="imageSource"]');
+const fileUploadContainer = document.getElementById('nail-idea-file-upload-container');
+const urlContainer = document.getElementById('nail-idea-url-container');
+const fileInput = document.getElementById('nail-idea-image');
+const urlInput = document.getElementById('nail-idea-image-url');
+
+imageSourceRadios.forEach(radio => {
+    radio.addEventListener('change', () => {
+        if (radio.value === 'upload') {
+            fileUploadContainer.classList.remove('hidden');
+            urlContainer.classList.add('hidden');
+            urlInput.value = ''; // Clear the URL input
+        } else {
+            fileUploadContainer.classList.add('hidden');
+            urlContainer.classList.remove('hidden');
+            fileInput.value = ''; // Clear the file input
+        }
+    });
+});
+    const openShareModal = (idea) => {
+        const salonUrl = "http://www.nailsxpressky.com";
+        const shareText = `Check out this amazing nail design: ${idea.name}!`;
+        document.getElementById('share-facebook').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(salonUrl)}`;
+        document.getElementById('share-pinterest').href = `http://pinterest.com/pin/create/button/?url=${encodeURIComponent(salonUrl)}&media=${encodeURIComponent(idea.imageURL)}&description=${encodeURIComponent(shareText)}`;
+        document.getElementById('share-twitter').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(salonUrl)}`;
+        document.getElementById('share-copy-link').onclick = () => { navigator.clipboard.writeText(salonUrl).then(() => alert('Link copied to clipboard!')); };
+        shareModal.classList.remove('hidden');
+        shareModal.classList.add('flex');
+    };
+
+    const closeShareModal = () => { shareModal.classList.add('hidden'); shareModal.classList.remove('flex'); };
+    document.getElementById('share-close-btn').addEventListener('click', closeShareModal);
+    document.querySelector('.share-modal-overlay').addEventListener('click', closeShareModal);
+    
+
+    // ADD THIS ENTIRE NEW BLOCK for the lightbox functions
+const openLightbox = (index) => {
+    if (index < 0 || index >= currentGalleryData.length) return;
+
+    currentLightboxIndex = index;
+    const idea = currentGalleryData[index];
+
+    lightboxImage.src = idea.imageURL;
+    currentRotation = 0; // ADD THIS LINE TO RESET ROTATION
+    lightboxImage.style.transform = `rotate(0deg)`; // AND THIS LINE TO RESET THE STYLE
+    lightboxTitle.textContent = idea.name;
+    lightboxShape.textContent = idea.shape || 'N/A';
+    lightboxColor.textContent = idea.color || 'N/A';
+    lightboxDescription.textContent = idea.description || ''; // ADD THIS LINE
+    lightboxCategories.innerHTML = idea.categories.map(cat => 
+        `<span class="bg-pink-100 text-pink-700 text-xs font-semibold px-2 py-1 rounded-full">${cat}</span>`
+    ).join('');
+
+    lightboxPrevBtn.classList.toggle('hidden', index === 0);
+    lightboxNextBtn.classList.toggle('hidden', index === currentGalleryData.length - 1);
+
+    nailIdeaLightbox.classList.remove('hidden');
+    nailIdeaLightbox.classList.add('flex');
+};
+// --- ADD THESE TWO NEW FUNCTIONS ---
+const toggleFullScreen = () => {
+    const lightbox = document.getElementById('nail-idea-lightbox');
+    const icon = document.getElementById('lightbox-fullscreen-btn').querySelector('i');
+    if (!document.fullscreenElement) {
+        lightbox.requestFullscreen().catch(err => {
+            alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+        });
+        icon.classList.replace('fa-expand', 'fa-compress');
+    } else {
+        document.exitFullscreen();
+        icon.classList.replace('fa-compress', 'fa-expand');
+    }
+};
+
+const rotateImage = () => {
+    currentRotation += 90;
+    if (currentRotation >= 360) {
+        currentRotation = 0;
+    }
+    document.getElementById('lightbox-image').style.transform = `rotate(${currentRotation}deg)`;
+};
+// --- END OF NEW FUNCTIONS ---
+const closeLightbox = () => {
+    nailIdeaLightbox.classList.add('hidden');
+    nailIdeaLightbox.classList.remove('flex');
+};
+
+const showNextImage = () => {
+    openLightbox(currentLightboxIndex + 1);
+};
+
+const showPrevImage = () => {
+    openLightbox(currentLightboxIndex - 1);
+};
+// REPLACE the old galleryClickHandler listeners with this new block ok
+const galleryClickHandler = (e) => {
+    const shareBtn = e.target.closest('.share-nail-idea-btn');
+    const img = e.target.closest('img[data-index]');
+
+    if (shareBtn) { 
+        const ideaId = shareBtn.dataset.id; 
+        const idea = allNailIdeas.find(i => i.id === ideaId); 
+        if (idea) { openShareModal(idea); }
+    } else if (img) {
+        const index = parseInt(img.dataset.index, 10);
+        openLightbox(index);
+    }
+};
+
+document.getElementById('nails-idea-gallery').addEventListener('click', galleryClickHandler);
+document.getElementById('nails-idea-landing').addEventListener('click', galleryClickHandler);
+
+    // ADD THIS NEW BLOCK for the lightbox buttons
+lightboxCloseBtn.addEventListener('click', closeLightbox);
+lightboxNextBtn.addEventListener('click', showNextImage);
+lightboxPrevBtn.addEventListener('click', showPrevImage);
+// ADD THESE TWO NEW LISTENERS
+document.getElementById('lightbox-fullscreen-btn').addEventListener('click', toggleFullScreen);
+document.getElementById('lightbox-rotate-btn').addEventListener('click', rotateImage);
+// END OF NEW LISTENERS
+// Add keyboard navigation
+document.addEventListener('keydown', (e) => {
+    if (!nailIdeaLightbox.classList.contains('hidden')) {
+        if (e.key === 'ArrowRight') showNextImage();
+        if (e.key === 'ArrowLeft') showPrevImage();
+        if (e.key === 'Escape') closeLightbox();
+    }
+});
+
+    // ADD THIS NEW BLOCK to close the lightbox on overlay click
+nailIdeaLightbox.addEventListener('click', (e) => {
+    // If the click is on the dark background itself (the overlay)
+    // and not on the content inside it, close the modal.
+    if (e.target === nailIdeaLightbox) {
+        closeLightbox();
+    }
+});
+    // REPLACE the old renderNailIdeasGallery function with this one
+const renderNailIdeasGallery = (ideas) => {
+    const landingGallery = document.querySelector('#nails-idea-landing .columns-2');
+    const appGallery = document.getElementById('nails-idea-gallery');
+    currentGalleryData = ideas; // Store the current set of ideas for the lightbox
+
+    const renderTo = (container, isLanding) => {
+        if (!container) return;
+        container.innerHTML = '';
+        if (ideas.length === 0) { container.innerHTML = '<p class="text-gray-500 col-span-full text-center">No nail ideas found. Check back later!</p>'; return; }
+        const ideasToRender = isLanding ? ideas.slice(0, 8) : ideas;
+        ideasToRender.forEach((idea, index) => {
+            const ideaEl = document.createElement('div');
+            ideaEl.className = 'break-inside-avoid mb-4 relative gallery-item group';
+            // Note: The share button is now separate from the clickable image
+            ideaEl.innerHTML = `
+                <img class="w-full rounded-lg shadow-md cursor-pointer" src="${idea.imageURL}" alt="${idea.name}" data-index="${index}">
+                <div class="absolute top-2 right-2 bg-black/40 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                   <button data-id="${idea.id}" class="share-nail-idea-btn text-white text-lg"><i class="fas fa-share-alt"></i></button>
+                </div>
+                ${!isLanding ? `<div class="p-2"><h5 class="font-bold text-sm">${idea.name}</h5><p class="text-xs text-gray-600">${idea.categories.join(', ')}</p></div>` : ''}`;
+            container.appendChild(ideaEl);
+        });
+    };
+
+    renderTo(landingGallery, true);
+    renderTo(appGallery, false);
+};
+
+    const renderNailIdeasAdminTable = (ideas) => {
+        nailIdeasTableBody.innerHTML = '';
+        ideas.forEach(idea => {
+            const row = nailIdeasTableBody.insertRow();
+            row.innerHTML = `<td class="px-6 py-4"><img src="${idea.imageURL}" alt="${idea.name}" class="w-16 h-16 object-cover rounded"></td><td class="px-6 py-4">${idea.name}</td><td class="px-6 py-4">${idea.shape}</td><td class="px-6 py-4">${idea.categories.join(', ')}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${idea.id}" class="edit-nail-idea-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${idea.id}" class="delete-nail-idea-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
+        });
+    };
+
+    const applyNailIdeaFilters = () => {
+        const searchTerm = document.getElementById('nail-idea-search').value.toLowerCase();
+        const shapeFilter = document.getElementById('nail-idea-shape-filter').value;
+        const categoryFilter = document.getElementById('nail-idea-category-filter').value;
+        const filteredIdeas = allNailIdeas.filter(idea => { const matchesSearch = idea.name.toLowerCase().includes(searchTerm) || idea.categories.some(cat => cat.toLowerCase().includes(searchTerm)); const matchesShape = !shapeFilter || idea.shape === shapeFilter; const matchesCategory = !categoryFilter || idea.categories.includes(categoryFilter); return matchesSearch && matchesShape && matchesCategory; });
+        renderNailIdeasGallery(filteredIdeas);
+    };
+
+    onSnapshot(query(collection(db, "nail_ideas"), orderBy("createdAt", "desc")), (snapshot) => {
+        allNailIdeas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // ADD THIS NEW BLOCK to populate the Nail Shape datalist
+const shapesDatalist = document.getElementById('nail-shapes-list');
+if (shapesDatalist) {
+    const uniqueShapes = [...new Set(allNailIdeas.map(idea => idea.shape).filter(Boolean))];
+    shapesDatalist.innerHTML = uniqueShapes.map(shape => `<option value="${shape}"></option>`).join('');
+}
+        const shapes = [...new Set(allNailIdeas.map(i => i.shape).filter(Boolean))];
+        const categories = [...new Set(allNailIdeas.flatMap(i => i.categories).filter(Boolean))];
+        const shapeFilter = document.getElementById('nail-idea-shape-filter');
+        const categoryFilter = document.getElementById('nail-idea-category-filter');
+        shapeFilter.innerHTML = '<option value="">All Shapes</option>' + shapes.map(s => `<option value="${s}">${s}</option>`).join('');
+        categoryFilter.innerHTML = '<option value="">All Categories</option>' + categories.map(c => `<option value="${c}">${c}</option>`).join('');
+        applyNailIdeaFilters();
+        renderNailIdeasAdminTable(allNailIdeas);
+    });
+
+    document.getElementById('nail-idea-search').addEventListener('input', applyNailIdeaFilters);
+    document.getElementById('nail-idea-shape-filter').addEventListener('change', applyNailIdeaFilters);
+    document.getElementById('nail-idea-category-filter').addEventListener('change', applyNailIdeaFilters);
+
+   // REPLACE the old addNailIdeaForm listener with this one
+addNailIdeaForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const ideaId = document.getElementById('edit-nail-idea-id').value;
+    const imageSource = document.querySelector('input[name="imageSource"]:checked').value;
+    const file = document.getElementById('nail-idea-image').files[0];
+    const imageUrl = document.getElementById('nail-idea-image-url').value;
+    let finalImageURL = null;
+
+    const btn = document.getElementById('add-nail-idea-btn');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    try {
+        if (imageSource === 'upload') {
+            if (!ideaId && !file) {
+                alert('Please select an image to upload.');
+                btn.disabled = false; btn.textContent = 'Add Idea';
+                return;
+            }
+            if (file) {
+                const storageRef = ref(storage, `nail_ideas/${Date.now()}_${file.name}`);
+                await uploadBytes(storageRef, file);
+                finalImageURL = await getDownloadURL(storageRef);
+            }
+        } else { // imageSource === 'url'
+            if (!imageUrl) {
+                alert('Please enter an image URL.');
+                btn.disabled = false; btn.textContent = 'Add Idea';
+                return;
+            }
+            finalImageURL = imageUrl;
+        }
+
+       const ideaData = {
+    name: document.getElementById('nail-idea-name').value,
+    description: document.getElementById('nail-idea-description').value, // ADD THIS LINE
+    color: document.getElementById('nail-idea-color').value,
+    shape: document.getElementById('nail-idea-shape').value,
+    categories: document.getElementById('nail-idea-categories').value.split(',').map(s => s.trim()).filter(Boolean),
+};
+
+        if (ideaId) { // Editing an existing idea
+            const existingIdea = allNailIdeas.find(i => i.id === ideaId);
+            if (finalImageURL) { // If a new image (URL or upload) was provided
+                ideaData.imageURL = finalImageURL;
+                // If the old image was an upload, delete it from storage
+                if (existingIdea.imageURL && existingIdea.imageURL.includes('firebasestorage')) {
+                    try {
+                        const oldImageRef = ref(storage, existingIdea.imageURL);
+                        await deleteObject(oldImageRef);
+                    } catch (storageError) {
+                        console.warn("Could not delete old image, it might not exist:", storageError);
+                    }
+                }
+            }
+            await updateDoc(doc(db, "nail_ideas", ideaId), ideaData);
+        } else { // Adding a new idea
+            ideaData.imageURL = finalImageURL;
+            ideaData.createdAt = serverTimestamp();
+            await addDoc(collection(db, "nail_ideas"), ideaData);
+        }
+
+        resetNailIdeaForm();
+
+    } catch (error) {
+        console.error("Error saving nail idea:", error);
+        alert("Could not save nail idea.");
+    } finally {
+        btn.disabled = false;
+        // Ensure the text is correct for adding vs. editing
+        const buttonText = document.getElementById('edit-nail-idea-id').value ? 'Update Idea' : 'Add Idea';
+        btn.textContent = buttonText;
+    }
+});
+
+    const resetNailIdeaForm = () => {
+        addNailIdeaForm.reset();
+        document.getElementById('edit-nail-idea-id').value = '';
+        document.getElementById('nail-idea-description').value = ''; // ADD THIS LINE
+        document.getElementById('add-nail-idea-btn').textContent = 'Add Idea';
+        document.getElementById('cancel-edit-nail-idea-btn').classList.add('hidden');
+    };
+    document.getElementById('cancel-edit-nail-idea-btn').addEventListener('click', resetNailIdeaForm);
+
+    nailIdeasTableBody.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-nail-idea-btn');
+        const deleteBtn = e.target.closest('.delete-nail-idea-btn');
+        if (editBtn) {
+            const idea = allNailIdeas.find(i => i.id === editBtn.dataset.id);
+            if (idea) {
+                document.getElementById('edit-nail-idea-id').value = idea.id;
+                document.getElementById('nail-idea-name').value = idea.name;
+                document.getElementById('nail-idea-color').value = idea.color;
+                document.getElementById('nail-idea-shape').value = idea.shape;
+                document.getElementById('nail-idea-description').value = idea.description || ''; // ADD THIS LINE
+                document.getElementById('nail-idea-categories').value = idea.categories.join(', ');
+                
+                document.getElementById('add-nail-idea-btn').textContent = 'Update Idea';
+                document.getElementById('cancel-edit-nail-idea-btn').classList.remove('hidden');
+            }
+        } else if (deleteBtn) {
+            const ideaId = deleteBtn.dataset.id;
+            showConfirmModal("Delete this nail idea? This will also delete the image.", async () => {
+               // REPLACE the old delete logic with this new version
+const ideaToDelete = allNailIdeas.find(i => i.id === ideaId);
+if (ideaToDelete) {
+    // NEW LINE: Only try to delete from storage if it's a Firebase URL
+    if (ideaToDelete.imageURL && ideaToDelete.imageURL.includes('firebasestorage')) {
+        const imageRef = ref(storage, ideaToDelete.imageURL);
+        await deleteObject(imageRef).catch(err => console.error("Error deleting image from storage", err));
+    }
+    // This line will now run for all items, whether they had an uploaded image or a URL
+    await deleteDoc(doc(db, "nail_ideas", ideaId));
+}
+            });
+        }
+    });
+
+    const giftCardsTableBody = document.querySelector('#gift-cards-table tbody');
+    const giftCardsTableAdminBody = document.querySelector('#gift-cards-table-admin tbody');
+
+const renderGiftCardsAdminTable = (cards) => {
+    const tables = [giftCardsTableBody, giftCardsTableAdminBody];
+    tables.forEach(tbody => {
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        if (cards.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-gray-400">No gift cards have been sold.</td></tr>`;
+            return;
+        }
+        cards.forEach(card => {
+            const row = tbody.insertRow();
+            const balance = card.balance !== undefined ? card.balance : card.amount;
+            
+            let statusText = card.status || 'Active'; // Default to Active for older cards
+            let statusColor = 'bg-gray-200 text-gray-800'; // Default
+            switch (statusText) {
+                case 'Active': statusColor = 'bg-green-100 text-green-800'; break;
+                case 'Pending': statusColor = 'bg-yellow-100 text-yellow-800'; break;
+                case 'Depleted': statusColor = 'bg-red-100 text-red-800'; break;
+            }
+
+            let actionButtons = `<button data-id="${card.id}" class="edit-gift-card-btn text-blue-500 hover:text-blue-700" title="Manage Card"><i class="fas fa-edit text-lg"></i></button>
+                                 <button data-id="${card.id}" class="delete-gift-card-btn text-red-500 hover:text-red-700" title="Delete Card"><i class="fas fa-trash-alt text-lg"></i></button>`;
+
+            if (statusText === 'Pending') {
+                actionButtons = `<button data-id="${card.id}" class="activate-gift-card-btn text-green-500 hover:text-green-700" title="Activate Card"><i class="fas fa-check-circle text-lg"></i></button>` + actionButtons;
+            }
+
+            row.innerHTML = `<td class="px-6 py-4">${new Date(card.createdAt.seconds * 1000).toLocaleDateString()}</td>
+                             <td class="px-6 py-4 font-mono text-xs">${card.code}</td>
+                             <td class="px-6 py-4">$${card.amount.toFixed(2)}</td>
+                             <td class="px-6 py-4 font-bold">$${balance.toFixed(2)}</td>
+                             <td class="px-6 py-4">${card.recipientName}<br><span class="text-xs text-gray-500">${card.buyerInfo?.email || 'N/A'}</span></td>
+                             <td class="px-6 py-4">${card.senderName}</td>
+                             <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-semibold rounded-full ${statusColor}">${statusText}</span></td>
+                             <td class="px-6 py-4 text-center space-x-4">${actionButtons}</td>`;
+        });
+    });
+};
+
+    onSnapshot(query(collection(db, "gift_cards"), orderBy("createdAt", "desc")), (snapshot) => {
+        allGiftCards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderGiftCardsAdminTable(allGiftCards);
+    });
+
+    const addPromotionForm = document.getElementById('add-promotion-form');
+    const promotionsTableBody = document.querySelector('#promotions-table tbody');
+    const promotionsContainerLanding = document.getElementById('promotions-container-landing');
+    
+    const renderPromotionsAdminTable = (promotions) => {
+        promotionsTableBody.innerHTML = '';
+        const now = new Date();
+        promotions.forEach(promo => {
+            const startDate = promo.startDate.toDate();
+            const endDate = promo.endDate.toDate();
+            let status, statusColor;
+            if (now < startDate) { status = 'Scheduled'; statusColor = 'text-blue-600'; } 
+            else if (now > endDate) { status = 'Expired'; statusColor = 'text-gray-500'; } 
+            else { status = 'Active'; statusColor = 'text-green-600'; }
+            const row = promotionsTableBody.insertRow();
+            row.innerHTML = `<td class="px-6 py-4">${promo.title}</td><td class="px-6 py-4">${promo.description}</td><td class="px-6 py-4">${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}</td><td class="px-6 py-4 font-bold ${statusColor}">${status}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${promo.id}" class="send-promo-notification-btn text-purple-500" title="Send Notification"><i class="fas fa-paper-plane"></i></button><button data-id="${promo.id}" class="edit-promotion-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${promo.id}" class="delete-promotion-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
+        });
+    };
+
+    const renderPromotionsLanding = (promotions) => {
+        promotionsContainerLanding.innerHTML = '';
+        const now = new Date();
+        const activePromos = promotions.filter(promo => {
+            const startDate = promo.startDate.toDate();
+            const endDate = promo.endDate.toDate();
+            return now >= startDate && now <= endDate;
+        });
+        if (activePromos.length === 0) { promotionsContainerLanding.innerHTML = '<p class="text-gray-600 col-span-full text-center">No active promotions right now. Check back soon!</p>'; return; }
+        activePromos.forEach(promo => { const promoEl = document.createElement('div'); promoEl.className = 'bg-white p-6 rounded-lg shadow-md text-center'; promoEl.innerHTML = `<h3 class="text-xl font-bold text-pink-700 mb-2">${promo.title}</h3><p class="text-gray-600">${promo.description}</p>`; promotionsContainerLanding.appendChild(promoEl); });
+    };
+
+    onSnapshot(query(collection(db, "promotions"), orderBy("startDate", "desc")), (snapshot) => {
+        allPromotions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderPromotionsAdminTable(allPromotions);
+        renderPromotionsLanding(allPromotions);
+    });
+
+    addPromotionForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const promoId = document.getElementById('edit-promotion-id').value;
+        const promoData = { title: document.getElementById('promotion-title').value, description: document.getElementById('promotion-description').value, startDate: Timestamp.fromDate(new Date(document.getElementById('promotion-start-date').value + 'T00:00:00')), endDate: Timestamp.fromDate(new Date(document.getElementById('promotion-end-date').value + 'T23:59:59')), };
+        try {
+            if (promoId) { await updateDoc(doc(db, "promotions", promoId), promoData); } 
+            else { promoData.createdAt = serverTimestamp(); await addDoc(collection(db, "promotions"), promoData); }
+            addPromotionForm.reset(); document.getElementById('edit-promotion-id').value = '';
+        } catch (error) { console.error("Error saving promotion:", error); alert("Could not save promotion."); }
+    });
+
+    promotionsTableBody.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-promotion-btn');
+        const deleteBtn = e.target.closest('.delete-promotion-btn');
+        const sendBtn = e.target.closest('.send-promo-notification-btn');
+        if (editBtn) {
+            const promo = allPromotions.find(p => p.id === editBtn.dataset.id);
+            if (promo) { document.getElementById('edit-promotion-id').value = promo.id; document.getElementById('promotion-title').value = promo.title; document.getElementById('promotion-description').value = promo.description; document.getElementById('promotion-start-date').value = promo.startDate.toDate().toISOString().split('T')[0]; document.getElementById('promotion-end-date').value = promo.endDate.toDate().toISOString().split('T')[0]; document.getElementById('add-promotion-btn').textContent = 'Update Promotion'; document.getElementById('cancel-edit-promotion-btn').classList.remove('hidden'); }
+        } else if (deleteBtn) { showConfirmModal("Are you sure you want to delete this promotion?", async () => { await deleteDoc(doc(db, "promotions", deleteBtn.dataset.id)); });
+        } else if (sendBtn) {
+            const promo = allPromotions.find(p => p.id === sendBtn.dataset.id);
+            if (promo) { showConfirmModal(`Send a notification for "${promo.title}" to all clients?`, () => { addNotification('promo', `New Promotion: ${promo.title}! ${promo.description}`); alert('Promotion notification sent!'); }); }
+        }
+    });
+
+    document.getElementById('cancel-edit-promotion-btn').addEventListener('click', () => {
+        addPromotionForm.reset();
+        document.getElementById('edit-promotion-id').value = '';
+        document.getElementById('add-promotion-btn').textContent = 'Add Promotion';
+        document.getElementById('cancel-edit-promotion-btn').classList.add('hidden');
+    });
+
+    const openClientModal = (client = null) => {
+        clientForm.reset();
+        const modalTitle = document.getElementById('client-form-title');
+        if (client) {
+            modalTitle.textContent = 'Edit Client Information';
+            document.getElementById('edit-client-id').value = client.id;
+            document.getElementById('client-form-name').value = client.name;
+            document.getElementById('client-form-phone').value = client.phone || '';
+            document.getElementById('client-form-dob').value = client.dob || '';
+        } else {
+            modalTitle.textContent = 'Create New Client';
+            document.getElementById('edit-client-id').value = '';
+        }
+        clientFormModal.classList.remove('hidden');
+        clientFormModal.classList.add('flex');
+    };
+
+    const closeClientModal = () => { clientFormModal.classList.add('hidden'); clientFormModal.classList.remove('flex'); };
+    document.getElementById('create-new-client-btn').addEventListener('click', () => openClientModal());
+    document.getElementById('client-form-cancel-btn').addEventListener('click', closeClientModal);
+    document.querySelector('.client-form-modal-overlay').addEventListener('click', closeClientModal);
+
+    clientForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const clientId = document.getElementById('edit-client-id').value;
+        const clientData = { name: document.getElementById('client-form-name').value, phone: document.getElementById('client-form-phone').value, dob: document.getElementById('client-form-dob').value, };
+        if (!clientData.name) { alert('Client name is required.'); return; }
+        try {
+            if (clientId) { await updateDoc(doc(db, "clients", clientId), clientData); } 
+            else { await addDoc(collection(db, "clients"), clientData); }
+            closeClientModal();
+        } catch (error) { console.error("Error saving client:", error); alert("Could not save client data."); }
+    });
+
+    const importClientsBtn = document.getElementById('import-clients-btn');
+    const importClientsInput = document.getElementById('import-clients-input');
+    importClientsBtn.addEventListener('click', () => importClientsInput.click());
+    importClientsInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            const data = new Uint8Array(event.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const clientsToImport = XLSX.utils.sheet_to_json(firstSheet);
+            if (clientsToImport.length === 0) { alert('No clients found in the file.'); return; }
+            const batch = writeBatch(db);
+            clientsToImport.forEach(client => { const newClientRef = doc(collection(db, "clients")); batch.set(newClientRef, { name: client.Name || 'N/A', phone: client.Phone || '', dob: client.DOB || '' }); });
+            try { await batch.commit(); alert(`${clientsToImport.length} clients imported successfully!`); } 
+            catch (error) { console.error("Error importing clients: ", error); alert("An error occurred during import."); }
+        };
+        reader.readAsArrayBuffer(file);
+        e.target.value = '';
+    });
+    
+    // --- Gift Card Designer & Management Logic ---
+    const designerForm = document.getElementById('physical-gift-card-form');
+    const designerBackgroundTabs = document.getElementById('designer-background-tabs');
+    const designerBackgroundOptions = document.getElementById('designer-background-options');
+    const printableCardArea = document.getElementById('printable-gift-card-area');
+    const printableCard = document.getElementById('printable-gift-card');
+    const saveAndPrintBtn = document.getElementById('save-and-print-btn');
+    const editGiftCardForm = document.getElementById('edit-gift-card-form');
+
+
+    const updateDesignerPreview = () => {
+        const showTo = document.getElementById('designer-show-to').checked;
+        const showFrom = document.getElementById('designer-show-from').checked;
+        const setExpiry = document.getElementById('designer-set-expiry').checked;
+        
+        document.getElementById('preview-to').parentElement.style.display = showTo ? '' : 'none';
+        document.getElementById('preview-from').parentElement.style.display = showFrom ? '' : 'none';
+        document.getElementById('designer-to-wrapper').style.display = showTo ? '' : 'none';
+        document.getElementById('designer-from-wrapper').style.display = showFrom ? '' : 'none';
+
+        document.getElementById('preview-to').textContent = document.getElementById('designer-to').value || 'Recipient';
+        document.getElementById('preview-from').textContent = document.getElementById('designer-from').value || 'Sender';
+        
+        const amount = parseFloat(document.getElementById('designer-amount').value) || 0;
+        document.getElementById('preview-amount').textContent = `$${amount.toFixed(2)}`;
+        
+        const expiryPreview = document.getElementById('preview-expiry');
+        if (setExpiry) {
+            const value = parseInt(document.getElementById('designer-expiry-value').value, 10);
+            const unit = document.getElementById('designer-expiry-unit').value;
+            if (value > 0) {
+                const expiryDate = new Date();
+                if (unit === 'months') {
+                    expiryDate.setMonth(expiryDate.getMonth() + value);
+                } else {
+                    expiryDate.setFullYear(expiryDate.getFullYear() + value);
+                }
+                expiryPreview.textContent = `Expires: ${expiryDate.toLocaleDateString()}`;
+                expiryPreview.style.display = 'block';
+            } else {
+                 expiryPreview.style.display = 'none';
+            }
+        } else {
+            expiryPreview.style.display = 'none';
+        }
+    };
+    
+    const populateBackgrounds = (category) => {
+        designerBackgroundOptions.innerHTML = giftCardBackgrounds[category].map(url => 
+            `<button type="button" data-bg="${url}" class="w-full h-16 bg-cover bg-center rounded-md border-2 border-transparent hover:border-pink-400" style="background-image: url('${url}')"></button>`
+        ).join('');
+        const firstBgBtn = designerBackgroundOptions.querySelector('button');
+        if (firstBgBtn) {
+            firstBgBtn.classList.add('ring-2', 'ring-pink-500');
+            printableCard.style.backgroundImage = `url('${firstBgBtn.dataset.bg}')`;
+        }
+    };
+    
+    const initializeGiftCardDesigner = () => {
+        designerForm.reset();
+        document.getElementById('designer-quantity').value = 1;
+        document.getElementById('preview-code').textContent = `GC-${Date.now()}${[...Array(4)].map(() => Math.floor(Math.random() * 10)).join('')}`;
+        
+        designerBackgroundTabs.innerHTML = Object.keys(giftCardBackgrounds).map(cat => 
+            `<button type="button" data-category="${cat}" class="px-3 py-1 text-sm font-medium rounded-t-lg">${cat}</button>`
+        ).join('');
+        
+        const firstTab = designerBackgroundTabs.querySelector('button');
+        if(firstTab) {
+             firstTab.classList.add('bg-gray-200', 'border-gray-300', 'border-b-0');
+             populateBackgrounds(firstTab.dataset.category);
+        }
+
+        updateDesignerPreview();
+    };
+    
+    designerBackgroundTabs.addEventListener('click', e => {
+        const tab = e.target.closest('button');
+        if (tab) {
+            designerBackgroundTabs.querySelectorAll('button').forEach(t => t.classList.remove('bg-gray-200', 'border-gray-300', 'border-b-0'));
+            tab.classList.add('bg-gray-200', 'border-gray-300', 'border-b-0');
+            populateBackgrounds(tab.dataset.category);
+        }
+    });
+
+    designerBackgroundOptions.addEventListener('click', (e) => {
+        const target = e.target.closest('button');
+        if (target && target.dataset.bg) {
+            designerBackgroundOptions.querySelectorAll('button').forEach(btn => btn.classList.remove('ring-2', 'ring-pink-500'));
+            target.classList.add('ring-2', 'ring-pink-500');
+            printableCard.style.backgroundImage = `url('${target.dataset.bg}')`;
+        }
+    });
+
+    const handleSaveAndPrint = async () => {
+        const quantity = parseInt(document.getElementById('designer-quantity').value, 10);
+        if (isNaN(quantity) || quantity < 1) {
+            alert("Please enter a valid quantity.");
+            return;
+        }
+
+        const amount = parseFloat(document.getElementById('designer-amount').value);
+        if (isNaN(amount) || amount <= 0) {
+            alert("Please enter a valid amount.");
+            return;
+        }
+
+        const batch = writeBatch(db);
+        const cardsToPrint = [];
+
+        for (let i = 0; i < quantity; i++) {
+            const cardData = {
+                amount: amount,
+                balance: amount,
+                history: [],
+                recipientName: document.getElementById('designer-show-to').checked ? document.getElementById('designer-to').value : '',
+                senderName: document.getElementById('designer-show-from').checked ? document.getElementById('designer-from').value : '',
+                code: `GC-${Date.now()}-${i}`,
+                status: 'Active',
+                type: 'Physical',
+                createdAt: serverTimestamp()
+            };
+
+            if (document.getElementById('designer-set-expiry').checked) {
+                const value = parseInt(document.getElementById('designer-expiry-value').value, 10);
+                const unit = document.getElementById('designer-expiry-unit').value;
+                const expiryDate = new Date();
+                if (unit === 'months') expiryDate.setMonth(expiryDate.getMonth() + value);
+                else expiryDate.setFullYear(expiryDate.getFullYear() + value);
+                cardData.expiresAt = Timestamp.fromDate(expiryDate);
+            }
+
+            const newCardRef = doc(collection(db, "gift_cards"));
+            batch.set(newCardRef, cardData);
+            cardsToPrint.push(cardData);
+        }
+
+        try {
+            await batch.commit();
+            
+            const originalPreviewHTML = printableCardArea.innerHTML;
+
+            printableCardArea.innerHTML = cardsToPrint.map(card => {
+                 const expiryText = card.expiresAt ? `Expires: ${card.expiresAt.toDate().toLocaleDateString()}` : '';
+                 const bgImage = printableCard.style.backgroundImage;
+                 return `
+                    <div class="printable-gift-card w-[400px] h-[228px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" style="background-image: ${bgImage};">
+                        <div class="flex justify-between items-start" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
+                            <img src="${document.getElementById('preview-logo').src}" class="w-12 h-12 rounded-full border-2 border-white"/>
+                            <div class="text-right">
+                                <p class="font-parisienne text-3xl">Gift Card</p>
+                                <p class="text-xs font-semibold tracking-wider">Nails Express</p>
+                            </div>
+                        </div>
+                        <div class="text-center" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.7);"><p class="text-5xl font-bold">$${card.amount.toFixed(2)}</p></div>
+                        <div class="text-xs" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
+                            <div class="flex justify-between font-semibold">
+                                <span style="display: ${card.recipientName ? 'inline' : 'none'}">FOR: <span class="font-normal">${card.recipientName}</span></span>
+                                <span style="display: ${card.senderName ? 'inline' : 'none'}">FROM: <span class="font-normal">${card.senderName}</span></span>
+                            </div>
+                            <p class="mt-2 text-center font-mono tracking-widest text-sm">${card.code}</p>
+                            <p class="mt-1 text-center text-[10px] opacity-80" style="display: ${expiryText ? 'block' : 'none'}">${expiryText}</p>
+                        </div>
+                    </div>`;
+            }).join('');
+            
+            window.print();
+
+            setTimeout(() => {
+                printableCardArea.innerHTML = originalPreviewHTML;
+            }, 1000);
+
+        } catch (error) {
+            console.error("Error saving physical gift cards:", error);
+            alert("Could not save the gift cards. Please try again.");
+        }
+    };
+    
+    document.getElementById('designer-show-to').addEventListener('change', updateDesignerPreview);
+    document.getElementById('designer-show-from').addEventListener('change', updateDesignerPreview);
+    document.getElementById('designer-set-expiry').addEventListener('change', (e) => {
+        document.getElementById('designer-expiry-inputs').classList.toggle('hidden', !e.target.checked);
+        updateDesignerPreview();
+    });
+
+    designerForm.addEventListener('input', updateDesignerPreview);
+    saveAndPrintBtn.addEventListener('click', handleSaveAndPrint);
+    
+    const openEditGiftCardModal = (card) => {
+        editGiftCardForm.reset();
+        document.getElementById('edit-gift-card-id').value = card.id;
+        document.getElementById('edit-gc-code').textContent = card.code;
+        document.getElementById('edit-gc-original-amount').textContent = `$${card.amount.toFixed(2)}`;
+        document.getElementById('edit-gc-current-balance').textContent = `$${card.balance.toFixed(2)}`;
+
+        const historyContainer = document.getElementById('edit-gc-history');
+        historyContainer.innerHTML = '';
+        if (card.history && card.history.length > 0) {
+            card.history.slice().reverse().forEach(entry => {
+                const isRedeem = entry.type === 'redeem';
+                const el = document.createElement('div');
+                el.className = 'text-sm p-2 rounded bg-gray-100 flex justify-between';
+                el.innerHTML = `
+                    <div>
+                        <p class="font-semibold ${isRedeem ? 'text-red-600' : 'text-green-600'}">${isRedeem ? 'Redeemed' : 'Added'} $${entry.amount.toFixed(2)}</p>
+                        <p class="text-xs text-gray-500">${entry.notes || ''}</p>
+                    </div>
+                    <div class="text-xs text-gray-500 text-right">
+                        ${new Date(entry.timestamp.seconds * 1000).toLocaleString()}
+                    </div>
+                `;
+                historyContainer.appendChild(el);
+            });
+        } else {
+            historyContainer.innerHTML = '<p class="text-sm text-gray-500 text-center">No transactions yet.</p>';
+        }
+
+        editGiftCardModal.classList.remove('hidden');
+        editGiftCardModal.classList.add('flex');
+    };
+
+    editGiftCardForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const cardId = document.getElementById('edit-gift-card-id').value;
+        const transactionAmount = parseFloat(document.getElementById('edit-gc-transaction-amount').value);
+        const transactionType = document.getElementById('edit-gc-transaction-type').value;
+        const currentCard = allGiftCards.find(c => c.id === cardId);
+
+        if (!currentCard || isNaN(transactionAmount) || transactionAmount <= 0) {
+            alert("Invalid amount.");
+            return;
+        }
+        
+        let newBalance = currentCard.balance;
+        if (transactionType === 'redeem') {
+            if (transactionAmount > currentCard.balance) {
+                alert("Cannot redeem more than the current balance.");
+                return;
+            }
+            newBalance -= transactionAmount;
+        } else {
+            newBalance += transactionAmount;
+        }
+
+        const newTransaction = {
+            type: transactionType,
+            amount: transactionAmount,
+            notes: document.getElementById('edit-gc-transaction-notes').value,
+            timestamp: Timestamp.now()
+        };
+
+        try {
+            await updateDoc(doc(db, "gift_cards", cardId), {
+                balance: newBalance,
+                history: arrayUnion(newTransaction),
+                status: newBalance > 0 ? 'Active' : 'Depleted'
+            });
+            editGiftCardForm.reset();
+            editGiftCardModal.classList.add('hidden');
+        } catch (error) {
+            console.error("Error updating gift card:", error);
+            alert("Could not update gift card.");
+        }
+    });
+
+    
+    document.getElementById('close-edit-gift-card-modal-btn').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));
+    editGiftCardModal.querySelector('.modal-overlay').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));
+    const setupGiftCardTableListener = (tableId) => {
+    const table = document.getElementById(tableId);
+ Excellent! This is a fantastic and very practical business feature. You're essentially creating a manual payment workflow, which gives you full control over activating gift cards once you've confirmed payment. It's a very smart and secure way to handle transactions without a direct payment gateway.
+
+I will guide you through this process step-by-step. It involves changes to both index.html and script.js to create the admin settings, update the customer purchase form, and add the activation controls for the admin.
+
+Part 1: Create the Admin Setting for the Payment Guide
+First, let's give the admin a place to enter and save the payment instructions.
+
+1. Add the Form to index.html
+
+Find the "Salon Hours" form in your index.html file. It's inside the "Settings" tab and should be around line 2326.
+
+Add the following new form block on the line directly after the closing </form> tag of the salon hours form.
+
+HTML
+
+                        </form> <!-- This is the end of the salon hours form -->
+
+                        <!-- ADD THIS ENTIRE NEW FORM BLOCK -->
+                        <h3 class="text-xl font-semibold text-gray-700 mt-8 mb-4">Gift Card Payment Guide</h3>
+                        <form id="payment-guide-form" class="p-4 border rounded-lg bg-gray-50 space-y-4">
+                            <div>
+                                <label for="gift-card-payment-guide-textarea"
+                                    class="block text-sm font-medium text-gray-600">Payment Instructions</label>
+                                <textarea id="gift-card-payment-guide-textarea" rows="4"
+                                    class="form-input w-full mt-1"
+                                    placeholder="e.g., Please send payment to our Venmo @NailsXpress or call us at (555) 123-4567 to pay by phone."></textarea>
+                                <p class="text-xs text-gray-500 mt-1">This text will be shown to clients when they are about to purchase a gift card.</p>
+                            </div>
+                            <div class="text-right">
+                                <button type="submit"
+                                    class="bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">Save Guide</button>
+                            </div>
+                        </form>
+                        <!-- END OF NEW BLOCK -->
+2. Add the Logic to script.js
+
+Now, let's make the new form load and save the instructions.
+
+Find the setupAdminFeatures function in your script.js file (around line 922).
+
+Add the following code block inside that function, right after the loadAndRenderSalonHours(); line.
+
+JavaScript
+
+    // --- Setup for Payment Guide ---
+    const paymentGuideForm = document.getElementById('payment-guide-form');
+    const paymentGuideTextarea = document.getElementById('gift-card-payment-guide-textarea');
+
+    // Load existing guide
+    getDoc(doc(db, "settings", "paymentGuide")).then(docSnap => {
+        if (docSnap.exists()) {
+            paymentGuideTextarea.value = docSnap.data().text || '';
+        }
+    });
+
+    // Save new guide
+    paymentGuideForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            await setDoc(doc(db, "settings", "paymentGuide"), { text: paymentGuideTextarea.value });
+            alert("Payment guide saved successfully!");
+        } catch (error) {
+            console.error("Error saving payment guide:", error);
+            alert("Could not save payment guide.");
+        }
+    });
+Part 2: Update the Customer Purchase Form
+Now, let's change the landing page form to show the payment guide and set the gift cards to "Pending" status.
+
+1. Update the Modal in index.html
+
+Find the "Purchase a Gift Card" modal, which is the div with the id="gift-card-purchase-modal" (around line 2569).
+
+Make two small changes inside this modal:
+
+Change the button text.
+
+Add a div where the payment guide will be displayed.
+
+Change this button line...
+
+HTML
+
+<button type="submit" id="landing-gc-submit-btn" class="w-full bg-pink-600 text-white font-bold py-3 px-12 rounded-full hover:bg-pink-700">
+    Proceed to Payment
+</button>
+...to this:
+
+HTML
+
+<button type="submit" id="landing-gc-submit-btn" class="w-full bg-pink-600 text-white font-bold py-3 px-12 rounded-full hover:bg-pink-700">
+    Buy Gift Card Now
+</button>
+Then, add this new div right before that button:
+
+HTML
+
+                        <!-- ADD THIS NEW PAYMENT GUIDE DIV -->
+                        <div id="landing-gc-payment-guide" class="text-sm text-gray-600 bg-gray-100 p-3 rounded-lg border">
+                            <!-- Payment guide from settings will be loaded here -->
+                        </div>
+                        <!-- The button you just changed is right below this -->
+                        <button type="submit" id="landing-gc-submit-btn" ...>
+2. Update the Logic in script.js
+
+Find the initLandingPage function (around line 313).
+
+Add this code inside the function, right after the line const purchaseForm = document.getElementById('landing-gift-card-form');. This will fetch and display the payment guide when the form opens.
+
+JavaScript
+
+    const paymentGuideDisplay = document.getElementById('landing-gc-payment-guide');
+    // Load payment guide text into the purchase form
+    getDoc(doc(db, "settings", "paymentGuide")).then(docSnap => {
+        if (docSnap.exists() && docSnap.data().text) {
+            paymentGuideDisplay.innerHTML = `<p class="font-semibold mb-2">How to Pay:</p><p>${docSnap.data().text.replace(/\n/g, '<br>')}</p>`;
+        } else {
+            paymentGuideDisplay.textContent = 'Please contact the salon to complete your payment.';
+        }
+    });
+Next, find the purchaseForm.addEventListener('submit', ...) logic (around line 526).
+
+Replace the entire try...catch...finally block inside it with this new version, which sets the status to "Pending" and updates the success message.
+
+Replace this block...
+
+JavaScript
+
+        try {
+            // ... existing code ...
+        } catch (error) {
+            // ... existing code ...
+        } finally {
+            // ... existing code ...
+        }
+...with this new version:
+
+JavaScript
+
+        try {
+            alert('Your gift card request will be submitted. Please follow the payment instructions to activate your card.');
+
+            const batch = writeBatch(db);
+            const expiryDate = new Date();
+            expiryDate.setMonth(expiryDate.getMonth() + 6);
+
+            for (let i = 0; i < quantity; i++) {
+                const cardData = {
+                    amount: amount,
+                    balance: amount,
+                    history: [],
+                    recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerName,
+                    senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerName,
+                    code: `GC-${Date.now()}-${i}`,
+                    status: 'Pending', // <-- IMPORTANT: Set status to Pending
+                    type: 'E-Gift',
+                    createdBy: anonymousUserId,
+                    buyerInfo: { name: buyerName, email: buyerEmail, phone: buyerPhone },
+                    createdAt: serverTimestamp(),
+                    expiresAt: Timestamp.fromDate(expiryDate)
+                };
+                const newCardRef = doc(collection(db, "gift_cards"));
+                batch.set(newCardRef, cardData);
+            }
+
+            await batch.commit();
+
+            alert(`Success! Your gift card request has been submitted. It will be activated once payment is confirmed.`);
+            purchaseForm.reset();
+            purchaseModal.classList.add('hidden');
+
+        } catch (error) {
+            console.error("Error during gift card purchase:", error);
+            alert(`Could not process your request. Error: ${error.message}`);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Buy Gift Card Now';
+        }
+Part 3: Add Activation Controls for the Admin
+Finally, let's give the admin the ability to see pending cards and activate them.
+
+1. Update the Admin Gift Card Table in script.js
+
+Find the renderGiftCardsAdminTable function (around line 1544).
+
+Replace the entire function with this new version, which adds a colored status badge and a conditional "Activate" button.
+
+JavaScript
+
+const renderGiftCardsAdminTable = (cards) => {
+    const tables = [giftCardsTableBody, giftCardsTableAdminBody];
+    tables.forEach(tbody => {
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        if (cards.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-gray-400">No gift cards have been sold.</td></tr>`;
+            return;
+        }
+        cards.forEach(card => {
+            const row = tbody.insertRow();
+            const balance = card.balance !== undefined ? card.balance : card.amount;
+            
+            let statusText = card.status || 'Active'; // Default to Active for older cards
+            let statusColor = 'bg-gray-200 text-gray-800'; // Default
+            switch (statusText) {
+                case 'Active': statusColor = 'bg-green-100 text-green-800'; break;
+                case 'Pending': statusColor = 'bg-yellow-100 text-yellow-800'; break;
+                case 'Depleted': statusColor = 'bg-red-100 text-red-800'; break;
+            }
+
+            let actionButtons = `<button data-id="${card.id}" class="edit-gift-card-btn text-blue-500 hover:text-blue-700" title="Manage Card"><i class="fas fa-edit text-lg"></i></button>
+                                 <button data-id="${card.id}" class="delete-gift-card-btn text-red-500 hover:text-red-700" title="Delete Card"><i class="fas fa-trash-alt text-lg"></i></button>`;
+
+            if (statusText === 'Pending') {
+                actionButtons = `<button data-id="${card.id}" class="activate-gift-card-btn text-green-500 hover:text-green-700" title="Activate Card"><i class="fas fa-check-circle text-lg"></i></button>` + actionButtons;
+            }
+
+            row.innerHTML = `<td class="px-6 py-4">${new Date(card.createdAt.seconds * 1000).toLocaleDateString()}</td>
+                             <td class="px-6 py-4 font-mono text-xs">${card.code}</td>
+                             <td class="px-6 py-4">$${card.amount.toFixed(2)}</td>
+                             <td class="px-6 py-4 font-bold">$${balance.toFixed(2)}</td>
+                             <td class="px-6 py-4">${card.recipientName}<br><span class="text-xs text-gray-500">${card.buyerInfo?.email || 'N/A'}</span></td>
+                             <td class="px-6 py-4">${card.senderName}</td>
+                             <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-semibold rounded-full ${statusColor}">${statusText}</span></td>
+                             <td class="px-6 py-4 text-center space-x-4">${actionButtons}</td>`;
+        });
+    });
+};
+2. Add the Activation Logic in script.js
+
+Find the setupGiftCardTableListener function (around line 2401).
+
+Add the new logic inside it to handle clicks on the "Activate" button.
+
+Find this part of the function:
+
+JavaScript
+
+if (table) {
+    table.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-gift-card-btn');
+        if (editBtn) {
+            // ... existing edit logic
+        }
+And add the new activateBtn logic right after it, like this:
+
+JavaScript
+
+if (table) {
+    table.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-gift-card-btn');
+        const deleteBtn = e.target.closest('.delete-gift-card-btn');
+        const activateBtn = e.target.closest('.activate-gift-card-btn'); // ADD THIS LINE
+
+        if (activateBtn) { // ADD THIS ENTIRE IF BLOCK
+            const cardId = activateBtn.dataset.id;
+            const card = allGiftCards.find(c => c.id === cardId);
+            if (card) {
+                showConfirmModal(`Activate gift card ${card.code} for $${card.amount.toFixed(2)}?`, async () => {
+                    try {
+                        await updateDoc(doc(db, "gift_cards", cardId), { status: 'Active' });
+                        alert('Gift card has been activated!');
+                    } catch (error) {
+                        console.error("Error activating gift card:", error);
+                        alert("Could not activate the gift card.");
+                    }
+                }, 'Activate'); // Optional: change confirm button text
+            }
+        }
+            if (editBtn) {
+                const card = allGiftCards.find(c => c.id === editBtn.dataset.id);
+                if(card) openEditGiftCardModal(card);
+            }
+
+            const deleteBtn = e.target.closest('.delete-gift-card-btn');
+            if (deleteBtn) {
+                const cardId = deleteBtn.dataset.id;
+                const card = allGiftCards.find(c => c.id === cardId);
+                if (card) {
+                    showConfirmModal(`Are you sure you want to delete gift card ${card.code}? This action cannot be undone.`, async () => {
+                        try {
+                            await deleteDoc(doc(db, "gift_cards", cardId));
+                            alert(`Gift card ${card.code} has been deleted.`);
+                        } catch (error) {
+                            console.error("Error deleting gift card:", error);
+                            alert("Could not delete the gift card.");
+                        }
+                    });
+                }
+            }
+        });
+    }
+};
+setupGiftCardTableListener('gift-cards-table');
+setupGiftCardTableListener('gift-cards-table-admin');
+    document.getElementById('close-client-profile-modal-btn').addEventListener('click', () => clientProfileModal.classList.add('hidden'));
+clientProfileModal.querySelector('.modal-overlay').addEventListener('click', () => clientProfileModal.classList.add('hidden'));
+
+
+
+    
+    loadAndRenderServices();
+    initializeGiftCardDesigner();
+    const todayString = getLocalDateString();
+    const currentMonthIndex = new Date().getMonth();
+    document.getElementById('finished-date-filter').value = todayString;
+    currentFinishedDateFilter = todayString;
+    renderFinishedClients(applyClientFilters(allFinishedClients, '', 'All', currentFinishedDateFilter));
+    document.getElementById('staff-earning-date').value = todayString;
+    document.getElementById('earning-date-filter').value = todayString;
+    currentEarningDateFilter = todayString;
+    renderAllStaffEarnings();
+    const dashboardEarningDateFilter = document.getElementById('dashboard-earning-date-filter');
+    // ADD THESE TWO LINES
+const dashboardEarningSubmitDateInput = document.getElementById('dashboard-staff-earning-date-full');
+if (dashboardEarningSubmitDateInput) dashboardEarningSubmitDateInput.value = todayString;
+    
+    dashboardEarningDateFilter.value = todayString;
+    currentDashboardEarningDateFilter = todayString;
+    
+    document.getElementById('salon-earning-date').value = todayString;
+    const salonEarningRangeFilter = document.getElementById('salon-earning-range-filter');
+    const salonEarningDateFilter = document.getElementById('salon-earning-date-filter');
+    salonEarningRangeFilter.value = currentMonthIndex;
+    salonEarningDateFilter.style.display = 'none';
+    currentSalonEarningRangeFilter = String(currentMonthIndex);
+    currentSalonEarningDateFilter = '';
+    renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, currentSalonEarningDateFilter, currentSalonEarningRangeFilter));
+    document.getElementById('expense-date').value = todayString;
+    document.getElementById('sign-out-btn').addEventListener('click', () => { signOut(auth); });
+    document.getElementById('floating-booking-btn').addEventListener('click', () => { openAddAppointmentModal(getLocalDateString()); });
+    // ADD THIS NEW LINE to set the default date
+    document.getElementById('staff-details-date-filter').value = todayString;
 }

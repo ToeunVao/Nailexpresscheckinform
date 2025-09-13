@@ -3417,7 +3417,29 @@ onSnapshot(collection(db, "users"), (snapshot) => {
     loadSettings();
     loadFeatureToggles();
     loadAndRenderSalonHours();
+// --- Setup for Payment Guide ---
+    const paymentGuideForm = document.getElementById('payment-guide-form');
+    const paymentGuideTextarea = document.getElementById('gift-card-payment-guide-textarea');
 
+    // Load existing guide
+    getDoc(doc(db, "settings", "paymentGuide")).then(docSnap => {
+        if (docSnap.exists()) {
+            paymentGuideTextarea.value = docSnap.data().text || '';
+        }
+    });
+
+    // Save new guide
+    paymentGuideForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            await setDoc(doc(db, "settings", "paymentGuide"), { text: paymentGuideTextarea.value });
+            alert("Payment guide saved successfully!");
+        } catch (error) {
+            console.error("Error saving payment guide:", error);
+            alert("Could not save payment guide.");
+        }
+    });
+    
     settingsForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const hours = parseInt(minBookingHoursInput.value, 10);

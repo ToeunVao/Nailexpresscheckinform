@@ -2425,11 +2425,15 @@ onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot
         updateDashboard();
     });
 
-    onSnapshot(query(collection(db, "expenses"), orderBy("date", "desc")), (snapshot) => {
-        allExpenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+onSnapshot(query(collection(db, "expenses"), orderBy("date", "desc")), (snapshot) => {
+    allExpenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Only run these functions if an admin is logged in and can see the report
+    if (currentUserRole === 'admin') {
         populateExpenseMonthFilter();
         renderExpenses();
-    });
+    }
+});
 
     onSnapshot(query(collection(db, "clients"), orderBy("name")), (snapshot) => {
         allClients = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));

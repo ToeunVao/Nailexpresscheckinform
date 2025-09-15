@@ -343,49 +343,6 @@ function initLandingPage() {
         loginFormContainer.classList.add('hidden');
     });
 
-    const openGiftCardModal = () => { giftCardModal.classList.remove('hidden'); giftCardModal.classList.add('flex'); };
-    const closeGiftCardModal = () => { giftCardModal.classList.add('hidden'); giftCardModal.classList.remove('flex'); };
-    buyGiftCardBtn.addEventListener('click', openGiftCardModal);
-    closeGiftCardModalBtn.addEventListener('click', closeGiftCardModal);
-    giftCardModal.querySelector('.modal-overlay').addEventListener('click', closeGiftCardModal);
-    
-    const giftCardAmountSelect = document.getElementById('gift-card-amount');
-    const customAmountInput = document.getElementById('gift-card-custom-amount');
-    giftCardAmountSelect.addEventListener('change', () => {
-        if (giftCardAmountSelect.value === 'custom') {
-            customAmountInput.classList.remove('hidden');
-            customAmountInput.required = true;
-        } else {
-            customAmountInput.classList.add('hidden');
-            customAmountInput.required = false;
-        }
-    });
-
-    giftCardForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const amount = giftCardAmountSelect.value === 'custom' 
-            ? parseFloat(customAmountInput.value) 
-            : parseInt(giftCardAmountSelect.value, 10);
-
-        if (isNaN(amount) || amount <= 0) {
-            alert('Please enter a valid amount.');
-            return;
-        }
-
-        const giftCardData = { amount: amount, balance: amount, history: [], recipientName: document.getElementById('gift-card-recipient-name').value, recipientEmail: document.getElementById('gift-card-recipient-email').value, senderName: document.getElementById('gift-card-sender-name').value, message: document.getElementById('gift-card-message').value, code: `GC-${Date.now()}${[...Array(4)].map(() => Math.floor(Math.random() * 10)).join('')}`, status: 'Active', createdAt: serverTimestamp() };
-
-        try {
-            alert('Redirecting to a secure payment page...');
-            await addDoc(collection(db, "gift_cards"), giftCardData);
-            alert(`Success! Gift card for $${amount} has been sent to ${giftCardData.recipientEmail}.`);
-            giftCardForm.reset();
-            closeGiftCardModal();
-
-        } catch (error) {
-            console.error("Error purchasing gift card:", error);
-            alert("Could not process the gift card purchase. Please try again.");
-        }
-    });
 
     landingLoginForm.addEventListener('submit', async (e) => {
         e.preventDefault();

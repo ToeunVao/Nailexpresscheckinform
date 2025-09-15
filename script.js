@@ -11,7 +11,7 @@ const firebaseConfig = {
     messagingSenderId: "1015991996673",
     appId: "1:1015991996673:web:b6e8888abae83906d34b00"
 };
-///---1
+///---2
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -2583,7 +2583,7 @@ document.getElementById('staff-earning').value = '';
 document.getElementById('staff-tip').value = '';
 
         document.getElementById('staff-earning-date').value = getLocalDateString();
-        document.getElementById('staff-name').value = 'TJ'; // Reset default to TJ
+       // document.getElementById('staff-name').value = 'TJ'; // Reset default to TJ
     } catch (err) { console.error("Error adding earning: ", err); alert("Could not add earning."); }
 });
 
@@ -2604,13 +2604,13 @@ document.getElementById('dashboard-staff-earning-form-full').addEventListener('s
     try {
         // Add service to the data being saved
         await addDoc(collection(db, "earnings"), { staffName, service, earning, tip, date: Timestamp.fromDate(date) });
-        alert(`Earning for ${staffName} on ${dateStr} has been saved.`);
+       // alert(`Earning for ${staffName} on ${dateStr} has been saved.`);
        // Manually clear only the fields that need it
 document.getElementById('dashboard-staff-earning-service').value = '';
 document.getElementById('dashboard-staff-earning-full').value = '';
 document.getElementById('dashboard-staff-tip-full').value = '';
         document.getElementById('dashboard-staff-earning-date-full').value = getLocalDateString();
-        document.getElementById('dashboard-staff-name-full').value = 'TJ'; // Reset default to TJ
+        //document.getElementById('dashboard-staff-name-full').value = 'TJ'; // Reset default to TJ
     } catch (err) {
         console.error("Error saving earning entry: ", err);
         alert("Could not save the earning entry.");

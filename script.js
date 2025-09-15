@@ -509,23 +509,6 @@ purchaseForm.addEventListener('submit', async (e) => {
         loginFormContainer.classList.add('hidden');
     });
 
-    const openGiftCardModal = () => { giftCardModal.classList.remove('hidden'); giftCardModal.classList.add('flex'); };
-    const closeGiftCardModal = () => { giftCardModal.classList.add('hidden'); giftCardModal.classList.remove('flex'); };
-    buyGiftCardBtn.addEventListener('click', openGiftCardModal);
-    closeGiftCardModalBtn.addEventListener('click', closeGiftCardModal);
-    giftCardModal.querySelector('.modal-overlay').addEventListener('click', closeGiftCardModal);
-    
-    const giftCardAmountSelect = document.getElementById('gift-card-amount');
-    const customAmountInput = document.getElementById('gift-card-custom-amount');
-    giftCardAmountSelect.addEventListener('change', () => {
-        if (giftCardAmountSelect.value === 'custom') {
-            customAmountInput.classList.remove('hidden');
-            customAmountInput.required = true;
-        } else {
-            customAmountInput.classList.add('hidden');
-            customAmountInput.required = false;
-        }
-    });
 
 const paymentGuideDisplay = document.getElementById('landing-gc-payment-guide');
     // Load payment guide text into the purchase form

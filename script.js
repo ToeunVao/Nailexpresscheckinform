@@ -833,12 +833,6 @@ function initMainApp(userRole, userName) {
         }
     });
 
-
-    if (userRole !== 'admin') {
-        document.querySelector('[data-target="report"]').style.display = 'none';
-        document.querySelector('[data-target="setting"]').style.display = 'none';
-    }
-
     const checkInForm = document.getElementById('check-in-form');
     const peopleCountSelect = document.getElementById('people-count');
     const servicesContainer = document.getElementById('services-container');

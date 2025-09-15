@@ -2480,48 +2480,96 @@
             </div>
         </div>
     </div>
+<!-- REPLACE THE OLD #gift-card-modal WITH THIS NEW ONE -->
+<div id="gift-card-purchase-modal" class="modal hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
+    <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
+    <div class="relative bg-white w-full max-w-4xl p-6 rounded-2xl shadow-xl m-4 max-h-[90vh] overflow-y-auto">
+        <button id="close-gift-card-purchase-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times fa-lg"></i></button>
+        <h2 class="text-3xl font-bold text-center text-pink-700 mb-6">Purchase a Gift Card</h2>
 
-    <div id="gift-card-modal" class="modal hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
-        <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
-        <div class="relative bg-white w-full max-w-lg p-8 rounded-2xl shadow-xl m-4">
-            <button id="close-gift-card-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i
-                    class="fas fa-times fa-lg"></i></button>
-            <h2 class="text-2xl font-bold text-center text-pink-700 mb-6">Purchase a Gift Card</h2>
-            <form id="gift-card-form" class="space-y-4">
-                <div><label for="gift-card-amount" class="block text-sm font-medium text-gray-600">Amount</label><select
-                        id="gift-card-amount" class="form-select w-full p-3 mt-1">
-                        <option value="25">$25</option>
-                        <option value="50">$50</option>
-                        <option value="100">$100</option>
-                        <option value="custom">Custom</option>
-                    </select></div>
-                <input type="number" id="gift-card-custom-amount" class="form-input w-full p-3 mt-1 hidden"
-                    placeholder="Enter custom amount">
-                <div><label for="gift-card-recipient-name" class="block text-sm font-medium text-gray-600">Recipient's
-                        Name</label><input type="text" id="gift-card-recipient-name" class="form-input w-full p-3 mt-1"
-                        required></div>
-                <div><label for="gift-card-recipient-email" class="block text-sm font-medium text-gray-600">Recipient's
-                        Email</label><input type="email" id="gift-card-recipient-email"
-                        class="form-input w-full p-3 mt-1" required></div>
-                <div><label for="gift-card-sender-name" class="block text-sm font-medium text-gray-600">Your
-                        Name</label><input type="text" id="gift-card-sender-name" class="form-input w-full p-3 mt-1"
-                        required></div>
-                <div><label for="gift-card-message" class="block text-sm font-medium text-gray-600">Message
-                        (optional)</label><textarea id="gift-card-message" rows="2"
-                        class="form-input w-full p-3 mt-1"></textarea></div>
-                <div class="pt-2">
-				 <!-- ADD THIS NEW PAYMENT GUIDE DIV -->
-                        <div id="landing-gc-payment-guide pb-2" class="text-sm text-gray-600 bg-gray-100 p-3 rounded-lg border">
-                            <!-- Payment guide from settings will be loaded here -->
+        <form id="landing-gift-card-form" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left Column: User & Gift Card Info -->
+            <div class="space-y-6">
+                <!-- User Information Section -->
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-700 border-b pb-2 mb-4">Your Information</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="gc-buyer-name" class="block text-sm font-medium text-gray-600">Full Name</label>
+                            <input type="text" id="gc-buyer-name" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg" required>
                         </div>
-                        <!-- The button you just changed is right below this -->
-						<button type="submit" id="landing-gc-submit-btn" class="w-full bg-pink-600 text-white font-bold py-3 px-12 rounded-full hover:bg-pink-700">
-    Buy Gift Card Now
-</button>
+                        <div>
+                            <label for="gc-buyer-phone" class="block text-sm font-medium text-gray-600">Phone Number</label>
+                            <input type="tel" id="gc-buyer-phone" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg" required>
+                        </div>
+                        <div>
+                            <label for="gc-buyer-email" class="block text-sm font-medium text-gray-600">Email Address</label>
+                            <input type="email" id="gc-buyer-email" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg" required>
+                            <p class="text-xs text-gray-500 mt-1">We'll use this to create your client account. Your phone number will be your default password.</p>
+                        </div>
+                    </div>
                 </div>
-            </form>
-        </div>
+                <!-- Gift Card Information Section -->
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-700 border-b pb-2 mb-4">Gift Card Details</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-4">
+                            <input type="checkbox" id="gc-show-to" class="form-checkbox" checked> <label for="gc-show-to">Show 'To' Field</label>
+                            <input type="checkbox" id="gc-show-from" class="form-checkbox" checked> <label for="gc-show-from">Show 'From' Field</label>
+                        </div>
+                        <div id="gc-to-wrapper"><label for="gc-to" class="block text-sm font-medium text-gray-600">To (Recipient)</label><input type="text" id="gc-to" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg"></div>
+                        <div id="gc-from-wrapper"><label for="gc-from" class="block text-sm font-medium text-gray-600">From (Your Name)</label><input type="text" id="gc-from" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg"></div>
+                        <div>
+                            <label for="gc-amount" class="block text-sm font-medium text-gray-600">Amount Per Card ($)</label>
+                            <input type="number" id="gc-amount" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg" required min="1">
+                        </div>
+                        <div>
+                            <label for="gc-quantity" class="block text-sm font-medium text-gray-600">Quantity</label>
+                            <input type="number" id="gc-quantity" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg" required min="1" value="1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Card Designer & Summary -->
+            <div class="space-y-6">
+                <div>
+                     <h3 class="font-semibold text-gray-700 border-b pb-2">Card Style</h3>
+                    <div id="landing-gc-background-tabs" class="flex flex-wrap gap-2 mt-2 border-b"></div>
+                    <div id="landing-gc-background-options" class="grid grid-cols-3 gap-2 mt-2"></div>
+                </div>
+                <div class="flex items-center justify-center">
+                    <div id="landing-gc-preview-area">
+                        <div id="landing-gc-preview-card" class="w-[350px] h-[200px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white transition-all duration-300" style="background-image: url('https://images.unsplash.com/photo-1596048135132-911961bd4350?q=80&w=1887&auto=format&fit=crop');">
+                             <div class="flex justify-between items-start" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
+                                <img src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white" />
+                                <div class="text-right"><p class="font-parisienne text-3xl">Gift Card</p><p class="text-xs font-semibold tracking-wider">Nails Express</p></div>
+                            </div>
+                            <div class="text-center" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.7);"><p id="landing-gc-preview-amount" class="text-5xl font-bold">$0.00</p></div>
+                            <div class="text-xs" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
+                                <div class="flex justify-between font-semibold">
+                                    <span>FOR: <span id="landing-gc-preview-to" class="font-normal"></span></span>
+                                    <span>FROM: <span id="landing-gc-preview-from" class="font-normal"></span></span>
+                                </div>
+                                <p class="mt-2 text-center font-mono tracking-widest text-sm">CODE-PREVIEW</p>
+                                <p class="mt-1 text-center text-[10px] opacity-80">Expires in 6 months</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                 <div class="border-t pt-4 space-y-2">
+                    <div class="flex justify-between text-lg">
+                        <span>Total:</span>
+                        <span id="landing-gc-total-amount" class="font-bold text-xl">$0.00</span>
+                    </div>
+                    <button type="submit" id="landing-gc-submit-btn" class="w-full bg-pink-600 text-white font-bold py-3 px-12 rounded-full hover:bg-pink-700">
+                        Proceed to Payment
+                    </button>
+                </div>
+            </div>
+        </form>
     </div>
+</div>
 
     <div id="landing-booking-service-modal" class="modal hidden fixed inset-0 z-[70] flex items-center justify-center">
         <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>

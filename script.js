@@ -3219,31 +3219,93 @@ if (ideaToDelete) {
     const giftCardsTableBody = document.querySelector('#gift-cards-table tbody');
     const giftCardsTableAdminBody = document.querySelector('#gift-cards-table-admin tbody');
 
-    const renderGiftCardsAdminTable = (cards) => {
-        const tables = [giftCardsTableBody, giftCardsTableAdminBody];
-        tables.forEach(tbody => {
-            if (!tbody) return;
-            tbody.innerHTML = '';
-            if (cards.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-gray-400">No gift cards have been sold.</td></tr>`;
-                return;
-            }
-            cards.forEach(card => {
-                const row = tbody.insertRow();
-                const balance = card.balance !== undefined ? card.balance : card.amount;
-                let status = card.status;
-                let statusColor = 'text-gray-500';
-                if (balance > 0) {
-                    status = 'Active';
-                    statusColor = 'text-green-600';
-                } else {
-                    status = 'Depleted';
-                }
+// PASTE THIS ENTIRE CORRECTED BLOCK
 
-            row.innerHTML = `<td class="px-6 py-4">${new Date(card.createdAt.seconds * 1000).toLocaleDateString()}</td><td class="px-6 py-4 font-mono text-xs">${card.code}</td><td class="px-6 py-4">$${card.amount.toFixed(2)}</td><td class="px-6 py-4 font-bold">$${balance.toFixed(2)}</td><td class="px-6 py-4">${card.recipientName}<br><span class="text-xs text-gray-500">${card.recipientEmail || 'Physical Card'}</span></td><td class="px-6 py-4">${card.senderName}</td><td class="px-6 py-4 font-bold ${statusColor}">${status}</td><td class="px-6 py-4 text-center space-x-4"><button data-id="${card.id}" class="edit-gift-card-btn text-blue-500 hover:text-blue-700" title="Manage Card"><i class="fas fa-edit text-lg"></i></button><button data-id="${card.id}" class="delete-gift-card-btn text-red-500 hover:text-red-700" title="Delete Card"><i class="fas fa-trash-alt text-lg"></i></button></td>`;
-                });
+const renderGiftCardsAdminTable = (cards) => {
+    const tables = [giftCardsTableBody, giftCardsTableAdminBody];
+    tables.forEach(tbody => {
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        if (cards.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-gray-400">No gift cards have been sold.</td></tr>`;
+            return;
+        }
+        cards.forEach(card => {
+            const row = tbody.insertRow();
+            const balance = card.balance !== undefined ? card.balance : card.amount;
+
+            let statusText = card.status || 'Active';
+            let statusColor = 'bg-gray-200 text-gray-800';
+            switch (statusText) {
+                case 'Active': statusColor = 'bg-green-100 text-green-800'; break;
+                case 'Pending': statusColor = 'bg-yellow-100 text-yellow-800'; break;
+                case 'Depleted': statusColor = 'bg-red-100 text-red-800'; break;
+            }
+
+            let actionButtons = `<button data-id="${card.id}" class="edit-gift-card-btn text-blue-500 hover:text-blue-700" title="Manage Card"><i class="fas fa-edit text-lg"></i></button>
+                                 <button data-id="${card.id}" class="delete-gift-card-btn text-red-500 hover:text-red-700" title="Delete Card"><i class="fas fa-trash-alt text-lg"></i></button>`;
+
+            if (statusText === 'Pending') {
+                actionButtons = `<button data-id="${card.id}" class="activate-gift-card-btn text-green-500 hover:text-green-700" title="Activate Card"><i class="fas fa-check-circle text-lg"></i></button>` + actionButtons;
+            }
+
+            row.innerHTML = `<td class="px-6 py-4">${new Date(card.createdAt.seconds * 1000).toLocaleDateString()}</td>
+                             <td class="px-6 py-4 font-mono text-xs">${card.code}</td>
+                             <td class="px-6 py-4">$${card.amount.toFixed(2)}</td>
+                             <td class="px-6 py-4 font-bold">$${balance.toFixed(2)}</td>
+                             <td class="px-6 py-4">${card.recipientName}<br><span class="text-xs text-gray-500">${card.buyerInfo?.email || 'N/A'}</span></td>
+                             <td class="px-6 py-4">${card.senderName}</td>
+                             <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-semibold rounded-full ${statusColor}">${statusText}</span></td>
+                             <td class="px-6 py-4 text-center space-x-4">${actionButtons}</td>`;
         });
-    };
+    });
+};
+
+const setupGiftCardTableListener = (tableId) => {
+    const table = document.getElementById(tableId);
+    if (table) {
+        table.addEventListener('click', (e) => {
+            const editBtn = e.target.closest('.edit-gift-card-btn');
+            const deleteBtn = e.target.closest('.delete-gift-card-btn');
+            const activateBtn = e.target.closest('.activate-gift-card-btn');
+
+            if (activateBtn) {
+                const cardId = activateBtn.dataset.id;
+                const card = allGiftCards.find(c => c.id === cardId);
+                if (card) {
+                    showConfirmModal(`Activate gift card ${card.code} for $${card.amount.toFixed(2)}?`, async () => {
+                        try {
+                            await updateDoc(doc(db, "gift_cards", cardId), { status: 'Active' });
+                            alert('Gift card has been activated!');
+                        } catch (error) {
+                            console.error("Error activating gift card:", error);
+                            alert("Could not activate the gift card.");
+                        }
+                    }, 'Activate');
+                }
+            } else if (editBtn) {
+                const card = allGiftCards.find(c => c.id === editBtn.dataset.id);
+                if(card) openEditGiftCardModal(card);
+            } else if (deleteBtn) {
+                const cardId = deleteBtn.dataset.id;
+                const card = allGiftCards.find(c => c.id === cardId);
+                if (card) {
+                    showConfirmModal(`Are you sure you want to delete gift card ${card.code}? This action cannot be undone.`, async () => {
+                        try {
+                            await deleteDoc(doc(db, "gift_cards", cardId));
+                            alert(`Gift card ${card.code} has been deleted.`);
+                        } catch (error) {
+                            console.error("Error deleting gift card:", error);
+                            alert("Could not delete the gift card.");
+                        }
+                    });
+                }
+            }
+        });
+    }
+};
+
+// END OF BLOCK TO PASTE
 
     onSnapshot(query(collection(db, "gift_cards"), orderBy("createdAt", "desc")), (snapshot) => {
         allGiftCards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -3643,49 +3705,6 @@ if (ideaToDelete) {
     
     document.getElementById('close-edit-gift-card-modal-btn').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));
     editGiftCardModal.querySelector('.modal-overlay').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));
-const setupGiftCardTableListener = (tableId) => {
-        const table = document.getElementById(tableId);
-        if (table) {
-            table.addEventListener('click', (e) => {
-                const editBtn = e.target.closest('.edit-gift-card-btn');
-                const deleteBtn = e.target.closest('.delete-gift-card-btn');
-                const activateBtn = e.target.closest('.activate-gift-card-btn');
-
-                if (activateBtn) {
-                    const cardId = activateBtn.dataset.id;
-                    const card = allGiftCards.find(c => c.id === cardId);
-                    if (card) {
-                        showConfirmModal(`Activate gift card ${card.code} for $${card.amount.toFixed(2)}?`, async () => {
-                            try {
-                                await updateDoc(doc(db, "gift_cards", cardId), { status: 'Active' });
-                                alert('Gift card has been activated!');
-                            } catch (error) {
-                                console.error("Error activating gift card:", error);
-                                alert("Could not activate the gift card.");
-                            }
-                        }, 'Activate');
-                    }
-                } else if (editBtn) {
-                    const card = allGiftCards.find(c => c.id === editBtn.dataset.id);
-                    if (card) openEditGiftCardModal(card);
-                } else if (deleteBtn) {
-                    const cardId = deleteBtn.dataset.id;
-                    const card = allGiftCards.find(c => c.id === cardId);
-                    if (card) {
-                        showConfirmModal(`Are you sure you want to delete gift card ${card.code}? This action cannot be undone.`, async () => {
-                            try {
-                                await deleteDoc(doc(db, "gift_cards", cardId));
-                                alert(`Gift card ${card.code} has been deleted.`);
-                            } catch (error) {
-                                console.error("Error deleting gift card:", error);
-                                alert("Could not delete the gift card.");
-                            }
-                        });
-                    }
-                }
-            });
-        }
-    };
 setupGiftCardTableListener('gift-cards-table');
 setupGiftCardTableListener('gift-cards-table-admin');
     document.getElementById('close-client-profile-modal-btn').addEventListener('click', () => clientProfileModal.classList.add('hidden'));

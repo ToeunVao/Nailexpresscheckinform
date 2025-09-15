@@ -1914,7 +1914,13 @@ onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot
         renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, currentSalonEarningDateFilter, currentSalonEarningRangeFilter));
         updateDashboard();
     });
-
+// PASTE THE FUNCTION HERE
+const populateExpenseMonthFilter = () => {
+    const months = [...new Set(allExpenses.map(exp => { const d = new Date(exp.date.seconds * 1000); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }))].sort().reverse();
+    expenseMonthFilter.innerHTML = '<option value="all">All Months</option>';
+    months.forEach(monthYear => { const [year, month] = monthYear.split('-'); expenseMonthFilter.innerHTML += `<option value="${monthYear}">${new Date(year, month - 1, 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</option>`; });
+    expenseMonthFilter.value = currentExpenseMonthFilter || 'all';
+};
     onSnapshot(query(collection(db, "expenses"), orderBy("date", "desc")), (snapshot) => {
         allExpenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         populateExpenseMonthFilter();
@@ -2271,16 +2277,31 @@ const renderAllBookingsList = () => {
     document.getElementById('today-btn').addEventListener('click', () => { document.getElementById('month-view').classList.add('hidden'); document.getElementById('month-nav').classList.add('hidden'); document.getElementById('list-view').classList.remove('hidden'); document.getElementById('today-btn').classList.add('hidden'); document.getElementById('month-view-btn').classList.remove('hidden'); renderAllBookingsList(); });
     document.getElementById('month-view-btn').addEventListener('click', () => { document.getElementById('list-view').classList.add('hidden'); document.getElementById('month-view-btn').classList.add('hidden'); document.getElementById('month-view').classList.remove('hidden'); document.getElementById('month-nav').classList.remove('hidden'); document.getElementById('today-btn').classList.remove('hidden'); });
 
-    document.getElementById('today-bookings-table').addEventListener('click', async (e) => {
-        if (e.target.classList.contains('checkin-today-btn')) {
-            const appointment = allAppointments.find(a => a.id === e.target.dataset.id);
-            if (!appointment) return;
-            try {
-                await addDoc(collection(db, "active_queue"), { name: appointment.name, phone: appointment.phone, people: appointment.people || 1, bookingType: 'Booked - Calendar', services: Array.isArray(appointment.services) ? appointment.services : [appointment.services], technician: appointment.technician, notes: appointment.notes || '', checkInTimestamp: serverTimestamp(), status: 'waiting' });
-                await deleteDoc(doc(db, "appointments", e.target.dataset.id));
-            } catch (err) { console.error("Error checking in from today's view:", err); alert("Could not check in this client."); }
+// ADD THIS NEW BLOCK
+document.getElementById('list-view').addEventListener('click', async (e) => {
+    const checkinBtn = e.target.closest('.checkin-today-btn');
+    if (checkinBtn) {
+        const appointment = allAppointments.find(a => a.id === checkinBtn.dataset.id);
+        if (!appointment) return;
+        try {
+            await addDoc(collection(db, "active_queue"), {
+                name: appointment.name,
+                phone: appointment.phone,
+                people: appointment.people || 1,
+                bookingType: 'Booked - Calendar',
+                services: Array.isArray(appointment.services) ? appointment.services : [appointment.services],
+                technician: appointment.technician,
+                notes: appointment.notes || '',
+                checkInTimestamp: serverTimestamp(),
+                status: 'waiting'
+            });
+            await deleteDoc(doc(db, "appointments", checkinBtn.dataset.id));
+        } catch (err) {
+            console.error("Error checking in from today's view:", err);
+            alert("Could not check in this client.");
         }
-    });
+    }
+});
 
     const clockEl = document.getElementById('live-clock'), dateEl = document.getElementById('live-date'), copyrightYear = document.getElementById('copyright-year');
     const updateTime = () => { const now = new Date(); clockEl.textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }); dateEl.textContent = now.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); copyrightYear.textContent = now.getFullYear(); };
@@ -2796,13 +2817,6 @@ onSnapshot(collection(db, "users"), (snapshot) => {
         populate(categorySelect, allExpenseCategories);
         populate(supplierSelect, allSuppliers);
         populate(paymentSelect, allPaymentAccounts);
-    };
-
-    const populateExpenseMonthFilter = () => {
-        const months = [...new Set(allExpenses.map(exp => { const d = new Date(exp.date.seconds * 1000); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }))].sort().reverse();
-        expenseMonthFilter.innerHTML = '<option value="all">All Months</option>';
-        months.forEach(monthYear => { const [year, month] = monthYear.split('-'); expenseMonthFilter.innerHTML += `<option value="${monthYear}">${new Date(year, month - 1, 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</option>`; });
-        expenseMonthFilter.value = currentExpenseMonthFilter || 'all';
     };
 
     const renderExpenses = () => {

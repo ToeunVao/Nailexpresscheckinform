@@ -1,3 +1,4 @@
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, query, doc, getDoc, deleteDoc, serverTimestamp, where, getDocs, orderBy, Timestamp, updateDoc, writeBatch, setDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -58,13 +59,13 @@ let confirmCallback = null;
 let initialAppointmentsLoaded = false;
 let initialInventoryLoaded = false;
 
-// Filter State Variables
+// Filter State Variables (declared globally)
 let currentTechFilterCalendar = 'All', currentTechFilterActive = 'All', currentTechFilterProcessing = 'All', currentTechFilterFinished = 'All', currentFinishedDateFilter = '',
     currentEarningTechFilter = 'All', currentEarningDateFilter = '', currentEarningRangeFilter = 'daily',
     currentDashboardEarningTechFilter = 'All', currentDashboardEarningDateFilter = '',
     currentDashboardRangeFilter = String(new Date().getMonth()),
     currentStaffDashboardDateFilter = '', currentStaffDashboardRangeFilter = String(new Date().getMonth()),
-    currentSalonEarningDateFilter = '', currentSalonEarningRangeFilter = String(new Date().getMonth()), 
+    currentSalonEarningDateFilter = '', currentSalonEarningRangeFilter = String(new Date().getMonth()),
     currentExpenseMonthFilter = '';
 
 
@@ -97,7 +98,8 @@ const colorPalette = [
     { card: 'bg-orange-100', text: 'text-orange-800', bg: 'rgba(255, 159, 64, 0.5)', border: 'rgba(255, 159, 64, 1)' }
 ];
 
-// --- Global Helper Functions ---
+// --- Global Helper & Rendering Functions (Defined before they are called) ---
+
 const getLocalDateString = (date = new Date()) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -125,36 +127,22 @@ async function sendBookingNotificationEmail(appointmentData) {
 
         const recipients = [...new Set([...adminEmails, technicianEmail].filter(Boolean))];
 
-        if (recipients.length === 0) {
-            console.log("No recipients found for booking notification email.");
-            return;
-        }
+        if (recipients.length === 0) return;
 
         const appointmentTime = appointmentData.appointmentTimestamp.toDate().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
         const subject = `New Booking: ${appointmentData.name} @ ${appointmentTime}`;
         const servicesList = Array.isArray(appointmentData.services) ? appointmentData.services.join(', ') : appointmentData.services;
-        
         const html = `<div style="font-family: Arial, sans-serif; color: #333;"><h2 style="color: #d63384;">New Appointment Booked</h2><p>A new appointment has been scheduled for <strong>${appointmentData.name}</strong>.</p><table style="width: 100%; border-collapse: collapse; margin-top: 15px;"><tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px; width: 120px;"><strong>Client:</strong></td><td style="padding: 8px;">${appointmentData.name}</td></tr><tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px;"><strong>Phone:</strong></td><td style="padding: 8px;">${appointmentData.phone || 'N/A'}</td></tr><tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px;"><strong>Time:</strong></td><td style="padding: 8px;">${appointmentTime}</td></tr><tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px;"><strong>Technician:</strong></td><td style="padding: 8px;">${appointmentData.technician}</td></tr><tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px;"><strong>Services:</strong></td><td style="padding: 8px;">${servicesList}</td></tr><tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px;"><strong>Notes:</strong></td><td style="padding: 8px;">${appointmentData.notes || 'None'}</td></tr></table></div>`;
-
-        const mailPromises = recipients.map(email => {
-            return addDoc(collection(db, "mail"), {
-                to: email,
-                message: { subject: subject, html: html },
-            });
-        });
-
+        const mailPromises = recipients.map(email => addDoc(collection(db, "mail"), { to: email, message: { subject, html } }));
         await Promise.all(mailPromises);
-        console.log("Booking notification emails queued for:", recipients.join(', '));
-
     } catch (error) {
         console.error("Error queuing booking notification email:", error);
     }
 }
-
+// --- Booking Validation Logic ---
 function isBookingTimeValid(bookingDate) {
-    const dayOfWeek = bookingDate.getDay(); 
+    const dayOfWeek = bookingDate.getDay();
     const dayName = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][dayOfWeek];
-
     const dayHours = salonHours[dayName];
 
     if (!dayHours || !dayHours.isOpen) {
@@ -162,28 +150,26 @@ function isBookingTimeValid(bookingDate) {
     }
 
     const bookingTime = bookingDate.getHours() * 60 + bookingDate.getMinutes();
-    
     const [openHour, openMinute] = dayHours.open.split(':').map(Number);
     const openTime = openHour * 60 + openMinute;
-    
     const [closeHour, closeMinute] = dayHours.close.split(':').map(Number);
     const closeTime = closeHour * 60 + closeMinute;
 
     if (bookingTime < openTime || bookingTime > closeTime) {
-         const formatTime = (timeStr) => new Date(`1970-01-01T${timeStr}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        const formatTime = (timeStr) => new Date(`1970-01-01T${timeStr}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
         return { valid: false, message: `Sorry, our hours on ${dayName.charAt(0).toUpperCase() + dayName.slice(1)}s are from ${formatTime(dayHours.open)} to ${formatTime(dayHours.close)}.` };
     }
-
     return { valid: true };
 }
 
-
+// --- Global Modal Logic ---
 const openPolicyModal = () => { policyModal.classList.add('flex'); policyModal.classList.remove('hidden'); };
 const closePolicyModal = () => { policyModal.classList.add('hidden'); policyModal.classList.remove('flex'); };
 document.addEventListener('click', (e) => { if (e.target.closest('.view-policy-btn')) { openPolicyModal(); } });
 document.getElementById('policy-close-btn').addEventListener('click', closePolicyModal);
 document.querySelector('#policy-modal .policy-modal-overlay').addEventListener('click', closePolicyModal);
 
+// --- Shared Appointment Modal Logic ---
 const openAddAppointmentModal = (date, clientData = null) => {
     addAppointmentForm.reset();
     const now = new Date();
@@ -260,8 +246,6 @@ addAppointmentForm.addEventListener('submit', async (e) => {
     }
 });
 
-
-
 // --- Primary Authentication Router ---
 onAuthStateChanged(auth, async (user) => {
     try {
@@ -331,7 +315,6 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 
-// --- LANDING PAGE SCRIPT ---
 function initLandingPage() {
     const signupLoginModal = document.getElementById('signup-login-modal');
     const userIcon = document.getElementById('user-icon');
@@ -778,6 +761,8 @@ function initLandingPage() {
     });
 }
 
+
+
 // --- CLIENT DASHBOARD SCRIPT ---
 function initClientDashboard(clientId, clientData) {
     document.getElementById('client-welcome-name').textContent = `Welcome back, ${clientData.name}!`;
@@ -902,11 +887,10 @@ function initClientDashboard(clientId, clientData) {
     setupClientTabs();
 }
 
-// --- MAIN CHECK-IN APP SCRIPT ---
-// (All the functions that were here have been moved to the global scope)
+
+// --- MAIN APP SCRIPT ---
 
 function initMainApp(userRole, userName) {
-    
     // --- START: MOBILE MENU LOGIC ---
     const mobileMenuBtn = document.getElementById('mobile-menu-btn');
     const mobileSidebar = document.getElementById('mobile-sidebar');
@@ -954,15 +938,9 @@ function initMainApp(userRole, userName) {
     `;
     mobileNavLinksContainer.insertAdjacentHTML('beforeend', mobileLogoutButtonHTML);
     
-    if (mobileMenuBtn) {
-        mobileMenuBtn.addEventListener('click', openSidebar);
-    }
-    if (mobileSidebarCloseBtn) {
-        mobileSidebarCloseBtn.addEventListener('click', closeSidebar);
-    }
-    if (mobileSidebarOverlay) {
-        mobileSidebarOverlay.addEventListener('click', closeSidebar);
-    }
+    if (mobileMenuBtn) mobileMenuBtn.addEventListener('click', openSidebar);
+    if (mobileSidebarCloseBtn) mobileSidebarCloseBtn.addEventListener('click', closeSidebar);
+    if (mobileSidebarOverlay) mobileSidebarOverlay.addEventListener('click', closeSidebar);
     
     if (mobileNavLinksContainer) {
         mobileNavLinksContainer.addEventListener('click', (e) => {
@@ -989,6 +967,7 @@ function initMainApp(userRole, userName) {
         appSubtitle.textContent = `Welcome, ${userName}!`;
     }
 
+    // Define all constants for elements within the app
     const dashboardContent = document.getElementById('dashboard-content');
     const mainAppContainer = document.getElementById('main-app-container');
     const logoLink = document.getElementById('logo-link');
@@ -1005,12 +984,14 @@ function initMainApp(userRole, userName) {
     if (userRole === 'admin') {
         adminDashboardView.classList.remove('hidden');
         staffDashboardView.classList.add('hidden');
+        setupAdminFeatures();
     } else {
         adminDashboardView.classList.add('hidden');
         staffDashboardView.classList.remove('hidden');
+        setupStaffFeatures();
     }
     
-    // --- DATABASE LISTENERS (MOVED HERE) ---
+    // --- SETUP ALL DATABASE LISTENERS (onSnapshot) HERE ---
     onSnapshot(query(collection(db, "active_queue"), orderBy("checkInTimestamp", "asc")), (snapshot) => {
         allActiveClients = snapshot.docs.map(doc => ({ id: doc.id, checkInTime: doc.data().checkInTimestamp ? new Date(doc.data().checkInTimestamp.seconds * 1000).toLocaleString() : 'Pending...', services: (doc.data().services || []).join(', '), ...doc.data() }));
         const waitingClients = allActiveClients.filter(c => c.status === 'waiting');
@@ -1021,7 +1002,166 @@ function initMainApp(userRole, userName) {
         renderProcessingClients(applyClientFilters(processingClients, document.getElementById('search-processing').value.toLowerCase(), currentTechFilterProcessing, null));
         updateNavCounts();
     });
+
+    onSnapshot(query(collection(db, "finished_clients"), orderBy("checkOutTimestamp", "desc")), (snapshot) => {
+        allFinishedClients = snapshot.docs.map(doc => ({ id: doc.id, checkInTime: doc.data().checkInTimestamp ? new Date(doc.data().checkInTimestamp.seconds * 1000).toLocaleString() : 'N/A', checkOutTimestamp: doc.data().checkOutTimestamp, services: (doc.data().services || []).join(', '), ...doc.data() }));
+        document.getElementById('finished-count').textContent = allFinishedClients.length;
+        renderFinishedClients(applyClientFilters(allFinishedClients, document.getElementById('search-finished').value.toLowerCase(), currentTechFilterFinished, currentFinishedDateFilter));
+        if (currentUserRole === 'admin') {
+            renderClientsList();
+        }
+        const clientList = document.getElementById('client-names-list'), checkinClientList = document.getElementById('checkin-client-names');
+        const appointmentPhoneList = document.getElementById('appointment-client-phones'), checkinPhoneList = document.getElementById('checkin-client-phones');
+        const uniqueNames = [...new Set(allFinishedClients.map(c => c.name))];
+        const uniquePhones = [...new Set(allFinishedClients.filter(c => c.phone && c.phone !== 'N/A').map(c => c.phone))];
+        const nameOptionsHtml = uniqueNames.map(name => `<option value="${name}"></option>`).join('');
+        const phoneOptionsHtml = uniquePhones.map(phone => `<option value="${phone}"></option>`).join('');
+        if(clientList) clientList.innerHTML = nameOptionsHtml;
+        if(checkinClientList) checkinClientList.innerHTML = nameOptionsHtml;
+        if(appointmentPhoneList) appointmentPhoneList.innerHTML = phoneOptionsHtml;
+        if(checkinPhoneList) checkinPhoneList.innerHTML = phoneOptionsHtml;
+        updateDashboard();
+    });
+
+     onSnapshot(query(collection(db, "appointments"), orderBy("appointmentTimestamp", "asc")), (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+            if (change.type === "added" && initialAppointmentsLoaded) {
+                const data = change.doc.data();
+                if (data.appointmentTimestamp.seconds > appLoadTimestamp.seconds) {
+                    const apptTime = new Date(data.appointmentTimestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const serviceString = Array.isArray(data.services) ? data.services[0] : data.services;
+                    addNotification('booking', `New booking from ${data.name} for ${serviceString} at ${apptTime}`);
+                }
+            }
+        });
+        
+        allAppointments = snapshot.docs.map(doc => ({ id: doc.id, appointmentTime: doc.data().appointmentTimestamp ? new Date(doc.data().appointmentTimestamp.seconds * 1000).toLocaleString() : 'N/A', ...doc.data() }));
+        renderCalendar(new Date().getFullYear(), new Date().getMonth(), currentTechFilterCalendar);
+        renderAllBookingsList();
+        updateDashboard();
+        updateNavCounts();
+
+        if (!initialAppointmentsLoaded) {
+            initialAppointmentsLoaded = true;
+        }
+    });
+
+    onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot) => {
+        allEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (currentUserRole === 'admin') {
+            const datesToUpdate = new Set();
+            snapshot.docChanges().forEach((change) => {
+                const dateStr = getLocalDateString(change.doc.data().date.toDate());
+                datesToUpdate.add(dateStr);
+            });
+            datesToUpdate.forEach(dateStr => updateSalonEarningsForDate(dateStr));
+        }
+        renderAllStaffEarnings();
+        updateDashboard();
+    });
+
+    onSnapshot(query(collection(db, "salon_earnings"), orderBy("date", "desc")), (snapshot) => {
+        allSalonEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (currentUserRole === 'admin') {
+            renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, currentSalonEarningDateFilter, currentSalonEarningRangeFilter));
+        }
+        updateDashboard();
+    });
+
+    onSnapshot(query(collection(db, "expenses"), orderBy("date", "desc")), (snapshot) => {
+        allExpenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (currentUserRole === 'admin') {
+            populateExpenseMonthFilter();
+            renderExpenses();
+        }
+    });
+
+    onSnapshot(query(collection(db, "clients"), orderBy("name")), (snapshot) => {
+        allClients = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (currentUserRole === 'admin') {
+            renderClientsList();
+        }
+    });
     
+    onSnapshot(query(collection(db, "inventory"), orderBy("name")), (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+            if ((change.type === "added" || change.type === "modified") && initialInventoryLoaded) {
+                const product = { id: change.doc.id, ...change.doc.data() };
+                if (currentUserRole === 'admin' && product.quantity <= product.lowStockAlert) {
+                     if (!notifications.some(n => n.itemId === product.id)) {
+                        addNotification('stock', `${product.name} is low in stock (${product.quantity} left).`, product.id);
+                    }
+                } else {
+                    const existingNotifIndex = notifications.findIndex(n => n.itemId === product.id);
+                    if (existingNotifIndex > -1) {
+                        notifications.splice(existingNotifIndex, 1);
+                        updateNotificationDisplay();
+                    }
+                }
+            }
+        });
+        initialInventoryLoaded = true;
+        allInventory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (currentUserRole === 'admin') {
+            renderInventory();
+        }
+    });
+    
+    onSnapshot(query(collection(db, "gift_cards"), orderBy("createdAt", "desc")), (snapshot) => {
+        allGiftCards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (currentUserRole === 'admin') {
+            renderGiftCardsAdminTable(allGiftCards);
+        }
+    });
+    
+    onSnapshot(query(collection(db, "promotions"), orderBy("startDate", "desc")), (snapshot) => {
+        allPromotions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (currentUserRole === 'admin') {
+            renderPromotionsAdminTable(allPromotions);
+        }
+    });
+    
+    onSnapshot(query(collection(db, "inventory_usage"), orderBy("timestamp", "desc")), (snapshot) => {
+        allInventoryUsage = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (currentUserRole === 'admin') {
+            renderInventoryReport();
+        }
+    });
+
+    onSnapshot(query(collection(db, "nail_ideas"), orderBy("createdAt", "desc")), (snapshot) => {
+        allNailIdeas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (currentUserRole === 'admin') {
+            const shapesDatalist = document.getElementById('nail-shapes-list');
+            if (shapesDatalist) {
+                const uniqueShapes = [...new Set(allNailIdeas.map(idea => idea.shape).filter(Boolean))];
+                shapesDatalist.innerHTML = uniqueShapes.map(shape => `<option value="${shape}"></option>`).join('');
+            }
+            const shapes = [...new Set(allNailIdeas.map(i => i.shape).filter(Boolean))];
+            const categories = [...new Set(allNailIdeas.flatMap(i => i.categories).filter(Boolean))];
+            const shapeFilter = document.getElementById('nail-idea-shape-filter');
+            const categoryFilter = document.getElementById('nail-idea-category-filter');
+            if (shapeFilter) shapeFilter.innerHTML = '<option value="">All Shapes</option>' + shapes.map(s => `<option value="${s}">${s}</option>`).join('');
+            if (categoryFilter) categoryFilter.innerHTML = '<option value="">All Categories</option>' + categories.map(c => `<option value="${c}">${c}</option>`).join('');
+            renderNailIdeasAdminTable(allNailIdeas);
+        }
+        applyNailIdeaFilters();
+    });
+    
+    onSnapshot(collection(db, "users"), (snapshot) => {
+        const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        techniciansAndStaff = users.filter(user => user.role === 'technician' || user.role === 'staff');
+        technicians = users.filter(user => user.role === 'technician');
+        technicianColorMap = {};
+        technicians.forEach((tech, index) => {
+            technicianColorMap[tech.name] = colorPalette[index % colorPalette.length];
+        });
+        if (currentUserRole === 'admin') {
+            renderUsers(users);
+            updatePublicTechnicianList(users);
+        }
+        populateTechnicianFilters();
+    });
+
     // --- SETUP EVENT LISTENERS & INITIAL RENDERS ---
     
     logoLink.addEventListener('click', () => {
@@ -1055,15 +1195,9 @@ function initMainApp(userRole, userName) {
     });
 
     loadAndRenderServices();
-    
-    if (userRole === 'admin') {
-        setupAdminFeatures();
-    } else {
-        setupStaffFeatures();
-    }
+    initializeGiftCardDesigner();
 
     const todayString = getLocalDateString();
-    
     if (document.getElementById('finished-date-filter')) {
         document.getElementById('finished-date-filter').value = todayString;
         currentFinishedDateFilter = todayString;

@@ -32,7 +32,7 @@ let anonymousUserId = null;
 let bookingSettings = { minBookingHours: 2 };
 let loginSecuritySettings = { maxAttempts: 5, lockoutMinutes: 15 };
 let salonHours = {}; // To store salon operating hours
-let salonRevenueChart, myEarningsChart;
+let salonRevenueChart, myEarningsChart, staffEarningsChart;
 let notifications = [];
 let currentUserRole = null;
 let currentUserName = null; // To store the logged-in user's name
@@ -343,6 +343,49 @@ function initLandingPage() {
         loginFormContainer.classList.add('hidden');
     });
 
+    const openGiftCardModal = () => { giftCardModal.classList.remove('hidden'); giftCardModal.classList.add('flex'); };
+    const closeGiftCardModal = () => { giftCardModal.classList.add('hidden'); giftCardModal.classList.remove('flex'); };
+    buyGiftCardBtn.addEventListener('click', openGiftCardModal);
+    closeGiftCardModalBtn.addEventListener('click', closeGiftCardModal);
+    giftCardModal.querySelector('.modal-overlay').addEventListener('click', closeGiftCardModal);
+    
+    const giftCardAmountSelect = document.getElementById('gift-card-amount');
+    const customAmountInput = document.getElementById('gift-card-custom-amount');
+    giftCardAmountSelect.addEventListener('change', () => {
+        if (giftCardAmountSelect.value === 'custom') {
+            customAmountInput.classList.remove('hidden');
+            customAmountInput.required = true;
+        } else {
+            customAmountInput.classList.add('hidden');
+            customAmountInput.required = false;
+        }
+    });
+
+    giftCardForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const amount = giftCardAmountSelect.value === 'custom' 
+            ? parseFloat(customAmountInput.value) 
+            : parseInt(giftCardAmountSelect.value, 10);
+
+        if (isNaN(amount) || amount <= 0) {
+            alert('Please enter a valid amount.');
+            return;
+        }
+
+        const giftCardData = { amount: amount, balance: amount, history: [], recipientName: document.getElementById('gift-card-recipient-name').value, recipientEmail: document.getElementById('gift-card-recipient-email').value, senderName: document.getElementById('gift-card-sender-name').value, message: document.getElementById('gift-card-message').value, code: `GC-${Date.now()}${[...Array(4)].map(() => Math.floor(Math.random() * 10)).join('')}`, status: 'Active', createdAt: serverTimestamp() };
+
+        try {
+            alert('Redirecting to a secure payment page...');
+            await addDoc(collection(db, "gift_cards"), giftCardData);
+            alert(`Success! Gift card for $${amount} has been sent to ${giftCardData.recipientEmail}.`);
+            giftCardForm.reset();
+            closeGiftCardModal();
+
+        } catch (error) {
+            console.error("Error purchasing gift card:", error);
+            alert("Could not process the gift card purchase. Please try again.");
+        }
+    });
 
     landingLoginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -717,10 +760,148 @@ function initClientDashboard(clientId, clientData) {
     });
 
     setupClientTabs();
-}
+    // ADD THIS LINE
+enableSwipeableTabs('#client-dashboard-content > main', '#client-dashboard-tabs');
 
+}
+// ADD THIS ENTIRE NEW FUNCTION
+const enableSwipeableTabs = (contentContainerSelector, tabsListSelector) => {
+    const contentContainer = document.querySelector(contentContainerSelector);
+    const tabsList = document.querySelector(tabsListSelector);
+    if (!contentContainer || !tabsList) return;
+
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    contentContainer.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    contentContainer.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+    });
+
+    function handleSwipe() {
+        const swipeThreshold = 50; // Minimum pixels for a swipe
+        const swipeDistance = touchEndX - touchStartX;
+
+        if (Math.abs(swipeDistance) < swipeThreshold) {
+            return; // Not a long enough swipe
+        }
+
+        const tabButtons = Array.from(tabsList.querySelectorAll('button.tab-btn, button.sub-tab-btn'));
+        const currentIndex = tabButtons.findIndex(btn => btn.classList.contains('active'));
+        
+        if (currentIndex === -1) return;
+
+        if (swipeDistance < 0) { // Swiped left
+            const nextIndex = currentIndex + 1;
+            if (nextIndex < tabButtons.length) {
+                tabButtons[nextIndex].click();
+            }
+        } else { // Swiped right
+            const prevIndex = currentIndex - 1;
+            if (prevIndex >= 0) {
+                tabButtons[prevIndex].click();
+            }
+        }
+    }
+};
 // --- MAIN CHECK-IN APP SCRIPT ---
 function initMainApp(userRole, userName) {
+    // --- START: MOBILE MENU LOGIC (REPLACE YOUR OLD BLOCK WITH THIS) ---
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const mobileSidebar = document.getElementById('mobile-sidebar');
+    const mobileSidebarCloseBtn = document.getElementById('mobile-sidebar-close-btn');
+    const mobileSidebarOverlay = document.getElementById('mobile-sidebar-overlay');
+    const mobileNavLinksContainer = document.getElementById('mobile-nav-links');
+    const topNavContainer = document.getElementById('top-nav');
+
+    // Function to open the sidebar
+    const openSidebar = () => {
+        mobileSidebar.classList.remove('translate-x-full');
+        mobileSidebarOverlay.classList.remove('hidden');
+    };
+
+    // Function to close the sidebar
+    const closeSidebar = () => {
+        mobileSidebar.classList.add('translate-x-full');
+        mobileSidebarOverlay.classList.add('hidden');
+    };
+    
+    // Build and Populate Navigation Links
+    let navHTML = `
+        <button class="top-nav-btn relative" data-target="check-in">
+            Check-in
+            <span id="check-in-nav-count" class="absolute -top-1 -right-1 bg-pink-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center hidden">0</span>
+        </button>
+        <button class="top-nav-btn relative" data-target="booking">
+            Booking
+            <span id="booking-nav-count" class="absolute -top-1 -right-1 bg-blue-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center hidden">0</span>
+        </button>
+        <button class="top-nav-btn" data-target="nails-idea">Nails Idea</button>
+    `;
+
+    // Add admin-only links if the user is an admin
+    if (userRole === 'admin') {
+        navHTML += `
+            <button class="top-nav-btn" data-target="report">Report</button>
+            <button class="top-nav-btn" data-target="setting">Setting</button>
+        `;
+    }
+    
+    // Populate both the desktop and mobile navigation containers
+    topNavContainer.innerHTML = navHTML;
+    mobileNavLinksContainer.innerHTML = navHTML;
+   // --- ADD THIS NEW BLOCK TO ADD THE LOGOUT BUTTON ---
+    const mobileLogoutButtonHTML = `
+        <button id="mobile-logout-btn" class="top-nav-btn mt-4 w-full text-left bg-pink-100 text-pink-700">
+            <i class="fas fa-sign-out-alt mr-2"></i>Logout
+        </button>
+    `;
+    mobileNavLinksContainer.insertAdjacentHTML('beforeend', mobileLogoutButtonHTML);
+    // --- END OF NEW BLOCK ---
+    // Add event listeners
+    if (mobileMenuBtn) {
+        mobileMenuBtn.addEventListener('click', openSidebar);
+    }
+    if (mobileSidebarCloseBtn) {
+        mobileSidebarCloseBtn.addEventListener('click', closeSidebar);
+    }
+    if (mobileSidebarOverlay) {
+        mobileSidebarOverlay.addEventListener('click', closeSidebar);
+    }
+    
+    // Add listener to close sidebar when a nav link is clicked
+    if (mobileNavLinksContainer) {
+        mobileNavLinksContainer.addEventListener('click', (e) => {
+            if (e.target.closest('.top-nav-btn')) {
+                // We need to find the corresponding desktop button to click it
+                const target = e.target.closest('.top-nav-btn').dataset.target;
+                const desktopButton = topNavContainer.querySelector(`[data-target="${target}"]`);
+                if (desktopButton) {
+                    desktopButton.click();
+                }
+                closeSidebar();
+            }
+        });
+    }
+     // --- ADD THIS NEW BLOCK TO MAKE THE LOGOUT BUTTON WORK ---
+    const mobileLogoutBtn = document.getElementById('mobile-logout-btn');
+    if (mobileLogoutBtn) {
+        mobileLogoutBtn.addEventListener('click', () => {
+            signOut(auth);
+            closeSidebar(); // Also close the sidebar on logout
+        });
+    }
+    // --- END: MOBILE MENU LOGIC ---
+    // --- END OF NEW BLOCK ---
+     // Personalize the header subtitle
+    const appSubtitle = document.getElementById('app-subtitle');
+    if (appSubtitle) {
+        appSubtitle.textContent = `Welcome, ${userName}!`;
+    }
     const dashboardContent = document.getElementById('dashboard-content');
     const mainAppContainer = document.getElementById('main-app-container');
     const logoLink = document.getElementById('logo-link');
@@ -807,23 +988,53 @@ function initMainApp(userRole, userName) {
         topNav.querySelectorAll('.top-nav-btn').forEach(btn => btn.classList.remove('active'));
     });
 
-    topNav.addEventListener('click', (e) => {
-        const button = e.target.closest('.top-nav-btn');
-        if (!button) return;
-        const target = button.dataset.target;
-        topNav.querySelectorAll('.top-nav-btn').forEach(btn => btn.classList.remove('active'));
-        button.classList.add('active');
-        dashboardContent.classList.add('hidden');
-        mainAppContainer.classList.remove('hidden');
-        allMainSections.forEach(section => section.classList.add('hidden'));
-        switch (target) {
-            case 'check-in': document.getElementById('check-in-section').classList.remove('hidden'); document.getElementById('check-in-tab').click(); break;
-            case 'booking': document.getElementById('calendar-content').classList.remove('hidden'); break;
-            case 'nails-idea': document.getElementById('nails-idea-content').classList.remove('hidden'); break;
-            case 'report': document.getElementById('reports-content').classList.remove('hidden'); document.getElementById('salon-earning-report-tab').click(); break;
-            case 'setting': document.getElementById('admin-content').classList.remove('hidden'); document.getElementById('user-management-tab').click(); break;
-        }
+// NEW Reusable Navigation Function
+const navigateToSection = (target) => {
+    // De-activate all buttons in both desktop and mobile nav
+    document.querySelectorAll('#top-nav .top-nav-btn, #mobile-nav-links .top-nav-btn').forEach(btn => {
+        btn.classList.remove('active');
     });
+
+    // Activate the correct buttons in both navs
+    const desktopBtn = topNavContainer.querySelector(`[data-target="${target}"]`);
+    if (desktopBtn) desktopBtn.classList.add('active');
+    const mobileBtn = mobileNavLinksContainer.querySelector(`[data-target="${target}"]`);
+    if (mobileBtn) mobileBtn.classList.add('active');
+
+    // Switch the main content view
+    dashboardContent.classList.add('hidden');
+    mainAppContainer.classList.remove('hidden');
+    allMainSections.forEach(section => section.classList.add('hidden'));
+
+    switch (target) {
+        case 'check-in':
+            document.getElementById('check-in-section').classList.remove('hidden');
+            document.getElementById('check-in-tab').click();
+            break;
+        case 'booking':
+            document.getElementById('calendar-content').classList.remove('hidden');
+            break;
+        case 'nails-idea':
+            document.getElementById('nails-idea-content').classList.remove('hidden');
+            break;
+        case 'report':
+            document.getElementById('reports-content').classList.remove('hidden');
+            document.getElementById('salon-earning-report-tab').click();
+            break;
+        case 'setting':
+            document.getElementById('admin-content').classList.remove('hidden');
+            document.getElementById('user-management-tab').click();
+            break;
+    }
+};
+
+// NEW Simplified Desktop Nav Listener
+topNav.addEventListener('click', (e) => {
+    const button = e.target.closest('.top-nav-btn');
+    if (button) {
+        navigateToSection(button.dataset.target);
+    }
+});
     
     notificationBell.addEventListener('click', () => {
         notificationDropdown.classList.toggle('hidden');
@@ -832,6 +1043,8 @@ function initMainApp(userRole, userName) {
             setTimeout(updateNotificationDisplay, 300);
         }
     });
+
+
 
     const checkInForm = document.getElementById('check-in-form');
     const peopleCountSelect = document.getElementById('people-count');
@@ -880,11 +1093,16 @@ function initMainApp(userRole, userName) {
     let currentYear = new Date().getFullYear();
 
     let currentTechFilterCalendar = 'All', currentTechFilterActive = 'All', currentTechFilterProcessing = 'All', currentTechFilterFinished = 'All', currentFinishedDateFilter = '';
-    let currentEarningTechFilter = 'All', currentEarningDateFilter = '', currentEarningRangeFilter = 'daily';
+    let currentEarningTechFilter = 'All', currentEarningDateFilter = '', currentEarningRangeFilter = 'daily',
+    currentDashboardDateFilter = '', currentDashboardRangeFilter = String(new Date().getMonth()),
+    currentStaffDashboardDateFilter = '', currentStaffDashboardRangeFilter = String(new Date().getMonth());
+    
     let currentDashboardEarningTechFilter = 'All', currentDashboardEarningDateFilter = '', currentDashboardEarningRangeFilter = 'daily';
     let currentSalonEarningDateFilter = '', currentSalonEarningRangeFilter = String(new Date().getMonth()), currentExpenseMonthFilter = '';
 
-    let aggregatedClients = [], allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [], allInventoryUsage = [], allGiftCards = [], allPromotions = [];
+   // ... other variables
+let aggregatedClients = [], allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [], allInventoryUsage = [], allGiftCards = [], allPromotions = [], allServicesList = [], technicianColorMap = {}, sentReminderIds = [];
+// ... more variables
     let techniciansAndStaff = [], technicians = [];
     let allExpenseCategories = [], allPaymentAccounts = [], allSuppliers = [];
 // ADD THIS ENTIRE NEW BLOCK for the lightbox
@@ -966,11 +1184,121 @@ const getDateRange = (filter, specificDate = null) => {
             updateStaffDashboard();
         }
     };
-    
+// DELETE the old cardColors array and REPLACE it with this new palette
+const colorPalette = [
+    { card: 'bg-pink-100', text: 'text-pink-800', bg: 'rgba(255, 99, 132, 0.5)', border: 'rgba(255, 99, 132, 1)' },
+    { card: 'bg-blue-100', text: 'text-blue-800', bg: 'rgba(54, 162, 235, 0.5)', border: 'rgba(54, 162, 235, 1)' },
+    { card: 'bg-green-100', text: 'text-green-800', bg: 'rgba(75, 192, 192, 0.5)', border: 'rgba(75, 192, 192, 1)' },
+    { card: 'bg-yellow-100', text: 'text-yellow-800', bg: 'rgba(255, 206, 86, 0.5)', border: 'rgba(255, 206, 86, 1)' },
+    { card: 'bg-purple-100', text: 'text-purple-800', bg: 'rgba(153, 102, 255, 0.5)', border: 'rgba(153, 102, 255, 1)' },
+    { card: 'bg-teal-100', text: 'text-teal-800', bg: 'rgba(32, 201, 151, 0.5)', border: 'rgba(32, 201, 151, 1)' },
+    { card: 'bg-indigo-100', text: 'text-indigo-800', bg: 'rgba(79, 70, 229, 0.5)', border: 'rgba(79, 70, 229, 1)' },
+    { card: 'bg-orange-100', text: 'text-orange-800', bg: 'rgba(255, 159, 64, 0.5)', border: 'rgba(255, 159, 64, 1)' }
+];
+
+    const updateStaffEarningsReport = (filteredData) => {
+    const staffContainer = document.getElementById('staff-earning-cards-container');
+    const ctx = document.getElementById('staff-earnings-chart')?.getContext('2d');
+
+    if (!staffContainer || !ctx) return;
+
+    // Calculate total earnings for each staff member (excluding admin)
+    const staffTotals = {};
+    const staffExcludingAdmins = techniciansAndStaff.filter(user => user.role !== 'admin');
+
+    staffExcludingAdmins.forEach(staff => {
+        staffTotals[staff.name] = 0; // Initialize
+    });
+
+    filteredData.forEach(earning => {
+        staffExcludingAdmins.forEach(staff => {
+            const staffNameLower = staff.name.toLowerCase();
+            if (earning[staffNameLower]) {
+                staffTotals[staff.name] += earning[staffNameLower];
+            }
+        });
+    });
+
+    // Render Staff Earning Cards using the new palette
+    staffContainer.innerHTML = '';
+    if (staffExcludingAdmins.length === 0) {
+        staffContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">No staff found.</p>';
+    } else {
+        staffExcludingAdmins.forEach((staff, index) => {
+            // --- Calculations ---
+            const totalEarning = staffTotals[staff.name] || 0;
+            const commission = totalEarning * 0.70;
+            const checkPayout = commission * 0.70;
+            const cashPayout = commission * 0.30; // This is the remaining 30% of the commission
+
+            // --- HTML Template ---
+            const colorTheme = colorPalette[index % colorPalette.length];
+            const cardHTML = `
+                <div class="dashboard-card ${colorTheme.card} p-4 flex flex-col">
+                    <div>
+                        <h4 class="font-bold ${colorTheme.text} truncate">${staff.name}</h4>
+                        <p class="text-2xl font-bold text-gray-700 mb-2">$${totalEarning.toFixed(2)}</p>
+                    </div>
+                    <div class="mt-auto space-y-1 text-xs text-gray-600 border-t border-gray-400/20 pt-2">
+                        <div class="flex justify-between">
+                            <span>Commission (70%):</span>
+                            <span class="font-semibold text-gray-800">$${commission.toFixed(2)}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Check Payout (70%):</span>
+                            <span class="font-semibold text-gray-800">$${checkPayout.toFixed(2)}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Cash Payout (30%):</span>
+                            <span class="font-semibold text-gray-800">$${cashPayout.toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            staffContainer.innerHTML += cardHTML;
+        });
+    }
+    // Render Staff Earnings Chart using the new palette
+    const labels = Object.keys(staffTotals);
+    const data = Object.values(staffTotals);
+
+    // Dynamically create color arrays that match the cards
+    const backgroundColors = labels.map((_, index) => colorPalette[index % colorPalette.length].bg);
+    const borderColors = labels.map((_, index) => colorPalette[index % colorPalette.length].border);
+
+    const chartConfig = {
+        labels,
+        datasets: [{
+            label: 'Total Earnings',
+            data: data,
+            backgroundColor: backgroundColors,
+            borderColor: borderColors,
+            borderWidth: 1
+        }]
+    };
+
+    const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    };
+
+    staffEarningsChart = initializeChart(staffEarningsChart, ctx, 'bar', chartConfig, chartOptions);
+};
+        
     // REPLACE the old updateAdminDashboard function with this one
 const updateAdminDashboard = () => {
     const filter = document.getElementById('dashboard-date-filter').value;
-    const { startDate, endDate } = getDateRange(filter);
+    const { startDate, endDate } = getDateRange(currentDashboardRangeFilter, currentDashboardDateFilter);
     if (!startDate) return;
 
     const filteredSalonEarnings = allSalonEarnings.filter(e => {
@@ -1038,14 +1366,16 @@ const updateAdminDashboard = () => {
     document.getElementById('total-expense-card').textContent = `$${totalExpense.toFixed(2)}`;
 
     // Render Graph and Upcoming Appointments
-    updateSalonRevenueChart(filteredSalonEarnings, filter);
+   updateSalonRevenueChart(filteredSalonEarnings, currentDashboardRangeFilter);
+    updateStaffEarningsReport(filteredSalonEarnings); // <-- ADD THIS LINE
     renderDetailedAppointmentsList('admin-upcoming-appointments-list', allAppointments);
 };
 
+
 // REPLACE the old updateStaffDashboard function with this one
 const updateStaffDashboard = () => {
-    const filter = document.getElementById('staff-dashboard-date-filter').value;
-    const { startDate, endDate } = getDateRange(filter);
+const filter = document.getElementById('staff-dashboard-date-filter').value;
+const { startDate, endDate } = getDateRange(currentStaffDashboardRangeFilter, currentStaffDashboardDateFilter);
     if (!startDate) return;
 
     // --- Calculations for Cards & Graph (This part remains the same) ---
@@ -1064,12 +1394,52 @@ const updateStaffDashboard = () => {
     const myCheckPayout = myTotalPayout * 0.70;
     const myCashPayout = myTotalPayout - myCheckPayout;
 
-    document.getElementById('my-earning-card').textContent = `$${myTotalEarning.toFixed(2)}`;
+   document.getElementById('my-earning-card').textContent = `$${myTotalEarning.toFixed(2)}`;
     document.getElementById('my-total-payout-card').textContent = `$${myTotalPayout.toFixed(2)}`;
     document.getElementById('my-cash-payout-card').textContent = `$${myCashPayout.toFixed(2)}`;
     document.getElementById('my-check-payout-card').textContent = `$${myCheckPayout.toFixed(2)}`;
 
-    updateMyEarningsChart(mySalonEarnings, filter, currentUserName);
+    // --- ADD THIS NEW BLOCK FOR THE TIPS CARD ---
+    // Filter all earnings data for the current user and date range
+    const myFilteredEarnings = allEarnings.filter(e => {
+        const earnDate = e.date.toDate();
+        return e.staffName === currentUserName && earnDate >= startDate && earnDate <= endDate;
+    });
+
+    // Sum up the tips from the filtered earnings
+    const myTotalTips = myFilteredEarnings.reduce((sum, e) => sum + (e.tip || 0), 0);
+    
+    // Update the new "My Tips" card
+    const myTipsCard = document.getElementById('my-tips-card');
+    if (myTipsCard) {
+        myTipsCard.textContent = `$${myTotalTips.toFixed(2)}`;
+    }
+    // --- END OF NEW BLOCK ---
+// --- ADD THIS NEW BLOCK FOR APPOINTMENT & CLIENT COUNTS ---
+// Filter for upcoming appointments assigned to the current staff member
+const myUpcomingAppointments = allAppointments.filter(appt => 
+    appt.technician === currentUserName && appt.appointmentTimestamp.toDate() > new Date()
+);
+
+// Count unique clients served by the current staff member from their history
+const myClientNames = new Set(
+    allFinishedClients
+        .filter(client => client.technician === currentUserName)
+        .map(client => client.name)
+);
+
+// Update the dashboard cards with the new counts
+const myAppointmentsCard = document.getElementById('my-appointments-card');
+if (myAppointmentsCard) {
+    myAppointmentsCard.textContent = myUpcomingAppointments.length;
+}
+
+const myClientsCard = document.getElementById('my-clients-card');
+if (myClientsCard) {
+    myClientsCard.textContent = myClientNames.size;
+}
+// --- END OF NEW BLOCK ---
+    updateMyEarningsChart(mySalonEarnings, currentStaffDashboardRangeFilter, currentUserName);
 
     // --- NEW: Logic for the Earning Details Table ---
     const detailsDateFilter = document.getElementById('staff-details-date-filter').value;
@@ -1086,6 +1456,7 @@ const updateStaffDashboard = () => {
         });
     }
 
+   
     // Update the title with the client count
     const clientCount = myPayoutDetails.length;
     const detailsTitle = document.getElementById('staff-details-title');
@@ -1154,9 +1525,9 @@ const renderDetailedAppointmentsList = (containerId, appointments, techFilter = 
 };
     
 const updateSalonRevenueChart = (data, filter) => {
-    const ctx = document.getElementById('salon-revenue-chart').getContext('2d');
+    const ctx = document.getElementById('salon-revenue-chart')?.getContext('2d');
     if (!ctx) return;
-    
+
     let labels = [];
     let revenueData = [];
     let cashData = [];
@@ -1166,10 +1537,15 @@ const updateSalonRevenueChart = (data, filter) => {
     data.forEach(item => {
         const date = item.date.toDate();
         let key;
-        if (filter === 'today') key = date.getHours();
-        else if (filter === 'this_week') key = date.getDay();
-        else if (filter === 'this_month') key = date.getDate();
-        else if (filter === 'this_year') key = date.getMonth();
+
+        // NEW: Updated logic to handle the new filter values
+        if (filter === 'daily') {
+            key = date.getHours();
+        } else if (filter === 'this-year' || filter === 'last-year') {
+            key = date.getMonth();
+        } else if (!isNaN(parseInt(filter))) { // Handles month filters (e.g., '0' for Jan, '1' for Feb)
+            key = date.getDate();
+        }
 
         let dailyTotal = 0;
         techniciansAndStaff.forEach(tech => { dailyTotal += item[tech.name.toLowerCase()] || 0; });
@@ -1177,55 +1553,52 @@ const updateSalonRevenueChart = (data, filter) => {
 
         const dailyCash = dailyTotal - ((item.totalCredit || 0) + (item.check || 0) + (item.returnGiftCard || 0) + (item.venmo || 0) + (item.square || 0));
 
-        revenueCounts[key] = (revenueCounts[key] || 0) + dailyTotal;
-        cashCounts[key] = (cashCounts[key] || 0) + dailyCash;
+        if (key !== undefined) {
+             revenueCounts[key] = (revenueCounts[key] || 0) + dailyTotal;
+             cashCounts[key] = (cashCounts[key] || 0) + dailyCash;
+        }
     });
-    
-    if (filter === 'today') {
+
+    // NEW: Updated logic to build the chart labels and data correctly
+    if (filter === 'daily') {
         labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
         revenueData = labels.map((_, i) => revenueCounts[i] || 0);
         cashData = labels.map((_, i) => cashCounts[i] || 0);
-    } else if (filter === 'this_week') {
-        labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        revenueData = labels.map((_, i) => revenueCounts[i] || 0);
-        cashData = labels.map((_, i) => cashCounts[i] || 0);
-    } else if (filter === 'this_month') {
-         const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
-         labels = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-         revenueData = labels.map(day => revenueCounts[day] || 0);
-         cashData = labels.map(day => cashCounts[day] || 0);
-    } else if (filter === 'this_year') {
+    } else if (filter === 'this-year' || filter === 'last-year') {
         labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         revenueData = labels.map((_, i) => revenueCounts[i] || 0);
         cashData = labels.map((_, i) => cashCounts[i] || 0);
+    } else if (!isNaN(parseInt(filter))) {
+        const year = new Date().getFullYear();
+        const month = parseInt(filter);
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        labels = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+        revenueData = labels.map(day => revenueCounts[day] || 0);
+        cashData = labels.map(day => cashCounts[day] || 0);
     }
 
-    const chartConfig = { 
-        labels, 
-        datasets: [
-            { 
-                label: 'Total Revenue', 
-                data: revenueData, 
-                backgroundColor: 'rgba(219, 39, 119, 0.5)', 
-                borderColor: 'rgba(219, 39, 119, 1)', 
-                borderWidth: 1, 
-                tension: 0.1 
-            },
-            { 
-                label: 'Cash Revenue', 
-                data: cashData, 
-                backgroundColor: 'rgba(16, 185, 129, 0.5)', 
-                borderColor: 'rgba(16, 185, 129, 1)', 
-                borderWidth: 1, 
-                tension: 0.1 
-            }
-        ] 
+    const chartConfig = {
+        labels,
+        datasets: [{
+            label: 'Total Revenue',
+            data: revenueData,
+            backgroundColor: 'rgba(219, 39, 119, 0.5)',
+            borderColor: 'rgba(219, 39, 119, 1)',
+            borderWidth: 1,
+            tension: 0.1
+        }, {
+            label: 'Cash Revenue',
+            data: cashData,
+            backgroundColor: 'rgba(16, 185, 129, 0.5)',
+            borderColor: 'rgba(16, 185, 129, 1)',
+            borderWidth: 1,
+            tension: 0.1
+        }]
     };
     salonRevenueChart = initializeChart(salonRevenueChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
 };
-// REPLACE the old updateMyEarningsChart function with this one
 const updateMyEarningsChart = (data, filter, staffName) => {
-    const ctx = document.getElementById('my-earnings-chart').getContext('2d');
+    const ctx = document.getElementById('my-earnings-chart')?.getContext('2d');
     if (!ctx) return;
 
     const staffNameLower = staffName.toLowerCase();
@@ -1242,15 +1615,22 @@ const updateMyEarningsChart = (data, filter, staffName) => {
     data.forEach(item => {
         const date = item.date.toDate();
         let key;
-        if (filter === 'today') key = date.getHours();
-        else if (filter === 'this_week') key = date.getDay();
-        else if (filter === 'this_month') key = date.getDate();
-        else if (filter === 'this_year') key = date.getMonth();
 
-        if (!timeData[key]) {
-            timeData[key] = { earning: 0 };
+        // CORRECTED: Logic now handles the new filter values
+        if (filter === 'daily') {
+            key = date.getHours();
+        } else if (filter === 'this-year' || filter === 'last-year') {
+            key = date.getMonth();
+        } else if (!isNaN(parseInt(filter))) { // Handles month numbers
+            key = date.getDate();
         }
-        timeData[key].earning += item[staffNameLower] || 0;
+        
+        if (key !== undefined) {
+            if (!timeData[key]) {
+                timeData[key] = { earning: 0 };
+            }
+            timeData[key].earning += item[staffNameLower] || 0;
+        }
     });
 
     const populateDatasets = (key) => {
@@ -1265,18 +1645,19 @@ const updateMyEarningsChart = (data, filter, staffName) => {
         datasets.check.data.push(checkPayout);
     };
 
-    if (filter === 'today') {
+    // CORRECTED: Logic to build labels based on new filter values
+    if (filter === 'daily') {
         for (let i = 0; i < 24; i++) { labels.push(`${i}:00`); populateDatasets(i); }
-    } else if (filter === 'this_week') {
-        labels.push('Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat');
-        for (let i = 0; i < 7; i++) { populateDatasets(i); }
-    } else if (filter === 'this_month') {
-        const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
-        for (let i = 1; i <= daysInMonth; i++) { labels.push(i); populateDatasets(i); }
-    } else if (filter === 'this_year') {
+    } else if (filter === 'this-year' || filter === 'last-year') {
         labels.push('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
         for (let i = 0; i < 12; i++) { populateDatasets(i); }
+    } else if (!isNaN(parseInt(filter))) {
+        const year = new Date().getFullYear();
+        const month = parseInt(filter);
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        for (let i = 1; i <= daysInMonth; i++) { labels.push(i); populateDatasets(i); }
     }
+
 
     const chartConfig = {
         labels,
@@ -1289,10 +1670,29 @@ const updateMyEarningsChart = (data, filter, staffName) => {
     
     // END NEW DASHBOARD LOGIC
 
-    const loadAndRenderServices = async () => {
+const loadAndRenderServices = async () => {
         const servicesSnapshot = await getDocs(collection(db, "services"));
         servicesData = {};
         servicesSnapshot.forEach(doc => { servicesData[doc.id] = doc.data().items; });
+
+        // --- ADD THIS NEW BLOCK ---
+        allServicesList = []; // Reset the list
+        Object.values(servicesData).forEach(categoryItems => {
+            categoryItems.forEach(service => {
+                if (service.name && service.price) {
+                    // Extract the number from a price string like "$50"
+                    const priceValue = parseFloat(service.price.replace(/[^0-9.]/g, ''));
+                    if (!isNaN(priceValue)) {
+                        allServicesList.push({
+                            name: service.name,
+                            price: priceValue
+                        });
+                    }
+                }
+            });
+        });
+        // --- END OF NEW BLOCK ---
+
         renderCheckInServices();
     };
 
@@ -1866,13 +2266,16 @@ const updateSalonEarningsForDate = async (dateStr) => {
 
      onSnapshot(query(collection(db, "appointments"), orderBy("appointmentTimestamp", "asc")), (snapshot) => {
         snapshot.docChanges().forEach((change) => {
-            if (change.type === "added" && initialAppointmentsLoaded) {
-                 const data = change.doc.data();
-                 if (data.appointmentTimestamp.seconds > appLoadTimestamp.seconds) {
-                    const apptTime = new Date(data.appointmentTimestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    addNotification('booking', `New booking for ${data.name} at ${apptTime}`);
-                 }
-            }
+if (change.type === "added" && initialAppointmentsLoaded) {
+    const data = change.doc.data();
+    if (data.appointmentTimestamp.seconds > appLoadTimestamp.seconds) {
+        const apptTime = new Date(data.appointmentTimestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        // Create a clean service string
+        const serviceString = Array.isArray(data.services) ? data.services[0] : data.services;
+        // Update the notification message format
+        addNotification('booking', `New booking from ${data.name} for ${serviceString} at ${apptTime}`);
+    }
+}
         });
         
         allAppointments = snapshot.docs.map(doc => ({ id: doc.id, appointmentTime: doc.data().appointmentTimestamp ? new Date(doc.data().appointmentTimestamp.seconds * 1000).toLocaleString() : 'N/A', ...doc.data() }));
@@ -1908,13 +2311,7 @@ onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot
         renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, currentSalonEarningDateFilter, currentSalonEarningRangeFilter));
         updateDashboard();
     });
-// PASTE THE FUNCTION HERE
-const populateExpenseMonthFilter = () => {
-    const months = [...new Set(allExpenses.map(exp => { const d = new Date(exp.date.seconds * 1000); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }))].sort().reverse();
-    expenseMonthFilter.innerHTML = '<option value="all">All Months</option>';
-    months.forEach(monthYear => { const [year, month] = monthYear.split('-'); expenseMonthFilter.innerHTML += `<option value="${monthYear}">${new Date(year, month - 1, 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</option>`; });
-    expenseMonthFilter.value = currentExpenseMonthFilter || 'all';
-};
+
     onSnapshot(query(collection(db, "expenses"), orderBy("date", "desc")), (snapshot) => {
         allExpenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         populateExpenseMonthFilter();
@@ -1965,7 +2362,7 @@ const populateExpenseMonthFilter = () => {
         document.getElementById(button.id.replace('-tab', '-content')).classList.remove('hidden');
     });
 
-    const setupSubTabs = (tabsId, contentClass) => {
+   const setupSubTabs = (tabsId, contentClass) => {
         document.getElementById(tabsId).addEventListener('click', (e) => {
             const button = e.target.closest('button');
             if (!button) return;
@@ -1975,6 +2372,20 @@ const populateExpenseMonthFilter = () => {
             const targetContent = document.getElementById(button.id.replace('-tab', '-content'));
             if (targetContent) {
                 targetContent.classList.remove('hidden');
+            }
+
+            // ADDED: Logic to render the correct report when its tab is clicked
+            if (tabsId === 'reports-sub-tabs') {
+                switch (button.id) {
+                    case 'salon-earning-report-tab':
+                        // Manually trigger render with the current filter state
+                        renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, currentSalonEarningDateFilter, currentSalonEarningRangeFilter));
+                        break;
+                    case 'staff-earning-report-tab':
+                        // Manually trigger render with the current filter state
+                        renderAllStaffEarnings();
+                        break;
+                }
             }
         });
     };
@@ -1995,14 +2406,40 @@ const populateExpenseMonthFilter = () => {
             dayCell.innerHTML = `<div class="font-bold">${day}</div><div id="day-${day}" class="appointments"></div>`;
             calendarGrid.appendChild(dayCell);
         }
-        let filteredAppointments = allAppointments;
-        if (technicianFilter !== 'All' && technicianFilter !== 'Any Technician') { filteredAppointments = allAppointments.filter(appt => appt.technician === technicianFilter); } 
-        else if (technicianFilter === 'Any Technician') { filteredAppointments = allAppointments.filter(appt => appt.technician === 'Any Technician'); }
+let filteredAppointments = allAppointments;
+        if (technicianFilter !== 'All' && technicianFilter !== 'Any Technician') {
+            filteredAppointments = allAppointments.filter(appt => appt.technician === technicianFilter);
+        } else if (technicianFilter === 'Any Technician') {
+            filteredAppointments = allAppointments.filter(appt => appt.technician === 'Any Technician');
+        }
+
+        // Sort appointments by time to display them chronologically
+        filteredAppointments.sort((a, b) => a.appointmentTimestamp.seconds - b.appointmentTimestamp.seconds);
+
         filteredAppointments.forEach(appt => {
             const apptDate = new Date(appt.appointmentTimestamp.seconds * 1000);
-             if (apptDate.getFullYear() === year && apptDate.getMonth() === month) {
+            if (apptDate.getFullYear() === year && apptDate.getMonth() === month) {
                 const dayCell = document.getElementById(`day-${apptDate.getDate()}`);
-                if (dayCell) { dayCell.insertAdjacentHTML('beforeend', `<div class="appointment-entry bg-blue-100 text-blue-700" data-id="${appt.id}" data-type="appointment">${appt.name}</div>`); }
+                if (dayCell) {
+                    const timeString = apptDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+                    const serviceString = Array.isArray(appt.services) ? appt.services[0] : appt.services;
+                    
+                    // --- Get the color for the assigned technician ---
+                    const technicianName = appt.technician;
+                    let colorTheme = { card: 'bg-gray-100', text: 'text-gray-800' }; // Default for "Any Technician"
+                    if (technicianName && technicianColorMap[technicianName]) {
+                        colorTheme = technicianColorMap[technicianName];
+                    }
+                    // --- End of color logic ---
+
+                    const entryHTML = `
+                        <div class="appointment-entry ${colorTheme.card} p-1" data-id="${appt.id}" data-type="appointment">
+                            <p class="font-semibold text-xs ${colorTheme.text} truncate">${timeString} - ${appt.name}</p>
+                            <p class="text-xs text-gray-600 truncate">${serviceString || 'Service not specified'}</p>
+                        </div>`;
+                    
+                    dayCell.insertAdjacentHTML('beforeend', entryHTML);
+                }
             }
         });
         if(calendarCountSpan) {
@@ -2011,11 +2448,21 @@ const populateExpenseMonthFilter = () => {
     }
     document.getElementById('prev-month-btn').addEventListener('click', () => { currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(currentYear, currentMonth, currentTechFilterCalendar); });
     document.getElementById('next-month-btn').addEventListener('click', () => { currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; } renderCalendar(currentYear, currentMonth, currentTechFilterCalendar); });
-    calendarGrid.addEventListener('click', (e) => {
+calendarGrid.addEventListener('click', (e) => {
+        const appointmentEntry = e.target.closest('.appointment-entry');
         const dayCell = e.target.closest('.calendar-day');
-        if (!dayCell) return;
-        if (e.target.classList.contains('appointment-entry')) { const client = allAppointments.find(a => a.id === e.target.dataset.id); openViewDetailModal(client, "Booking Detail"); } 
-        else { openAddAppointmentModal(dayCell.dataset.date); }
+
+        // First, check if the click was inside an appointment entry
+        if (appointmentEntry) {
+            const client = allAppointments.find(a => a.id === appointmentEntry.dataset.id);
+            if (client) {
+                openViewDetailModal(client, "Booking Detail");
+            }
+        } 
+        // If not, then check if the click was on an empty part of a day cell
+        else if (dayCell) {
+            openAddAppointmentModal(dayCell.dataset.date);
+        }
     });
 
     const setupTechFilter = (containerId, callback) => {
@@ -2057,18 +2504,76 @@ const setupReportDateFilters = (selectId, dateInputId, callback) => {
 
     setupReportDateFilters('earning-range-filter', 'earning-date-filter', (date, range) => { currentEarningDateFilter = date; currentEarningRangeFilter = range; renderAllStaffEarnings(); });
     setupReportDateFilters('dashboard-earning-range-filter', 'dashboard-earning-date-filter', (date, range) => { currentDashboardEarningDateFilter = date; currentDashboardEarningRangeFilter = range; renderAllStaffEarnings(); });
-    setupReportDateFilters('salon-earning-range-filter', 'salon-earning-date-filter', (date, range) => { currentSalonEarningDateFilter = date; currentSalonEarningRangeFilter = range; renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, date, range)); });
-    
-    
+// ... existing filter setups
+setupReportDateFilters('salon-earning-range-filter', 'salon-earning-date-filter', (date, range) => { currentSalonEarningDateFilter = date; currentSalonEarningRangeFilter = range; renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, date, range)); });
+
+// ADD THESE TWO NEW LINES
+setupReportDateFilters('dashboard-range-filter', 'dashboard-date-filter', (date, range) => { currentDashboardRangeFilter = range; currentDashboardDateFilter = date; updateAdminDashboard(); });
+setupReportDateFilters('staff-dashboard-range-filter', 'staff-dashboard-date-filter', (date, range) => { currentStaffDashboardRangeFilter = range; currentStaffDashboardDateFilter = date; updateStaffDashboard(); });
+ // --- Set Default Dashboard Filters to Current Month ---
+    const currentMonthValue = String(new Date().getMonth());
+    const adminDashboardFilter = document.getElementById('dashboard-range-filter');
+    if (adminDashboardFilter) {
+        adminDashboardFilter.value = currentMonthValue;
+    }
+    const staffDashboardFilter = document.getElementById('staff-dashboard-range-filter');
+    if (staffDashboardFilter) {
+        staffDashboardFilter.value = currentMonthValue;
+    }   
+    // --- Autocomplete for Dashboard Earning Form ---
+const dashboardServiceInput = document.getElementById('dashboard-staff-earning-service');
+const dashboardEarningInput = document.getElementById('dashboard-staff-earning-full');
+
+if (dashboardServiceInput && dashboardEarningInput) {
+    // Use 'change' event to fire when an option is selected or input loses focus
+    dashboardServiceInput.addEventListener('change', (e) => {
+        const selectedServiceName = e.target.value;
+        const service = allServicesList.find(s => s.name === selectedServiceName);
+
+        if (service) {
+            dashboardEarningInput.value = service.price.toFixed(2);
+        }
+    });
+}
+         // --- ACTIVATE SWIPEABLE TABS ---
+        enableSwipeableTabs('#check-in-section', '#main-tabs');
+        enableSwipeableTabs('#reports-content', '#reports-sub-tabs');
+        enableSwipeableTabs('#admin-content', '#admin-sub-tabs');
+    // --- PASTE THE NEW REMINDER LOGIC HERE ---
+        const checkAppointmentReminders = () => {
+            const now = new Date();
+            allAppointments.forEach(appt => {
+                if (sentReminderIds.includes(appt.id)) {
+                    return; // Reminder already sent for this appointment
+                }
+
+                const apptTime = appt.appointmentTimestamp.toDate();
+                const timeDifferenceMinutes = (apptTime.getTime() - now.getTime()) / 60000;
+
+                // If the appointment is between 0 and 60 minutes from now
+                if (timeDifferenceMinutes > 0 && timeDifferenceMinutes <= 60) {
+                    const timeString = apptTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const serviceString = Array.isArray(appt.services) ? appt.services[0] : appt.services;
+                    
+                    addNotification('reminder', `Reminder: ${appt.name}'s appointment for ${serviceString} is at ${timeString}.`);
+                    
+                    sentReminderIds.push(appt.id); // Mark reminder as sent
+                }
+            });
+        };
+
+        // Check for reminders every minute
+        setInterval(checkAppointmentReminders, 60000);
+        // --- END OF NEW BLOCK ---
    // REPLACE the old staff-earning-form listener with this one
 document.getElementById('staff-earning-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const staffName = document.getElementById('staff-name').value;
     const service = document.getElementById('staff-earning-service').value; // Get service value
     const earning = parseFloat(document.getElementById('staff-earning').value);
-    const tip = parseFloat(document.getElementById('staff-tip').value);
+    const tip = parseFloat(document.getElementById('staff-tip').value) || 0; // If blank, default to 0
     const date = document.getElementById('staff-earning-date').value;
-    if (isNaN(earning) || isNaN(tip) || !date || !service) { return alert('Please fill out all fields correctly.'); }
+    if (isNaN(earning) || !date ) { return alert('Please ensure Date, and Earning fields are filled out correctly.'); } // Tip is now optional
     try {
         // Add service to the data being saved
         await addDoc(collection(db, "earnings"), { staffName, service, earning, tip, date: Timestamp.fromDate(new Date(date + 'T12:00:00')) });
@@ -2085,10 +2590,10 @@ document.getElementById('dashboard-staff-earning-form-full').addEventListener('s
     const staffName = document.getElementById('dashboard-staff-name-full').value;
     const service = document.getElementById('dashboard-staff-earning-service').value; // Get service value
     const earning = parseFloat(document.getElementById('dashboard-staff-earning-full').value);
-    const tip = parseFloat(document.getElementById('dashboard-staff-tip-full').value);
+    const tip = parseFloat(document.getElementById('dashboard-staff-tip-full').value) || 0;
     const dateStr = document.getElementById('dashboard-staff-earning-date-full').value;
 
-    if (isNaN(earning) || isNaN(tip) || !dateStr || !service) { return alert('Please fill out all fields correctly.'); }
+   if (isNaN(earning) || !dateStr) { return alert('Please make sure the Date and Earning fields are filled out correctly.'); }
 
     const date = new Date(dateStr + 'T12:00:00');
 
@@ -2174,7 +2679,84 @@ document.getElementById('dashboard-staff-earning-form-full').addEventListener('s
         XLSX.utils.book_append_sheet(workbook, worksheet, "Salon Earnings");
         XLSX.writeFile(workbook, "Salon_Earning_Report.xlsx");
     });
-    
+
+    const importSalonEarningsBtn = document.getElementById('import-salon-earnings-btn');
+    const importSalonEarningsInput = document.getElementById('import-salon-earnings-input');
+
+    // When the "Import" button is clicked, trigger the hidden file input
+    importSalonEarningsBtn.addEventListener('click', () => {
+        importSalonEarningsInput.click();
+    });
+
+    // When a file is selected in the hidden input, process it
+    importSalonEarningsInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const importedData = XLSX.utils.sheet_to_json(firstSheet);
+
+                if (importedData.length === 0) {
+                    alert('No data found in the Excel file.');
+                    return;
+                }
+
+                const batch = writeBatch(db);
+                let processedCount = 0;
+
+                for (const row of importedData) {
+                    // Ensure there's a valid date
+                    if (!row.Date || !(row.Date instanceof Date)) {
+                        console.warn('Skipping row due to invalid or missing date:', row);
+                        continue;
+                    }
+
+                    const date = row.Date;
+                    // Format the date as YYYY-MM-DD for the document ID
+                    const docId = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                    
+                    const salonEarningData = {
+                        date: Timestamp.fromDate(date),
+                        sellGiftCard: parseFloat(row['Sell GC']) || 0,
+                        returnGiftCard: parseFloat(row['Return GC']) || 0,
+                        check: parseFloat(row['Check']) || 0,
+                        noOfCredit: parseInt(row['No of Credit']) || 0,
+                        totalCredit: parseFloat(row['Total Credit']) || 0,
+                        venmo: parseFloat(row['Venmo']) || 0,
+                        square: parseFloat(row['Square']) || 0,
+                    };
+
+                    // Add earnings for each staff member found in the row
+                    techniciansAndStaff.forEach(tech => {
+                        const techName = tech.name;
+                        if (row[techName] !== undefined && !isNaN(parseFloat(row[techName]))) {
+                            salonEarningData[techName.toLowerCase()] = parseFloat(row[techName]);
+                        }
+                    });
+
+                    const docRef = doc(db, "salon_earnings", docId);
+                    batch.set(docRef, salonEarningData, { merge: true });
+                    processedCount++;
+                }
+
+                await batch.commit();
+                alert(`${processedCount} records imported successfully! The data will now appear in your report.`);
+
+            } catch (error) {
+                console.error("Error importing salon earnings:", error);
+                alert("An error occurred during the import. Please check the console for details and ensure your file format is correct.");
+            } finally {
+                // Reset the input so you can upload the same file again if needed
+                e.target.value = '';
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    });
     document.getElementById('print-salon-earnings-btn').addEventListener('click', () => {
         const printWindow = window.open('', '_blank', 'height=600,width=800');
         printWindow.document.write('<html><head><title>Salon Earning Report</title><script src="https://cdn.tailwindcss.com"><\/script><style>body{padding:20px;font-family:"Poppins",sans-serif}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background-color:#f2f2f2}</style></head><body><h1>Salon Earning Report</h1>');
@@ -2271,31 +2853,16 @@ const renderAllBookingsList = () => {
     document.getElementById('today-btn').addEventListener('click', () => { document.getElementById('month-view').classList.add('hidden'); document.getElementById('month-nav').classList.add('hidden'); document.getElementById('list-view').classList.remove('hidden'); document.getElementById('today-btn').classList.add('hidden'); document.getElementById('month-view-btn').classList.remove('hidden'); renderAllBookingsList(); });
     document.getElementById('month-view-btn').addEventListener('click', () => { document.getElementById('list-view').classList.add('hidden'); document.getElementById('month-view-btn').classList.add('hidden'); document.getElementById('month-view').classList.remove('hidden'); document.getElementById('month-nav').classList.remove('hidden'); document.getElementById('today-btn').classList.remove('hidden'); });
 
-// ADD THIS NEW BLOCK
-document.getElementById('list-view').addEventListener('click', async (e) => {
-    const checkinBtn = e.target.closest('.checkin-today-btn');
-    if (checkinBtn) {
-        const appointment = allAppointments.find(a => a.id === checkinBtn.dataset.id);
-        if (!appointment) return;
-        try {
-            await addDoc(collection(db, "active_queue"), {
-                name: appointment.name,
-                phone: appointment.phone,
-                people: appointment.people || 1,
-                bookingType: 'Booked - Calendar',
-                services: Array.isArray(appointment.services) ? appointment.services : [appointment.services],
-                technician: appointment.technician,
-                notes: appointment.notes || '',
-                checkInTimestamp: serverTimestamp(),
-                status: 'waiting'
-            });
-            await deleteDoc(doc(db, "appointments", checkinBtn.dataset.id));
-        } catch (err) {
-            console.error("Error checking in from today's view:", err);
-            alert("Could not check in this client.");
+    document.getElementById('today-bookings-table').addEventListener('click', async (e) => {
+        if (e.target.classList.contains('checkin-today-btn')) {
+            const appointment = allAppointments.find(a => a.id === e.target.dataset.id);
+            if (!appointment) return;
+            try {
+                await addDoc(collection(db, "active_queue"), { name: appointment.name, phone: appointment.phone, people: appointment.people || 1, bookingType: 'Booked - Calendar', services: Array.isArray(appointment.services) ? appointment.services : [appointment.services], technician: appointment.technician, notes: appointment.notes || '', checkInTimestamp: serverTimestamp(), status: 'waiting' });
+                await deleteDoc(doc(db, "appointments", e.target.dataset.id));
+            } catch (err) { console.error("Error checking in from today's view:", err); alert("Could not check in this client."); }
         }
-    }
-});
+    });
 
     const clockEl = document.getElementById('live-clock'), dateEl = document.getElementById('live-date'), copyrightYear = document.getElementById('copyright-year');
     const updateTime = () => { const now = new Date(); clockEl.textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }); dateEl.textContent = now.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); copyrightYear.textContent = now.getFullYear(); };
@@ -2460,6 +3027,13 @@ onSnapshot(collection(db, "users"), (snapshot) => {
     const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     techniciansAndStaff = users.filter(user => user.role === 'technician' || user.role === 'staff');
     technicians = users.filter(user => user.role === 'technician');
+    // --- ADD THIS NEW BLOCK TO CREATE THE COLOR MAP ---
+    technicianColorMap = {};
+    technicians.forEach((tech, index) => {
+        // Assign a color from the palette to each technician
+        technicianColorMap[tech.name] = colorPalette[index % colorPalette.length];
+    });
+    // --- END OF NEW BLOCK ---
     renderUsers(users);
     populateTechnicianFilters();
 
@@ -2811,6 +3385,13 @@ onSnapshot(collection(db, "users"), (snapshot) => {
         populate(categorySelect, allExpenseCategories);
         populate(supplierSelect, allSuppliers);
         populate(paymentSelect, allPaymentAccounts);
+    };
+
+    const populateExpenseMonthFilter = () => {
+        const months = [...new Set(allExpenses.map(exp => { const d = new Date(exp.date.seconds * 1000); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }))].sort().reverse();
+        expenseMonthFilter.innerHTML = '<option value="all">All Months</option>';
+        months.forEach(monthYear => { const [year, month] = monthYear.split('-'); expenseMonthFilter.innerHTML += `<option value="${monthYear}">${new Date(year, month - 1, 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</option>`; });
+        expenseMonthFilter.value = currentExpenseMonthFilter || 'all';
     };
 
     const renderExpenses = () => {
@@ -3213,93 +3794,31 @@ if (ideaToDelete) {
     const giftCardsTableBody = document.querySelector('#gift-cards-table tbody');
     const giftCardsTableAdminBody = document.querySelector('#gift-cards-table-admin tbody');
 
-// PASTE THIS ENTIRE CORRECTED BLOCK
-
-const renderGiftCardsAdminTable = (cards) => {
-    const tables = [giftCardsTableBody, giftCardsTableAdminBody];
-    tables.forEach(tbody => {
-        if (!tbody) return;
-        tbody.innerHTML = '';
-        if (cards.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-gray-400">No gift cards have been sold.</td></tr>`;
-            return;
-        }
-        cards.forEach(card => {
-            const row = tbody.insertRow();
-            const balance = card.balance !== undefined ? card.balance : card.amount;
-
-            let statusText = card.status || 'Active';
-            let statusColor = 'bg-gray-200 text-gray-800';
-            switch (statusText) {
-                case 'Active': statusColor = 'bg-green-100 text-green-800'; break;
-                case 'Pending': statusColor = 'bg-yellow-100 text-yellow-800'; break;
-                case 'Depleted': statusColor = 'bg-red-100 text-red-800'; break;
+    const renderGiftCardsAdminTable = (cards) => {
+        const tables = [giftCardsTableBody, giftCardsTableAdminBody];
+        tables.forEach(tbody => {
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            if (cards.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-gray-400">No gift cards have been sold.</td></tr>`;
+                return;
             }
-
-            let actionButtons = `<button data-id="${card.id}" class="edit-gift-card-btn text-blue-500 hover:text-blue-700" title="Manage Card"><i class="fas fa-edit text-lg"></i></button>
-                                 <button data-id="${card.id}" class="delete-gift-card-btn text-red-500 hover:text-red-700" title="Delete Card"><i class="fas fa-trash-alt text-lg"></i></button>`;
-
-            if (statusText === 'Pending') {
-                actionButtons = `<button data-id="${card.id}" class="activate-gift-card-btn text-green-500 hover:text-green-700" title="Activate Card"><i class="fas fa-check-circle text-lg"></i></button>` + actionButtons;
-            }
-
-            row.innerHTML = `<td class="px-6 py-4">${new Date(card.createdAt.seconds * 1000).toLocaleDateString()}</td>
-                             <td class="px-6 py-4 font-mono text-xs">${card.code}</td>
-                             <td class="px-6 py-4">$${card.amount.toFixed(2)}</td>
-                             <td class="px-6 py-4 font-bold">$${balance.toFixed(2)}</td>
-                             <td class="px-6 py-4">${card.recipientName}<br><span class="text-xs text-gray-500">${card.buyerInfo?.email || 'N/A'}</span></td>
-                             <td class="px-6 py-4">${card.senderName}</td>
-                             <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-semibold rounded-full ${statusColor}">${statusText}</span></td>
-                             <td class="px-6 py-4 text-center space-x-4">${actionButtons}</td>`;
-        });
-    });
-};
-
-const setupGiftCardTableListener = (tableId) => {
-    const table = document.getElementById(tableId);
-    if (table) {
-        table.addEventListener('click', (e) => {
-            const editBtn = e.target.closest('.edit-gift-card-btn');
-            const deleteBtn = e.target.closest('.delete-gift-card-btn');
-            const activateBtn = e.target.closest('.activate-gift-card-btn');
-
-            if (activateBtn) {
-                const cardId = activateBtn.dataset.id;
-                const card = allGiftCards.find(c => c.id === cardId);
-                if (card) {
-                    showConfirmModal(`Activate gift card ${card.code} for $${card.amount.toFixed(2)}?`, async () => {
-                        try {
-                            await updateDoc(doc(db, "gift_cards", cardId), { status: 'Active' });
-                            alert('Gift card has been activated!');
-                        } catch (error) {
-                            console.error("Error activating gift card:", error);
-                            alert("Could not activate the gift card.");
-                        }
-                    }, 'Activate');
+            cards.forEach(card => {
+                const row = tbody.insertRow();
+                const balance = card.balance !== undefined ? card.balance : card.amount;
+                let status = card.status;
+                let statusColor = 'text-gray-500';
+                if (balance > 0) {
+                    status = 'Active';
+                    statusColor = 'text-green-600';
+                } else {
+                    status = 'Depleted';
                 }
-            } else if (editBtn) {
-                const card = allGiftCards.find(c => c.id === editBtn.dataset.id);
-                if(card) openEditGiftCardModal(card);
-            } else if (deleteBtn) {
-                const cardId = deleteBtn.dataset.id;
-                const card = allGiftCards.find(c => c.id === cardId);
-                if (card) {
-                    showConfirmModal(`Are you sure you want to delete gift card ${card.code}? This action cannot be undone.`, async () => {
-                        try {
-                            await deleteDoc(doc(db, "gift_cards", cardId));
-                            alert(`Gift card ${card.code} has been deleted.`);
-                        } catch (error) {
-                            console.error("Error deleting gift card:", error);
-                            alert("Could not delete the gift card.");
-                        }
-                    });
-                }
-            }
-        });
-    }
-};
 
-// END OF BLOCK TO PASTE
+            row.innerHTML = `<td class="px-6 py-4">${new Date(card.createdAt.seconds * 1000).toLocaleDateString()}</td><td class="px-6 py-4 font-mono text-xs">${card.code}</td><td class="px-6 py-4">$${card.amount.toFixed(2)}</td><td class="px-6 py-4 font-bold">$${balance.toFixed(2)}</td><td class="px-6 py-4">${card.recipientName}<br><span class="text-xs text-gray-500">${card.recipientEmail || 'Physical Card'}</span></td><td class="px-6 py-4">${card.senderName}</td><td class="px-6 py-4 font-bold ${statusColor}">${status}</td><td class="px-6 py-4 text-center space-x-4"><button data-id="${card.id}" class="edit-gift-card-btn text-blue-500 hover:text-blue-700" title="Manage Card"><i class="fas fa-edit text-lg"></i></button><button data-id="${card.id}" class="delete-gift-card-btn text-red-500 hover:text-red-700" title="Delete Card"><i class="fas fa-trash-alt text-lg"></i></button></td>`;
+                });
+        });
+    };
 
     onSnapshot(query(collection(db, "gift_cards"), orderBy("createdAt", "desc")), (snapshot) => {
         allGiftCards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -3699,6 +4218,35 @@ const setupGiftCardTableListener = (tableId) => {
     
     document.getElementById('close-edit-gift-card-modal-btn').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));
     editGiftCardModal.querySelector('.modal-overlay').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));
+    const setupGiftCardTableListener = (tableId) => {
+    const table = document.getElementById(tableId);
+    if (table) {
+        table.addEventListener('click', (e) => {
+            const editBtn = e.target.closest('.edit-gift-card-btn');
+            if (editBtn) {
+                const card = allGiftCards.find(c => c.id === editBtn.dataset.id);
+                if(card) openEditGiftCardModal(card);
+            }
+
+            const deleteBtn = e.target.closest('.delete-gift-card-btn');
+            if (deleteBtn) {
+                const cardId = deleteBtn.dataset.id;
+                const card = allGiftCards.find(c => c.id === cardId);
+                if (card) {
+                    showConfirmModal(`Are you sure you want to delete gift card ${card.code}? This action cannot be undone.`, async () => {
+                        try {
+                            await deleteDoc(doc(db, "gift_cards", cardId));
+                            alert(`Gift card ${card.code} has been deleted.`);
+                        } catch (error) {
+                            console.error("Error deleting gift card:", error);
+                            alert("Could not delete the gift card.");
+                        }
+                    });
+                }
+            }
+        });
+    }
+};
 setupGiftCardTableListener('gift-cards-table');
 setupGiftCardTableListener('gift-cards-table-admin');
     document.getElementById('close-client-profile-modal-btn').addEventListener('click', () => clientProfileModal.classList.add('hidden'));
@@ -3739,18 +4287,4 @@ if (dashboardEarningSubmitDateInput) dashboardEarningSubmitDateInput.value = tod
     document.getElementById('floating-booking-btn').addEventListener('click', () => { openAddAppointmentModal(getLocalDateString()); });
     // ADD THIS NEW LINE to set the default date
     document.getElementById('staff-details-date-filter').value = todayString;
-        setInterval(() => {
-        const now = new Date();
-        allAppointments.forEach(appt => {
-            if (sentReminderIds.includes(appt.id)) return;
-            const apptTime = appt.appointmentTimestamp.toDate();
-            const timeDifferenceMinutes = (apptTime.getTime() - now.getTime()) / 60000;
-            if (timeDifferenceMinutes > 0 && timeDifferenceMinutes <= 60) {
-                const timeString = apptTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                const serviceString = Array.isArray(appt.services) ? appt.services[0] : appt.services;
-                addNotification('reminder', `Reminder: ${appt.name}'s appointment for ${serviceString} is at ${timeString}.`);
-                sentReminderIds.push(appt.id);
-            }
-        });
-    }, 60000);
 }

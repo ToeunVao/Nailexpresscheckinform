@@ -2798,6 +2798,7 @@ document.getElementById('staff-earning-form').addEventListener('submit', async (
         // Add service to the data being saved
         await addDoc(collection(db, "earnings"), { staffName, service, earning, tip, date: Timestamp.fromDate(new Date(date + 'T12:00:00')) });
        // Manually clear only the fields that need it
+document.getElementById('staff-earning-date').value = '';
 document.getElementById('staff-earning-service').value = '';
 document.getElementById('staff-earning').value = '';
 document.getElementById('staff-tip').value = '';
@@ -2826,6 +2827,7 @@ document.getElementById('dashboard-staff-earning-form-full').addEventListener('s
         await addDoc(collection(db, "earnings"), { staffName, service, earning, tip, date: Timestamp.fromDate(date) });
        // alert(`Earning for ${staffName} on ${dateStr} has been saved.`);
        // Manually clear only the fields that need it
+document.getElementById('dashboard-staff-earning-date-full').value = '';
 document.getElementById('dashboard-staff-earning-service').value = '';
 document.getElementById('dashboard-staff-earning-full').value = '';
 document.getElementById('dashboard-staff-tip-full').value = '';

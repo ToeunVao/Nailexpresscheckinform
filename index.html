@@ -1710,7 +1710,25 @@
                                                 class="bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">Save
                                                 Hours</button>
                                         </div>
-                                    </form>
+                                    </form> <!-- This is the end of the salon hours form -->
+
+                        <!-- ADD THIS ENTIRE NEW FORM BLOCK -->
+                        <h3 class="text-xl font-semibold text-gray-700 mt-8 mb-4">Gift Card Payment Guide</h3>
+                        <form id="payment-guide-form" class="p-4 border rounded-lg bg-gray-50 space-y-4">
+                            <div>
+                                <label for="gift-card-payment-guide-textarea"
+                                    class="block text-sm font-medium text-gray-600">Payment Instructions</label>
+                                <textarea id="gift-card-payment-guide-textarea" rows="4"
+                                    class="form-input w-full mt-1"
+                                    placeholder="e.g., Please send payment to our Venmo @NailsXpress or call us at (555) 123-4567 to pay by phone."></textarea>
+                                <p class="text-xs text-gray-500 mt-1">This text will be shown to clients when they are about to purchase a gift card.</p>
+                            </div>
+                            <div class="text-right">
+                                <button type="submit"
+                                    class="bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">Save Guide</button>
+                            </div>
+                        </form>
+                        <!-- END OF NEW BLOCK -->
 
                                     <h3 class="text-xl font-semibold text-gray-700 mb-4">Frontend Feature
                                         Management</h3>
@@ -2491,8 +2509,15 @@
                 <div><label for="gift-card-message" class="block text-sm font-medium text-gray-600">Message
                         (optional)</label><textarea id="gift-card-message" rows="2"
                         class="form-input w-full p-3 mt-1"></textarea></div>
-                <div class="pt-2"><button type="submit"
-                        class="w-full bg-pink-600 text-white font-bold py-3 rounded-lg">Proceed to Payment</button>
+                <div class="pt-2">
+				 <!-- ADD THIS NEW PAYMENT GUIDE DIV -->
+                        <div id="landing-gc-payment-guide pb-2" class="text-sm text-gray-600 bg-gray-100 p-3 rounded-lg border">
+                            <!-- Payment guide from settings will be loaded here -->
+                        </div>
+                        <!-- The button you just changed is right below this -->
+						<button type="submit" id="landing-gc-submit-btn" class="w-full bg-pink-600 text-white font-bold py-3 px-12 rounded-full hover:bg-pink-700">
+    Buy Gift Card Now
+</button>
                 </div>
             </form>
         </div>

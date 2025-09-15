@@ -1899,7 +1899,32 @@
         </footer>
 
     </div>
+<div id="nail-idea-lightbox" class="fixed inset-0 z-[80] hidden items-center justify-center bg-black/80 p-4">
+    <div class="relative w-full max-w-4xl h-full flex flex-col items-center justify-center">
+        <button id="lightbox-close-btn" class="absolute -top-2 -right-2 text-white bg-black/50 rounded-full w-10 h-10 z-10">&times;</button>
 
+        <div class="relative w-full h-[80%] flex items-center justify-center">
+            <img id="lightbox-image" src="" alt="Nail design" class="max-w-full max-h-full object-contain transition-transform duration-300">
+
+            <button id="lightbox-prev-btn" class="absolute left-0 top-1/2 -translate-y-1/2 bg-black/30 text-white p-3 rounded-full hidden"><i class="fas fa-chevron-left"></i></button>
+            <button id="lightbox-next-btn" class="absolute right-0 top-1/2 -translate-y-1/2 bg-black/30 text-white p-3 rounded-full hidden"><i class="fas fa-chevron-right"></i></button>
+        </div>
+
+        <div class="w-full max-w-2xl bg-white/90 backdrop-blur-sm rounded-b-lg p-4 text-center mt-2 relative">
+             <h3 id="lightbox-title" class="text-xl font-bold text-pink-700"></h3>
+             <p id="lightbox-description" class="text-sm text-gray-700 my-2"></p>
+             <div class="flex justify-center items-center gap-4 text-sm my-2">
+                <span><strong>Shape:</strong> <span id="lightbox-shape"></span></span>
+                <span><strong>Color:</strong> <span id="lightbox-color"></span></span>
+             </div>
+             <div id="lightbox-categories" class="flex flex-wrap justify-center gap-2"></div>
+            <div class="absolute bottom-4 right-4 flex flex-col gap-3">
+                <button id="lightbox-rotate-btn" class="bg-black/30 text-white w-10 h-10 rounded-full"><i class="fas fa-sync-alt"></i></button>
+                <button id="lightbox-fullscreen-btn" class="bg-black/30 text-white w-10 h-10 rounded-full"><i class="fas fa-expand"></i></button>
+            </div>
+        </div>
+    </div>
+</div>
         <button id="floating-booking-btn"
             class="fixed bottom-6 right-6 bg-pink-600 text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center text-2xl hover:bg-pink-700 transition-colors z-40">
             <i class="fas fa-plus"></i>

@@ -4418,50 +4418,6 @@ const renderGiftCardsAdminTable = (cards) => {
         editGiftCardModal.classList.add('flex');
     };
 
-    editGiftCardForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const cardId = document.getElementById('edit-gift-card-id').value;
-        const transactionAmount = parseFloat(document.getElementById('edit-gc-transaction-amount').value);
-        const transactionType = document.getElementById('edit-gc-transaction-type').value;
-        const currentCard = allGiftCards.find(c => c.id === cardId);
-
-        if (!currentCard || isNaN(transactionAmount) || transactionAmount <= 0) {
-            alert("Invalid amount.");
-            return;
-        }
-        
-        let newBalance = currentCard.balance;
-        if (transactionType === 'redeem') {
-            if (transactionAmount > currentCard.balance) {
-                alert("Cannot redeem more than the current balance.");
-                return;
-            }
-            newBalance -= transactionAmount;
-        } else {
-            newBalance += transactionAmount;
-        }
-
-        const newTransaction = {
-            type: transactionType,
-            amount: transactionAmount,
-            notes: document.getElementById('edit-gc-transaction-notes').value,
-            timestamp: Timestamp.now()
-        };
-
-        try {
-            await updateDoc(doc(db, "gift_cards", cardId), {
-                balance: newBalance,
-                history: arrayUnion(newTransaction),
-                status: newBalance > 0 ? 'Active' : 'Depleted'
-            });
-            editGiftCardForm.reset();
-            editGiftCardModal.classList.add('hidden');
-        } catch (error) {
-            console.error("Error updating gift card:", error);
-            alert("Could not update gift card.");
-        }
-    });
-
     
     document.getElementById('close-edit-gift-card-modal-btn').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));
     editGiftCardModal.querySelector('.modal-overlay').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));

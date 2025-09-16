@@ -418,65 +418,46 @@ purchaseForm.addEventListener('submit', async (e) => {
         // Step 1: Attempt to create a new client account.
         // NOTE: In a real-world app, you would send a verification email or use a more secure method.
         // Using the phone number as a password is for demonstration purposes.
-        try {
-            const userCredential = await createUserWithEmailAndPassword(auth, buyerEmail, buyerPhone);
-            const user = userCredential.user;
-            // Create a corresponding document in the 'clients' collection
-            await setDoc(doc(db, "clients", user.uid), {
-                name: buyerName,
-                email: buyerEmail,
-                phone: buyerPhone,
-                role: 'client',
-                createdAt: serverTimestamp()
-            });
-        } catch (error) {
-            if (error.code === 'auth/email-already-in-use') {
-                // This is okay, the user already has an account. We can proceed.
-                console.log("User already exists, proceeding with gift card purchase.");
-            } else {
-                // For other errors (e.g., invalid email), stop the process.
-                throw error;
+       
+            // The "Redirecting..." alert is removed.
+
+            const batch = writeBatch(db);
+            const expiryDate = new Date();
+            expiryDate.setMonth(expiryDate.getMonth() + 6);
+
+            for (let i = 0; i < quantity; i++) {
+                const cardData = {
+                    amount: amount,
+                    balance: amount,
+                    history: [],
+                    recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerName,
+                    senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerName,
+                    code: `GC-${Date.now()}-${i}`,
+                    status: 'Pending', // <-- IMPORTANT: Set status to Pending
+                    type: 'E-Gift',
+                    createdBy: anonymousUserId,
+                    buyerInfo: { name: buyerName, email: buyerEmail, phone: buyerPhone },
+                    createdAt: serverTimestamp(),
+                    expiresAt: Timestamp.fromDate(expiryDate)
+                };
+                const newCardRef = doc(collection(db, "gift_cards"));
+                batch.set(newCardRef, cardData);
             }
+
+            await batch.commit();
+
+            // NEW: Updated success message
+            alert(`You have submitted a request for a gift card to our salon. We will contact you soon about payment, or you can follow our Payment Guide.`);
+            purchaseForm.reset();
+            purchaseModal.classList.add('hidden');
+
+        } catch (error) {
+            console.error("Error during gift card purchase:", error);
+            alert(`Could not process your request. Error: ${error.message}`);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Buy Gift Card Now';
         }
-
-        // Step 2: Create the gift card(s)
-        alert('Redirecting to a secure payment page...'); // Simulate payment
-
-        const batch = writeBatch(db);
-        const expiryDate = new Date();
-        expiryDate.setMonth(expiryDate.getMonth() + 6); // Set expiry to 6 months from now
-
-        for (let i = 0; i < quantity; i++) {
-            const cardData = {
-                amount: amount,
-                balance: amount,
-                history: [],
-                recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerName,
-                senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerName,
-                code: `GC-${Date.now()}-${i}`,
-                status: 'Active',
-                type: 'E-Gift',
-                createdBy: buyerEmail, // Link card to the buyer
-                createdAt: serverTimestamp(),
-                expiresAt: Timestamp.fromDate(expiryDate)
-            };
-            const newCardRef = doc(collection(db, "gift_cards"));
-            batch.set(newCardRef, cardData);
-        }
-
-        await batch.commit();
-
-        alert(`Success! ${quantity} gift card(s) for $${amount.toFixed(2)} each have been processed. An account has been created for ${buyerEmail}.`);
-        purchaseForm.reset();
-        purchaseModal.classList.add('hidden');
-
-    } catch (error) {
-        console.error("Error during gift card purchase/account creation:", error);
-        alert(`Could not process your request. Error: ${error.message}`);
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Proceed to Payment';
-    }
 });
     getDoc(doc(db, "settings", "security")).then(docSnap => {
         if (docSnap.exists()) {

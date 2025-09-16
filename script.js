@@ -414,50 +414,45 @@ purchaseForm.addEventListener('submit', async (e) => {
     submitBtn.disabled = true;
     submitBtn.textContent = 'Processing...';
 
-    try {
-        // Step 1: Attempt to create a new client account.
-        // NOTE: In a real-world app, you would send a verification email or use a more secure method.
-        // Using the phone number as a password is for demonstration purposes.
-       
-            // The "Redirecting..." alert is removed.
+    // Find the purchaseForm listener and REPLACE its try...catch...finally block with this:
+try {
+    // This is the new, clearer alert message for the user.
+    alert('You have submitted a request for a gift card to our salon. We will contact you soon about payment, or you can follow our Payment Guide.');
 
-            const batch = writeBatch(db);
-            const expiryDate = new Date();
-            expiryDate.setMonth(expiryDate.getMonth() + 6);
+    const batch = writeBatch(db);
+    const expiryDate = new Date();
+    expiryDate.setMonth(expiryDate.getMonth() + 6);
 
-            for (let i = 0; i < quantity; i++) {
-                const cardData = {
-                    amount: amount,
-                    balance: amount,
-                    history: [],
-                    recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerName,
-                    senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerName,
-                    code: `GC-${Date.now()}-${i}`,
-                    status: 'Pending', // <-- IMPORTANT: Set status to Pending
-                    type: 'E-Gift',
-                    createdBy: anonymousUserId,
-                    buyerInfo: { name: buyerName, email: buyerEmail, phone: buyerPhone },
-                    createdAt: serverTimestamp(),
-                    expiresAt: Timestamp.fromDate(expiryDate)
-                };
-                const newCardRef = doc(collection(db, "gift_cards"));
-                batch.set(newCardRef, cardData);
-            }
+    for (let i = 0; i < quantity; i++) {
+        const cardData = {
+            amount: amount,
+            recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerName,
+            senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerName,
+            status: 'Pending',
+            type: 'E-Gift',
+            createdBy: anonymousUserId,
+            buyerInfo: { name: buyerName, email: buyerEmail, phone: buyerPhone },
+            createdAt: serverTimestamp(),
+            expiresAt: Timestamp.fromDate(expiryDate)
+        };
+        // IMPORTANT: We now write to a NEW collection called "gift_card_requests"
+        const newRequestRef = doc(collection(db, "gift_card_requests"));
+        batch.set(newRequestRef, cardData);
+    }
 
-            await batch.commit();
+    await batch.commit();
 
-            // NEW: Updated success message
-            alert(`You have submitted a request for a gift card to our salon. We will contact you soon about payment, or you can follow our Payment Guide.`);
-            purchaseForm.reset();
-            purchaseModal.classList.add('hidden');
+    // The success message is now removed because the first alert is enough.
+    purchaseForm.reset();
+    purchaseModal.classList.add('hidden');
 
-        } catch (error) {
-            console.error("Error during gift card purchase:", error);
-            alert(`Could not process your request. Error: ${error.message}`);
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Buy Gift Card Now';
-        }
+} catch (error) {
+    console.error("Error submitting gift card request:", error);
+    alert(`Could not process your request. Error: ${error.message}`);
+} finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Buy Gift Card Now';
+}
 });
     getDoc(doc(db, "settings", "security")).then(docSnap => {
         if (docSnap.exists()) {

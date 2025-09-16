@@ -520,60 +520,6 @@ const paymentGuideDisplay = document.getElementById('landing-gc-payment-guide');
         }
     });
 	
-	
-    giftCardForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const amount = giftCardAmountSelect.value === 'custom' 
-            ? parseFloat(customAmountInput.value) 
-            : parseInt(giftCardAmountSelect.value, 10);
-
-        if (isNaN(amount) || amount <= 0) {
-            alert('Please enter a valid amount.');
-            return;
-        }
-
-        const giftCardData = { amount: amount, balance: amount, history: [], recipientName: document.getElementById('gift-card-recipient-name').value, recipientEmail: document.getElementById('gift-card-recipient-email').value, senderName: document.getElementById('gift-card-sender-name').value, message: document.getElementById('gift-card-message').value, code: `GC-${Date.now()}${[...Array(4)].map(() => Math.floor(Math.random() * 10)).join('')}`, status: 'Active', createdAt: serverTimestamp() };
-
-try {
-            alert('Your gift card request will be submitted. Please follow the payment instructions to activate your card.');
-
-            const batch = writeBatch(db);
-            const expiryDate = new Date();
-            expiryDate.setMonth(expiryDate.getMonth() + 6);
-
-            for (let i = 0; i < quantity; i++) {
-                const cardData = {
-                    amount: amount,
-                    balance: amount,
-                    history: [],
-                    recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerName,
-                    senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerName,
-                    code: `GC-${Date.now()}-${i}`,
-                    status: 'Pending', // <-- IMPORTANT: Set status to Pending
-                    type: 'E-Gift',
-                    createdBy: anonymousUserId,
-                    buyerInfo: { name: buyerName, email: buyerEmail, phone: buyerPhone },
-                    createdAt: serverTimestamp(),
-                    expiresAt: Timestamp.fromDate(expiryDate)
-                };
-                const newCardRef = doc(collection(db, "gift_cards"));
-                batch.set(newCardRef, cardData);
-            }
-
-            await batch.commit();
-
-            alert(`Success! Your gift card request has been submitted. It will be activated once payment is confirmed.`);
-            purchaseForm.reset();
-            purchaseModal.classList.add('hidden');
-
-        } catch (error) {
-            console.error("Error during gift card purchase:", error);
-            alert(`Could not process your request. Error: ${error.message}`);
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Buy Gift Card Now';
-        }
-    });
 
     landingLoginForm.addEventListener('submit', async (e) => {
         e.preventDefault();

@@ -414,7 +414,7 @@ purchaseForm.addEventListener('submit', async (e) => {
     submitBtn.disabled = true;
     submitBtn.textContent = 'Processing...';
 
-    // Find the purchaseForm listener and REPLACE its try...catch...finally block with this:
+// Find the purchaseForm listener and REPLACE its try...catch...finally block with this:
 try {
     // This is the new, clearer alert message for the user.
     alert('You have submitted a request for a gift card to our salon. We will contact you soon about payment, or you can follow our Payment Guide.');
@@ -2659,7 +2659,7 @@ document.getElementById('staff-earning-service').value = '';
 document.getElementById('staff-earning').value = '';
 document.getElementById('staff-tip').value = '';
 
-        document.getElementById('staff-earning-date').value = getLocalDateString();
+       // document.getElementById('staff-earning-date').value = getLocalDateString();
        // document.getElementById('staff-name').value = 'TJ'; // Reset default to TJ
     } catch (err) { console.error("Error adding earning: ", err); alert("Could not add earning."); }
 });
@@ -2687,7 +2687,7 @@ document.getElementById('dashboard-staff-earning-date-full').value = '';
 document.getElementById('dashboard-staff-earning-service').value = '';
 document.getElementById('dashboard-staff-earning-full').value = '';
 document.getElementById('dashboard-staff-tip-full').value = '';
-        document.getElementById('dashboard-staff-earning-date-full').value = getLocalDateString();
+        //document.getElementById('dashboard-staff-earning-date-full').value = getLocalDateString();
         //document.getElementById('dashboard-staff-name-full').value = 'TJ'; // Reset default to TJ
     } catch (err) {
         console.error("Error saving earning entry: ", err);
@@ -4369,9 +4369,73 @@ if (table) {
         });
     }
 };
+
+// PASTE THIS ENTIRE BLOCK AT THE END OF initMainApp
+
+// --- NEW: Gift Card Request Approval Logic ---
+const requestsTableBody = document.getElementById('gift-card-requests-table').querySelector('tbody');
+
+if (userRole === 'admin' && requestsTableBody) {
+    onSnapshot(query(collection(db, "gift_card_requests"), orderBy("createdAt", "desc")), (snapshot) => {
+        const requests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        requestsTableBody.innerHTML = '';
+        if (requests.length === 0) {
+            requestsTableBody.innerHTML = `<tr><td colspan="4" class="text-center text-gray-400 py-3">No pending requests.</td></tr>`;
+            return;
+        }
+        requests.forEach(req => {
+            const row = requestsTableBody.insertRow();
+            row.innerHTML = `
+                <td class="px-6 py-3">${req.createdAt.toDate().toLocaleDateString()}</td>
+                <td class="px-6 py-3">${req.buyerInfo.name}<br><span class="text-xs text-gray-500">${req.buyerInfo.email}</span></td>
+                <td class="px-6 py-3 font-semibold">$${req.amount.toFixed(2)}</td>
+                <td class="px-6 py-3 text-center">
+                    <button data-id="${req.id}" class="approve-gift-card-btn bg-green-500 text-white px-3 py-1 text-xs font-bold rounded-full hover:bg-green-600">Approve</button>
+                </td>
+            `;
+        });
+    });
+
+    requestsTableBody.addEventListener('click', async (e) => {
+        const approveBtn = e.target.closest('.approve-gift-card-btn');
+        if (approveBtn) {
+            const requestId = approveBtn.dataset.id;
+            const requestDocRef = doc(db, "gift_card_requests", requestId);
+
+            showConfirmModal("Approve this gift card and activate it?", async () => {
+                try {
+                    const requestDoc = await getDoc(requestDocRef);
+                    if (!requestDoc.exists()) {
+                        alert("This request no longer exists.");
+                        return;
+                    }
+                    const requestData = requestDoc.data();
+
+                    // Create the new, official gift card
+                    const newCardData = { ...requestData, status: 'Active', code: `GC-${Date.now()}` };
+
+                    const newCardRef = doc(collection(db, "gift_cards"));
+
+                    // Use a batch to create the new card and delete the request atomically
+                    const batch = writeBatch(db);
+                    batch.set(newCardRef, newCardData);
+                    batch.delete(requestDocRef);
+                    await batch.commit();
+
+                    alert("Gift card has been approved and activated!");
+
+                } catch (error) {
+                    console.error("Error approving gift card:", error);
+                    alert("Could not approve the gift card.");
+                }
+            }, "Approve");
+        }
+    });
+}
+// --- END OF NEW LOGIC ---
 setupGiftCardTableListener('gift-cards-table');
 setupGiftCardTableListener('gift-cards-table-admin');
-    document.getElementById('close-client-profile-modal-btn').addEventListener('click', () => clientProfileModal.classList.add('hidden'));
+document.getElementById('close-client-profile-modal-btn').addEventListener('click', () => clientProfileModal.classList.add('hidden'));
 clientProfileModal.querySelector('.modal-overlay').addEventListener('click', () => clientProfileModal.classList.add('hidden'));
 
 

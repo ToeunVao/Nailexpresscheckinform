@@ -11,7 +11,7 @@ const firebaseConfig = {
     messagingSenderId: "1015991996673",
     appId: "1:1015991996673:web:b6e8888abae83906d34b00"
 };
-///---3
+///---31
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -875,54 +875,9 @@ function initClientDashboard(clientId, clientData) {
     });
 
     setupClientTabs();
-    // ADD THIS LINE
-enableSwipeableTabs('#client-dashboard-content > main', '#client-dashboard-tabs');
 
 }
-// ADD THIS ENTIRE NEW FUNCTION
-const enableSwipeableTabs = (contentContainerSelector, tabsListSelector) => {
-    const contentContainer = document.querySelector(contentContainerSelector);
-    const tabsList = document.querySelector(tabsListSelector);
-    if (!contentContainer || !tabsList) return;
 
-    let touchStartX = 0;
-    let touchEndX = 0;
-
-    contentContainer.addEventListener('touchstart', (e) => {
-        touchStartX = e.changedTouches[0].screenX;
-    }, { passive: true });
-
-    contentContainer.addEventListener('touchend', (e) => {
-        touchEndX = e.changedTouches[0].screenX;
-        handleSwipe();
-    });
-
-    function handleSwipe() {
-        const swipeThreshold = 50; // Minimum pixels for a swipe
-        const swipeDistance = touchEndX - touchStartX;
-
-        if (Math.abs(swipeDistance) < swipeThreshold) {
-            return; // Not a long enough swipe
-        }
-
-        const tabButtons = Array.from(tabsList.querySelectorAll('button.tab-btn, button.sub-tab-btn'));
-        const currentIndex = tabButtons.findIndex(btn => btn.classList.contains('active'));
-        
-        if (currentIndex === -1) return;
-
-        if (swipeDistance < 0) { // Swiped left
-            const nextIndex = currentIndex + 1;
-            if (nextIndex < tabButtons.length) {
-                tabButtons[nextIndex].click();
-            }
-        } else { // Swiped right
-            const prevIndex = currentIndex - 1;
-            if (prevIndex >= 0) {
-                tabButtons[prevIndex].click();
-            }
-        }
-    }
-};
 // --- MAIN CHECK-IN APP SCRIPT ---
 function initMainApp(userRole, userName) {
     // --- START: MOBILE MENU LOGIC (REPLACE YOUR OLD BLOCK WITH THIS) ---
@@ -2665,10 +2620,6 @@ if (dashboardServiceInput && dashboardEarningInput) {
         }
     });
 }
-         // --- ACTIVATE SWIPEABLE TABS ---
-        enableSwipeableTabs('#check-in-section', '#main-tabs');
-        enableSwipeableTabs('#reports-content', '#reports-sub-tabs');
-        enableSwipeableTabs('#admin-content', '#admin-sub-tabs');
     // --- PASTE THE NEW REMINDER LOGIC HERE ---
         const checkAppointmentReminders = () => {
             const now = new Date();
@@ -3698,6 +3649,8 @@ const openLightbox = (index) => {
     const idea = currentGalleryData[index];
 
     lightboxImage.src = idea.imageURL;
+    currentRotation = 0; // ADD THIS LINE TO RESET ROTATION
+    lightboxImage.style.transform = `rotate(0deg)`; // AND THIS LINE TO RESET THE STYLE
     lightboxTitle.textContent = idea.name;
     lightboxShape.textContent = idea.shape || 'N/A';
     lightboxColor.textContent = idea.color || 'N/A';
@@ -3712,6 +3665,29 @@ const openLightbox = (index) => {
     nailIdeaLightbox.classList.remove('hidden');
     nailIdeaLightbox.classList.add('flex');
 };
+// --- ADD THESE TWO NEW FUNCTIONS ---
+const toggleFullScreen = () => {
+    const lightbox = document.getElementById('nail-idea-lightbox');
+    const icon = document.getElementById('lightbox-fullscreen-btn').querySelector('i');
+    if (!document.fullscreenElement) {
+        lightbox.requestFullscreen().catch(err => {
+            alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+        });
+        icon.classList.replace('fa-expand', 'fa-compress');
+    } else {
+        document.exitFullscreen();
+        icon.classList.replace('fa-compress', 'fa-expand');
+    }
+};
+
+const rotateImage = () => {
+    currentRotation += 90;
+    if (currentRotation >= 360) {
+        currentRotation = 0;
+    }
+    document.getElementById('lightbox-image').style.transform = `rotate(${currentRotation}deg)`;
+};
+// --- END OF NEW FUNCTIONS ---
 
 const closeLightbox = () => {
     nailIdeaLightbox.classList.add('hidden');
@@ -3747,6 +3723,10 @@ document.getElementById('nails-idea-landing').addEventListener('click', galleryC
 lightboxCloseBtn.addEventListener('click', closeLightbox);
 lightboxNextBtn.addEventListener('click', showNextImage);
 lightboxPrevBtn.addEventListener('click', showPrevImage);
+// ADD THESE TWO NEW LISTENERS
+document.getElementById('lightbox-fullscreen-btn').addEventListener('click', toggleFullScreen);
+document.getElementById('lightbox-rotate-btn').addEventListener('click', rotateImage);
+// END OF NEW LISTENERS
 
 // Add keyboard navigation
 document.addEventListener('keydown', (e) => {

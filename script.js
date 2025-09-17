@@ -59,6 +59,63 @@ const giftCardBackgrounds = {
     ]
 };
 
+const updateLandingGiftCardPreview = () => {
+    const purchaseForm = document.getElementById('landing-gift-card-form');
+    if (!purchaseForm) return;
+
+    const showTo = document.getElementById('gc-show-to').checked;
+    const showFrom = document.getElementById('gc-show-from').checked;
+
+    document.getElementById('gc-to-wrapper').style.display = showTo ? '' : 'none';
+    document.getElementById('gc-from-wrapper').style.display = showFrom ? '' : 'none';
+
+    document.getElementById('landing-gc-preview-to').parentElement.style.display = showTo ? '' : 'none';
+    document.getElementById('landing-gc-preview-from').parentElement.style.display = showFrom ? '' : 'none';
+
+    document.getElementById('landing-gc-preview-to').textContent = document.getElementById('gc-to').value || 'Recipient';
+    document.getElementById('landing-gc-preview-from').textContent = document.getElementById('gc-from').value || 'Sender';
+
+    const amount = parseFloat(document.getElementById('gc-amount').value) || 0;
+    const quantity = parseInt(document.getElementById('gc-quantity').value, 10) || 1;
+
+    document.getElementById('landing-gc-preview-amount').textContent = `$${amount.toFixed(2)}`;
+    document.getElementById('landing-gc-total-amount').textContent = `$${(amount * quantity).toFixed(2)}`;
+
+    const expiryDate = new Date();
+    expiryDate.setMonth(expiryDate.getMonth() + 6);
+    const formattedExpiryDate = expiryDate.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    });
+    document.getElementById('landing-gc-preview-expiry').textContent = `Expires: ${formattedExpiryDate}`;
+};
+
+const initializeLandingGiftCardDesigner = () => {
+    const purchaseForm = document.getElementById('landing-gift-card-form');
+    const previewCard = document.getElementById('landing-gc-preview-card');
+    if (!purchaseForm || !previewCard) return;
+
+    purchaseForm.reset();
+    document.getElementById('gc-quantity').value = 1;
+
+    const backgroundTabs = document.getElementById('landing-gc-background-tabs');
+    const backgroundOptions = document.getElementById('landing-gc-background-options');
+
+    backgroundTabs.innerHTML = Object.keys(giftCardBackgrounds).map(cat =>
+        `<button type="button" data-category="${cat}" class="px-3 py-1 text-sm font-medium rounded-t-lg">${cat}</button>`
+    ).join('');
+
+    const firstTab = backgroundTabs.querySelector('button');
+    if (firstTab) {
+        firstTab.classList.add('bg-gray-200', 'border-gray-300', 'border-b-0');
+        backgroundOptions.innerHTML = giftCardBackgrounds[firstTab.dataset.category].map(url =>
+            `<button type="button" data-bg="${url}" class="w-full h-16 bg-cover bg-center rounded-md border-2 border-transparent hover:border-pink-400" style="background-image: url('${url}')"></button>`
+        ).join('');
+        previewCard.style.backgroundImage = `url('${giftCardBackgrounds[firstTab.dataset.category][0]}')`;
+    }
+    updateLandingGiftCardPreview();
+};
 
 // --- Global Helper Functions ---
 const getLocalDateString = (date = new Date()) => {
@@ -463,18 +520,14 @@ function initLandingPage() {
         }
     });
 
-   // Located inside initLandingPage() function
-// Located inside initLandingPage() function
+   // Located inside initLandingPage()
 purchaseForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const buyerName = document.getElementById('gc-buyer-name').value;
-    const buyerPhone = document.getElementById('gc-buyer-phone').value;
-    const buyerEmail = document.getElementById('gc-buyer-email').value;
     const amount = parseFloat(document.getElementById('gc-amount').value);
     const quantity = parseInt(document.getElementById('gc-quantity').value, 10);
 
-    if (!buyerName || !buyerPhone || !buyerEmail || isNaN(amount) || amount <= 0 || isNaN(quantity) || quantity <= 0) {
-        alert('Please fill out all user and gift card information correctly.');
+    if (isNaN(amount) || amount <= 0 || isNaN(quantity) || quantity <= 0) {
+        alert('Please fill out the gift card amount and quantity correctly.');
         return;
     }
 
@@ -483,35 +536,77 @@ purchaseForm.addEventListener('submit', async (e) => {
     submitBtn.textContent = 'Processing...';
 
     try {
-        const userCredential = await createUserWithEmailAndPassword(auth, buyerEmail, buyerPhone);
-        const user = userCredential.user;
-        
-        // *** NEW: Get the selected background image URL ***
-        const previewCard = document.getElementById('landing-gc-preview-card');
-        // This extracts the clean URL from the 'url("...")' string
-        const backgroundUrl = previewCard.style.backgroundImage.slice(5, -2);
+        // SCENARIO 1: User is already a logged-in client
+        if (currentUserId && auth.currentUser && !auth.currentUser.isAnonymous) {
+            const batch = writeBatch(db);
+            const expiryDate = new Date();
+            expiryDate.setMonth(expiryDate.getMonth() + 6);
+            
+            const buyerInfo = {
+                name: document.getElementById('gc-buyer-name').value,
+                email: document.getElementById('gc-buyer-email').value,
+                phone: document.getElementById('gc-buyer-phone').value,
+            };
 
-        const purchaseDetails = {
-            buyerName: buyerName,
-            buyerPhone: buyerPhone,
-            buyerEmail: buyerEmail,
-            amount: amount,
-            quantity: quantity,
-            recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerName,
-            senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerName,
-            backgroundUrl: backgroundUrl // Add the URL to the details
-        };
-        sessionStorage.setItem('pendingGiftCardPurchase', JSON.stringify(purchaseDetails));
+            for (let i = 0; i < quantity; i++) {
+                const cardData = {
+                    amount: amount,
+                    balance: amount,
+                    history: [],
+                    recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerInfo.name,
+                    senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerInfo.name,
+                    backgroundUrl: document.getElementById('landing-gc-preview-card').style.backgroundImage.slice(5, -2),
+                    code: `GC-${Date.now()}-${i}`,
+                    status: 'Pending',
+                    type: 'E-Gift',
+                    createdBy: currentUserId,
+                    buyerInfo: buyerInfo,
+                    createdAt: serverTimestamp(),
+                    expiresAt: Timestamp.fromDate(expiryDate)
+                };
+                const newCardRef = doc(collection(db, "gift_cards"));
+                batch.set(newCardRef, cardData);
+            }
+            await batch.commit();
+            alert("Success! Your gift card request has been sent. It will be activated once payment is confirmed.");
+            document.getElementById('gift-card-purchase-modal').classList.add('hidden');
 
+        } else {
+            // SCENARIO 2: New or anonymous user (original flow)
+            const buyerName = document.getElementById('gc-buyer-name').value;
+            const buyerPhone = document.getElementById('gc-buyer-phone').value;
+            const buyerEmail = document.getElementById('gc-buyer-email').value;
+
+            if (!buyerName || !buyerPhone || !buyerEmail) {
+                alert('Please fill out all your information to create an account.');
+                throw new Error("Missing buyer information.");
+            }
+            
+            await createUserWithEmailAndPassword(auth, buyerEmail, buyerPhone);
+            
+            const purchaseDetails = {
+                buyerName, buyerPhone, buyerEmail, amount, quantity,
+                recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerName,
+                senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerName,
+                backgroundUrl: document.getElementById('landing-gc-preview-card').style.backgroundImage.slice(5, -2),
+            };
+            sessionStorage.setItem('pendingGiftCardPurchase', JSON.stringify(purchaseDetails));
+            // onAuthStateChanged will handle the rest
+        }
     } catch (error) {
         if (error.code === 'auth/email-already-in-use') {
             alert("An account with this email already exists. Please log in to purchase a gift card.");
         } else {
-            console.error("Error creating user during gift card purchase:", error);
+            console.error("Error during gift card purchase:", error);
             alert(`Could not process your request. Error: ${error.message}`);
         }
+    } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Buy Gift Card Now';
+        submitBtn.textContent = 'Submit Purchase Request';
+        // Re-enable form fields that might have been disabled
+        document.getElementById('gc-buyer-name').disabled = false;
+        document.getElementById('gc-buyer-phone').disabled = false;
+        document.getElementById('gc-buyer-email').disabled = false;
     }
 });
 
@@ -815,6 +910,21 @@ function initClientDashboard(clientId, clientData) {
     document.getElementById('client-welcome-name').textContent = `Welcome back, ${clientData.name}!`;
     document.getElementById('client-sign-out-btn').addEventListener('click', () => signOut(auth));
 
+    const openPurchaseModalForClient = (client) => {
+        const purchaseModal = document.getElementById('gift-card-purchase-modal');
+        
+        // Pre-fill and disable user info fields
+        document.getElementById('gc-buyer-name').value = client.name;
+        document.getElementById('gc-buyer-name').disabled = true;
+        document.getElementById('gc-buyer-phone').value = client.phone || '';
+        document.getElementById('gc-buyer-phone').disabled = true;
+        document.getElementById('gc-buyer-email').value = clientData.email;
+        document.getElementById('gc-buyer-email').disabled = true;
+
+        // Initialize designer and show the modal
+        initializeLandingGiftCardDesigner();
+        purchaseModal.classList.remove('hidden');
+    };
     // Opens a new tab with just the gift card for printing or saving as an image
     const openCardForPrint = (card) => {
         const expiryText = card.expiresAt ? `Expires: ${card.expiresAt.toDate().toLocaleDateString()}` : '';
@@ -1045,6 +1155,10 @@ function initClientDashboard(clientId, clientData) {
 
     document.getElementById('client-book-new-btn').addEventListener('click', () => {
         openAddAppointmentModal(getLocalDateString(), clientData);
+    });
+     // *** NEW LISTENER FOR THE "BUY MORE" BUTTON ***
+    document.getElementById('client-buy-gift-card-btn').addEventListener('click', () => {
+        openPurchaseModalForClient(clientData);
     });
 
     setupClientTabs();

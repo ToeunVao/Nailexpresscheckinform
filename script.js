@@ -2253,21 +2253,22 @@ const loadAndRenderServices = async () => {
         return filtered;
     };
 
-    // REPLACE the old renderStaffEarningsTable function with this one
+// Located inside initMainApp()
 const renderStaffEarningsTable = (earnings, tableId, totalEarningId, totalTipId) => {
     const tbody = document.querySelector(`#${tableId} tbody`);
     if (!tbody) return;
 
-    const colspan = userRole === 'admin' ? 6 : 5; // Increased colspan for new column
+    const colspan = userRole === 'admin' ? 6 : 5;
     tbody.innerHTML = earnings.length === 0 ? `<tr><td colspan="${colspan}" class="py-6 text-center text-gray-400">No earnings found.</td></tr>` : '';
 
+    // *** FIX IS HERE: Sorting by newest date first (descending) ***
     earnings.sort((a, b) => b.date.seconds - a.date.seconds).forEach(earning => {
         const row = tbody.insertRow();
         row.className = 'bg-white border-b';
         let rowHTML = `
             <td class="px-6 py-4">${new Date(earning.date.seconds * 1000).toLocaleDateString()}</td>
             <td class="px-6 py-4 font-medium text-gray-900">${earning.staffName}</td>
-            <td class="px-6 py-4">${earning.service || ''}</td> <!-- Display the service -->
+            <td class="px-6 py-4">${earning.service || ''}</td>
             <td class="px-6 py-4">$${earning.earning.toFixed(2)}</td>
             <td class="px-6 py-4">$${earning.tip.toFixed(2)}</td>
         `;

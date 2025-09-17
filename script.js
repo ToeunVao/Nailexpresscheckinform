@@ -2968,31 +2968,27 @@ if (dashboardServiceInput && dashboardEarningInput) {
 document.getElementById('staff-earning-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const staffName = document.getElementById('staff-name').value;
-    const service = document.getElementById('staff-earning-service').value; // Get service value
+    const service = document.getElementById('staff-earning-service').value;
     const earning = parseFloat(document.getElementById('staff-earning').value);
-    const tip = parseFloat(document.getElementById('staff-tip').value) || 0; // If blank, default to 0
+    const tip = parseFloat(document.getElementById('staff-tip').value) || 0;
     const date = document.getElementById('staff-earning-date').value;
-    if (isNaN(earning) || !date ) { return alert('Please ensure Date, and Earning fields are filled out correctly.'); } // Tip is now optional
+    if (isNaN(earning) || !date ) { return alert('Please ensure Date, and Earning fields are filled out correctly.'); }
     try {
-        // Add service to the data being saved
         await addDoc(collection(db, "earnings"), { staffName, service, earning, tip, date: Timestamp.fromDate(new Date(date + 'T12:00:00')) });
-       // Manually clear only the fields that need it
-document.getElementById('staff-earning-date').value = '';
-document.getElementById('staff-earning-service').value = '';
-document.getElementById('staff-earning').value = '';
-document.getElementById('staff-tip').value = '';
+       
+       // Manually clear only the fields that need it, leaving the date intact
+       document.getElementById('staff-earning-service').value = '';
+       document.getElementById('staff-earning').value = '';
+       document.getElementById('staff-tip').value = '';
 
-       // document.getElementById('staff-earning-date').value = getLocalDateString();
-       // document.getElementById('staff-name').value = 'TJ'; // Reset default to TJ
     } catch (err) { console.error("Error adding earning: ", err); alert("Could not add earning."); }
 });
 
-// REPLACE the old dashboard form listener with this one
-// REPLACE the old dashboard form listener with this one
+// Located inside initMainApp()
 document.getElementById('dashboard-staff-earning-form-full').addEventListener('submit', async (e) => {
     e.preventDefault();
     const staffName = document.getElementById('dashboard-staff-name-full').value;
-    const service = document.getElementById('dashboard-staff-earning-service').value; // Get service value
+    const service = document.getElementById('dashboard-staff-earning-service').value;
     const earning = parseFloat(document.getElementById('dashboard-staff-earning-full').value);
     const tip = parseFloat(document.getElementById('dashboard-staff-tip-full').value) || 0;
     const dateStr = document.getElementById('dashboard-staff-earning-date-full').value;
@@ -3002,16 +2998,13 @@ document.getElementById('dashboard-staff-earning-form-full').addEventListener('s
     const date = new Date(dateStr + 'T12:00:00');
 
     try {
-        // Add service to the data being saved
         await addDoc(collection(db, "earnings"), { staffName, service, earning, tip, date: Timestamp.fromDate(date) });
-       // alert(`Earning for ${staffName} on ${dateStr} has been saved.`);
-       // Manually clear only the fields that need it
-document.getElementById('dashboard-staff-earning-date-full').value = '';
-document.getElementById('dashboard-staff-earning-service').value = '';
-document.getElementById('dashboard-staff-earning-full').value = '';
-document.getElementById('dashboard-staff-tip-full').value = '';
-        //document.getElementById('dashboard-staff-earning-date-full').value = getLocalDateString();
-        //document.getElementById('dashboard-staff-name-full').value = 'TJ'; // Reset default to TJ
+       
+       // Manually clear only the fields that need it, leaving the date intact
+       document.getElementById('dashboard-staff-earning-service').value = '';
+       document.getElementById('dashboard-staff-earning-full').value = '';
+       document.getElementById('dashboard-staff-tip-full').value = '';
+       
     } catch (err) {
         console.error("Error saving earning entry: ", err);
         alert("Could not save the earning entry.");

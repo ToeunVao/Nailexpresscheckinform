@@ -919,43 +919,6 @@ function initClientDashboard(clientId, clientData) {
         });
     };
 
-    // *** NEW FUNCTION TO RENDER GIFT CARDS ***
-    const renderClientGiftCards = (cards) => {
-        const container = document.getElementById('client-gift-cards-container');
-        if (!container) return;
-
-        container.innerHTML = '';
-        if (cards.length === 0) {
-            container.innerHTML = '<p class="text-gray-500 text-center">You do not have any gift cards.</p>';
-            return;
-        }
-
-        cards.forEach(card => {
-            const cardEl = document.createElement('div');
-            cardEl.className = 'bg-white p-4 rounded-lg shadow-md border-l-4';
-            
-            let statusColor = 'border-gray-400';
-            if (card.status === 'Active') statusColor = 'border-green-500';
-            if (card.status === 'Pending') statusColor = 'border-yellow-500';
-            if (card.status === 'Depleted') statusColor = 'border-red-500';
-
-            cardEl.classList.add(statusColor);
-            
-            cardEl.innerHTML = `
-                <div class="flex justify-between items-center">
-                    <div>
-                        <p class="font-mono text-sm text-gray-700">${card.code}</p>
-                        <p class="text-xs text-gray-500">To: ${card.recipientName || 'N/A'}</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-xl font-bold text-green-600">$${card.balance.toFixed(2)}</p>
-                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-800">${card.status}</span>
-                    </div>
-                </div>
-            `;
-            container.appendChild(cardEl);
-        });
-    };
 
     const renderClientAppointments = (appointments) => {
         const container = document.getElementById('client-upcoming-appointments');

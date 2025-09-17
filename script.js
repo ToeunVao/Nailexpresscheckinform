@@ -482,6 +482,12 @@ function initLandingPage() {
     };
 
     buyGiftCardBtn.addEventListener('click', () => {
+        const userInfoSection = document.getElementById('gc-user-info-section');
+        // *** SHOW the user info section ***
+        if (userInfoSection) {
+            userInfoSection.classList.remove('hidden');
+        }
+
         getDoc(doc(db, "settings", "paymentGuide")).then(docSnap => {
             if (docSnap.exists() && docSnap.data().text) {
                 paymentGuideDisplay.innerHTML = `<p class="font-semibold mb-2">How to Pay:</p><p>${docSnap.data().text.replace(/\n/g, '<br>')}</p>`;
@@ -613,11 +619,16 @@ purchaseForm.addEventListener('submit', async (e) => {
 // *** ADD THIS CORRECTED BLOCK ***
     const closePurchaseModal = () => {
         const purchaseModal = document.getElementById('gift-card-purchase-modal');
+        const userInfoSection = document.getElementById('gc-user-info-section');
         purchaseModal.classList.add('hidden');
         // Reset the form fields for the next user
         document.getElementById('gc-buyer-name').disabled = false;
         document.getElementById('gc-buyer-phone').disabled = false;
         document.getElementById('gc-buyer-email').disabled = false;
+        // *** SHOW the user info section again for the next user ***
+        if (userInfoSection) {
+            userInfoSection.classList.remove('hidden');
+        }
     };
 
     // Note: The 'purchaseModal' and 'closePurchaseModalBtn' variables are already
@@ -625,7 +636,7 @@ purchaseForm.addEventListener('submit', async (e) => {
     closePurchaseModalBtn.addEventListener('click', closePurchaseModal);
     purchaseModal.querySelector('.modal-overlay').addEventListener('click', closePurchaseModal);
     // *** END OF CORRECTED BLOCK ***
-    
+
     getDoc(doc(db, "settings", "security")).then(docSnap => {
         if (docSnap.exists()) {
             loginSecuritySettings = docSnap.data();
@@ -928,7 +939,12 @@ function initClientDashboard(clientId, clientData) {
 
     const openPurchaseModalForClient = (client) => {
         const purchaseModal = document.getElementById('gift-card-purchase-modal');
-        
+        const userInfoSection = document.getElementById('gc-user-info-section');
+
+        // *** HIDE the user info section ***
+        if (userInfoSection) {
+            userInfoSection.classList.add('hidden');
+        }
         // Pre-fill and disable user info fields
         document.getElementById('gc-buyer-name').value = client.name;
         document.getElementById('gc-buyer-name').disabled = true;

@@ -610,26 +610,21 @@ purchaseForm.addEventListener('submit', async (e) => {
 
 });
 
- // *** ADD THIS NEW BLOCK TO HANDLE CLOSING THE MODAL ***
-    const purchaseModal = document.getElementById('gift-card-purchase-modal');
-    const closePurchaseModalBtn = document.getElementById('close-gift-card-purchase-modal-btn');
-
+// *** ADD THIS CORRECTED BLOCK ***
     const closePurchaseModal = () => {
+        const purchaseModal = document.getElementById('gift-card-purchase-modal');
         purchaseModal.classList.add('hidden');
-        // It's good practice to re-enable the form fields in case they were
-        // disabled for a logged-in client. This resets the form for next time.
+        // Reset the form fields for the next user
         document.getElementById('gc-buyer-name').disabled = false;
         document.getElementById('gc-buyer-phone').disabled = false;
         document.getElementById('gc-buyer-email').disabled = false;
     };
 
-    if (closePurchaseModalBtn) {
-        closePurchaseModalBtn.addEventListener('click', closePurchaseModal);
-    }
-    if (purchaseModal) {
-        purchaseModal.querySelector('.modal-overlay').addEventListener('click', closePurchaseModal);
-    }
-    // *** END OF NEW BLOCK ***
+    // Note: The 'purchaseModal' and 'closePurchaseModalBtn' variables are already
+    // declared at the top of the gift card logic section, so we just use them here.
+    closePurchaseModalBtn.addEventListener('click', closePurchaseModal);
+    purchaseModal.querySelector('.modal-overlay').addEventListener('click', closePurchaseModal);
+    // *** END OF CORRECTED BLOCK ***
     
     getDoc(doc(db, "settings", "security")).then(docSnap => {
         if (docSnap.exists()) {

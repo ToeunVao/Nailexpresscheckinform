@@ -279,13 +279,26 @@ onAuthStateChanged(auth, async (user) => {
                             clientDashboardInitialized = true;
                         }
                    } else {
-                    // This is a new user who just signed up.
+                     // This is a new user who just signed up.
                     // Check if they came from the gift card purchase form.
                     const pendingPurchaseJSON = sessionStorage.getItem('pendingGiftCardPurchase');
                     if (pendingPurchaseJSON) {
                         const details = JSON.parse(pendingPurchaseJSON);
+                        const purchaseModal = document.getElementById('gift-card-purchase-modal');
 
-                        // Create the gift card(s) now that the user is authenticated
+
+                        // **Step 1: Create the client document first.**
+                        const newClientData = {
+                            name: details.buyerName,
+                            email: details.buyerEmail,
+                            phone: details.buyerPhone,
+                            role: 'client',
+                            createdAt: serverTimestamp()
+                        };
+                        await setDoc(doc(db, "clients", user.uid), newClientData);
+
+
+                        // **Step 2: Create the gift card(s).**
                         const batch = writeBatch(db);
                         const expiryDate = new Date();
                         expiryDate.setMonth(expiryDate.getMonth() + 6);
@@ -298,9 +311,9 @@ onAuthStateChanged(auth, async (user) => {
                                 recipientName: details.recipientName,
                                 senderName: details.senderName,
                                 code: `GC-${Date.now()}-${i}`,
-                                status: 'Active', // Card is active immediately upon purchase
+                                status: 'Active',
                                 type: 'E-Gift',
-                                createdBy: user.uid, // Link to the new user's ID
+                                createdBy: user.uid,
                                 buyerInfo: { name: details.buyerName, email: details.buyerEmail, phone: details.buyerPhone },
                                 createdAt: serverTimestamp(),
                                 expiresAt: Timestamp.fromDate(expiryDate)
@@ -314,8 +327,13 @@ onAuthStateChanged(auth, async (user) => {
 
                         alert("Success! Your account has been created and your gift card(s) have been issued.");
 
-                        // Now, proceed to initialize the client dashboard for the new user
-                        const newClientData = { name: details.buyerName, email: details.buyerEmail, phone: details.buyerPhone, role: 'client' };
+                        // **Step 3: Close the purchase modal and initialize the dashboard.**
+                        if (purchaseModal) {
+                            purchaseModal.classList.add('hidden');
+                        }
+                        
+                        landingPageContent.style.display = 'none';
+                        appContent.style.display = 'none';
                         clientDashboardContent.style.display = 'block';
                         if (!clientDashboardInitialized) {
                             initClientDashboard(user.uid, newClientData);
@@ -450,65 +468,60 @@ function initLandingPage() {
         }
     });
 
-    purchaseForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const buyerName = document.getElementById('gc-buyer-name').value;
-        const buyerPhone = document.getElementById('gc-buyer-phone').value;
-        const buyerEmail = document.getElementById('gc-buyer-email').value;
-        const amount = parseFloat(document.getElementById('gc-amount').value);
-        const quantity = parseInt(document.getElementById('gc-quantity').value, 10);
+   // Located inside initLandingPage() function
+purchaseForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const buyerName = document.getElementById('gc-buyer-name').value;
+    const buyerPhone = document.getElementById('gc-buyer-phone').value;
+    const buyerEmail = document.getElementById('gc-buyer-email').value;
+    const amount = parseFloat(document.getElementById('gc-amount').value);
+    const quantity = parseInt(document.getElementById('gc-quantity').value, 10);
 
-        if (!buyerName || !buyerPhone || !buyerEmail || isNaN(amount) || amount <= 0 || isNaN(quantity) || quantity <= 0) {
-            alert('Please fill out all user and gift card information correctly.');
-            return;
-        }
-
-        const submitBtn = document.getElementById('landing-gc-submit-btn');
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Processing...';
-
-        try {
-    // First, try to create a new user with their email and phone as the password.
-    const userCredential = await createUserWithEmailAndPassword(auth, buyerEmail, buyerPhone);
-    const user = userCredential.user;
-
-    // If successful, the user is now logged in.
-    // We will temporarily store the purchase details for the next step.
-    const purchaseDetails = {
-        buyerName: buyerName,
-        buyerPhone: buyerPhone,
-        buyerEmail: buyerEmail,
-        amount: amount,
-        quantity: quantity,
-        recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerName,
-        senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerName
-    };
-    sessionStorage.setItem('pendingGiftCardPurchase', JSON.stringify(purchaseDetails));
-
-    // The onAuthStateChanged listener will now automatically handle creating the
-    // client document, creating the gift card, and redirecting to the dashboard.
-
-    // We just need to create the client document here
-    await setDoc(doc(db, "clients", user.uid), {
-        name: buyerName,
-        email: buyerEmail,
-        phone: buyerPhone,
-        role: 'client',
-        createdAt: serverTimestamp()
-    });
-
-} catch (error) {
-    if (error.code === 'auth/email-already-in-use') {
-        alert("An account with this email already exists. Please log in to purchase a gift card.");
-    } else {
-        console.error("Error creating user during gift card purchase:", error);
-        alert(`Could not process your request. Error: ${error.message}`);
+    if (!buyerName || !buyerPhone || !buyerEmail || isNaN(amount) || amount <= 0 || isNaN(quantity) || quantity <= 0) {
+        alert('Please fill out all user and gift card information correctly.');
+        return;
     }
-} finally {
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Buy Gift Card Now';
-}
-    });
+
+    const submitBtn = document.getElementById('landing-gc-submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Processing...';
+
+    try {
+        // First, try to create a new user with their email and phone as the password.
+        const userCredential = await createUserWithEmailAndPassword(auth, buyerEmail, buyerPhone);
+        const user = userCredential.user;
+
+        // If successful, the user is now logged in.
+        // We will temporarily store the purchase details for the next step.
+        const purchaseDetails = {
+            buyerName: buyerName,
+            buyerPhone: buyerPhone,
+            buyerEmail: buyerEmail,
+            amount: amount,
+            quantity: quantity,
+            recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerName,
+            senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerName
+        };
+        sessionStorage.setItem('pendingGiftCardPurchase', JSON.stringify(purchaseDetails));
+
+        // The onAuthStateChanged listener will now automatically handle creating the
+        // client document, creating the gift card, and redirecting to the dashboard.
+        // DO NOT create the client document here.
+
+    } catch (error) {
+        if (error.code === 'auth/email-already-in-use') {
+            alert("An account with this email already exists. Please log in to purchase a gift card.");
+        } else {
+            console.error("Error creating user during gift card purchase:", error);
+            alert(`Could not process your request. Error: ${error.message}`);
+        }
+        // Re-enable the button on error
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Buy Gift Card Now';
+    }
+    // Note: 'finally' block removed so the button text isn't reset on success before redirection.
+});
+
     getDoc(doc(db, "settings", "security")).then(docSnap => {
         if (docSnap.exists()) {
             loginSecuritySettings = docSnap.data();

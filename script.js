@@ -607,8 +607,30 @@ purchaseForm.addEventListener('submit', async (e) => {
         document.getElementById('gc-buyer-phone').disabled = false;
         document.getElementById('gc-buyer-email').disabled = false;
     }
+
 });
 
+ // *** ADD THIS NEW BLOCK TO HANDLE CLOSING THE MODAL ***
+    const purchaseModal = document.getElementById('gift-card-purchase-modal');
+    const closePurchaseModalBtn = document.getElementById('close-gift-card-purchase-modal-btn');
+
+    const closePurchaseModal = () => {
+        purchaseModal.classList.add('hidden');
+        // It's good practice to re-enable the form fields in case they were
+        // disabled for a logged-in client. This resets the form for next time.
+        document.getElementById('gc-buyer-name').disabled = false;
+        document.getElementById('gc-buyer-phone').disabled = false;
+        document.getElementById('gc-buyer-email').disabled = false;
+    };
+
+    if (closePurchaseModalBtn) {
+        closePurchaseModalBtn.addEventListener('click', closePurchaseModal);
+    }
+    if (purchaseModal) {
+        purchaseModal.querySelector('.modal-overlay').addEventListener('click', closePurchaseModal);
+    }
+    // *** END OF NEW BLOCK ***
+    
     getDoc(doc(db, "settings", "security")).then(docSnap => {
         if (docSnap.exists()) {
             loginSecuritySettings = docSnap.data();

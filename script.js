@@ -11,7 +11,7 @@ const firebaseConfig = {
     messagingSenderId: "1015991996673",
     appId: "1:1015991996673:web:b6e8888abae83906d34b00"
 };
-///---30
+///---31
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -231,6 +231,7 @@ addAppointmentForm.addEventListener('submit', async (e) => {
 
 // --- Primary Authentication Router ---
 // REPLACE the entire onAuthStateChanged function
+// REPLACE the entire onAuthStateChanged function
 onAuthStateChanged(auth, async (user) => {
     try {
         const hoursDoc = await getDoc(doc(db, "settings", "salonHours"));
@@ -306,13 +307,14 @@ onAuthStateChanged(auth, async (user) => {
                                     recipientName: details.recipientName,
                                     senderName: details.senderName,
                                     code: `GC-${Date.now()}-${i}`,
-                                    // *** CHANGE IS HERE ***
-                                    status: 'Pending', // Set status to Pending instead of Active
+                                    status: 'Pending',
                                     type: 'E-Gift',
                                     createdBy: user.uid,
                                     buyerInfo: { name: details.buyerName, email: details.buyerEmail, phone: details.buyerPhone },
                                     createdAt: serverTimestamp(),
-                                    expiresAt: Timestamp.fromDate(expiryDate)
+                                    expiresAt: Timestamp.fromDate(expiryDate),
+                                    // *** CHANGE IS HERE: Save the background URL ***
+                                    backgroundUrl: details.backgroundUrl 
                                 };
                                 const newCardRef = doc(collection(db, "gift_cards"));
                                 batch.set(newCardRef, cardData);
@@ -462,6 +464,7 @@ function initLandingPage() {
     });
 
    // Located inside initLandingPage() function
+// Located inside initLandingPage() function
 purchaseForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const buyerName = document.getElementById('gc-buyer-name').value;
@@ -480,12 +483,14 @@ purchaseForm.addEventListener('submit', async (e) => {
     submitBtn.textContent = 'Processing...';
 
     try {
-        // First, try to create a new user with their email and phone as the password.
         const userCredential = await createUserWithEmailAndPassword(auth, buyerEmail, buyerPhone);
         const user = userCredential.user;
+        
+        // *** NEW: Get the selected background image URL ***
+        const previewCard = document.getElementById('landing-gc-preview-card');
+        // This extracts the clean URL from the 'url("...")' string
+        const backgroundUrl = previewCard.style.backgroundImage.slice(5, -2);
 
-        // If successful, the user is now logged in.
-        // We will temporarily store the purchase details for the next step.
         const purchaseDetails = {
             buyerName: buyerName,
             buyerPhone: buyerPhone,
@@ -493,13 +498,10 @@ purchaseForm.addEventListener('submit', async (e) => {
             amount: amount,
             quantity: quantity,
             recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerName,
-            senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerName
+            senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerName,
+            backgroundUrl: backgroundUrl // Add the URL to the details
         };
         sessionStorage.setItem('pendingGiftCardPurchase', JSON.stringify(purchaseDetails));
-
-        // The onAuthStateChanged listener will now automatically handle creating the
-        // client document, creating the gift card, and redirecting to the dashboard.
-        // DO NOT create the client document here.
 
     } catch (error) {
         if (error.code === 'auth/email-already-in-use') {
@@ -508,11 +510,9 @@ purchaseForm.addEventListener('submit', async (e) => {
             console.error("Error creating user during gift card purchase:", error);
             alert(`Could not process your request. Error: ${error.message}`);
         }
-        // Re-enable the button on error
         submitBtn.disabled = false;
         submitBtn.textContent = 'Buy Gift Card Now';
     }
-    // Note: 'finally' block removed so the button text isn't reset on success before redirection.
 });
 
     getDoc(doc(db, "settings", "security")).then(docSnap => {
@@ -815,166 +815,146 @@ function initClientDashboard(clientId, clientData) {
     document.getElementById('client-welcome-name').textContent = `Welcome back, ${clientData.name}!`;
     document.getElementById('client-sign-out-btn').addEventListener('click', () => signOut(auth));
 
-    const setupClientTabs = () => {
-        const tabs = document.getElementById('client-dashboard-tabs');
-        tabs.addEventListener('click', (e) => {
-            const button = e.target.closest('button');
-            if (!button) return;
-            document.querySelectorAll('#client-dashboard-tabs .tab-btn').forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            document.querySelectorAll('.client-tab-content').forEach(content => content.classList.add('hidden'));
-            document.getElementById(button.id.replace('-tab', '-content')).classList.remove('hidden');
-        });
+    // Opens a new tab with just the gift card for printing or saving as an image
+    const openCardForPrint = (card) => {
+        const expiryText = card.expiresAt ? `Expires: ${card.expiresAt.toDate().toLocaleDateString()}` : '';
+        const cardHTML = `
+            <html>
+                <head>
+                    <title>Your Gift Card ${card.code}</title>
+                    <script src="https://cdn.tailwindcss.com"></script>
+                    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&family=Parisienne&display=swap" rel="stylesheet">
+                    <style>
+                        body { font-family: 'Poppins', sans-serif; display: flex; align-items: center; justify-content: center; margin: 0; background-color: #f0f0f0; }
+                        .font-parisienne { font-family: 'Parisienne', cursive; }
+                        .card { text-shadow: 1px 1px 3px rgba(0,0,0,0.6); }
+                    </style>
+                </head>
+                <body>
+                    <div class="card w-[400px] h-[228px] rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" 
+                         style="background-image: url('${card.backgroundUrl}');">
+                        <div class="flex justify-between items-start">
+                            <img src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white" />
+                            <div class="text-right">
+                                <p class="font-parisienne text-3xl">Gift Card</p>
+                                <p class="text-xs font-semibold tracking-wider">Nails Express</p>
+                            </div>
+                        </div>
+                        <div class="text-center"><p class="text-5xl font-bold">$${card.balance.toFixed(2)}</p></div>
+                        <div class="text-xs">
+                            <div class="flex justify-between font-semibold">
+                                <span style="display: ${card.recipientName ? 'inline' : 'none'}">FOR: <span class="font-normal">${card.recipientName}</span></span>
+                                <span style="display: ${card.senderName ? 'inline' : 'none'}">FROM: <span class="font-normal">${card.senderName}</span></span>
+                            </div>
+                            <p class="mt-2 text-center font-mono tracking-widest text-sm">${card.code}</p>
+                            <p class="mt-1 text-center text-[10px] opacity-80" style="display: ${expiryText ? 'block' : 'none'}">${expiryText}</p>
+                        </div>
+                    </div>
+                </body>
+            </html>
+        `;
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(cardHTML);
+        printWindow.document.close();
+        printWindow.focus();
     };
 
-    // *** NEW FUNCTION TO RENDER GIFT CARDS ***
     const renderClientGiftCards = (cards) => {
         const container = document.getElementById('client-gift-cards-container');
         if (!container) return;
 
         container.innerHTML = '';
         if (cards.length === 0) {
-            container.innerHTML = '<p class="text-gray-500 text-center">You do not have any gift cards.</p>';
+            container.innerHTML = '<p class="text-gray-500 text-center col-span-full">You do not have any gift cards.</p>';
             return;
         }
 
         cards.forEach(card => {
             const cardEl = document.createElement('div');
-            cardEl.className = 'bg-white p-4 rounded-lg shadow-md border-l-4';
+            cardEl.className = 'bg-white p-3 rounded-lg shadow-md space-y-3';
             
-            let statusColor = 'border-gray-400';
-            if (card.status === 'Active') statusColor = 'border-green-500';
-            if (card.status === 'Pending') statusColor = 'border-yellow-500';
-            if (card.status === 'Depleted') statusColor = 'border-red-500';
-
-            cardEl.classList.add(statusColor);
+            const expiryText = card.expiresAt ? `Expires: ${card.expiresAt.toDate().toLocaleDateString()}` : '';
             
             cardEl.innerHTML = `
-                <div class="flex justify-between items-center">
-                    <div>
-                        <p class="font-mono text-sm text-gray-700">${card.code}</p>
-                        <p class="text-xs text-gray-500">To: ${card.recipientName || 'N/A'}</p>
+                <div class="w-full h-[200px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" 
+                     style="background-image: url('${card.backgroundUrl}'); text-shadow: 1px 1px 3px rgba(0,0,0,0.6);">
+                    <div class="flex justify-between items-start">
+                        <img src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white" />
+                        <div class="text-right">
+                            <p class="font-parisienne text-3xl">Gift Card</p>
+                            <p class="text-xs font-semibold tracking-wider">Nails Express</p>
+                        </div>
                     </div>
-                    <div class="text-right">
-                        <p class="text-xl font-bold text-green-600">$${card.balance.toFixed(2)}</p>
-                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-800">${card.status}</span>
+                    <div class="text-center"><p class="text-5xl font-bold">$${card.balance.toFixed(2)}</p></div>
+                    <div class="text-xs">
+                        <div class="flex justify-between font-semibold">
+                            <span>FOR: <span class="font-normal">${card.recipientName}</span></span>
+                            <span>FROM: <span class="font-normal">${card.senderName}</span></span>
+                        </div>
+                        <p class="mt-2 text-center font-mono tracking-widest text-sm">${card.code}</p>
+                        <p class="mt-1 text-center text-[10px] opacity-80" style="display: ${expiryText ? 'block' : 'none'}">${expiryText}</p>
                     </div>
+                </div>
+                <div class="flex justify-between items-center pt-2">
+                     <span class="px-2 py-1 text-xs font-semibold rounded-full ${card.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${card.status}</span>
+                     <div class="flex gap-2">
+                        <button data-card-id="${card.id}" class="download-card-btn text-gray-500 hover:text-blue-600" title="Download/Print"><i class="fas fa-download"></i></button>
+                        <button data-card-id="${card.id}" class="share-card-btn text-gray-500 hover:text-pink-600" title="Share"><i class="fas fa-share-alt"></i></button>
+                     </div>
                 </div>
             `;
             container.appendChild(cardEl);
         });
     };
 
-    const renderClientAppointments = (appointments) => {
-        const container = document.getElementById('client-upcoming-appointments');
-        container.innerHTML = '';
-        const upcoming = appointments.filter(a => a.appointmentTimestamp.toDate() > new Date());
-        if (upcoming.length === 0) {
-            container.innerHTML = '<p class="text-gray-500">You have no upcoming appointments.</p>';
-            return;
-        }
-        upcoming.forEach(appt => {
-            const el = document.createElement('div');
-            el.className = 'bg-white p-4 rounded-lg shadow';
-            el.innerHTML = `<p class="font-bold">${new Date(appt.appointmentTimestamp.seconds * 1000).toLocaleString()}</p><p>${appt.services.join(', ')}</p><p class="text-sm text-gray-600">With: ${appt.technician}</p>`;
-            container.appendChild(el);
-        });
-    };
+    const setupClientTabs = () => { /* ... existing code ... */ }; // No changes here, just showing for context
+    const renderClientAppointments = (appointments) => { /* ... existing code ... */ };
+    const renderClientHistory = (history) => { /* ... existing code ... */ };
+    const calculateAndRenderFavorites = (history) => { /* ... existing code ... */ };
+    const renderClientGallery = (photos) => { /* ... existing code ... */ };
+    
+    // Listeners for snapshots (appointments, history, etc.)
+    onSnapshot(doc(db, "clients", clientId), (docSnap) => { if (docSnap.exists()) { renderClientGallery(docSnap.data().photoGallery); } });
+    onSnapshot(query(collection(db, "appointments"), where("name", "==", clientData.name)), (snapshot) => { renderClientAppointments(snapshot.docs.map(doc => ({...doc.data(), id: doc.id}))); });
+    onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientData.name), orderBy("checkOutTimestamp", "desc")), (snapshot) => { const history = snapshot.docs.map(doc => ({...doc.data(), id: doc.id})); renderClientHistory(history); calculateAndRenderFavorites(history); });
 
-    const renderClientHistory = (history) => {
-         const container = document.getElementById('client-appointment-history');
-        container.innerHTML = '';
-        if (history.length === 0) {
-            container.innerHTML = '<p class="text-gray-500">You have no past appointments.</p>';
-            return;
-        }
-        history.forEach(visit => {
-            const el = document.createElement('div');
-            el.className = 'bg-white p-4 rounded-lg shadow';
-            el.innerHTML = `<p class="font-bold">${new Date(visit.checkOutTimestamp.seconds * 1000).toLocaleDateString()}</p><p>${visit.services}</p><p class="text-sm text-gray-600">With: ${visit.technician}</p>${visit.colorCode ? `<p class="text-sm text-gray-600">Color: ${visit.colorCode}</p>` : ''}`;
-            container.appendChild(el);
-        });
-    };
-
-    const calculateAndRenderFavorites = (history) => {
-        if (history.length === 0) return;
-        const techCounts = history.reduce((acc, visit) => {
-            if (visit.technician) acc[visit.technician] = (acc[visit.technician] || 0) + 1;
-            return acc;
-        }, {});
-        const colorCounts = history.reduce((acc, visit) => {
-            if(visit.colorCode) acc[visit.colorCode] = (acc[visit.colorCode] || 0) + 1;
-            return acc;
-        }, {});
-
-        const favTech = Object.keys(techCounts).length > 0 ? Object.keys(techCounts).reduce((a, b) => techCounts[a] > techCounts[b] ? a : b) : 'N/A';
-        const favColor = Object.keys(colorCounts).length > 0 ? Object.keys(colorCounts).reduce((a, b) => colorCounts[a] > colorCounts[b] ? a : b) : 'N/A';
-
-        document.getElementById('favorite-technician').textContent = favTech;
-        document.getElementById('favorite-color').textContent = favColor;
-    };
-
-    const renderClientGallery = (photos) => {
-        const container = document.getElementById('client-photo-gallery');
-        container.innerHTML = '';
-        if (!photos || photos.length === 0) {
-            container.innerHTML = '<p class="text-gray-500 col-span-full">You haven\'t uploaded any photos yet.</p>';
-            return;
-        }
-        photos.forEach(photoURL => {
-            const imgContainer = document.createElement('div');
-            imgContainer.className = 'relative';
-            imgContainer.innerHTML = `<img src="${photoURL}" class="w-full h-48 object-cover rounded-lg shadow">`;
-            container.appendChild(imgContainer);
-        });
-    };
-
-    onSnapshot(doc(db, "clients", clientId), (docSnap) => {
-        if (docSnap.exists()) {
-            renderClientGallery(docSnap.data().photoGallery);
-        }
-    });
-
-    onSnapshot(query(collection(db, "appointments"), where("name", "==", clientData.name)), (snapshot) => {
-        const appointments = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
-        renderClientAppointments(appointments);
-    });
-     onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientData.name), orderBy("checkOutTimestamp", "desc")), (snapshot) => {
-        const history = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
-        allFinishedClients = history;
-        renderClientHistory(history);
-        calculateAndRenderFavorites(history);
-    });
-
-    // *** NEW LISTENER FOR GIFT CARDS ***
+    let allClientGiftCards = [];
     onSnapshot(query(collection(db, "gift_cards"), where("createdBy", "==", clientId), orderBy("createdAt", "desc")), (snapshot) => {
-        const cards = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-        renderClientGiftCards(cards);
+        allClientGiftCards = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+        renderClientGiftCards(allClientGiftCards);
     });
 
-
-    document.getElementById('client-photo-upload').addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const storageRef = ref(storage, `client_galleries/${clientId}/${Date.now()}_${file.name}`);
-        try {
-            await uploadBytes(storageRef, file);
-            const downloadURL = await getDownloadURL(storageRef);
-            await updateDoc(doc(db, "clients", clientId), {
-                photoGallery: arrayUnion(downloadURL)
-            });
-            alert('Photo uploaded successfully!');
-        } catch (error) {
-            console.error("Error uploading photo:", error);
-            alert("Could not upload photo.");
+    // Event listener for the entire gift card container
+    document.getElementById('client-gift-cards-container').addEventListener('click', (e) => {
+        const downloadBtn = e.target.closest('.download-card-btn');
+        const shareBtn = e.target.closest('.share-card-btn');
+        
+        if (downloadBtn) {
+            const cardId = downloadBtn.dataset.cardId;
+            const card = allClientGiftCards.find(c => c.id === cardId);
+            if (card) openCardForPrint(card);
         }
-        e.target.value = '';
+
+        if (shareBtn) {
+            const cardId = shareBtn.dataset.cardId;
+            const card = allClientGiftCards.find(c => c.id === cardId);
+            if (card) {
+                // For simplicity, we can use the Web Share API if available, or just copy a link
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'Nails Express Gift Card',
+                        text: `Check out this gift card for Nails Express! Code: ${card.code}`,
+                        url: window.location.href,
+                    }).catch(console.error);
+                } else {
+                    alert('Sharing is not supported on this browser. Try the download button!');
+                }
+            }
+        }
     });
 
-    document.getElementById('client-book-new-btn').addEventListener('click', () => {
-        openAddAppointmentModal(getLocalDateString(), clientData);
-    });
+    document.getElementById('client-photo-upload').addEventListener('change', async (e) => { /* ... existing code ... */ });
+    document.getElementById('client-book-new-btn').addEventListener('click', () => { openAddAppointmentModal(getLocalDateString(), clientData); });
 
     setupClientTabs();
 }

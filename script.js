@@ -11,7 +11,7 @@ const firebaseConfig = {
     messagingSenderId: "1015991996673",
     appId: "1:1015991996673:web:b6e8888abae83906d34b00"
 };
-///---33
+///---3
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -907,12 +907,120 @@ function initClientDashboard(clientId, clientData) {
         });
     };
 
-    const setupClientTabs = () => { /* ... existing code ... */ }; // No changes here, just showing for context
-    const renderClientAppointments = (appointments) => { /* ... existing code ... */ };
-    const renderClientHistory = (history) => { /* ... existing code ... */ };
-    const calculateAndRenderFavorites = (history) => { /* ... existing code ... */ };
-    const renderClientGallery = (photos) => { /* ... existing code ... */ };
-    
+ const setupClientTabs = () => {
+        const tabs = document.getElementById('client-dashboard-tabs');
+        tabs.addEventListener('click', (e) => {
+            const button = e.target.closest('button');
+            if (!button) return;
+            document.querySelectorAll('#client-dashboard-tabs .tab-btn').forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            document.querySelectorAll('.client-tab-content').forEach(content => content.classList.add('hidden'));
+            document.getElementById(button.id.replace('-tab', '-content')).classList.remove('hidden');
+        });
+    };
+
+    // *** NEW FUNCTION TO RENDER GIFT CARDS ***
+    const renderClientGiftCards = (cards) => {
+        const container = document.getElementById('client-gift-cards-container');
+        if (!container) return;
+
+        container.innerHTML = '';
+        if (cards.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 text-center">You do not have any gift cards.</p>';
+            return;
+        }
+
+        cards.forEach(card => {
+            const cardEl = document.createElement('div');
+            cardEl.className = 'bg-white p-4 rounded-lg shadow-md border-l-4';
+            
+            let statusColor = 'border-gray-400';
+            if (card.status === 'Active') statusColor = 'border-green-500';
+            if (card.status === 'Pending') statusColor = 'border-yellow-500';
+            if (card.status === 'Depleted') statusColor = 'border-red-500';
+
+            cardEl.classList.add(statusColor);
+            
+            cardEl.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="font-mono text-sm text-gray-700">${card.code}</p>
+                        <p class="text-xs text-gray-500">To: ${card.recipientName || 'N/A'}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xl font-bold text-green-600">$${card.balance.toFixed(2)}</p>
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-800">${card.status}</span>
+                    </div>
+                </div>
+            `;
+            container.appendChild(cardEl);
+        });
+    };
+
+    const renderClientAppointments = (appointments) => {
+        const container = document.getElementById('client-upcoming-appointments');
+        container.innerHTML = '';
+        const upcoming = appointments.filter(a => a.appointmentTimestamp.toDate() > new Date());
+        if (upcoming.length === 0) {
+            container.innerHTML = '<p class="text-gray-500">You have no upcoming appointments.</p>';
+            return;
+        }
+        upcoming.forEach(appt => {
+            const el = document.createElement('div');
+            el.className = 'bg-white p-4 rounded-lg shadow';
+            el.innerHTML = `<p class="font-bold">${new Date(appt.appointmentTimestamp.seconds * 1000).toLocaleString()}</p><p>${appt.services.join(', ')}</p><p class="text-sm text-gray-600">With: ${appt.technician}</p>`;
+            container.appendChild(el);
+        });
+    };
+
+    const renderClientHistory = (history) => {
+         const container = document.getElementById('client-appointment-history');
+        container.innerHTML = '';
+        if (history.length === 0) {
+            container.innerHTML = '<p class="text-gray-500">You have no past appointments.</p>';
+            return;
+        }
+        history.forEach(visit => {
+            const el = document.createElement('div');
+            el.className = 'bg-white p-4 rounded-lg shadow';
+            el.innerHTML = `<p class="font-bold">${new Date(visit.checkOutTimestamp.seconds * 1000).toLocaleDateString()}</p><p>${visit.services}</p><p class="text-sm text-gray-600">With: ${visit.technician}</p>${visit.colorCode ? `<p class="text-sm text-gray-600">Color: ${visit.colorCode}</p>` : ''}`;
+            container.appendChild(el);
+        });
+    };
+
+    const calculateAndRenderFavorites = (history) => {
+        if (history.length === 0) return;
+        const techCounts = history.reduce((acc, visit) => {
+            if (visit.technician) acc[visit.technician] = (acc[visit.technician] || 0) + 1;
+            return acc;
+        }, {});
+        const colorCounts = history.reduce((acc, visit) => {
+            if(visit.colorCode) acc[visit.colorCode] = (acc[visit.colorCode] || 0) + 1;
+            return acc;
+        }, {});
+
+        const favTech = Object.keys(techCounts).length > 0 ? Object.keys(techCounts).reduce((a, b) => techCounts[a] > techCounts[b] ? a : b) : 'N/A';
+        const favColor = Object.keys(colorCounts).length > 0 ? Object.keys(colorCounts).reduce((a, b) => colorCounts[a] > colorCounts[b] ? a : b) : 'N/A';
+
+        document.getElementById('favorite-technician').textContent = favTech;
+        document.getElementById('favorite-color').textContent = favColor;
+    };
+
+    const renderClientGallery = (photos) => {
+        const container = document.getElementById('client-photo-gallery');
+        container.innerHTML = '';
+        if (!photos || photos.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 col-span-full">You haven\'t uploaded any photos yet.</p>';
+            return;
+        }
+        photos.forEach(photoURL => {
+            const imgContainer = document.createElement('div');
+            imgContainer.className = 'relative';
+            imgContainer.innerHTML = `<img src="${photoURL}" class="w-full h-48 object-cover rounded-lg shadow">`;
+            container.appendChild(imgContainer);
+        });
+    };
+
     // Listeners for snapshots (appointments, history, etc.)
     onSnapshot(doc(db, "clients", clientId), (docSnap) => { if (docSnap.exists()) { renderClientGallery(docSnap.data().photoGallery); } });
     onSnapshot(query(collection(db, "appointments"), where("name", "==", clientData.name)), (snapshot) => { renderClientAppointments(snapshot.docs.map(doc => ({...doc.data(), id: doc.id}))); });
@@ -953,8 +1061,28 @@ function initClientDashboard(clientId, clientData) {
         }
     });
 
-    document.getElementById('client-photo-upload').addEventListener('change', async (e) => { /* ... existing code ... */ });
-    document.getElementById('client-book-new-btn').addEventListener('click', () => { openAddAppointmentModal(getLocalDateString(), clientData); });
+   document.getElementById('client-photo-upload').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const storageRef = ref(storage, `client_galleries/${clientId}/${Date.now()}_${file.name}`);
+        try {
+            await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(storageRef);
+            await updateDoc(doc(db, "clients", clientId), {
+                photoGallery: arrayUnion(downloadURL)
+            });
+            alert('Photo uploaded successfully!');
+        } catch (error) {
+            console.error("Error uploading photo:", error);
+            alert("Could not upload photo.");
+        }
+        e.target.value = '';
+    });
+
+    document.getElementById('client-book-new-btn').addEventListener('click', () => {
+        openAddAppointmentModal(getLocalDateString(), clientData);
+    });
 
     setupClientTabs();
 }

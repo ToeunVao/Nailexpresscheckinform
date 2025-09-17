@@ -278,11 +278,58 @@ onAuthStateChanged(auth, async (user) => {
                             initClientDashboard(user.uid, clientDoc.data());
                             clientDashboardInitialized = true;
                         }
+                   } else {
+                    // This is a new user who just signed up.
+                    // Check if they came from the gift card purchase form.
+                    const pendingPurchaseJSON = sessionStorage.getItem('pendingGiftCardPurchase');
+                    if (pendingPurchaseJSON) {
+                        const details = JSON.parse(pendingPurchaseJSON);
+
+                        // Create the gift card(s) now that the user is authenticated
+                        const batch = writeBatch(db);
+                        const expiryDate = new Date();
+                        expiryDate.setMonth(expiryDate.getMonth() + 6);
+
+                        for (let i = 0; i < details.quantity; i++) {
+                            const cardData = {
+                                amount: details.amount,
+                                balance: details.amount,
+                                history: [],
+                                recipientName: details.recipientName,
+                                senderName: details.senderName,
+                                code: `GC-${Date.now()}-${i}`,
+                                status: 'Active', // Card is active immediately upon purchase
+                                type: 'E-Gift',
+                                createdBy: user.uid, // Link to the new user's ID
+                                buyerInfo: { name: details.buyerName, email: details.buyerEmail, phone: details.buyerPhone },
+                                createdAt: serverTimestamp(),
+                                expiresAt: Timestamp.fromDate(expiryDate)
+                            };
+                            const newCardRef = doc(collection(db, "gift_cards"));
+                            batch.set(newCardRef, cardData);
+                        }
+
+                        await batch.commit();
+                        sessionStorage.removeItem('pendingGiftCardPurchase'); // Clean up
+
+                        alert("Success! Your account has been created and your gift card(s) have been issued.");
+
+                        // Now, proceed to initialize the client dashboard for the new user
+                        const newClientData = { name: details.buyerName, email: details.buyerEmail, phone: details.buyerPhone, role: 'client' };
+                        clientDashboardContent.style.display = 'block';
+                        if (!clientDashboardInitialized) {
+                            initClientDashboard(user.uid, newClientData);
+                            clientDashboardInitialized = true;
+                        }
+
                     } else {
-                         console.error("User authenticated but no user/client document found. Logging out.");
-                         await signOut(auth);
-                         alert("Login error: User data not found.");
+                        // This is a regular new signup, not from a gift card purchase.
+                        // We can log an error or handle as a normal new client.
+                        console.error("User authenticated but no user/client document found. Logging out.");
+                        await signOut(auth);
+                        alert("Login error: User data not found.");
                     }
+                }
                 }
             }
         } else {
@@ -421,39 +468,46 @@ function initLandingPage() {
         submitBtn.textContent = 'Processing...';
 
         try {
-            const batch = writeBatch(db);
-            const expiryDate = new Date();
-            expiryDate.setMonth(expiryDate.getMonth() + 6);
+    // First, try to create a new user with their email and phone as the password.
+    const userCredential = await createUserWithEmailAndPassword(auth, buyerEmail, buyerPhone);
+    const user = userCredential.user;
 
-            for (let i = 0; i < quantity; i++) {
-                const cardData = {
-                    amount: amount,
-                    recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerName,
-                    senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerName,
-                    status: 'Pending',
-                    type: 'E-Gift',
-                    createdBy: anonymousUserId,
-                    buyerInfo: { name: buyerName, email: buyerEmail, phone: buyerPhone },
-                    createdAt: serverTimestamp(),
-                    expiresAt: Timestamp.fromDate(expiryDate)
-                };
-                const newRequestRef = doc(collection(db, "gift_card_requests"));
-                batch.set(newRequestRef, cardData);
-            }
+    // If successful, the user is now logged in.
+    // We will temporarily store the purchase details for the next step.
+    const purchaseDetails = {
+        buyerName: buyerName,
+        buyerPhone: buyerPhone,
+        buyerEmail: buyerEmail,
+        amount: amount,
+        quantity: quantity,
+        recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerName,
+        senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerName
+    };
+    sessionStorage.setItem('pendingGiftCardPurchase', JSON.stringify(purchaseDetails));
 
-            await batch.commit();
+    // The onAuthStateChanged listener will now automatically handle creating the
+    // client document, creating the gift card, and redirecting to the dashboard.
 
-            alert("You have submitted a request for a gift card to our salon. We will contact you soon about payment, or you can follow our Payment Guide.");
-            purchaseForm.reset();
-            purchaseModal.classList.add('hidden');
+    // We just need to create the client document here
+    await setDoc(doc(db, "clients", user.uid), {
+        name: buyerName,
+        email: buyerEmail,
+        phone: buyerPhone,
+        role: 'client',
+        createdAt: serverTimestamp()
+    });
 
-        } catch (error) {
-            console.error("Error submitting gift card request:", error);
-            alert(`Could not process your request. Error: ${error.message}`);
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Buy Gift Card Now';
-        }
+} catch (error) {
+    if (error.code === 'auth/email-already-in-use') {
+        alert("An account with this email already exists. Please log in to purchase a gift card.");
+    } else {
+        console.error("Error creating user during gift card purchase:", error);
+        alert(`Could not process your request. Error: ${error.message}`);
+    }
+} finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Buy Gift Card Now';
+}
     });
     getDoc(doc(db, "settings", "security")).then(docSnap => {
         if (docSnap.exists()) {
@@ -496,7 +550,7 @@ const paymentGuideDisplay = document.getElementById('landing-gc-payment-guide');
             paymentGuideDisplay.textContent = 'Please contact the salon to complete your payment.';
         }
     });
-	
+    
 
     landingLoginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -1202,7 +1256,7 @@ let currentGalleryData = [];
         confirmModal.classList.remove('hidden');
         confirmModal.classList.add('flex');
     };
-	const closeConfirmModal = () => { confirmModal.classList.add('hidden'); confirmModal.classList.remove('flex'); confirmCallback = null; };
+    const closeConfirmModal = () => { confirmModal.classList.add('hidden'); confirmModal.classList.remove('flex'); confirmCallback = null; };
     confirmConfirmBtn.addEventListener('click', () => { if (confirmCallback) { confirmCallback(); } closeConfirmModal(); });
     confirmCancelBtn.addEventListener('click', closeConfirmModal);
     document.querySelector('.confirm-modal-overlay').addEventListener('click', closeConfirmModal);
@@ -4497,4 +4551,18 @@ if (dashboardEarningSubmitDateInput) dashboardEarningSubmitDateInput.value = tod
     document.getElementById('floating-booking-btn').addEventListener('click', () => { openAddAppointmentModal(getLocalDateString()); });
     // ADD THIS NEW LINE to set the default date
     document.getElementById('staff-details-date-filter').value = todayString;
+    setInterval(() => {
+        const now = new Date();
+        allAppointments.forEach(appt => {
+            if (sentReminderIds.includes(appt.id)) return;
+            const apptTime = appt.appointmentTimestamp.toDate();
+            const timeDifferenceMinutes = (apptTime.getTime() - now.getTime()) / 60000;
+            if (timeDifferenceMinutes > 0 && timeDifferenceMinutes <= 60) {
+                const timeString = apptTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const serviceString = Array.isArray(appt.services) ? appt.services[0] : appt.services;
+                addNotification('reminder', `Reminder: ${appt.name}'s appointment for ${serviceString} is at ${timeString}.`);
+                sentReminderIds.push(appt.id);
+            }
+        });
+    }, 60000);
 }

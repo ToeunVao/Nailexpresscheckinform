@@ -11,7 +11,7 @@ const firebaseConfig = {
     messagingSenderId: "1015991996673",
     appId: "1:1015991996673:web:b6e8888abae83906d34b00"
 };
-///---3
+///---30
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -230,6 +230,7 @@ addAppointmentForm.addEventListener('submit', async (e) => {
 
 
 // --- Primary Authentication Router ---
+// REPLACE the entire onAuthStateChanged function
 onAuthStateChanged(auth, async (user) => {
     try {
         const hoursDoc = await getDoc(doc(db, "settings", "salonHours"));
@@ -252,8 +253,8 @@ onAuthStateChanged(auth, async (user) => {
             } else {
                 const userDocRef = doc(db, "users", user.uid);
                 const userDoc = await getDoc(userDocRef);
-                
-                if (userDoc.exists()) { 
+
+                if (userDoc.exists()) {
                     const userData = userDoc.data();
                     currentUserRole = userData.role;
                     currentUserName = userData.name; // Store user's name
@@ -265,89 +266,81 @@ onAuthStateChanged(auth, async (user) => {
                         initMainApp(currentUserRole, currentUserName);
                         mainAppInitialized = true;
                     }
-                } else { 
+                } else {
                     const clientDocRef = doc(db, "clients", user.uid);
                     const clientDoc = await getDoc(clientDocRef);
                     if (clientDoc.exists()) {
-                        currentUserRole = clientDoc.data().role; 
+                        currentUserRole = clientDoc.data().role;
                         loadingScreen.style.display = 'none';
                         landingPageContent.style.display = 'none';
                         appContent.style.display = 'none';
                         clientDashboardContent.style.display = 'block';
-                         if (!clientDashboardInitialized) {
+                        if (!clientDashboardInitialized) {
                             initClientDashboard(user.uid, clientDoc.data());
                             clientDashboardInitialized = true;
                         }
-                   } else {
-                     // This is a new user who just signed up.
-                    // Check if they came from the gift card purchase form.
-                    const pendingPurchaseJSON = sessionStorage.getItem('pendingGiftCardPurchase');
-                    if (pendingPurchaseJSON) {
-                        const details = JSON.parse(pendingPurchaseJSON);
-                        const purchaseModal = document.getElementById('gift-card-purchase-modal');
-
-
-                        // **Step 1: Create the client document first.**
-                        const newClientData = {
-                            name: details.buyerName,
-                            email: details.buyerEmail,
-                            phone: details.buyerPhone,
-                            role: 'client',
-                            createdAt: serverTimestamp()
-                        };
-                        await setDoc(doc(db, "clients", user.uid), newClientData);
-
-
-                        // **Step 2: Create the gift card(s).**
-                        const batch = writeBatch(db);
-                        const expiryDate = new Date();
-                        expiryDate.setMonth(expiryDate.getMonth() + 6);
-
-                        for (let i = 0; i < details.quantity; i++) {
-                            const cardData = {
-                                amount: details.amount,
-                                balance: details.amount,
-                                history: [],
-                                recipientName: details.recipientName,
-                                senderName: details.senderName,
-                                code: `GC-${Date.now()}-${i}`,
-                                status: 'Active',
-                                type: 'E-Gift',
-                                createdBy: user.uid,
-                                buyerInfo: { name: details.buyerName, email: details.buyerEmail, phone: details.buyerPhone },
-                                createdAt: serverTimestamp(),
-                                expiresAt: Timestamp.fromDate(expiryDate)
-                            };
-                            const newCardRef = doc(collection(db, "gift_cards"));
-                            batch.set(newCardRef, cardData);
-                        }
-
-                        await batch.commit();
-                        sessionStorage.removeItem('pendingGiftCardPurchase'); // Clean up
-
-                        alert("Success! Your account has been created and your gift card(s) have been issued.");
-
-                        // **Step 3: Close the purchase modal and initialize the dashboard.**
-                        if (purchaseModal) {
-                            purchaseModal.classList.add('hidden');
-                        }
-                        
-                        landingPageContent.style.display = 'none';
-                        appContent.style.display = 'none';
-                        clientDashboardContent.style.display = 'block';
-                        if (!clientDashboardInitialized) {
-                            initClientDashboard(user.uid, newClientData);
-                            clientDashboardInitialized = true;
-                        }
-
                     } else {
-                        // This is a regular new signup, not from a gift card purchase.
-                        // We can log an error or handle as a normal new client.
-                        console.error("User authenticated but no user/client document found. Logging out.");
-                        await signOut(auth);
-                        alert("Login error: User data not found.");
+                        const pendingPurchaseJSON = sessionStorage.getItem('pendingGiftCardPurchase');
+                        if (pendingPurchaseJSON) {
+                            const details = JSON.parse(pendingPurchaseJSON);
+                            const purchaseModal = document.getElementById('gift-card-purchase-modal');
+
+                            const newClientData = {
+                                name: details.buyerName,
+                                email: details.buyerEmail,
+                                phone: details.buyerPhone,
+                                role: 'client',
+                                createdAt: serverTimestamp()
+                            };
+                            await setDoc(doc(db, "clients", user.uid), newClientData);
+
+                            const batch = writeBatch(db);
+                            const expiryDate = new Date();
+                            expiryDate.setMonth(expiryDate.getMonth() + 6);
+
+                            for (let i = 0; i < details.quantity; i++) {
+                                const cardData = {
+                                    amount: details.amount,
+                                    balance: details.amount,
+                                    history: [],
+                                    recipientName: details.recipientName,
+                                    senderName: details.senderName,
+                                    code: `GC-${Date.now()}-${i}`,
+                                    // *** CHANGE IS HERE ***
+                                    status: 'Pending', // Set status to Pending instead of Active
+                                    type: 'E-Gift',
+                                    createdBy: user.uid,
+                                    buyerInfo: { name: details.buyerName, email: details.buyerEmail, phone: details.buyerPhone },
+                                    createdAt: serverTimestamp(),
+                                    expiresAt: Timestamp.fromDate(expiryDate)
+                                };
+                                const newCardRef = doc(collection(db, "gift_cards"));
+                                batch.set(newCardRef, cardData);
+                            }
+
+                            await batch.commit();
+                            sessionStorage.removeItem('pendingGiftCardPurchase');
+
+                            alert("Success! Your account has been created and your gift card request has been sent. It will be activated once payment is confirmed.");
+
+                            if (purchaseModal) {
+                                purchaseModal.classList.add('hidden');
+                            }
+
+                            landingPageContent.style.display = 'none';
+                            appContent.style.display = 'none';
+                            clientDashboardContent.style.display = 'block';
+                            if (!clientDashboardInitialized) {
+                                initClientDashboard(user.uid, newClientData);
+                                clientDashboardInitialized = true;
+                            }
+
+                        } else {
+                            console.error("User authenticated but no user/client document found. Logging out.");
+                            await signOut(auth);
+                            alert("Login error: User data not found.");
+                        }
                     }
-                }
                 }
             }
         } else {
@@ -817,6 +810,7 @@ getDoc(doc(db, "public_data", "technicians")).then(docSnap => {
 }
 
 // --- CLIENT DASHBOARD SCRIPT ---
+// REPLACE the entire initClientDashboard function
 function initClientDashboard(clientId, clientData) {
     document.getElementById('client-welcome-name').textContent = `Welcome back, ${clientData.name}!`;
     document.getElementById('client-sign-out-btn').addEventListener('click', () => signOut(auth));
@@ -830,6 +824,44 @@ function initClientDashboard(clientId, clientData) {
             button.classList.add('active');
             document.querySelectorAll('.client-tab-content').forEach(content => content.classList.add('hidden'));
             document.getElementById(button.id.replace('-tab', '-content')).classList.remove('hidden');
+        });
+    };
+
+    // *** NEW FUNCTION TO RENDER GIFT CARDS ***
+    const renderClientGiftCards = (cards) => {
+        const container = document.getElementById('client-gift-cards-container');
+        if (!container) return;
+
+        container.innerHTML = '';
+        if (cards.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 text-center">You do not have any gift cards.</p>';
+            return;
+        }
+
+        cards.forEach(card => {
+            const cardEl = document.createElement('div');
+            cardEl.className = 'bg-white p-4 rounded-lg shadow-md border-l-4';
+            
+            let statusColor = 'border-gray-400';
+            if (card.status === 'Active') statusColor = 'border-green-500';
+            if (card.status === 'Pending') statusColor = 'border-yellow-500';
+            if (card.status === 'Depleted') statusColor = 'border-red-500';
+
+            cardEl.classList.add(statusColor);
+            
+            cardEl.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="font-mono text-sm text-gray-700">${card.code}</p>
+                        <p class="text-xs text-gray-500">To: ${card.recipientName || 'N/A'}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xl font-bold text-green-600">$${card.balance.toFixed(2)}</p>
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-800">${card.status}</span>
+                    </div>
+                </div>
+            `;
+            container.appendChild(cardEl);
         });
     };
 
@@ -909,10 +941,17 @@ function initClientDashboard(clientId, clientData) {
     });
      onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientData.name), orderBy("checkOutTimestamp", "desc")), (snapshot) => {
         const history = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
-        allFinishedClients = history; 
+        allFinishedClients = history;
         renderClientHistory(history);
         calculateAndRenderFavorites(history);
     });
+
+    // *** NEW LISTENER FOR GIFT CARDS ***
+    onSnapshot(query(collection(db, "gift_cards"), where("createdBy", "==", clientId), orderBy("createdAt", "desc")), (snapshot) => {
+        const cards = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+        renderClientGiftCards(cards);
+    });
+
 
     document.getElementById('client-photo-upload').addEventListener('change', async (e) => {
         const file = e.target.files[0];
@@ -938,7 +977,6 @@ function initClientDashboard(clientId, clientData) {
     });
 
     setupClientTabs();
-
 }
 
 // --- MAIN CHECK-IN APP SCRIPT ---
@@ -4391,35 +4429,33 @@ const renderGiftCardsAdminTable = (cards) => {
     
     document.getElementById('close-edit-gift-card-modal-btn').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));
     editGiftCardModal.querySelector('.modal-overlay').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));
-    const setupGiftCardTableListener = (tableId) => {
+// REPLACE the entire setupGiftCardTableListener function
+const setupGiftCardTableListener = (tableId) => {
     const table = document.getElementById(tableId);
-if (table) {
-    table.addEventListener('click', (e) => {
-        const activateBtn = e.target.closest('.activate-gift-card-btn'); // ADD THIS LINE
-
-        if (activateBtn) { // ADD THIS ENTIRE IF BLOCK
-            const cardId = activateBtn.dataset.id;
-            const card = allGiftCards.find(c => c.id === cardId);
-            if (card) {
-                showConfirmModal(`Activate gift card ${card.code} for $${card.amount.toFixed(2)}?`, async () => {
-                    try {
-                        await updateDoc(doc(db, "gift_cards", cardId), { status: 'Active' });
-                        alert('Gift card has been activated!');
-                    } catch (error) {
-                        console.error("Error activating gift card:", error);
-                        alert("Could not activate the gift card.");
-                    }
-                }, 'Activate'); // Optional: change confirm button text
-            }
-        }
+    if (table) {
+        table.addEventListener('click', (e) => {
+            const activateBtn = e.target.closest('.activate-gift-card-btn');
             const editBtn = e.target.closest('.edit-gift-card-btn');
-            if (editBtn) {
-                const card = allGiftCards.find(c => c.id === editBtn.dataset.id);
-                if(card) openEditGiftCardModal(card);
-            }
-
             const deleteBtn = e.target.closest('.delete-gift-card-btn');
-            if (deleteBtn) {
+
+            if (activateBtn) {
+                const cardId = activateBtn.dataset.id;
+                const card = allGiftCards.find(c => c.id === cardId);
+                if (card) {
+                    showConfirmModal(`Activate gift card ${card.code} for $${card.amount.toFixed(2)}?`, async () => {
+                        try {
+                            await updateDoc(doc(db, "gift_cards", cardId), { status: 'Active' });
+                            alert('Gift card has been activated!');
+                        } catch (error) {
+                            console.error("Error activating gift card:", error);
+                            alert("Could not activate the gift card.");
+                        }
+                    }, 'Activate');
+                }
+            } else if (editBtn) {
+                const card = allGiftCards.find(c => c.id === editBtn.dataset.id);
+                if (card) openEditGiftCardModal(card);
+            } else if (deleteBtn) {
                 const cardId = deleteBtn.dataset.id;
                 const card = allGiftCards.find(c => c.id === cardId);
                 if (card) {

@@ -325,7 +325,7 @@ onAuthStateChanged(auth, async (user) => {
                         mainAppInitialized = true;
                     }
                 } else {
-                    const clientDocRef = doc(db, "clients", user.uid);
+                     const clientDocRef = doc(db, "clients", user.uid);
                     const clientDoc = await getDoc(clientDocRef);
                     if (clientDoc.exists()) {
                         currentUserRole = clientDoc.data().role;
@@ -333,10 +333,9 @@ onAuthStateChanged(auth, async (user) => {
                         landingPageContent.style.display = 'none';
                         appContent.style.display = 'none';
                         clientDashboardContent.style.display = 'block';
-                        if (!clientDashboardInitialized) {
-                            initClientDashboard(user.uid, clientDoc.data());
-                            clientDashboardInitialized = true;
-                        }
+                        
+                        // FIX: Always initialize the dashboard on login to attach listeners
+                        initClientDashboard(user.uid, clientDoc.data());
                     } else {
                         const pendingPurchaseJSON = sessionStorage.getItem('pendingGiftCardPurchase');
                         if (pendingPurchaseJSON) {

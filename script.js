@@ -2261,8 +2261,10 @@ const renderStaffEarningsTable = (earnings, tableId, totalEarningId, totalTipId)
     const colspan = userRole === 'admin' ? 6 : 5;
     tbody.innerHTML = earnings.length === 0 ? `<tr><td colspan="${colspan}" class="py-6 text-center text-gray-400">No earnings found.</td></tr>` : '';
 
-    // *** FIX IS HERE: Sorting by newest date first (descending) ***
-    earnings.sort((a, b) => b.date.seconds - a.date.seconds).forEach(earning => {
+    // *** FIX IS HERE: The .sort() method has been removed. ***
+    // The table will now render the data in the exact order it's received
+    // from the Firestore query, which is already sorted by date descending.
+    earnings.forEach(earning => {
         const row = tbody.insertRow();
         row.className = 'bg-white border-b';
         let rowHTML = `

@@ -2170,66 +2170,69 @@ const loadAndRenderServices = async () => {
         });
     };
 
-    const renderClientsList = () => {
-        if (!allFinishedClients || !allClients) {
-            const tbody = document.querySelector('#clients-list-table tbody');
-            if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-gray-400">Loading client data...</td></tr>`;
-            return;
-        }
-    
-        const clientsMap = new Map();
-        allFinishedClients.forEach(visit => {
-            if (!visit.name) return;
-            const clientKey = visit.name.toLowerCase();
-            if (!clientsMap.has(clientKey)) {
-                clientsMap.set(clientKey, { name: visit.name, phone: visit.phone || '', lastVisit: visit.checkOutTimestamp.toMillis(), techCounts: {}, colorCounts: {} });
-            }
-            const clientData = clientsMap.get(clientKey);
-            if (visit.checkOutTimestamp.toMillis() > clientData.lastVisit) {
-                clientData.lastVisit = visit.checkOutTimestamp.toMillis();
-                clientData.phone = visit.phone || clientData.phone;
-            }
-            if (visit.technician) { clientData.techCounts[visit.technician] = (clientData.techCounts[visit.technician] || 0) + 1; }
-            if (visit.colorCode) { clientData.colorCounts[visit.colorCode] = (clientData.colorCounts[visit.colorCode] || 0) + 1; }
-        });
-    
-        let processedClients = Array.from(clientsMap.values()).map(client => {
-            const findFavorite = (counts) => Object.keys(counts).length > 0 ? Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b) : 'N/A';
-            return { ...client, favoriteTech: findFavorite(client.techCounts), favoriteColor: findFavorite(client.colorCounts) };
-        });
-    
-        const clientInfoMap = new Map(allClients.map(c => [c.name.toLowerCase(), { dob: c.dob, id: c.id, phone: c.phone }]));
-        let finalClientList = processedClients.map(aggClient => {
-            const key = aggClient.name.toLowerCase();
-            const masterInfo = clientInfoMap.get(key);
-            return { ...aggClient, id: masterInfo ? masterInfo.id : null, dob: masterInfo ? masterInfo.dob : '', phone: masterInfo && masterInfo.phone ? masterInfo.phone : aggClient.phone };
-        });
-    
-        allClients.forEach(masterClient => {
-            if (!clientsMap.has(masterClient.name.toLowerCase())) {
-                finalClientList.push({ ...masterClient, lastVisit: null, favoriteTech: 'N/A', favoriteColor: 'N/A' });
-            }
-        });
-        
-        aggregatedClients = finalClientList;
-    
-        const searchTerm = document.getElementById('search-clients-list').value.toLowerCase();
-        const filteredClients = aggregatedClients.filter(c => c.name.toLowerCase().includes(searchTerm));
-    
+   // Located inside initMainApp()
+const renderClientsList = () => {
+    if (!allFinishedClients || !allClients) {
         const tbody = document.querySelector('#clients-list-table tbody');
-        if (!tbody) return;
-        tbody.innerHTML = '';
-        if (filteredClients.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-gray-400">No clients found.</td></tr>`;
-            return;
+        if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-gray-400">Loading client data...</td></tr>`;
+        return;
+    }
+
+    const clientsMap = new Map();
+    allFinishedClients.forEach(visit => {
+        if (!visit.name) return;
+        const clientKey = visit.name.toLowerCase();
+        if (!clientsMap.has(clientKey)) {
+            clientsMap.set(clientKey, { name: visit.name, phone: visit.phone || '', email: visit.email || '', lastVisit: visit.checkOutTimestamp.toMillis(), techCounts: {}, colorCounts: {} });
         }
+        const clientData = clientsMap.get(clientKey);
+        if (visit.checkOutTimestamp.toMillis() > clientData.lastVisit) {
+            clientData.lastVisit = visit.checkOutTimestamp.toMillis();
+            clientData.phone = visit.phone || clientData.phone;
+            clientData.email = visit.email || clientData.email; // Capture email from last visit
+        }
+        if (visit.technician) { clientData.techCounts[visit.technician] = (clientData.techCounts[visit.technician] || 0) + 1; }
+        if (visit.colorCode) { clientData.colorCounts[visit.colorCode] = (clientData.colorCounts[visit.colorCode] || 0) + 1; }
+    });
+
+    let processedClients = Array.from(clientsMap.values()).map(client => {
+        const findFavorite = (counts) => Object.keys(counts).length > 0 ? Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b) : 'N/A';
+        return { ...client, favoriteTech: findFavorite(client.techCounts), favoriteColor: findFavorite(client.colorCounts) };
+    });
+
+    const clientInfoMap = new Map(allClients.map(c => [c.name.toLowerCase(), { dob: c.dob, id: c.id, phone: c.phone, email: c.email }]));
+    let finalClientList = processedClients.map(aggClient => {
+        const key = aggClient.name.toLowerCase();
+        const masterInfo = clientInfoMap.get(key);
+        return { ...aggClient, id: masterInfo ? masterInfo.id : null, dob: masterInfo ? masterInfo.dob : '', phone: masterInfo && masterInfo.phone ? masterInfo.phone : aggClient.phone, email: masterInfo && masterInfo.email ? masterInfo.email : aggClient.email };
+    });
+
+    allClients.forEach(masterClient => {
+        if (!clientsMap.has(masterClient.name.toLowerCase())) {
+            finalClientList.push({ ...masterClient, lastVisit: null, favoriteTech: 'N/A', favoriteColor: 'N/A' });
+        }
+    });
     
-        filteredClients.forEach(client => {
-            const row = tbody.insertRow();
-            row.className = 'bg-white border-b';
-            row.innerHTML = `<td class="px-6 py-4 font-medium text-gray-900">${client.name}</td><td class="px-6 py-4">${client.phone || 'N/A'}</td><td class="px-6 py-4">${client.lastVisit ? new Date(client.lastVisit).toLocaleDateString() : 'N/A'}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${client.id}" class="text-indigo-500 hover:text-indigo-700 view-client-profile-btn" title="View Profile"><i class="fas fa-user-circle text-lg"></i></button><button data-id="${client.id}" class="text-blue-500 hover:text-blue-700 edit-client-btn" title="Edit Client"><i class="fas fa-edit text-lg"></i></button><button data-id="${client.id}" class="text-red-500 hover:text-red-700 delete-client-btn" title="Delete Client"><i class="fas fa-trash-alt text-lg"></i></button></td>`;
-        });
-    };
+    aggregatedClients = finalClientList;
+
+    const searchTerm = document.getElementById('search-clients-list').value.toLowerCase();
+    const filteredClients = aggregatedClients.filter(c => c.name.toLowerCase().includes(searchTerm));
+
+    const tbody = document.querySelector('#clients-list-table tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    if (filteredClients.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-gray-400">No clients found.</td></tr>`;
+        return;
+    }
+
+    filteredClients.forEach(client => {
+        const row = tbody.insertRow();
+        row.className = 'bg-white border-b';
+        // *** UPDATED THIS LINE TO INCLUDE EMAIL ***
+        row.innerHTML = `<td class="px-6 py-4 font-medium text-gray-900">${client.name}</td><td class="px-6 py-4">${client.phone || 'N/A'}</td><td class="px-6 py-4">${client.email || 'N/A'}</td><td class="px-6 py-4">${client.lastVisit ? new Date(client.lastVisit).toLocaleDateString() : 'N/A'}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${client.id}" class="text-indigo-500 hover:text-indigo-700 view-client-profile-btn" title="View Profile"><i class="fas fa-user-circle text-lg"></i></button><button data-id="${client.id}" class="text-blue-500 hover:text-blue-700 edit-client-btn" title="Edit Client"><i class="fas fa-edit text-lg"></i></button><button data-id="${client.id}" class="text-red-500 hover:text-red-700 delete-client-btn" title="Delete Client"><i class="fas fa-trash-alt text-lg"></i></button></td>`;
+    });
+};
 
     const applyEarningFilters = (earnings, techFilter, dateFilter, rangeFilter, role, name) => {
         let filtered = earnings;
@@ -2761,13 +2764,23 @@ onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot
         renderGiftCardsAdminTable(filtered);
     });
     
-    document.getElementById('export-clients-btn').addEventListener('click', () => {
-        const dataToExport = aggregatedClients.map(c => ({ Name: c.name, Phone: c.phone || '', DOB: c.dob || '', 'Favorite Tech': c.favoriteTech || '', 'Favorite Color': c.favoriteColor || '', 'Last Visit': c.lastVisit ? new Date(c.lastVisit).toLocaleDateString() : '' }));
-        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Clients");
-        XLSX.writeFile(workbook, "clients_list.xlsx");
-    });
+// Located inside initMainApp()
+document.getElementById('export-clients-btn').addEventListener('click', () => {
+    // *** UPDATED THIS LINE TO INCLUDE EMAIL ***
+    const dataToExport = aggregatedClients.map(c => ({ 
+        Name: c.name, 
+        Phone: c.phone || '', 
+        Email: c.email || '', 
+        DOB: c.dob || '', 
+        'Favorite Tech': c.favoriteTech || '', 
+        'Favorite Color': c.favoriteColor || '', 
+        'Last Visit': c.lastVisit ? new Date(c.lastVisit).toLocaleDateString() : '' 
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Clients");
+    XLSX.writeFile(workbook, "clients_list.xlsx");
+});
 
     document.getElementById('full-name').addEventListener('input', (e) => { const client = allFinishedClients.find(c => c.name === e.target.value); if (client) { document.getElementById('phone-number').value = client.phone; } });
     document.getElementById('phone-number').addEventListener('input', (e) => { const client = allFinishedClients.find(c => c.phone === e.target.value); if (client) { document.getElementById('full-name').value = client.name; } });

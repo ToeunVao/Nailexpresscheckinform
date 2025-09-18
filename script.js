@@ -4274,6 +4274,7 @@ if (ideaToDelete) {
     const giftCardsTableBody = document.querySelector('#gift-cards-table tbody');
     const giftCardsTableAdminBody = document.querySelector('#gift-cards-table-admin tbody');
 
+// Located inside initMainApp()
 const renderGiftCardsAdminTable = (cards) => {
     const tables = [giftCardsTableBody, giftCardsTableAdminBody];
     tables.forEach(tbody => {
@@ -4287,8 +4288,8 @@ const renderGiftCardsAdminTable = (cards) => {
             const row = tbody.insertRow();
             const balance = card.balance !== undefined ? card.balance : card.amount;
             
-            let statusText = card.status || 'Active'; // Default to Active for older cards
-            let statusColor = 'bg-gray-200 text-gray-800'; // Default
+            let statusText = card.status || 'Active';
+            let statusColor = 'bg-gray-200 text-gray-800';
             switch (statusText) {
                 case 'Active': statusColor = 'bg-green-100 text-green-800'; break;
                 case 'Pending': statusColor = 'bg-yellow-100 text-yellow-800'; break;
@@ -4302,11 +4303,28 @@ const renderGiftCardsAdminTable = (cards) => {
                 actionButtons = `<button data-id="${card.id}" class="activate-gift-card-btn text-green-500 hover:text-green-700" title="Activate Card"><i class="fas fa-check-circle text-lg"></i></button>` + actionButtons;
             }
 
+            // *** NEW: Create detailed HTML for the Buyer/Recipient column ***
+            let buyerRecipientHTML = 'N/A';
+            if (card.buyerInfo) {
+                buyerRecipientHTML = `
+                    <div>
+                        <p class="font-semibold">${card.buyerInfo.name || 'N/A'}</p>
+                        <p class="text-xs text-gray-600">${card.buyerInfo.phone || 'No Phone'}</p>
+                        <p class="text-xs text-gray-600">${card.buyerInfo.email || 'No Email'}</p>
+                    </div>
+                `;
+                // Also show the recipient if their name is different from the buyer's
+                if (card.recipientName && card.recipientName !== card.buyerInfo.name) {
+                    buyerRecipientHTML += `<div class="mt-1 border-t border-gray-200 pt-1 text-sm"><span class="font-semibold text-gray-500">To:</span> ${card.recipientName}</div>`;
+                }
+            }
+
+            // *** UPDATED: The entire row.innerHTML is replaced to use the new HTML ***
             row.innerHTML = `<td class="px-6 py-4">${new Date(card.createdAt.seconds * 1000).toLocaleDateString()}</td>
                              <td class="px-6 py-4 font-mono text-xs">${card.code}</td>
                              <td class="px-6 py-4">$${card.amount.toFixed(2)}</td>
                              <td class="px-6 py-4 font-bold">$${balance.toFixed(2)}</td>
-                             <td class="px-6 py-4">${card.recipientName}<br><span class="text-xs text-gray-500">${card.buyerInfo?.email || 'N/A'}</span></td>
+                             <td class="px-6 py-4">${buyerRecipientHTML}</td>
                              <td class="px-6 py-4">${card.senderName}</td>
                              <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-semibold rounded-full ${statusColor}">${statusText}</span></td>
                              <td class="px-6 py-4 text-center space-x-4">${actionButtons}</td>`;

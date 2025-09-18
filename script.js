@@ -2291,26 +2291,34 @@ const renderStaffEarningsTable = (earnings, tableId, totalEarningId, totalTipId)
     return { totalEarning, totalTip };
 };
 
-     const renderAllStaffEarnings = () => {
-        // Render for Report Page
-        const reportFiltered = applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter, currentEarningRangeFilter, userRole, userName);
-        const { totalEarning: reportTotalEarning, totalTip: reportTotalTip } = renderStaffEarningsTable(reportFiltered, 'staff-earning-table', 'total-earning', 'total-tip');
-        
-        const reportTotalMainSpan = document.getElementById('filtered-earning-total-main');
-        const reportTotalTipSpan = document.getElementById('filtered-earning-total-tip');
-        if(reportTotalMainSpan) reportTotalMainSpan.textContent = `Total ($${reportTotalEarning.toFixed(2)})`;
-        if(reportTotalTipSpan) reportTotalTipSpan.textContent = `Tip ($${reportTotalTip.toFixed(2)})`;
+// Located inside initMainApp()
+const renderAllStaffEarnings = () => {
+    // Render for Report Page
+    const reportFiltered = applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter, currentEarningRangeFilter, userRole, userName);
+    const { totalEarning: reportTotalEarning, totalTip: reportTotalTip } = renderStaffEarningsTable(reportFiltered, 'staff-earning-table', 'total-earning', 'total-tip');
+    
+    const reportTotalMainSpan = document.getElementById('filtered-earning-total-main');
+    const reportTotalTipSpan = document.getElementById('filtered-earning-total-tip');
+    if(reportTotalMainSpan) reportTotalMainSpan.textContent = `Total ($${reportTotalEarning.toFixed(2)})`;
+    if(reportTotalTipSpan) reportTotalTipSpan.textContent = `Tip ($${reportTotalTip.toFixed(2)})`;
 
 
-        // Render for Dashboard Page
-        const dashboardFiltered = applyEarningFilters(allEarnings, currentDashboardEarningTechFilter, currentDashboardEarningDateFilter, currentDashboardEarningRangeFilter, userRole, userName);
-        const { totalEarning: dashTotalEarning, totalTip: dashTotalTip } = renderStaffEarningsTable(dashboardFiltered, 'dashboard-staff-earning-table-full', 'dashboard-total-earning', 'dashboard-total-tip');
+    // Render for Dashboard Page
+    const dashboardFiltered = applyEarningFilters(allEarnings, currentDashboardEarningTechFilter, currentDashboardEarningDateFilter, currentDashboardEarningRangeFilter, userRole, userName);
+    const { totalEarning: dashTotalEarning, totalTip: dashTotalTip } = renderStaffEarningsTable(dashboardFiltered, 'dashboard-staff-earning-table-full', 'dashboard-total-earning', 'dashboard-total-tip');
 
-        const dashTotalMainSpan = document.getElementById('dashboard-filtered-earning-total-main');
-        const dashTotalTipSpan = document.getElementById('dashboard-filtered-earning-total-tip');
-        if(dashTotalMainSpan) dashTotalMainSpan.textContent = `Total ($${dashTotalEarning.toFixed(2)})`;
-        if(dashTotalTipSpan) dashTotalTipSpan.textContent = `Tip ($${dashTotalTip.toFixed(2)})`;
-     };
+    const dashTotalMainSpan = document.getElementById('dashboard-filtered-earning-total-main');
+    const dashTotalTipSpan = document.getElementById('dashboard-filtered-earning-total-tip');
+    if(dashTotalMainSpan) dashTotalMainSpan.textContent = `Total ($${dashTotalEarning.toFixed(2)})`;
+    if(dashTotalTipSpan) dashTotalTipSpan.textContent = `Tip ($${dashTotalTip.toFixed(2)})`;
+
+    // *** NEW: Add live client count to the dashboard report title ***
+    const clientCount = dashboardFiltered.length;
+    const detailsTitle = document.getElementById('dashboard-staff-earning-title');
+    if (detailsTitle) {
+        detailsTitle.textContent = `Staff Earning Report (${clientCount} Client${clientCount === 1 ? '' : 's'})`;
+    }
+};
     
     const applySalonEarningFilters = (earnings, dateFilter, rangeFilter) => {
         let filtered = [...earnings];

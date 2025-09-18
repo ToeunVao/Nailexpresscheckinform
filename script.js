@@ -1491,7 +1491,7 @@ topNav.addEventListener('click', (e) => {
     currentStaffDashboardDateFilter = '', currentStaffDashboardRangeFilter = String(new Date().getMonth());
     
     let currentDashboardEarningTechFilter = 'All', currentDashboardEarningDateFilter = '', currentDashboardEarningRangeFilter = 'daily';
-    let currentSalonEarningDateFilter = '', currentSalonEarningRangeFilter = String(new Date().getMonth()), currentExpenseMonthFilter = '';
+    let currentSalonEarningDateFilter = '', currentSalonEarningRangeFilter = String(new Date().getMonth()), currentExpenseMonthFilter = '', currentDashboardApptTechFilter = 'All';
 
    // ... other variables
 let aggregatedClients = [], allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [], allInventoryUsage = [], allGiftCards = [], allPromotions = [], allServicesList = [], technicianColorMap = {}, sentReminderIds = [], currentRotation = 0;
@@ -1776,7 +1776,7 @@ const updateAdminDashboard = () => {
     // Render Graph and Upcoming Appointments
    updateSalonRevenueChart(filteredSalonEarnings, currentDashboardRangeFilter);
     updateStaffEarningsReport(filteredSalonEarnings); // <-- ADD THIS LINE
-    renderDetailedAppointmentsList('admin-upcoming-appointments-list', allAppointments);
+   renderDetailedAppointmentsList('admin-upcoming-appointments-list', allAppointments, currentDashboardApptTechFilter);
 };
 
 
@@ -2914,7 +2914,13 @@ calendarGrid.addEventListener('click', (e) => {
     
     setupTechFilter('tech-filter-container-earning', (tech) => { currentEarningTechFilter = tech; renderAllStaffEarnings(); });
     setupTechFilter('dashboard-tech-filter-container-earning', (tech) => { currentDashboardEarningTechFilter = tech; renderAllStaffEarnings(); });
-    
+    // Located inside initMainApp()
+setupTechFilter('tech-filter-container-earning', (tech) => { currentEarningTechFilter = tech; renderAllStaffEarnings(); });
+setupTechFilter('dashboard-tech-filter-container-earning', (tech) => { currentDashboardEarningTechFilter = tech; renderAllStaffEarnings(); });
+
+// *** ADD THIS NEW LINE ***
+setupTechFilter('tech-filter-container-dashboard-appointments', (tech) => { currentDashboardApptTechFilter = tech; updateAdminDashboard(); });
+
     
 const setupReportDateFilters = (selectId, dateInputId, callback) => {
     const select = document.getElementById(selectId);
@@ -3445,7 +3451,7 @@ const updatePublicTechnicianList = async (users) => {
 
         const publicDataRef = doc(db, "public_data", "technicians");
         await setDoc(publicDataRef, { names: technicians });
-        console.log("Public technician list updated.");
+        //console.log("Public technician list updated.");
     } catch (error) {
         console.error("Error updating public technician list:", error);
     }

@@ -1649,15 +1649,15 @@ const colorPalette = [
                     </div>
                     <div class="mt-auto space-y-1 text-xs text-gray-600 border-t border-gray-400/20 pt-2">
                         <div class="flex justify-between">
-                            <span>Commission (70%):</span>
+                            <span>Total Payout:</span>
                             <span class="font-semibold text-gray-800">$${commission.toFixed(2)}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span>Check Payout (70%):</span>
+                            <span>Check Payout:</span>
                             <span class="font-semibold text-gray-800">$${checkPayout.toFixed(2)}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span>Cash Payout (30%):</span>
+                            <span>Cash Payout:</span>
                             <span class="font-semibold text-gray-800">$${cashPayout.toFixed(2)}</span>
                         </div>
                     </div>
@@ -4692,92 +4692,7 @@ const setupGiftCardTableListener = (tableId) => {
     }
 };
 
-// PASTE THIS ENTIRE BLOCK AT THE END OF initMainApp
 
-// --- NEW: Gift Card Request Approval Logic ---
-const requestsTableBody = document.getElementById('gift-card-requests-table').querySelector('tbody');
-
-if (userRole === 'admin' && requestsTableBody) {
-    onSnapshot(query(collection(db, "gift_card_requests"), orderBy("createdAt", "desc")), (snapshot) => {
-        const requests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        requestsTableBody.innerHTML = '';
-        if (requests.length === 0) {
-            requestsTableBody.innerHTML = `<tr><td colspan="4" class="text-center text-gray-400 py-3">No pending requests.</td></tr>`;
-            return;
-        }
-        requests.forEach(req => {
-            const row = requestsTableBody.insertRow();
-            row.innerHTML = `
-                <td class="px-6 py-3">${req.createdAt.toDate().toLocaleDateString()}</td>
-                <td class="px-6 py-3">${req.buyerInfo.name}<br><span class="text-xs text-gray-500">${req.buyerInfo.email}</span></td>
-                <td class="px-6 py-3 font-semibold">$${req.amount.toFixed(2)}</td>
-                <td class="px-6 py-3 text-center">
-                    <button data-id="${req.id}" class="approve-gift-card-btn bg-green-500 text-white px-3 py-1 text-xs font-bold rounded-full hover:bg-green-600">Approve</button>
-                </td>
-            `;
-        });
-    });
-
-  // --- NEW: Gift Card Request Approval Logic ---
-    const requestsTableBody = document.getElementById('gift-card-requests-table').querySelector('tbody');
-
-    if (userRole === 'admin' && requestsTableBody) {
-        onSnapshot(query(collection(db, "gift_card_requests"), orderBy("createdAt", "desc")), (snapshot) => {
-            const requests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            requestsTableBody.innerHTML = '';
-            if (requests.length === 0) {
-                requestsTableBody.innerHTML = `<tr><td colspan="4" class="text-center text-gray-400 py-3">No pending requests.</td></tr>`;
-                return;
-            }
-            requests.forEach(req => {
-                const row = requestsTableBody.insertRow();
-                row.innerHTML = `
-                    <td class="px-6 py-3">${req.createdAt.toDate().toLocaleDateString()}</td>
-                    <td class="px-6 py-3">${req.buyerInfo.name}<br><span class="text-xs text-gray-500">${req.buyerInfo.email}</span></td>
-                    <td class="px-6 py-3 font-semibold">$${req.amount.toFixed(2)}</td>
-                    <td class="px-6 py-3 text-center">
-                        <button data-id="${req.id}" class="approve-gift-card-btn bg-green-500 text-white px-3 py-1 text-xs font-bold rounded-full hover:bg-green-600">Approve</button>
-                    </td>
-                `;
-            });
-        });
-
-        requestsTableBody.addEventListener('click', async (e) => {
-            const approveBtn = e.target.closest('.approve-gift-card-btn');
-            if (approveBtn) {
-                const requestId = approveBtn.dataset.id;
-                const requestDocRef = doc(db, "gift_card_requests", requestId);
-
-                showConfirmModal("Approve this gift card and activate it?", async () => {
-                    try {
-                        const requestDoc = await getDoc(requestDocRef);
-                        if (!requestDoc.exists()) {
-                            alert("This request no longer exists.");
-                            return;
-                        }
-                        const requestData = requestDoc.data();
-
-                        const newCardData = { ...requestData, status: 'Active', code: `GC-${Date.now()}` };
-
-                        const newCardRef = doc(collection(db, "gift_cards"));
-
-                        const batch = writeBatch(db);
-                        batch.set(newCardRef, newCardData);
-                        batch.delete(requestDocRef);
-                        await batch.commit();
-
-                        alert("Gift card has been approved and activated!");
-
-                    } catch (error) {
-                        console.error("Error approving gift card:", error);
-                        alert("Could not approve the gift card.");
-                    }
-                }, "Approve");
-            }
-    });
-    }
-}
-// --- END OF NEW LOGIC ---
 setupGiftCardTableListener('gift-cards-table');
 setupGiftCardTableListener('gift-cards-table-admin');
 document.getElementById('close-client-profile-modal-btn').addEventListener('click', () => clientProfileModal.classList.add('hidden'));

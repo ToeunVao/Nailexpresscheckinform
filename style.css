@@ -1,6 +1,21 @@
 body { font-family: 'Poppins', sans-serif; background-color: #FEFBF9; }
         h1, h2, h3, .clock { font-family: 'Playfair Display', serif; }
-
+/* Add this to the end of your style.css file */
+.color-brand-btn.active {
+    background-color: #d63384;
+    color: white;
+}
+.color-swatch {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid #e2e8f0;
+    transition: transform 0.2s;
+}
+.color-swatch:hover {
+    transform: scale(1.1);
+}
         /* Common Form Styles */
         .form-input:focus, .form-select:focus, .form-checkbox:focus, button:focus-visible {
             outline: none;

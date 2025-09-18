@@ -40,6 +40,7 @@ let currentUserId = null;
 let initialAppointmentsLoaded = false;
 let initialInventoryLoaded = false;
 let allFinishedClients = [], allAppointments = [], allClients = [], allActiveClients = [], servicesData = {};
+let allColorBrands = [];
 
 const giftCardBackgrounds = {
     'General': [
@@ -1233,7 +1234,8 @@ function initMainApp(userRole, userName) {
             Booking
             <span id="booking-nav-count" class="absolute -top-1 -right-1 bg-blue-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center hidden">0</span>
         </button>
-        <button class="top-nav-btn" data-target="nails-idea">Nails Idea</button>
+        <button class="top-nav-btn" data-target="nails-idea">Nails Inspo</button>
+        <button class="top-nav-btn" data-target="color-chart">Color Chart</button>
     `;
 
     // Add admin-only links if the user is an admin
@@ -1409,6 +1411,10 @@ const navigateToSection = (target) => {
             break;
         case 'nails-idea':
             document.getElementById('nails-idea-content').classList.remove('hidden');
+            break;
+        case 'color-chart': // ADD THIS CASE
+            document.getElementById('color-chart-content').classList.remove('hidden');
+            initColorChart();
             break;
         case 'report':
             document.getElementById('reports-content').classList.remove('hidden');
@@ -4274,6 +4280,184 @@ if (ideaToDelete) {
     await deleteDoc(doc(db, "nail_ideas", ideaId));
 }
             });
+        }
+    });
+
+
+    // ADD ALL THIS CODE AT THE END OF THE initMainApp FUNCTION
+
+    // --- COLOR CHART LOGIC ---
+
+    let colorChartInitialized = false;
+    let handSVGContent = null;
+
+    // Function to pre-fill the database with initial brands and colors
+    const prefillColorData = async () => {
+        const batch = writeBatch(db);
+        
+        // Define brands and some sample colors
+        const brands = {
+            "DND": [
+                { name: "401 Angel Lace", hex: "#fce5cd" }, { name: "429 Pinky Star", hex: "#f4abc4" },
+                { name: "441 Funky Fuchsia", hex: "#d93696" }, { name: "502 Ocean Blue", hex: "#0081a7" },
+                { name: "525 Lemon Juice", hex: "#fdfcdc" }, { name: "545 Fiery Red", hex: "#c1121f" },
+            ],
+            "DC": [
+                { name: "001 French White", hex: "#ffffff" }, { name: "002 Sugar Swizzle", hex: "#f7ede2" },
+                { name: "020 Red Stone", hex: "#a4161a" }, { name: "055 Mermaid Green", hex: "#006d77" },
+                { name: "075 Spiced Brown", hex: "#7f5539" }, { name: "091 Lavender Haze", hex: "#a393eb" },
+            ],
+            "DD": [
+                { name: "156 North Sea", hex: "#2b2d42" }, { name: "163 Coral Castle", hex: "#ff8fab" },
+                { name: "172 Lilac Season", hex: "#c7b7e3" }, { name: "190 Gold Glam", hex: "#f0c808" },
+                { name: "205 Racing Green", hex: "#004b23" }, { name: "221 Orange Sunset", hex: "#f28c18" },
+            ],
+            "Cat Eye": [],
+            "Chrome": []
+        };
+
+        for (const brandName in brands) {
+            const docRef = doc(db, "color_brands", brandName);
+            batch.set(docRef, { name: brandName, colors: brands[brandName] });
+        }
+
+        try {
+            await batch.commit();
+            console.log("Successfully pre-filled color chart data.");
+        } catch (error) {
+            console.error("Error pre-filling color data: ", error);
+        }
+    };
+
+    const renderColorSwatches = (colors) => {
+        const container = document.getElementById('color-swatches-container');
+        container.innerHTML = '';
+        if (colors.length === 0) {
+            container.innerHTML = '<p class="col-span-full text-sm text-gray-500">No colors for this brand yet.</p>';
+        } else {
+            colors.forEach(color => {
+                container.innerHTML += `
+                    <div class="text-center">
+                        <div class="color-swatch mx-auto" data-color="${color.hex}" style="background-color: ${color.hex};"></div>
+                        <p class="text-xs mt-1">${color.name}</p>
+                    </div>
+                `;
+            });
+        }
+    };
+
+    const initColorChart = async () => {
+        if (colorChartInitialized) return;
+
+        // Fetch and embed the SVG
+        if (!handSVGContent) {
+            try {
+                const response = await fetch('hand.svg');
+                handSVGContent = await response.text();
+            } catch (e) {
+                console.error("Could not load hand.svg", e);
+                return;
+            }
+        }
+        const handContainer = document.getElementById('hand-preview-container');
+        handContainer.innerHTML = handSVGContent;
+
+        const tabsContainer = document.getElementById('color-brands-tabs');
+        tabsContainer.innerHTML = '';
+        allColorBrands.forEach((brand, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'color-brand-btn px-3 py-1 rounded-full text-sm';
+            btn.textContent = brand.name;
+            btn.dataset.brandId = brand.id;
+            if (index === 0) {
+                btn.classList.add('active');
+                renderColorSwatches(brand.colors);
+            }
+            tabsContainer.appendChild(btn);
+        });
+
+        tabsContainer.addEventListener('click', (e) => {
+            const btn = e.target.closest('.color-brand-btn');
+            if (btn) {
+                tabsContainer.querySelectorAll('.color-brand-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const brand = allColorBrands.find(b => b.id === btn.dataset.brandId);
+                renderColorSwatches(brand.colors);
+            }
+        });
+
+        document.getElementById('color-swatches-container').addEventListener('click', (e) => {
+            const swatch = e.target.closest('.color-swatch');
+            if (swatch) {
+                const color = swatch.dataset.color;
+                handContainer.querySelectorAll('.nail').forEach(nailPath => {
+                    nailPath.style.fill = color;
+                });
+            }
+        });
+        
+        colorChartInitialized = true;
+    };
+
+
+    // --- COLOR CHART ADMIN LOGIC ---
+    const renderColorBrandsAdmin = () => {
+        const container = document.getElementById('color-brands-admin-list');
+        if(!container) return;
+
+        container.innerHTML = '';
+        allColorBrands.forEach(brand => {
+            const div = document.createElement('div');
+            div.className = 'p-3 border rounded-lg bg-white flex justify-between items-center';
+            div.innerHTML = `
+                <span class="font-bold">${brand.name}</span>
+                <div>
+                    <span class="text-sm text-gray-500 mr-4">${brand.colors.length} colors</span>
+                    <button data-id="${brand.id}" class="delete-color-brand-btn text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    };
+
+    document.getElementById('add-color-brand-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const input = document.getElementById('new-color-brand-name');
+        const brandName = input.value.trim();
+        if (brandName) {
+            try {
+                await setDoc(doc(db, "color_brands", brandName), { name: brandName, colors: [] });
+                input.value = '';
+            } catch (error) {
+                console.error("Error adding new color brand: ", error);
+                alert("Could not add new brand.");
+            }
+        }
+    });
+
+    document.getElementById('color-brands-admin-list')?.addEventListener('click', (e) => {
+        const delBtn = e.target.closest('.delete-color-brand-btn');
+        if (delBtn) {
+            const brandId = delBtn.dataset.id;
+            const brand = allColorBrands.find(b => b.id === brandId);
+            showConfirmModal(`Are you sure you want to delete the brand "${brand.name}" and all its colors?`, async () => {
+                await deleteDoc(doc(db, "color_brands", brandId));
+            });
+        }
+    });
+    
+    // Fetch all color brands and prefill if needed
+    onSnapshot(query(collection(db, "color_brands"), orderBy("name")), (snapshot) => {
+        if (snapshot.empty) {
+            prefillColorData(); // If collection is empty, add default data
+        } else {
+            allColorBrands = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderColorBrandsAdmin();
+            // If the color chart has been initialized, we might want to refresh it
+            if(colorChartInitialized) {
+                colorChartInitialized = false; // Reset to allow re-initialization
+                initColorChart();
+            }
         }
     });
 

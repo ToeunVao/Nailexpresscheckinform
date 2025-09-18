@@ -938,7 +938,25 @@
                         </div>
                     </div>
 
-
+<div id="color-chart-content" class="main-section hidden">
+    <div class="mb-6 border-b pb-3">
+        <h3 class="text-xl font-semibold text-gray-700">Interactive Color Chart</h3>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="md:col-span-1">
+            <h4 class="font-semibold mb-2">Brands</h4>
+            <div id="color-brands-tabs" class="flex flex-wrap gap-2 mb-4">
+                </div>
+            <h4 class="font-semibold mb-2">Colors</h4>
+            <div id="color-swatches-container" class="grid grid-cols-5 gap-3 max-h-[60vh] overflow-y-auto pr-2">
+                </div>
+        </div>
+        <div class="md:col-span-2 flex items-center justify-center">
+            <div id="hand-preview-container" class="w-full max-w-md">
+                </div>
+        </div>
+    </div>
+</div>
                     <div id="reports-content" class="main-section hidden">
                         <div class="mb-4 border-b border-gray-200">
                             <ul class="flex flex-wrap -mb-px text-sm font-medium text-center scrollable-tabs" id="reports-sub-tabs">
@@ -1273,6 +1291,8 @@
                                         id="inventory-report-tab" type="button">Inventory Report</button></li>
                                 <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg"
                                         id="service-management-tab" type="button">Service Management</button></li>
+                                 <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg" 
+                                        id="color-chart-management-tab" type="button">Color Chart</button></li>
                                 <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg"
                                         id="nail-ideas-management-tab" type="button">Nail Ideas Management</button></li>
                                 <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg"
@@ -1503,7 +1523,18 @@
                                 </table>
                             </div>
                         </div>
-
+<div id="color-chart-management-content" class="sub-tab-content hidden">
+    <h3 class="text-xl font-semibold text-gray-700 mb-4">Manage Color Brands</h3>
+    <form id="add-color-brand-form" class="p-4 border rounded-lg bg-gray-50 mb-6">
+        <label for="new-color-brand-name" class="block text-sm font-medium text-gray-600">New Brand Name</label>
+        <div class="flex gap-2 mt-1">
+            <input type="text" id="new-color-brand-name" class="form-input w-full" placeholder="e.g., OPI" required>
+            <button type="submit" class="bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">Add Brand</button>
+        </div>
+    </form>
+    <div id="color-brands-admin-list" class="space-y-2">
+        </div>
+</div>
                         <!-- Gift Card Management Content -->
                         <div id="gift-card-management-content" class="sub-tab-content hidden">
                             <h3 class="text-xl font-semibold text-gray-700 border-b pb-3 mb-6">Gift Card Management</h3>

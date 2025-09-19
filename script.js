@@ -2504,7 +2504,7 @@ const renderAllStaffEarnings = () => {
         }
     });
 
-   // Located inside initMainApp()
+// Located inside initMainApp()
 const openClientProfileModal = async (client) => {
     // Find all relevant data for the selected client
     const clientData = aggregatedClients.find(c => c.id === client.id);
@@ -2522,16 +2522,12 @@ const openClientProfileModal = async (client) => {
 
     // Populate stats cards
     document.getElementById('profile-total-visits').textContent = clientHistory.length;
-    
-    // *** FIX IS HERE: This calculation is now safer ***
     const totalSpent = clientHistory.reduce((sum, visit) => {
-        // Ensure visit.services is a string before calling .match()
         const servicesString = Array.isArray(visit.services) ? visit.services.join(', ') : visit.services;
         const prices = (servicesString.match(/\$\d+/g) || []).map(p => Number(p.slice(1)));
         return sum + prices.reduce((a, b) => a + b, 0);
     }, 0);
     document.getElementById('profile-total-spent').textContent = `$${totalSpent.toFixed(2)}`;
-
     document.getElementById('profile-fav-tech').textContent = clientData.favoriteTech;
     document.getElementById('profile-fav-color').textContent = clientData.favoriteColor;
 
@@ -2551,19 +2547,7 @@ const openClientProfileModal = async (client) => {
         ? clientAppointments.map(a => `<div class="bg-blue-50 p-2 rounded-md"><p class="font-semibold">${a.appointmentTimestamp.toDate().toLocaleString()}</p><p class="text-sm">${a.services.join(', ')}</p></div>`).join('')
         : '<p class="text-sm text-gray-500">No upcoming appointments.</p>';
 
-    // Populate photo gallery (This part might be removed if you deleted the feature)
-    const galleryContainer = document.getElementById('profile-photo-gallery');
-    try {
-        const clientDocSnap = await getDoc(doc(db, "clients", client.id));
-        if (clientDocSnap.exists() && clientDocSnap.data().photoGallery && clientDocSnap.data().photoGallery.length > 0) {
-             galleryContainer.innerHTML = clientDocSnap.data().photoGallery.map(url => `<a href="${url}" target="_blank"><img src="${url}" class="w-full h-24 object-cover rounded-md"></a>`).join('');
-        } else {
-            galleryContainer.innerHTML = '<p class="text-sm text-gray-500 col-span-full">No photos uploaded.</p>';
-        }
-    } catch (error) {
-        console.error("Error fetching client photo gallery:", error);
-        galleryContainer.innerHTML = '<p class="text-sm text-red-500 col-span-full">Could not load photos.</p>';
-    }
+    // The photo gallery logic has been removed from this function.
 
     // Show the modal
     clientProfileModal.classList.remove('hidden');

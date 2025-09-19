@@ -1117,23 +1117,8 @@ function initClientDashboard(clientId, clientData) {
         document.getElementById('favorite-color').textContent = favColor;
     };
 
-    const renderClientGallery = (photos) => {
-        const container = document.getElementById('client-photo-gallery');
-        container.innerHTML = '';
-        if (!photos || photos.length === 0) {
-            container.innerHTML = '<p class="text-gray-500 col-span-full">You haven\'t uploaded any photos yet.</p>';
-            return;
-        }
-        photos.forEach(photoURL => {
-            const imgContainer = document.createElement('div');
-            imgContainer.className = 'relative';
-            imgContainer.innerHTML = `<img src="${photoURL}" class="w-full h-48 object-cover rounded-lg shadow">`;
-            container.appendChild(imgContainer);
-        });
-    };
 
     // Listeners for snapshots (appointments, history, etc.)
-    onSnapshot(doc(db, "clients", clientId), (docSnap) => { if (docSnap.exists()) { renderClientGallery(docSnap.data().photoGallery); } });
     onSnapshot(query(collection(db, "appointments"), where("name", "==", clientData.name)), (snapshot) => { renderClientAppointments(snapshot.docs.map(doc => ({...doc.data(), id: doc.id}))); });
     onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientData.name), orderBy("checkOutTimestamp", "desc")), (snapshot) => { const history = snapshot.docs.map(doc => ({...doc.data(), id: doc.id})); renderClientHistory(history); calculateAndRenderFavorites(history); });
 

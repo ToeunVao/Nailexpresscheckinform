@@ -2504,7 +2504,8 @@ const renderAllStaffEarnings = () => {
         }
     });
 
-    const openClientProfileModal = async (client) => {
+   // Located inside initMainApp()
+const openClientProfileModal = async (client) => {
     // Find all relevant data for the selected client
     const clientData = aggregatedClients.find(c => c.id === client.id);
     if (!clientData) {
@@ -2521,11 +2522,16 @@ const renderAllStaffEarnings = () => {
 
     // Populate stats cards
     document.getElementById('profile-total-visits').textContent = clientHistory.length;
+    
+    // *** FIX IS HERE: This calculation is now safer ***
     const totalSpent = clientHistory.reduce((sum, visit) => {
-        const prices = (visit.services.match(/\$\d+/g) || []).map(p => Number(p.slice(1)));
+        // Ensure visit.services is a string before calling .match()
+        const servicesString = Array.isArray(visit.services) ? visit.services.join(', ') : visit.services;
+        const prices = (servicesString.match(/\$\d+/g) || []).map(p => Number(p.slice(1)));
         return sum + prices.reduce((a, b) => a + b, 0);
     }, 0);
     document.getElementById('profile-total-spent').textContent = `$${totalSpent.toFixed(2)}`;
+
     document.getElementById('profile-fav-tech').textContent = clientData.favoriteTech;
     document.getElementById('profile-fav-color').textContent = clientData.favoriteColor;
 
@@ -2534,7 +2540,7 @@ const renderAllStaffEarnings = () => {
     historyBody.innerHTML = clientHistory.length > 0 ? clientHistory.map(v => 
         `<tr>
             <td class="px-4 py-2">${v.checkOutTimestamp.toDate().toLocaleDateString()}</td>
-            <td class="px-4 py-2">${v.services}</td>
+            <td class="px-4 py-2">${Array.isArray(v.services) ? v.services.join(', ') : v.services}</td>
             <td class="px-4 py-2">${v.technician}</td>
         </tr>`
     ).join('') : '<tr><td colspan="3" class="text-center p-4 text-gray-500">No visit history found.</td></tr>';
@@ -2545,7 +2551,7 @@ const renderAllStaffEarnings = () => {
         ? clientAppointments.map(a => `<div class="bg-blue-50 p-2 rounded-md"><p class="font-semibold">${a.appointmentTimestamp.toDate().toLocaleString()}</p><p class="text-sm">${a.services.join(', ')}</p></div>`).join('')
         : '<p class="text-sm text-gray-500">No upcoming appointments.</p>';
 
-    // Populate photo gallery
+    // Populate photo gallery (This part might be removed if you deleted the feature)
     const galleryContainer = document.getElementById('profile-photo-gallery');
     try {
         const clientDocSnap = await getDoc(doc(db, "clients", client.id));

@@ -4291,44 +4291,413 @@ if (ideaToDelete) {
     let colorChartInitialized = false;
     let handSVGContent = null;
 
-    // Function to pre-fill the database with initial brands and colors
-    const prefillColorData = async () => {
-        const batch = writeBatch(db);
-        
-        // Define brands and some sample colors
-        const brands = {
-            "DND": [
-                { name: "401 Angel Lace", hex: "#fce5cd" }, { name: "429 Pinky Star", hex: "#f4abc4" },
-                { name: "441 Funky Fuchsia", hex: "#d93696" }, { name: "502 Ocean Blue", hex: "#0081a7" },
-                { name: "525 Lemon Juice", hex: "#fdfcdc" }, { name: "545 Fiery Red", hex: "#c1121f" },
-            ],
-            "DC": [
-                { name: "001 French White", hex: "#ffffff" }, { name: "002 Sugar Swizzle", hex: "#f7ede2" },
-                { name: "020 Red Stone", hex: "#a4161a" }, { name: "055 Mermaid Green", hex: "#006d77" },
-                { name: "075 Spiced Brown", hex: "#7f5539" }, { name: "091 Lavender Haze", hex: "#a393eb" },
-            ],
-            "DD": [
-                { name: "156 North Sea", hex: "#2b2d42" }, { name: "163 Coral Castle", hex: "#ff8fab" },
-                { name: "172 Lilac Season", hex: "#c7b7e3" }, { name: "190 Gold Glam", hex: "#f0c808" },
-                { name: "205 Racing Green", hex: "#004b23" }, { name: "221 Orange Sunset", hex: "#f28c18" },
-            ],
-            "Cat Eye": [],
-            "Chrome": []
-        };
+// Function to pre-fill the database with initial brands and colors
+const prefillColorData = async () => {
+    const batch = writeBatch(db);
 
-        for (const brandName in brands) {
-            const docRef = doc(db, "color_brands", brandName);
-            batch.set(docRef, { name: brandName, colors: brands[brandName] });
-        }
-
-        try {
-            await batch.commit();
-            console.log("Successfully pre-filled color chart data.");
-        } catch (error) {
-            console.error("Error pre-filling color data: ", error);
-        }
+    const brands = {
+        "DND": [
+            { name: "401 Angel Lace", hex: "#fce5cd", group: "Pinks & Nudes" },
+            { name: "429 Pinky Star", hex: "#f4abc4", group: "Pinks & Nudes" },
+            { name: "441 Funky Fuchsia", hex: "#d93696", group: "Pinks & Nudes" },
+            { name: "473 French Tip", hex: "#fde9f0", group: "Pinks & Nudes" },
+            { name: "499 Be My Valentine", hex: "#f7a7c8", group: "Pinks & Nudes" },
+            { name: "501 Ballet Pink", hex: "#f9ddec", group: "Pinks & Nudes" },
+            { name: "542 Tea Time", hex: "#f3d9d5", group: "Pinks & Nudes" },
+            { name: "577 Nude", hex: "#e7d4c5", group: "Pinks & Nudes" },
+            { name: "601 Ballet Pink", hex: "#f4c2c2", group: "Pinks & Nudes" },
+            { name: "610 Pinky Promise", hex: "#f5b7b1", group: "Pinks & Nudes" },
+            { name: "640 Barbie Pink", hex: "#ff82c3", group: "Pinks & Nudes" },
+            { name: "650 Rose", hex: "#e4a7b5", group: "Pinks & Nudes" },
+            { name: "661 Bubble Gum", hex: "#f7b2d5", group: "Pinks & Nudes" },
+            { name: "719 Tutti Frutti", hex: "#ff6392", group: "Pinks & Nudes" },
+            { name: "807 Cotton Candy", hex: "#ffbcd9", group: "Pinks & Nudes" },
+            { name: "857 Sheer Pink", hex: "#ffe4e1", group: "Pinks & Nudes" },
+            { name: "860 Perfect Nude", hex: "#eec9b8", group: "Pinks & Nudes" },
+            { name: "862 Milky Pink", hex: "#fceef5", group: "Pinks & Nudes" },
+            { name: "DC023 Blushing", hex: "#ffb6c1", group: "Pinks & Nudes" },
+            { name: "DC149 Antique Pink", hex: "#e0b4b4", group: "Pinks & Nudes" },
+            { name: "DC151 Rose Petal", hex: "#f9a8d4", group: "Pinks & Nudes" },
+            { name: "430 Ferrari Red", hex: "#c1121f", group: "Reds & Berries" },
+            { name: "429 Boston University Red", hex: "#cc0000", group: "Reds & Berries" },
+            { name: "498 Fiery Red", hex: "#d90429", group: "Reds & Berries" },
+            { name: "510 Red Stone", hex: "#a4161a", group: "Reds & Berries" },
+            { name: "545 Fiery Red", hex: "#ff0000", group: "Reds & Berries" },
+            { name: "633 Garnet Red", hex: "#8c0000", group: "Reds & Berries" },
+            { name: "751 Cherry Mocha", hex: "#6a0000", group: "Reds & Berries" },
+            { name: "753 Scarlett Dreams", hex: "#b20000", group: "Reds & Berries" },
+            { name: "754 Winter Berry", hex: "#a4133c", group: "Reds & Berries" },
+            { name: "757 Chili Pepper", hex: "#9b2226", group: "Reds & Berries" },
+            { name: "DC010 Red Cherry", hex: "#c9184a", group: "Reds & Berries" },
+            { name: "DC085 Cranberry", hex: "#8d0801", group: "Reds & Berries" },
+            { name: "434 Violet", hex: "#a393eb", group: "Purples" },
+            { name: "500 Lavender", hex: "#e6e6fa", group: "Purples" },
+            { name: "543 Purple Passion", hex: "#8338ec", group: "Purples" },
+            { name: "620 Grape", hex: "#6a0dad", group: "Purples" },
+            { name: "621 Purple Rain", hex: "#7b2cbf", group: "Purples" },
+            { name: "670 Lilac", hex: "#c8a2c8", group: "Purples" },
+            { name: "785 Voodoo", hex: "#5a189a", group: "Purples" },
+            { name: "DC091 Lavender Haze", hex: "#b39ddb", group: "Purples" },
+            { name: "DC105 Iris", hex: "#9d4edd", group: "Purples" },
+            { name: "DC172 Lilac Season", hex: "#c7b7e3", group: "Purples" },
+            { name: "436 Baby Blue", hex: "#89cff0", group: "Blues" },
+            { name: "502 Ocean Blue", hex: "#0081a7", group: "Blues" },
+            { name: "529 Blue River", hex: "#0077b6", group: "Blues" },
+            { name: "572 Great Smoky Mountain", hex: "#4895ef", group: "Blues" },
+            { name: "574 Blue Bell", hex: "#a2a2d0", group: "Blues" },
+            { name: "575 Blue Earth", hex: "#3f88c5", group: "Blues" },
+            { name: "622 Midnight Blue", hex: "#03045e", group: "Blues" },
+            { name: "671 Blue Hawaiian", hex: "#00b4d8", group: "Blues" },
+            { name: "734 Berry Blue", hex: "#4a4e69", group: "Blues" },
+            { name: "DC028 Navy Blue", hex: "#000080", group: "Blues" },
+            { name: "DC107 Periwinkle", hex: "#ccccff", group: "Blues" },
+            { name: "DC165 North Sea", hex: "#2b2d42", group: "Blues" },
+            { name: "431 Minty Green", hex: "#98ff98", group: "Greens" },
+            { name: "503 Lime Green", hex: "#32cd32", group: "Greens" },
+            { name: "530 Emerald Green", hex: "#50c878", group: "Greens" },
+            { name: "605 Olive Green", hex: "#808000", group: "Greens" },
+            { name: "617 Sage", hex: "#b2ac88", group: "Greens" },
+            { name: "680 Teal", hex: "#008080", group: "Greens" },
+            { name: "747 Aurora Green", hex: "#4f7942", group: "Greens" },
+            { name: "DC055 Mermaid Green", hex: "#006d77", group: "Greens" },
+            { name: "DC118 Pale Kiwi", hex: "#d0f4de", group: "Greens" },
+            { name: "DC205 Racing Green", hex: "#004b23", group: "Greens" },
+            { name: "418 Butternut Squash", hex: "#f8961e", group: "Oranges & Corals" },
+            { name: "420 Neon Orange", hex: "#ff9e00", group: "Oranges & Corals" },
+            { name: "506 Sunset Orange", hex: "#fb5607", group: "Oranges & Corals" },
+            { name: "532 Coral", hex: "#ff7f50", group: "Oranges & Corals" },
+            { name: "660 Papaya", hex: "#ffc971", group: "Oranges & Corals" },
+            { name: "729 Ambrosia", hex: "#ffbf69", group: "Oranges & Corals" },
+            { name: "756 Bonfire", hex: "#f48c06", group: "Oranges & Corals" },
+            { name: "DC011 Coral Kiss", hex: "#f77f00", group: "Oranges & Corals" },
+            { name: "DC163 Coral Castle", hex: "#ff8fab", group: "Oranges & Corals" },
+            { name: "DC205 Papaya Pop", hex: "#ff97b3", group: "Oranges & Corals" },
+            { name: "425 Sunshine Yellow", hex: "#ffca3a", group: "Yellows" },
+            { name: "525 Lemon Juice", hex: "#fdfcdc", group: "Yellows" },
+            { name: "531 Canary Yellow", hex: "#fef278", group: "Yellows" },
+            { name: "616 Lemon", hex: "#fff44f", group: "Yellows" },
+            { name: "745 Honey", hex: "#fca311", group: "Yellows" },
+            { name: "DC190 Gold Glam", hex: "#f0c808", group: "Yellows" },
+            { name: "DC2509 Gimmie' Butter", hex: "#fae152", group: "Yellows" },
+            { name: "405 Taupe", hex: "#bcae9e", group: "Browns & Neutrals" },
+            { name: "422 Brown", hex: "#6f4e37", group: "Browns & Neutrals" },
+            { name: "550 Chocolate", hex: "#492611", group: "Browns & Neutrals" },
+            { name: "607 Espresso", hex: "#362222", group: "Browns & Neutrals" },
+            { name: "750 Fudgsicle", hex: "#45322e", group: "Browns & Neutrals" },
+            { name: "971 Tele-Talking", hex: "#eaddcf", group: "Browns & Neutrals" },
+            { name: "DC075 Spiced Brown", hex: "#7f5539", group: "Browns & Neutrals" },
+            { name: "447 Black Licorice", hex: "#000000", group: "Grays, Blacks & Whites" },
+            { name: "448 Snow Flake", hex: "#ffffff", group: "Grays, Blacks & Whites" },
+            { name: "460 Gray", hex: "#8e8d8d", group: "Grays, Blacks & Whites" },
+            { name: "555 Charcoal", hex: "#3d3d3d", group: "Grays, Blacks & Whites" },
+            { name: "602 Silver", hex: "#c0c0c0", group: "Grays, Blacks & Whites" },
+            { name: "DC001 French White", hex: "#ffffff", group: "Grays, Blacks & Whites" },
+            { name: "DC002 Sugar Swizzle", hex: "#f7ede2", group: "Grays, Blacks & Whites" },
+            { name: "DC030 Charcoal Gray", hex: "#5e5e5e", group: "Grays, Blacks & Whites" },
+            { name: "443 Twinkle Little Star", hex: "#d4af37", group: "Glitters & Metallics" },
+            { name: "558 Gold", hex: "#ffd700", group: "Glitters & Metallics" },
+            { name: "645 Rose Gold", hex: "#b76e79", group: "Glitters & Metallics" },
+            { name: "740 Dazzle", hex: "#e0b0ff", group: "Glitters & Metallics" },
+            { name: "741 Diamond Eyes", hex: "#b9f2ff", group: "Glitters & Metallics" },
+            { name: "792 Bubbles", hex: "#e7feff", group: "Glitters & Metallics" },
+            { name: "795 Super-Nova", hex: "#c9bcf3", group: "Glitters & Metallics" },
+            { name: "726 Whirly Pop", hex: "#fec8d8", group: "Glitters & Metallics" },
+        ],
+        "DC": [
+            { name: "002 Sugar Swizzle", hex: "#f7ede2", group: "Pinks & Nudes" },
+            { name: "003 Dusty Pink", hex: "#e4c7c2", group: "Pinks & Nudes" },
+            { name: "005 Pinky Swear", hex: "#f5cac3", group: "Pinks & Nudes" },
+            { name: "023 Blushing", hex: "#ffb6c1", group: "Pinks & Nudes" },
+            { name: "032 Tea Rose", hex: "#f4c2c2", group: "Pinks & Nudes" },
+            { name: "045 Soft Peach", hex: "#fdebd1", group: "Pinks & Nudes" },
+            { name: "051 Ballet Slipper", hex: "#fde8e9", group: "Pinks & Nudes" },
+            { name: "062 Mauvelous", hex: "#e0b0ff", group: "Pinks & Nudes" },
+            { name: "078 Rosewood", hex: "#a87c7c", group: "Pinks & Nudes" },
+            { name: "088 Shocking Pink", hex: "#fc0fc0", group: "Pinks & Nudes" },
+            { name: "101 Peachy Keen", hex: "#f8c8a0", group: "Pinks & Nudes" },
+            { name: "115 Barefoot", hex: "#e7d2cc", group: "Pinks & Nudes" },
+            { name: "125 Cashmere", hex: "#d1b399", group: "Pinks & Nudes" },
+            { name: "149 Antique Pink", hex: "#e0b4b4", group: "Pinks & Nudes" },
+            { name: "151 Rose Petal", hex: "#f9a8d4", group: "Pinks & Nudes" },
+            { name: "166 Flamingo", hex: "#fca3b7", group: "Pinks & Nudes" },
+            { name: "175 Fuchsia", hex: "#ff00ff", group: "Pinks & Nudes" },
+            { name: "180 Pink Tutu", hex: "#f3d6e4", group: "Pinks & Nudes" },
+            { name: "007 Fire Red", hex: "#be0000", group: "Reds & Berries" },
+            { name: "008 Cherry Pop", hex: "#990000", group: "Reds & Berries" },
+            { name: "010 Red Cherry", hex: "#c9184a", group: "Reds & Berries" },
+            { name: "020 Red Stone", hex: "#a4161a", group: "Reds & Berries" },
+            { name: "035 Scarlet Letter", hex: "#ff2400", group: "Reds & Berries" },
+            { name: "048 Crimson", hex: "#dc143c", group: "Reds & Berries" },
+            { name: "058 Pomegranate", hex: "#c1121f", group: "Reds & Berries" },
+            { name: "070 Wine & Dine", hex: "#6a0000", group: "Reds & Berries" },
+            { name: "085 Cranberry", hex: "#8d0801", group: "Reds & Berries" },
+            { name: "100 Hollywood Red", hex: "#c10000", group: "Reds & Berries" },
+            { name: "123 Sangria", hex: "#7e0021", group: "Reds & Berries" },
+            { name: "135 Raspberry", hex: "#d7263d", group: "Reds & Berries" },
+            { name: "155 Ruby Red", hex: "#e0115f", group: "Reds & Berries" },
+            { name: "178 Strawberry", hex: "#fc5a8d", group: "Reds & Berries" },
+            { name: "018 Lilac Mist", hex: "#dcd0ff", group: "Purples" },
+            { name: "025 Grapevine", hex: "#5a189a", group: "Purples" },
+            { name: "038 Purple Haze", hex: "#a393eb", group: "Purples" },
+            { name: "052 Electric Purple", hex: "#bf00ff", group: "Purples" },
+            { name: "065 Violet Vixen", hex: "#8338ec", group: "Purples" },
+            { name: "075 Orchid", hex: "#af69ee", group: "Purples" },
+            { name: "091 Lavender Haze", hex: "#b39ddb", group: "Purples" },
+            { name: "105 Iris", hex: "#9d4edd", group: "Purples" },
+            { name: "118 Amethyst", hex: "#9b5de5", group: "Purples" },
+            { name: "132 Periwinkle", hex: "#b2b2e0", group: "Purples" },
+            { name: "150 Plum", hex: "#5d3a9b", group: "Purples" },
+            { name: "172 Lilac Season", hex: "#c7b7e3", group: "Purples" },
+            { name: "177 Wisteria", hex: "#cba0e1", group: "Purples" },
+            { name: "015 Ice Blue", hex: "#add8e6", group: "Blues" },
+            { name: "028 Navy Blue", hex: "#000080", group: "Blues" },
+            { name: "037 Sky Blue", hex: "#87cefa", group: "Blues" },
+            { name: "042 Royal Blue", hex: "#002366", group: "Blues" },
+            { name: "056 Ocean Deep", hex: "#0077b6", group: "Blues" },
+            { name: "072 Blue Lagoon", hex: "#0096c7", group: "Blues" },
+            { name: "083 Denim", hex: "#22577a", group: "Blues" },
+            { name: "107 Periwinkle", hex: "#ccccff", group: "Blues" },
+            { name: "120 Teal", hex: "#008080", group: "Blues" },
+            { name: "138 Sapphire", hex: "#0f52ba", group: "Blues" },
+            { name: "145 Baby Boy Blue", hex: "#a2d2ff", group: "Blues" },
+            { name: "165 North Sea", hex: "#2b2d42", group: "Blues" },
+            { name: "178 Cornflower", hex: "#6495ed", group: "Blues" },
+            { name: "026 Minty Fresh", hex: "#cce3de", group: "Greens" },
+            { name: "036 Forest Green", hex: "#014421", group: "Greens" },
+            { name: "047 Olive You", hex: "#6b705c", group: "Greens" },
+            { name: "055 Mermaid Green", hex: "#006d77", group: "Greens" },
+            { name: "068 Sage", hex: "#a3b18a", group: "Greens" },
+            { name: "080 Emerald", hex: "#009b7d", group: "Greens" },
+            { name: "108 Lime Light", hex: "#bfff00", group: "Greens" },
+            { name: "118 Pale Kiwi", hex: "#d0f4de", group: "Greens" },
+            { name: "130 Jade", hex: "#00a36c", group: "Greens" },
+            { name: "153 Hunter", hex: "#386641", group: "Greens" },
+            { name: "168 Pistachio", hex: "#a1c084", group: "Greens" },
+            { name: "179 Seafoam", hex: "#80b9a9", group: "Greens" },
+            { name: "011 Coral Kiss", hex: "#f77f00", group: "Oranges & Corals" },
+            { name: "012 Sunny Day", hex: "#fca311", group: "Oranges & Corals" },
+            { name: "027 Peach Sorbet", hex: "#ffdba1", group: "Oranges & Corals" },
+            { name: "040 Goldenrod", hex: "#daa520", group: "Oranges & Corals" },
+            { name: "053 Tangerine", hex: "#ff9505", group: "Oranges & Corals" },
+            { name: "066 Marigold", hex: "#fcc421", group: "Oranges & Corals" },
+            { name: "081 Neon Orange", hex: "#ffad00", group: "Oranges & Corals" },
+            { name: "095 Buttercup", hex: "#fae152", group: "Oranges & Corals" },
+            { name: "111 Papaya", hex: "#f8961e", group: "Oranges & Corals" },
+            { name: "133 Mango Tango", hex: "#fb8500", group: "Oranges & Corals" },
+            { name: "152 Lemonade", hex: "#fcf4a3", group: "Oranges & Corals" },
+            { name: "170 Burnt Sienna", hex: "#e85d04", group: "Oranges & Corals" },
+            { name: "190 Gold Glam", hex: "#f0c808", group: "Oranges & Corals" },
+            { name: "017 Almond", hex: "#eaddcf", group: "Browns & Neutrals" },
+            { name: "022 Toasted Brown", hex: "#8a5a44", group: "Browns & Neutrals" },
+            { name: "033 Espresso", hex: "#4a2c2a", group: "Browns & Neutrals" },
+            { name: "046 Taupe", hex: "#a99985", group: "Browns & Neutrals" },
+            { name: "060 Mocha", hex: "#6d4c41", group: "Browns & Neutrals" },
+            { name: "075 Spiced Brown", hex: "#7f5539", group: "Browns & Neutrals" },
+            { name: "089 Latte", hex: "#c4a389", group: "Browns & Neutrals" },
+            { name: "106 Caramel", hex: "#bc6c25", group: "Browns & Neutrals" },
+            { name: "117 Khaki", hex: "#b5a68d", group: "Browns & Neutrals" },
+            { name: "131 Clay", hex: "#a18276", group: "Browns & Neutrals" },
+            { name: "158 Chestnut", hex: "#744838", group: "Browns & Neutrals" },
+            { name: "173 Sandstone", hex: "#cbbba0", group: "Browns & Neutrals" },
+            { name: "001 French White", hex: "#ffffff", group: "Grays, Blacks & Whites" },
+            { name: "030 Charcoal Gray", hex: "#5e5e5e", group: "Grays, Blacks & Whites" },
+            { name: "041 Silver Lining", hex: "#d1d1d1", group: "Grays, Blacks & Whites" },
+            { name: "050 Black Out", hex: "#000000", group: "Grays, Blacks & Whites" },
+            { name: "063 Stormy", hex: "#797d7f", group: "Grays, Blacks & Whites" },
+            { name: "076 Ash", hex: "#abb2b9", group: "Grays, Blacks & Whites" },
+            { name: "099 Dove", hex: "#d8d8d8", group: "Grays, Blacks & Whites" },
+            { name: "121 Milky Way", hex: "#f8f9fa", group: "Grays, Blacks & Whites" },
+            { name: "140 Slate", hex: "#5d737e", group: "Grays, Blacks & Whites" },
+            { name: "160 Steel", hex: "#858585", group: "Grays, Blacks & Whites" },
+        ],
+        "DD": [
+            { name: "001 Bare Pink", hex: "#f4e3e0", group: "Pinks & Nudes" },
+            { name: "003 Nude Pink", hex: "#e8d1c5", group: "Pinks & Nudes" },
+            { name: "005 Pinky Nude", hex: "#e7c2b5", group: "Pinks & Nudes" },
+            { name: "025 English Rose", hex: "#d9a9a3", group: "Pinks & Nudes" },
+            { name: "032 Dusty Rose", hex: "#c99a98", group: "Pinks & Nudes" },
+            { name: "041 Soft Pink", hex: "#f6d4d3", group: "Pinks & Nudes" },
+            { name: "050 Baby Pink", hex: "#f5b7b1", group: "Pinks & Nudes" },
+            { name: "077 Flamingo Pink", hex: "#f4a2a3", group: "Pinks & Nudes" },
+            { name: "081 Barbie Pink", hex: "#e75480", group: "Pinks & Nudes" },
+            { name: "088 Hot Pink", hex: "#ff69b4", group: "Pinks & Nudes" },
+            { name: "102 Peach Puff", hex: "#f2d3b3", group: "Pinks & Nudes" },
+            { name: "111 Sandy Beach", hex: "#e4c6a8", group: "Pinks & Nudes" },
+            { name: "125 Taupe", hex: "#bcae9e", group: "Pinks & Nudes" },
+            { name: "151 Rose Gold", hex: "#e0b4b4", group: "Pinks & Nudes" },
+            { name: "203 Cotton Candy", hex: "#ffbcd9", group: "Pinks & Nudes" },
+            { name: "220 Bubblegum", hex: "#ffc1cc", group: "Pinks & Nudes" },
+            { name: "250 Mauve", hex: "#d1a3a4", group: "Pinks & Nudes" },
+            { name: "288 Peony", hex: "#eeafaf", group: "Pinks & Nudes" },
+            { name: "007 Cherry Red", hex: "#c21807", group: "Reds & Berries" },
+            { name: "008 Fire Engine Red", hex: "#ce2029", group: "Reds & Berries" },
+            { name: "036 Classic Red", hex: "#a11d21", group: "Reds & Berries" },
+            { name: "045 Deep Red", hex: "#9b1c1c", group: "Reds & Berries" },
+            { name: "058 Wine Red", hex: "#8b0000", group: "Reds & Berries" },
+            { name: "060 Burgundy", hex: "#800020", group: "Reds & Berries" },
+            { name: "075 Raspberry", hex: "#e30b5d", group: "Reds & Berries" },
+            { name: "090 Cranberry", hex: "#951a32", group: "Reds & Berries" },
+            { name: "100 Apple Red", hex: "#d71f28", group: "Reds & Berries" },
+            { name: "133 Scarlet", hex: "#ff2400", group: "Reds & Berries" },
+            { name: "144 Brick Red", hex: "#cb4154", group: "Reds & Berries" },
+            { name: "168 Sangria", hex: "#5e0b15", group: "Reds & Berries" },
+            { name: "189 Poppy", hex: "#e35335", group: "Reds & Berries" },
+            { name: "211 Merlot", hex: "#731c22", group: "Reds & Berries" },
+            { name: "245 Lipstick Red", hex: "#c00000", group: "Reds & Berries" },
+            { name: "277 Ruby", hex: "#e0115f", group: "Reds & Berries" },
+            { name: "011 Lavender", hex: "#e6e6fa", group: "Purples" },
+            { name: "012 Lilac", hex: "#c8a2c8", group: "Purples" },
+            { name: "028 Orchid", hex: "#da70d6", group: "Purples" },
+            { name: "040 Violet", hex: "#8f00ff", group: "Purples" },
+            { name: "065 Amethyst", hex: "#9966cc", group: "Purples" },
+            { name: "078 Grape", hex: "#6f2da8", group: "Purples" },
+            { name: "092 Plum", hex: "#8e4585", group: "Purples" },
+            { name: "110 Periwinkle", hex: "#ccccff", group: "Purples" },
+            { name: "123 Iris", hex: "#5a4fcf", group: "Purples" },
+            { name: "155 Royal Purple", hex: "#7851a9", group: "Purples" },
+            { name: "176 Magenta", hex: "#ff00ff", group: "Purples" },
+            { name: "210 Eggplant", hex: "#483248", group: "Purples" },
+            { name: "233 Wisteria", hex: "#c9a0dc", group: "Purples" },
+            { name: "266 Thistle", hex: "#d8bfd8", group: "Purples" },
+            { name: "299 Boysenberry", hex: "#873260", group: "Purples" },
+            { name: "013 Baby Blue", hex: "#89cff0", group: "Blues" },
+            { name: "014 Sky Blue", hex: "#87ceeb", group: "Blues" },
+            { name: "021 Tiffany Blue", hex: "#0abab5", group: "Blues" },
+            { name: "043 Royal Blue", hex: "#4169e1", group: "Blues" },
+            { name: "055 Navy Blue", hex: "#000080", group: "Blues" },
+            { name: "068 Teal", hex: "#008080", group: "Blues" },
+            { name: "084 Denim Blue", hex: "#1560bd", group: "Blues" },
+            { name: "105 Ocean Blue", hex: "#0077be", group: "Blues" },
+            { name: "115 Slate Blue", hex: "#6a5acd", group: "Blues" },
+            { name: "130 Cobalt Blue", hex: "#0047ab", group: "Blues" },
+            { name: "160 Midnight Blue", hex: "#003366", group: "Blues" },
+            { name: "181 Powder Blue", hex: "#b0e0e6", group: "Blues" },
+            { name: "200 Turquoise", hex: "#40e0d0", group: "Blues" },
+            { name: "240 Aqua", hex: "#00ffff", group: "Blues" },
+            { name: "270 Cerulean", hex: "#2a52be", group: "Blues" },
+            { name: "015 Mint Green", hex: "#98ff98", group: "Greens" },
+            { name: "016 Sage Green", hex: "#b2ac88", group: "Greens" },
+            { name: "022 Pistachio", hex: "#93c572", group: "Greens" },
+            { name: "048 Lime Green", hex: "#32cd32", group: "Greens" },
+            { name: "057 Olive Green", hex: "#808000", group: "Greens" },
+            { name: "070 Forest Green", hex: "#228b22", group: "Greens" },
+            { name: "085 Emerald Green", hex: "#50c878", group: "Greens" },
+            { name: "118 Hunter Green", hex: "#355e3b", group: "Greens" },
+            { name: "135 Kelly Green", hex: "#4cbb17", group: "Greens" },
+            { name: "150 Seafoam Green", hex: "#9fe2bf", group: "Greens" },
+            { name: "177 Jade", hex: "#00a86b", group: "Greens" },
+            { name: "195 Chartreuse", hex: "#dfff00", group: "Greens" },
+            { name: "215 Army Green", hex: "#4b5320", group: "Greens" },
+            { name: "255 Celadon", hex: "#ace1af", group: "Greens" },
+            { name: "290 Pear", hex: "#d1e231", group: "Greens" },
+            { name: "018 Peach", hex: "#ffcba4", group: "Oranges & Yellows" },
+            { name: "019 Coral", hex: "#ff7f50", group: "Oranges & Yellows" },
+            { name: "030 Pastel Yellow", hex: "#fdfd96", group: "Oranges & Yellows" },
+            { name: "031 Lemon Yellow", hex: "#fff44f", group: "Oranges & Yellows" },
+            { name: "063 Tangerine", hex: "#f28500", group: "Oranges & Yellows" },
+            { name: "072 Marigold", hex: "#ffbf00", group: "Oranges & Yellows" },
+            { name: "095 Mustard Yellow", hex: "#ffdb58", group: "Oranges & Yellows" },
+            { name: "112 Gold", hex: "#ffd700", group: "Oranges & Yellows" },
+            { name: "140 Burnt Orange", hex: "#cc5500", group: "Oranges & Yellows" },
+            { name: "165 Apricot", hex: "#fbceb1", group: "Oranges & Yellows" },
+            { name: "188 Mango", hex: "#fdb84e", group: "Oranges & Yellows" },
+            { name: "208 Buttercup", hex: "#fae052", group: "Oranges & Yellows" },
+            { name: "225 Papaya", hex: "#ffc971", group: "Oranges & Yellows" },
+            { name: "260 Cantaloupe", hex: "#fa9a50", group: "Oranges & Yellows" },
+            { name: "295 Neon Orange", hex: "#ff9933", group: "Oranges & Yellows" },
+            { name: "023 Beige", hex: "#f5f5dc", group: "Browns & Neutrals" },
+            { name: "024 Tan", hex: "#d2b48c", group: "Browns & Neutrals" },
+            { name: "035 Cream", hex: "#fffdd0", group: "Browns & Neutrals" },
+            { name: "052 Chocolate", hex: "#7b3f00", group: "Browns & Neutrals" },
+            { name: "061 Coffee", hex: "#6f4e37", group: "Browns & Neutrals" },
+            { name: "076 Caramel", hex: "#af6f09", group: "Browns & Neutrals" },
+            { name: "098 Cinnamon", hex: "#d2691e", group: "Browns & Neutrals" },
+            { name: "120 Mocha", hex: "#9d7c61", group: "Browns & Neutrals" },
+            { name: "138 Walnut", hex: "#593a28", group: "Browns & Neutrals" },
+            { name: "158 Chestnut", hex: "#954535", group: "Browns & Neutrals" },
+            { name: "180 Khaki", hex: "#c3b091", group: "Browns & Neutrals" },
+            { name: "223 Ivory", hex: "#fffff0", group: "Browns & Neutrals" },
+            { name: "252 Clay", hex: "#bca28e", group: "Browns & Neutrals" },
+            { name: "280 Toffee", hex: "#8c5a2b", group: "Browns & Neutrals" },
+            { name: "033 White", hex: "#ffffff", group: "Grays, Blacks & Whites" },
+            { name: "034 Black", hex: "#000000", group: "Grays, Blacks & Whites" },
+            { name: "049 Light Gray", hex: "#d3d3d3", group: "Grays, Blacks & Whites" },
+            { name: "059 Silver", hex: "#c0c0c0", group: "Grays, Blacks & Whites" },
+            { name: "069 Charcoal", hex: "#36454f", group: "Grays, Blacks & Whites" },
+            { name: "086 Slate Gray", hex: "#708090", group: "Grays, Blacks & Whites" },
+            { name: "101 Platinum", hex: "#e5e4e2", group: "Grays, Blacks & Whites" },
+            { name: "121 Ash Gray", hex: "#b2beb5", group: "Grays, Blacks & Whites" },
+            { name: "148 Stone", hex: "#8a795d", group: "Grays, Blacks & Whites" },
+            { name: "170 Gunmetal", hex: "#53565a", group: "Grays, Blacks & Whites" },
+            { name: "199 Onyx", hex: "#353839", group: "Grays, Blacks & Whites" },
+            { name: "230 Off White", hex: "#f8f8f8", group: "Grays, Blacks & Whites" },
+            { name: "262 Iron Gray", hex: "#615f5f", group: "Grays, Blacks & Whites" },
+            { name: "298 Jet Black", hex: "#0a0a0a", group: "Grays, Blacks & Whites" },
+        ],
+        "Royal Cat Eye": [
+            { name: "01 Ruby Slipper", hex: "#c00000", group: "Reds & Pinks" },
+            { name: "02 Garnet", hex: "#9d0208", group: "Reds & Pinks" },
+            { name: "03 Crimson", hex: "#8b0000", group: "Reds & Pinks" },
+            { name: "04 Rose Quartz", hex: "#f7cac9", group: "Reds & Pinks" },
+            { name: "05 Flamingo", hex: "#f896d8", group: "Reds & Pinks" },
+            { name: "06 Fuchsia", hex: "#e75480", group: "Reds & Pinks" },
+            { name: "07 Amethyst", hex: "#a45ee5", group: "Purples" },
+            { name: "08 Lavender", hex: "#b57edc", group: "Purples" },
+            { name: "09 Plum", hex: "#8e4585", group: "Purples" },
+            { name: "10 Grape", hex: "#6f2da8", group: "Purples" },
+            { name: "11 Violet", hex: "#7f00ff", group: "Purples" },
+            { name: "12 Indigo", hex: "#4b0082", group: "Purples" },
+            { name: "13 Sapphire", hex: "#0f52ba", group: "Blues" },
+            { name: "14 Royal Blue", hex: "#0038a8", group: "Blues" },
+            { name: "15 Cobalt", hex: "#0047ab", group: "Blues" },
+            { name: "16 Ocean", hex: "#0077b6", group: "Blues" },
+            { name: "17 Sky", hex: "#87ceeb", group: "Blues" },
+            { name: "18 Baby Blue", hex: "#a2d2ff", group: "Blues" },
+            { name: "19 Emerald", hex: "#009b7d", group: "Greens" },
+            { name: "20 Forest", hex: "#014421", group: "Greens" },
+            { name: "21 Jade", hex: "#00a86b", group: "Greens" },
+            { name: "22 Olive", hex: "#708238", group: "Greens" },
+            { name: "23 Mint", hex: "#bdfcc9", group: "Greens" },
+            { name: "24 Teal", hex: "#008080", group: "Greens" },
+            { name: "25 Gold", hex: "#ffd700", group: "Golds & Yellows" },
+            { name: "26 Champagne", hex: "#f7e7ce", group: "Golds & Yellows" },
+            { name: "27 Lemon", hex: "#fff44f", group: "Golds & Yellows" },
+            { name: "28 Copper", hex: "#b87333", group: "Golds & Yellows" },
+            { name: "29 Bronze", hex: "#cd7f32", group: "Golds & Yellows" },
+            { name: "30 Amber", hex: "#ffbf00", group: "Golds & Yellows" },
+            { name: "31 Silver", hex: "#c0c0c0", group: "Neutrals & Metallics" },
+            { name: "32 Platinum", hex: "#e5e4e2", group: "Neutrals & Metallics" },
+            { name: "33 Steel", hex: "#858585", group: "Neutrals & Metallics" },
+            { name: "34 Onyx", hex: "#353839", group: "Neutrals & Metallics" },
+            { name: "35 Diamond", hex: "#ffffff", group: "Neutrals & Metallics" },
+            { name: "36 Pearl", hex: "#f0f0e0", group: "Neutrals & Metallics" },
+            { name: "37 Chocolate", hex: "#5a3a22", group: "Browns" },
+            { name: "38 Coffee", hex: "#4b372c", group: "Browns" },
+            { name: "39 Mocha", hex: "#87624f", group: "Browns" },
+            { name: "40 Caramel", hex: "#af6f09", group: "Browns" },
+            { name: "41 Topaz", hex: "#ffc87c", group: "Browns" },
+            { name: "42 Peach", hex: "#ffc99a", group: "Browns" },
+            { name: "43 Sunset", hex: "#f28500", group: "Oranges" },
+            { name: "44 Marigold", hex: "#fca311", group: "Oranges" },
+            { name: "45 Coral", hex: "#ff7f50", group: "Oranges" },
+            { name: "46 Fire", hex: "#e25822", group: "Oranges" },
+            { name: "47 Papaya", hex: "#ff97b3", group: "Oranges" },
+            { name: "48 Tiger Eye", hex: "#b0793d", group: "Oranges" }
+        ],
+        "Chrome": []
     };
 
+    for (const brandName in brands) {
+        const docRef = doc(db, "color_brands", brandName);
+        await setDoc(docRef, { name: brandName, colors: brands[brandName] }, { merge: true });
+    }
+
+    try {
+        console.log("Successfully pre-filled and merged color chart data.");
+    } catch (error) {
+        console.error("Error pre-filling color data: ", error);
+    }
+};
     const renderColorSwatches = (colors) => {
         const container = document.getElementById('color-swatches-container');
         container.innerHTML = '';
@@ -4346,79 +4715,107 @@ if (ideaToDelete) {
         }
     };
 
-    const initColorChart = async () => {
-        if (colorChartInitialized) return;
+// ADD THIS NEW FUNCTION before initColorChart()
+const updateColorChartDisplay = (brand) => {
+    const groupFilter = document.getElementById('color-group-filter');
+    const allGroups = [...new Set(brand.colors.map(c => c.group || 'Uncategorized'))];
+    
+    // Populate group filter dropdown
+    groupFilter.innerHTML = '<option value="all">All Groups</option>';
+    allGroups.sort().forEach(group => {
+        groupFilter.innerHTML += `<option value="${group}">${group}</option>`;
+    });
 
-        // Fetch and embed the SVG
-        if (!handSVGContent) {
-            try {
-                const response = await fetch('hand.svg');
-                handSVGContent = await response.text();
-            } catch (e) {
-                console.error("Could not load hand.svg", e);
-                return;
-            }
+    const selectedGroup = groupFilter.value;
+    let colorsToDisplay = brand.colors;
+
+    if (selectedGroup && selectedGroup !== 'all') {
+        colorsToDisplay = brand.colors.filter(c => (c.group || 'Uncategorized') === selectedGroup);
+    }
+    
+    renderColorSwatches(colorsToDisplay);
+};
+// Located inside initMainApp()
+const initColorChart = async () => {
+    if (colorChartInitialized) return;
+
+    if (!handSVGContent) {
+        try {
+            const response = await fetch('hand.svg');
+            handSVGContent = await response.text();
+        } catch (e) { console.error("Could not load hand.svg", e); return; }
+    }
+    const handContainer = document.getElementById('hand-preview-container');
+    handContainer.innerHTML = handSVGContent;
+
+    const tabsContainer = document.getElementById('color-brands-tabs');
+    tabsContainer.innerHTML = '';
+    allColorBrands.forEach((brand, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'color-brand-btn px-3 py-1 rounded-full text-sm';
+        btn.textContent = brand.name;
+        btn.dataset.brandId = brand.id;
+        if (index === 0) {
+            btn.classList.add('active');
+            updateColorChartDisplay(brand);
         }
-        const handContainer = document.getElementById('hand-preview-container');
-        handContainer.innerHTML = handSVGContent;
+        tabsContainer.appendChild(btn);
+    });
 
-        const tabsContainer = document.getElementById('color-brands-tabs');
-        tabsContainer.innerHTML = '';
-        allColorBrands.forEach((brand, index) => {
-            const btn = document.createElement('button');
-            btn.className = 'color-brand-btn px-3 py-1 rounded-full text-sm';
-            btn.textContent = brand.name;
-            btn.dataset.brandId = brand.id;
-            if (index === 0) {
-                btn.classList.add('active');
-                renderColorSwatches(brand.colors);
-            }
-            tabsContainer.appendChild(btn);
-        });
+    tabsContainer.addEventListener('click', (e) => {
+        const btn = e.target.closest('.color-brand-btn');
+        if (btn) {
+            tabsContainer.querySelectorAll('.color-brand-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const brand = allColorBrands.find(b => b.id === btn.dataset.brandId);
+            updateColorChartDisplay(brand);
+        }
+    });
 
-        tabsContainer.addEventListener('click', (e) => {
-            const btn = e.target.closest('.color-brand-btn');
-            if (btn) {
-                tabsContainer.querySelectorAll('.color-brand-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                const brand = allColorBrands.find(b => b.id === btn.dataset.brandId);
-                renderColorSwatches(brand.colors);
-            }
-        });
+    document.getElementById('color-group-filter').addEventListener('change', () => {
+        const activeBrandBtn = tabsContainer.querySelector('.color-brand-btn.active');
+        if (activeBrandBtn) {
+            const brand = allColorBrands.find(b => b.id === activeBrandBtn.dataset.brandId);
+            updateColorChartDisplay(brand);
+        }
+    });
 
-        document.getElementById('color-swatches-container').addEventListener('click', (e) => {
-            const swatch = e.target.closest('.color-swatch');
-            if (swatch) {
-                const color = swatch.dataset.color;
-                handContainer.querySelectorAll('.nail').forEach(nailPath => {
-                    nailPath.style.fill = color;
-                });
-            }
-        });
-        
-        colorChartInitialized = true;
-    };
-
+    document.getElementById('color-swatches-container').addEventListener('click', (e) => {
+        const swatch = e.target.closest('.color-swatch');
+        if (swatch) {
+            const color = swatch.dataset.color;
+            handContainer.querySelectorAll('.nail').forEach(nailPath => {
+                nailPath.style.fill = color;
+            });
+        }
+    });
+    
+    colorChartInitialized = true;
+};
 
     // --- COLOR CHART ADMIN LOGIC ---
-    const renderColorBrandsAdmin = () => {
-        const container = document.getElementById('color-brands-admin-list');
-        if(!container) return;
+// Located inside initMainApp()
+const renderColorBrandsAdmin = () => {
+    const container = document.getElementById('color-brands-admin-list');
+    if(!container) return;
 
-        container.innerHTML = '';
-        allColorBrands.forEach(brand => {
-            const div = document.createElement('div');
-            div.className = 'p-3 border rounded-lg bg-white flex justify-between items-center';
-            div.innerHTML = `
-                <span class="font-bold">${brand.name}</span>
-                <div>
-                    <span class="text-sm text-gray-500 mr-4">${brand.colors.length} colors</span>
-                    <button data-id="${brand.id}" class="delete-color-brand-btn text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
-                </div>
-            `;
-            container.appendChild(div);
-        });
-    };
+    container.innerHTML = '';
+    allColorBrands.forEach(brand => {
+        const div = document.createElement('div');
+        div.className = 'p-3 border rounded-lg bg-white flex justify-between items-center';
+        div.innerHTML = `
+            <span class="font-bold">${brand.name}</span>
+            <div>
+                <span class="text-sm text-gray-500 mr-4">${brand.colors.length} colors</span>
+                
+                <button data-id="${brand.id}" class="edit-color-brand-btn text-blue-500 hover:text-blue-700 mr-2" title="Edit Colors"><i class="fas fa-palette"></i></button>
+
+                <button data-id="${brand.id}" class="delete-color-brand-btn text-red-500 hover:text-red-700" title="Delete Brand"><i class="fas fa-trash"></i></button>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+};
 
     document.getElementById('add-color-brand-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -4460,6 +4857,107 @@ if (ideaToDelete) {
             }
         }
     });
+
+// ADD THIS ENTIRE BLOCK AT THE END OF initMainApp()
+
+    // --- LOGIC FOR THE EDIT COLORS MODAL ---
+    const editColorsModal = document.getElementById('edit-colors-modal');
+    const closeColorsModalBtn = document.getElementById('close-edit-colors-modal-btn');
+    const addColorForm = document.getElementById('add-new-color-form');
+    const existingColorsList = document.getElementById('existing-colors-list');
+
+// Located inside the "LOGIC FOR THE EDIT COLORS MODAL" section
+const renderExistingColors = (brand) => {
+    existingColorsList.innerHTML = '';
+    if (brand.colors.length === 0) {
+        existingColorsList.innerHTML = '<p class="text-sm text-gray-500 text-center p-4">No colors added yet.</p>';
+        return;
+    }
+    brand.colors.forEach((color, index) => {
+        const colorEl = document.createElement('div');
+        colorEl.className = 'flex items-center justify-between p-2 bg-gray-50 rounded';
+        colorEl.innerHTML = `
+            <div class="flex items-center gap-3">
+                <div class="w-6 h-6 rounded-full border" style="background-color: ${color.hex};"></div>
+                <div>
+                    <span class="font-medium">${color.name}</span>
+                    <p class="text-xs text-gray-500">${color.group || 'No Group'}</p>
+                </div>
+            </div>
+            <button data-index="${index}" class="delete-color-btn text-red-400 hover:text-red-700"><i class="fas fa-times-circle"></i></button>
+        `;
+        existingColorsList.appendChild(colorEl);
+    });
+};
+    const openEditColorsModal = (brand) => {
+        document.getElementById('edit-colors-modal-title').textContent = `Edit Colors for ${brand.name}`;
+        document.getElementById('edit-color-brand-id').value = brand.id;
+        renderExistingColors(brand);
+        editColorsModal.classList.remove('hidden');
+    };
+
+    const closeEditColorsModal = () => {
+        editColorsModal.classList.add('hidden');
+        addColorForm.reset();
+    };
+
+    // Event listener for opening the modal
+    document.getElementById('color-brands-admin-list')?.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-color-brand-btn');
+        if (editBtn) {
+            const brandId = editBtn.dataset.id;
+            const brand = allColorBrands.find(b => b.id === brandId);
+            if (brand) {
+                openEditColorsModal(brand);
+            }
+        }
+    });
+
+// Located inside the "LOGIC FOR THE EDIT COLORS MODAL" section
+addColorForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const brandId = document.getElementById('edit-color-brand-id').value;
+    const brand = allColorBrands.find(b => b.id === brandId);
+    if (!brand) return;
+
+    const newColor = {
+        name: document.getElementById('new-color-name').value,
+        hex: document.getElementById('new-color-hex').value,
+        group: document.getElementById('new-color-group').value.trim() || 'Uncategorized'
+    };
+
+    const updatedColors = [...brand.colors, newColor];
+    try {
+        await updateDoc(doc(db, "color_brands", brandId), { colors: updatedColors });
+        addColorForm.reset();
+    } catch (error) {
+        console.error("Error adding new color:", error);
+        alert("Could not add the color.");
+    }
+});
+
+    // Event listener for deleting a color
+    existingColorsList.addEventListener('click', async (e) => {
+        const deleteBtn = e.target.closest('.delete-color-btn');
+        if (deleteBtn) {
+            const brandId = document.getElementById('edit-color-brand-id').value;
+            const brand = allColorBrands.find(b => b.id === brandId);
+            if (!brand) return;
+
+            const indexToDelete = parseInt(deleteBtn.dataset.index, 10);
+            const updatedColors = brand.colors.filter((_, index) => index !== indexToDelete);
+
+            try {
+                await updateDoc(doc(db, "color_brands", brandId), { colors: updatedColors });
+            } catch (error) {
+                console.error("Error deleting color:", error);
+                alert("Could not delete the color.");
+            }
+        }
+    });
+
+    closeColorsModalBtn.addEventListener('click', closeEditColorsModal);
+    editColorsModal.querySelector('.modal-overlay').addEventListener('click', closeEditColorsModal);
 
     const giftCardsTableBody = document.querySelector('#gift-cards-table tbody');
     const giftCardsTableAdminBody = document.querySelector('#gift-cards-table-admin tbody');

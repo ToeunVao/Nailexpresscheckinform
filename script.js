@@ -4716,28 +4716,56 @@ const prefillColorData = async () => {
         }
     };
 
-// ADD THIS NEW FUNCTION before initColorChart()
+// REPLACE this function inside initMainApp()
 const updateColorChartDisplay = (brand) => {
     const groupFilter = document.getElementById('color-group-filter');
+    const searchInput = document.getElementById('color-search-input');
     const allGroups = [...new Set(brand.colors.map(c => c.group || 'Uncategorized'))];
-    
-    // Populate group filter dropdown
+
+    // Populate group filter dropdown, preserving the current selection
+    const currentGroupSelection = groupFilter.value;
     groupFilter.innerHTML = '<option value="all">All Groups</option>';
     allGroups.sort().forEach(group => {
-        groupFilter.innerHTML += `<option value="${group}">${group}</option>`;
+        const isSelected = group === currentGroupSelection ? 'selected' : '';
+        groupFilter.innerHTML += `<option value="${group}" ${isSelected}>${group}</option>`;
     });
 
     const selectedGroup = groupFilter.value;
+    const searchTerm = searchInput.value.toLowerCase();
     let colorsToDisplay = brand.colors;
 
+    // Filter by group first
     if (selectedGroup && selectedGroup !== 'all') {
-        colorsToDisplay = brand.colors.filter(c => (c.group || 'Uncategorized') === selectedGroup);
+        colorsToDisplay = colorsToDisplay.filter(c => (c.group || 'Uncategorized') === selectedGroup);
+    }
+    
+    // Then filter by search term
+    if (searchTerm) {
+        colorsToDisplay = colorsToDisplay.filter(c => c.name.toLowerCase().includes(searchTerm));
     }
     
     renderColorSwatches(colorsToDisplay);
 };
 
-// Located inside initMainApp()
+// REPLACE this function inside initMainApp()
+const renderColorSwatches = (colors) => {
+    const container = document.getElementById('color-swatches-container');
+    container.innerHTML = '';
+    if (colors.length === 0) {
+        container.innerHTML = '<p class="col-span-full text-sm text-gray-500">No colors match your filter.</p>';
+    } else {
+        colors.forEach(color => {
+            container.innerHTML += `
+                <div class="text-center">
+                    <div class="color-swatch mx-auto" data-color="${color.hex}" style="background-color: ${color.hex};"></div>
+                    <p class="text-xs mt-1">${color.name}</p>
+                </div>
+            `;
+        });
+    }
+};
+
+// REPLACE this function inside initMainApp()
 const initColorChart = async () => {
     if (colorChartInitialized) return;
 
@@ -4759,7 +4787,7 @@ const initColorChart = async () => {
         btn.dataset.brandId = brand.id;
         if (index === 0) {
             btn.classList.add('active');
-            updateColorChartDisplay(brand);
+            updateColorChartDisplay(brand); // Initial display
         }
         tabsContainer.appendChild(btn);
     });
@@ -4777,16 +4805,17 @@ const initColorChart = async () => {
         if (btn) {
             tabsContainer.querySelectorAll('.color-brand-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            // Reset search and group filter when changing brands for a cleaner experience
+            
+            // Reset filters for a new brand
             document.getElementById('color-group-filter').value = 'all';
             document.getElementById('color-search-input').value = '';
+            
             reapplyFilters();
         }
     });
 
+    // Correctly wire up the event listeners
     document.getElementById('color-group-filter').addEventListener('change', reapplyFilters);
-    
-    // *** ADD THIS EVENT LISTENER FOR THE SEARCH INPUT ***
     document.getElementById('color-search-input').addEventListener('input', reapplyFilters);
 
     document.getElementById('color-swatches-container').addEventListener('click', (e) => {

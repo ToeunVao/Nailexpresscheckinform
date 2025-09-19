@@ -2649,17 +2649,21 @@
         <h2 id="edit-colors-modal-title" class="text-2xl font-bold text-pink-700 mb-4">Edit Colors</h2>
         <input type="hidden" id="edit-color-brand-id">
 
-        <form id="add-new-color-form" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end p-4 border rounded-lg bg-gray-50 mb-4">
-            <div>
-                <label for="new-color-name" class="block text-sm font-medium text-gray-600">Color Name</label>
-                <input type="text" id="new-color-name" class="form-input w-full mt-1" placeholder="e.g., Cherry Red" required>
-            </div>
-            <div>
-                <label for="new-color-hex" class="block text-sm font-medium text-gray-600">Color</label>
-                <input type="color" id="new-color-hex" class="form-input w-full mt-1 h-10">
-            </div>
-            <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 h-10">Add Color</button>
-        </form>
+<form id="add-new-color-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end p-4 border rounded-lg bg-gray-50 mb-4">
+    <div>
+        <label for="new-color-name" class="block text-sm font-medium text-gray-600">Color Name</label>
+        <input type="text" id="new-color-name" class="form-input w-full mt-1" placeholder="e.g., Cherry Red" required>
+    </div>
+    <div>
+        <label for="new-color-hex" class="block text-sm font-medium text-gray-600">Color</label>
+        <input type="color" id="new-color-hex" class="form-input w-full mt-1 h-10">
+    </div>
+    <div>
+        <label for="new-color-group" class="block text-sm font-medium text-gray-600">Group</label>
+        <input type="text" id="new-color-group" class="form-input w-full mt-1" placeholder="e.g., Pinks & Nudes">
+    </div>
+    <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 h-10">Add Color</button>
+</form>
 
         <div id="existing-colors-list" class="flex-grow overflow-y-auto space-y-2 pr-2">
             </div>

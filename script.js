@@ -1234,13 +1234,14 @@ function initMainApp(userRole, userName) {
             Booking
             <span id="booking-nav-count" class="absolute -top-1 -right-1 bg-blue-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center hidden">0</span>
         </button>
-        <button class="top-nav-btn" data-target="nails-idea">Nails Inspo</button>
-        <button class="top-nav-btn" data-target="color-chart">Color Chart</button>
     `;
 
     // Add admin-only links if the user is an admin
     if (userRole === 'admin') {
         navHTML += `
+
+            <button class="top-nav-btn" data-target="nails-idea">Nails Inspo</button>
+            <button class="top-nav-btn" data-target="color-chart">Color Chart</button>
             <button class="top-nav-btn" data-target="report">Report</button>
             <button class="top-nav-btn" data-target="setting">Setting</button>
         `;

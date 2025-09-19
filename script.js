@@ -4699,22 +4699,6 @@ const prefillColorData = async () => {
         console.error("Error pre-filling color data: ", error);
     }
 };
-    const renderColorSwatches = (colors) => {
-        const container = document.getElementById('color-swatches-container');
-        container.innerHTML = '';
-        if (colors.length === 0) {
-            container.innerHTML = '<p class="col-span-full text-sm text-gray-500">No colors for this brand yet.</p>';
-        } else {
-            colors.forEach(color => {
-                container.innerHTML += `
-                    <div class="text-center">
-                        <div class="color-swatch mx-auto" data-color="${color.hex}" style="background-color: ${color.hex};"></div>
-                        <p class="text-xs mt-1">${color.name}</p>
-                    </div>
-                `;
-            });
-        }
-    };
 
 // REPLACE this function inside initMainApp()
 const updateColorChartDisplay = (brand) => {

@@ -4736,6 +4736,7 @@ const updateColorChartDisplay = (brand) => {
     
     renderColorSwatches(colorsToDisplay);
 };
+
 // Located inside initMainApp()
 const initColorChart = async () => {
     if (colorChartInitialized) return;
@@ -4763,23 +4764,30 @@ const initColorChart = async () => {
         tabsContainer.appendChild(btn);
     });
 
-    tabsContainer.addEventListener('click', (e) => {
-        const btn = e.target.closest('.color-brand-btn');
-        if (btn) {
-            tabsContainer.querySelectorAll('.color-brand-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            const brand = allColorBrands.find(b => b.id === btn.dataset.brandId);
-            updateColorChartDisplay(brand);
-        }
-    });
-
-    document.getElementById('color-group-filter').addEventListener('change', () => {
+    const reapplyFilters = () => {
         const activeBrandBtn = tabsContainer.querySelector('.color-brand-btn.active');
         if (activeBrandBtn) {
             const brand = allColorBrands.find(b => b.id === activeBrandBtn.dataset.brandId);
             updateColorChartDisplay(brand);
         }
+    };
+
+    tabsContainer.addEventListener('click', (e) => {
+        const btn = e.target.closest('.color-brand-btn');
+        if (btn) {
+            tabsContainer.querySelectorAll('.color-brand-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            // Reset search and group filter when changing brands for a cleaner experience
+            document.getElementById('color-group-filter').value = 'all';
+            document.getElementById('color-search-input').value = '';
+            reapplyFilters();
+        }
     });
+
+    document.getElementById('color-group-filter').addEventListener('change', reapplyFilters);
+    
+    // *** ADD THIS EVENT LISTENER FOR THE SEARCH INPUT ***
+    document.getElementById('color-search-input').addEventListener('input', reapplyFilters);
 
     document.getElementById('color-swatches-container').addEventListener('click', (e) => {
         const swatch = e.target.closest('.color-swatch');

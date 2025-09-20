@@ -973,6 +973,12 @@ getDoc(doc(db, "public_data", "technicians")).then(docSnap => {
 
         document.getElementById('nails-idea-landing').style.display = showNailArt ? '' : 'none';
         document.querySelector('.nav-item-nails-idea').style.display = showNailArt ? '' : 'none';
+        // Add this block to control the Memberships section
+    const membershipSection = document.getElementById('memberships-landing');
+    const membershipNavLink = document.querySelector('a[href="#memberships-landing"]');
+    if (membershipSection) membershipSection.style.display = showMemberships ? '' : 'none';
+    if (membershipNavLink) membershipNavLink.style.display = showMemberships ? '' : 'none';
+    
     };
 
     onSnapshot(doc(db, "settings", "features"), (docSnap) => {
@@ -1584,7 +1590,7 @@ topNav.addEventListener('click', (e) => {
     let currentSalonEarningDateFilter = '', currentSalonEarningRangeFilter = String(new Date().getMonth()), currentExpenseMonthFilter = '', currentDashboardApptTechFilter = 'All';
 
    // ... other variables
-let aggregatedClients = [], allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [], allInventoryUsage = [], allGiftCards = [], allPromotions = [], allServicesList = [], technicianColorMap = {}, sentReminderIds = [], allMemberships = [], currentRotation = 0;
+    let aggregatedClients = [], allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [], allInventoryUsage = [], allGiftCards = [], allPromotions = [], allServicesList = [], technicianColorMap = {}, sentReminderIds = [], allMemberships = [], currentRotation = 0;
 // ... more variables
     let techniciansAndStaff = [], technicians = [];
     let allExpenseCategories = [], allPaymentAccounts = [], allSuppliers = [];
@@ -3808,29 +3814,38 @@ onSnapshot(collection(db, "users"), (snapshot) => {
         catch (error) { console.error("Error saving salon hours:", error); alert("Could not save salon hours."); }
     });
 
+// Located inside initMainApp()
+const loadFeatureToggles = async () => {
+    const settingsDoc = await getDoc(doc(db, "settings", "features"));
+    if (settingsDoc.exists()) {
+        const settings = settingsDoc.data();
+        document.getElementById('toggle-client-login').checked = settings.showClientLogin !== false;
+        document.getElementById('toggle-promotions').checked = settings.showPromotions !== false;
+        document.getElementById('toggle-gift-card').checked = settings.showGiftCards !== false;
+        document.getElementById('toggle-nails-idea').checked = settings.showNailArt !== false;
+        document.getElementById('toggle-memberships').checked = settings.showMemberships !== false; // Add this line
+    } else {
+        // Default all to true if no settings exist yet
+        document.getElementById('toggle-client-login').checked = true;
+        document.getElementById('toggle-promotions').checked = true;
+        document.getElementById('toggle-gift-card').checked = true;
+        document.getElementById('toggle-nails-idea').checked = true;
+        document.getElementById('toggle-memberships').checked = true; // Add this line
+    }
+};
 
-    const loadFeatureToggles = async () => {
-        const settingsDoc = await getDoc(doc(db, "settings", "features"));
-        if (settingsDoc.exists()) {
-            const settings = settingsDoc.data();
-            document.getElementById('toggle-client-login').checked = settings.showClientLogin !== false;
-            document.getElementById('toggle-promotions').checked = settings.showPromotions !== false;
-            document.getElementById('toggle-gift-card').checked = settings.showGiftCards !== false;
-            document.getElementById('toggle-nails-idea').checked = settings.showNailArt !== false;
-        } else {
-            document.getElementById('toggle-client-login').checked = true;
-            document.getElementById('toggle-promotions').checked = true;
-            document.getElementById('toggle-gift-card').checked = true;
-            document.getElementById('toggle-nails-idea').checked = true;
-        }
-    };
-    
-    featureTogglesForm.addEventListener('change', async (e) => {
-        if (e.target.type === 'checkbox') {
-            const settings = { showClientLogin: document.getElementById('toggle-client-login').checked, showPromotions: document.getElementById('toggle-promotions').checked, showGiftCards: document.getElementById('toggle-gift-card').checked, showNailArt: document.getElementById('toggle-nails-idea').checked };
-            await setDoc(doc(db, "settings", "features"), settings, { merge: true });
-        }
-    });
+featureTogglesForm.addEventListener('change', async (e) => {
+    if (e.target.type === 'checkbox') {
+        const settings = {
+            showClientLogin: document.getElementById('toggle-client-login').checked,
+            showPromotions: document.getElementById('toggle-promotions').checked,
+            showGiftCards: document.getElementById('toggle-gift-card').checked,
+            showNailArt: document.getElementById('toggle-nails-idea').checked,
+            showMemberships: document.getElementById('toggle-memberships').checked // Add this line
+        };
+        await setDoc(doc(db, "settings", "features"), settings, { merge: true });
+    }
+});
 
     const loadSettings = async () => { 
         const bookingSnap = await getDoc(doc(db, "settings", "booking")); 

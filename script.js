@@ -1355,28 +1355,30 @@ function initMainApp(userRole, userName) {
         }
     }
 
-    const updateNavCounts = () => {
-        const checkInCount = allActiveClients.length;
-        if (checkInNavCount) {
-            if (checkInCount > 0) {
-                checkInNavCount.textContent = checkInCount;
-                checkInNavCount.classList.remove('hidden');
-            } else {
-                checkInNavCount.classList.add('hidden');
-            }
+// Located inside initMainApp()
+const updateNavCounts = () => {
+    const checkInCount = allActiveClients.length;
+    if (checkInNavCount) {
+        if (checkInCount > 0) {
+            checkInNavCount.textContent = checkInCount;
+            checkInNavCount.classList.remove('hidden');
+        } else {
+            checkInNavCount.classList.add('hidden');
         }
+    }
 
-        const bookingCount = allAppointments.length;
-        if (bookingNavCount) {
-            if (bookingCount > 0) {
-                bookingNavCount.textContent = bookingCount;
-                bookingNavCount.classList.remove('hidden');
-            } else {
-                bookingNavCount.classList.add('hidden');
-            }
+    // *** FIX IS HERE: Filter for future appointments before counting ***
+    const bookingCount = allAppointments.filter(a => a.appointmentTimestamp.toDate() > new Date()).length;
+
+    if (bookingNavCount) {
+        if (bookingCount > 0) {
+            bookingNavCount.textContent = bookingCount;
+            bookingNavCount.classList.remove('hidden');
+        } else {
+            bookingNavCount.classList.add('hidden');
         }
-    };
-    
+    }
+};
     const updateNotificationDisplay = () => {
         const unreadCount = notifications.filter(n => !n.read).length;
         notificationCount.textContent = unreadCount;

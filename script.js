@@ -41,6 +41,7 @@ let initialAppointmentsLoaded = false;
 let initialInventoryLoaded = false;
 let allFinishedClients = [], allAppointments = [], allClients = [], allActiveClients = [], servicesData = {};
 let allColorBrands = [];
+let allMembershipTiers = [];
 
 const giftCardBackgrounds = {
     'General': [
@@ -989,6 +990,53 @@ function initClientDashboard(clientId, clientData) {
     document.getElementById('client-welcome-name').textContent = `Welcome back, ${clientData.name}!`;
     document.getElementById('client-sign-out-btn').addEventListener('click', () => signOut(auth));
 
+        const renderClientMembership = (client, tiers) => {
+        const container = document.getElementById('client-membership-display');
+        if (!container) return;
+
+        if (client.membership && client.membership.tierId) {
+            const tier = tiers.find(t => t.id === client.membership.tierId);
+            const joinDate = client.membership.startDate.toDate().toLocaleDateString();
+            if (tier) {
+                container.innerHTML = `
+                    <div class="bg-green-50 border-l-4 border-green-500 p-6 rounded-lg">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="text-sm font-semibold text-green-700">YOUR MEMBERSHIP</p>
+                                <h3 class="text-2xl font-bold text-green-800">${tier.name}</h3>
+                            </div>
+                            <span class="text-lg font-bold text-green-600">$${tier.price}/month</span>
+                        </div>
+                        <div class="mt-4 border-t pt-4">
+                            <h4 class="font-semibold mb-2">Your Benefits:</h4>
+                            <ul class="list-disc list-inside text-gray-700 space-y-1">
+                                <li>${tier.discount}% off all services</li>
+                                ${tier.benefits.split('\n').map(b => `<li>${b}</li>`).join('')}
+                            </ul>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-4">Member since: ${joinDate}</p>
+                    </div>
+                `;
+            }
+        } else {
+            container.innerHTML = `
+                <div class="text-center p-6 bg-gray-50 rounded-lg">
+                    <h3 class="text-xl font-bold text-gray-800">You are not a member yet.</h3>
+                    <p class="text-gray-600 mt-2">Join today to unlock exclusive discounts and perks!</p>
+                    <button id="client-join-membership-btn" class="mt-4 bg-pink-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-pink-700">View Plans</button>
+                </div>
+            `;
+            document.getElementById('client-join-membership-btn').addEventListener('click', openViewMembershipsModal);
+        }
+    };
+
+    onSnapshot(doc(db, "clients", clientId), (docSnap) => {
+        if (docSnap.exists()) {
+            const updatedClientData = docSnap.data();
+            renderClientMembership(updatedClientData, allMembershipTiers);
+        }
+    });
+
     const openPurchaseModalForClient = (client) => {
         const purchaseModal = document.getElementById('gift-card-purchase-modal');
         const userInfoSection = document.getElementById('gc-user-info-section');
@@ -1457,6 +1505,8 @@ const navigateToSection = (target) => {
         case 'setting':
             document.getElementById('admin-content').classList.remove('hidden');
             document.getElementById('user-management-tab').click();
+            // **NEW** Add this line to pre-load memberships for the admin panel
+            if (currentUserRole === 'admin') initMembershipManagement();
             break;
     }
 };
@@ -1534,7 +1584,7 @@ topNav.addEventListener('click', (e) => {
     let currentSalonEarningDateFilter = '', currentSalonEarningRangeFilter = String(new Date().getMonth()), currentExpenseMonthFilter = '', currentDashboardApptTechFilter = 'All';
 
    // ... other variables
-let aggregatedClients = [], allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [], allInventoryUsage = [], allGiftCards = [], allPromotions = [], allServicesList = [], technicianColorMap = {}, sentReminderIds = [], currentRotation = 0;
+let aggregatedClients = [], allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [], allInventoryUsage = [], allGiftCards = [], allPromotions = [], allServicesList = [], technicianColorMap = {}, sentReminderIds = [], let allMemberships = [], currentRotation = 0;
 // ... more variables
     let techniciansAndStaff = [], technicians = [];
     let allExpenseCategories = [], allPaymentAccounts = [], allSuppliers = [];
@@ -5484,6 +5534,90 @@ document.getElementById('close-client-profile-modal-btn').addEventListener('clic
 clientProfileModal.querySelector('.modal-overlay').addEventListener('click', () => clientProfileModal.classList.add('hidden'));
 
 
+// ADD ALL THIS CODE AT THE END OF THE initMainApp FUNCTION
+
+// --- MEMBERSHIP MANAGEMENT (ADMIN) ---
+const membershipModal = document.getElementById('membership-tier-modal');
+const membershipForm = document.getElementById('membership-tier-form');
+
+const renderMembershipsAdmin = (tiers) => {
+    const tbody = document.querySelector('#memberships-table tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    tiers.forEach(tier => {
+        const row = tbody.insertRow();
+        row.innerHTML = `
+            <td class="px-6 py-4 font-bold">${tier.name}</td>
+            <td class="px-6 py-4">$${tier.price}/month</td>
+            <td class="px-6 py-4">${tier.discount}%</td>
+            <td class="px-6 py-4 whitespace-pre-line">${tier.benefits}</td>
+            <td class="px-6 py-4 text-center">
+                <button data-id="${tier.id}" class="edit-membership-btn text-blue-500 mr-2"><i class="fas fa-edit"></i></button>
+                <button data-id="${tier.id}" class="delete-membership-btn text-red-500"><i class="fas fa-trash"></i></button>
+            </td>
+        `;
+    });
+};
+
+const openMembershipTierModal = (tier = null) => {
+    membershipForm.reset();
+    if (tier) {
+        document.getElementById('membership-tier-modal-title').textContent = 'Edit Tier';
+        document.getElementById('edit-membership-tier-id').value = tier.id;
+        document.getElementById('tier-name').value = tier.name;
+        document.getElementById('tier-price').value = tier.price;
+        document.getElementById('tier-discount').value = tier.discount;
+        document.getElementById('tier-benefits').value = tier.benefits;
+    } else {
+        document.getElementById('membership-tier-modal-title').textContent = 'Add New Tier';
+        document.getElementById('edit-membership-tier-id').value = '';
+    }
+    membershipModal.classList.remove('hidden');
+};
+
+const initMembershipManagement = () => {
+    onSnapshot(query(collection(db, "memberships"), orderBy("price")), (snapshot) => {
+        allMembershipTiers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderMembershipsAdmin(allMembershipTiers);
+    });
+
+    document.getElementById('add-new-membership-tier-btn').addEventListener('click', () => openMembershipTierModal());
+    document.getElementById('cancel-membership-tier-btn').addEventListener('click', () => membershipModal.classList.add('hidden'));
+
+    membershipForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const tierId = document.getElementById('edit-membership-tier-id').value;
+        const data = {
+            name: document.getElementById('tier-name').value,
+            price: parseFloat(document.getElementById('tier-price').value),
+            discount: parseInt(document.getElementById('tier-discount').value, 10),
+            benefits: document.getElementById('tier-benefits').value,
+        };
+        try {
+            if (tierId) {
+                await updateDoc(doc(db, "memberships", tierId), data);
+            } else {
+                await addDoc(collection(db, "memberships"), data);
+            }
+            membershipModal.classList.add('hidden');
+        } catch (error) {
+            alert("Could not save tier.");
+            console.error(error);
+        }
+    });
+    
+    document.querySelector('#memberships-table tbody').addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-membership-btn');
+        if(editBtn) openMembershipTierModal(allMembershipTiers.find(t => t.id === editBtn.dataset.id));
+
+        const deleteBtn = e.target.closest('.delete-membership-btn');
+        if(deleteBtn) {
+            showConfirmModal("Delete this tier?", async () => {
+                await deleteDoc(doc(db, "memberships", deleteBtn.dataset.id));
+            });
+        }
+    });
+};
 
     
     loadAndRenderServices();

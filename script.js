@@ -4721,8 +4721,7 @@ const prefillColorData = async () => {
             { name: "46 Fire", hex: "#e25822", group: "Oranges" },
             { name: "47 Papaya", hex: "#ff97b3", group: "Oranges" },
             { name: "48 Tiger Eye", hex: "#b0793d", group: "Oranges" }
-        ],
-        "Chrome": []
+        ]
     };
 
     for (const brandName in brands) {

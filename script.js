@@ -1097,7 +1097,7 @@ const updateFeatureVisibility = (settings) => {
     document.getElementById('gift-card-landing').style.display = showGiftCards ? '' : 'none';
     document.querySelector('.nav-item-gift-card').style.display = showGiftCards ? '' : 'none';
 
-    document.getElementById('nails-inspo-landing').style.display = showNailArt ? '' : 'none';
+    document.getElementById('nails-idea-landing').style.display = showNailArt ? '' : 'none';
     document.querySelector('.nav-item-nails-inspo').style.display = showNailArt ? '' : 'none';
 
     const membershipSection = document.getElementById('memberships-landing');

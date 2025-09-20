@@ -391,7 +391,10 @@ onAuthStateChanged(auth, async (user) => {
                         initClientDashboard(user.uid, clientDoc.data());
                     } else {
                         const pendingPurchaseJSON = sessionStorage.getItem('pendingGiftCardPurchase');
+                        const pendingMembershipId = sessionStorage.getItem('pendingMembershipPurchase'); // Check for pending membership
+
                         if (pendingPurchaseJSON) {
+                            // --- GIFT CARD PURCHASE LOGIC (No changes here) ---
                             const details = JSON.parse(pendingPurchaseJSON);
                             const purchaseModal = document.getElementById('gift-card-purchase-modal');
 
@@ -422,7 +425,6 @@ onAuthStateChanged(auth, async (user) => {
                                     buyerInfo: { name: details.buyerName, email: details.buyerEmail, phone: details.buyerPhone },
                                     createdAt: serverTimestamp(),
                                     expiresAt: Timestamp.fromDate(expiryDate),
-                                    // *** CHANGE IS HERE: Save the background URL ***
                                     backgroundUrl: details.backgroundUrl 
                                 };
                                 const newCardRef = doc(collection(db, "gift_cards"));
@@ -431,7 +433,6 @@ onAuthStateChanged(auth, async (user) => {
 
                             await batch.commit();
                             sessionStorage.removeItem('pendingGiftCardPurchase');
-
                             alert("Success! Your account has been created and your gift card request has been sent. It will be activated once payment is confirmed.");
 
                             if (purchaseModal) {
@@ -441,15 +442,54 @@ onAuthStateChanged(auth, async (user) => {
                             landingPageContent.style.display = 'none';
                             appContent.style.display = 'none';
                             clientDashboardContent.style.display = 'block';
-                            if (!clientDashboardInitialized) {
-                                initClientDashboard(user.uid, newClientData);
-                                clientDashboardInitialized = true;
-                            }
+                            initClientDashboard(user.uid, newClientData);
+
+                        } else if (pendingMembershipId) {
+                            // --- NEW MEMBERSHIP PURCHASE LOGIC ---
+                            const details = JSON.parse(sessionStorage.getItem('signupDetails'));
+                            
+                            const newClientData = {
+                                name: details.name,
+                                email: details.email,
+                                phone: details.phone,
+                                role: 'client',
+                                createdAt: serverTimestamp(),
+                                membership: {
+                                    tierId: pendingMembershipId,
+                                    tierName: allMembershipTiers.find(t => t.id === pendingMembershipId)?.name || 'Unknown',
+                                    startDate: serverTimestamp()
+                                }
+                            };
+                            
+                            await setDoc(doc(db, "clients", user.uid), newClientData);
+                            
+                            sessionStorage.removeItem('pendingMembershipPurchase');
+                            sessionStorage.removeItem('signupDetails');
+
+                            alert("Welcome! Your account and membership are active.");
+                            
+                            landingPageContent.style.display = 'none';
+                            appContent.style.display = 'none';
+                            clientDashboardContent.style.display = 'block';
+                            initClientDashboard(user.uid, newClientData);
 
                         } else {
-                            console.error("User authenticated but no user/client document found. Logging out.");
-                            await signOut(auth);
-                            alert("Login error: User data not found.");
+                            // --- REGULAR SIGNUP (No purchase) ---
+                            const details = JSON.parse(sessionStorage.getItem('signupDetails'));
+                            if (details) {
+                                const newClientData = { name: details.name, email: details.email, phone: details.phone, role: 'client', createdAt: serverTimestamp() };
+                                await setDoc(doc(db, "clients", user.uid), newClientData);
+                                sessionStorage.removeItem('signupDetails');
+                                
+                                landingPageContent.style.display = 'none';
+                                appContent.style.display = 'none';
+                                clientDashboardContent.style.display = 'block';
+                                initClientDashboard(user.uid, newClientData);
+                            } else {
+                                console.error("User authenticated but no user/client document found and no signup details. Logging out.");
+                                await signOut(auth);
+                                alert("Login error: User data not found.");
+                            }
                         }
                     }
                 }
@@ -465,8 +505,51 @@ onAuthStateChanged(auth, async (user) => {
         loadingScreen.innerHTML = `<div class="text-center"><h2 class="text-3xl font-bold text-red-700">Connection Error</h2><p class="text-gray-600 mt-2">Could not connect to services. Please check your internet connection and refresh the page.</p><p class="text-xs text-gray-400 mt-4">Error: ${error.message}</p></div>`;
     }
 });
+// ADD THIS ENTIRE NEW BLOCK OF FUNCTIONS
 
 
+const renderMembershipTiers = (tiers, containerId, isLoggedIn) => {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    
+    tiers.forEach(tier => {
+        const benefitsList = tier.benefits.split('\n').map(b => `<li class="flex items-start"><span class="text-green-500 mr-2">✔</span><span>${b}</span></li>`).join('');
+        const buttonText = isLoggedIn ? 'Select Plan' : 'Become a Member';
+
+        const tierEl = document.createElement('div');
+        tierEl.className = 'border rounded-lg p-6 text-left flex flex-col hover:shadow-lg transition-shadow';
+        tierEl.innerHTML = `
+            <h3 class="text-2xl font-bold text-pink-700">${tier.name}</h3>
+            <p class="text-4xl font-bold my-4">$${tier.price}<span class="text-lg font-normal text-gray-500">/month</span></p>
+            <p class="text-sm text-gray-600 mb-4">${tier.discount}% off all additional services.</p>
+            <ul class="space-y-2 text-gray-700 flex-grow">${benefitsList}</ul>
+            <button data-tier-id="${tier.id}" class="purchase-membership-btn mt-6 w-full bg-pink-600 text-white font-bold py-3 rounded-lg hover:bg-pink-700">${buttonText}</button>
+        `;
+        container.appendChild(tierEl);
+    });
+};
+
+const openViewMembershipsModal = () => {
+    const isLoggedIn = auth.currentUser && !auth.currentUser.isAnonymous;
+    renderMembershipTiers(allMembershipTiers, 'view-memberships-container', isLoggedIn);
+    
+    // Load payment guide text
+    getDoc(doc(db, "settings", "paymentGuide")).then(docSnap => {
+        const paymentGuideDisplay = document.getElementById('membership-payment-guide');
+        if (docSnap.exists() && docSnap.data().text) {
+            paymentGuideDisplay.innerHTML = `<p class="font-semibold mb-2">How to Pay:</p><p>${docSnap.data().text.replace(/\n/g, '<br>')}</p>`;
+        } else {
+            paymentGuideDisplay.textContent = 'Please contact the salon to complete your payment.';
+        }
+    });
+
+    document.getElementById('view-memberships-modal').classList.remove('hidden');
+};
+
+const closeViewMembershipsModal = () => {
+    document.getElementById('view-memberships-modal').classList.add('hidden');
+};
 // --- LANDING PAGE SCRIPT ---
 function initLandingPage() {
     const signupLoginModal = document.getElementById('signup-login-modal');
@@ -482,6 +565,41 @@ function initLandingPage() {
     const closePurchaseModalBtn = document.getElementById('close-gift-card-purchase-modal-btn');
     const purchaseForm = document.getElementById('landing-gift-card-form');
     const previewCard = document.getElementById('landing-gc-preview-card');
+
+    // Fetch and render membership tiers on the landing page
+    onSnapshot(query(collection(db, "memberships"), orderBy("price")), (snapshot) => {
+        allMembershipTiers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderMembershipTiers(allMembershipTiers, 'landing-memberships-container', false);
+    });
+
+    document.getElementById('landing-memberships-container').addEventListener('click', (e) => {
+        if (e.target.closest('.purchase-membership-btn')) {
+            openViewMembershipsModal();
+        }
+    });
+    
+    // Logic for opening and closing the purchase modal
+    document.getElementById('close-view-memberships-modal-btn').addEventListener('click', closeViewMembershipsModal);
+    document.getElementById('view-memberships-modal').querySelector('.modal-overlay').addEventListener('click', closeViewMembershipsModal);
+    
+    document.getElementById('view-memberships-container').addEventListener('click', async (e) => {
+        const purchaseBtn = e.target.closest('.purchase-membership-btn');
+        if (purchaseBtn) {
+            const tierId = purchaseBtn.dataset.tierId;
+            const isLoggedIn = auth.currentUser && !auth.currentUser.isAnonymous;
+            
+            if (isLoggedIn) {
+                // Logic for logged-in user is handled in initClientDashboard
+            } else {
+                // Logic for anonymous user: store intent and open signup modal
+                sessionStorage.setItem('pendingMembershipPurchase', tierId);
+                closeViewMembershipsModal();
+                signupLoginModal.classList.remove('hidden');
+                signupLoginModal.classList.add('flex');
+            }
+        }
+    });
+
 
     const updateLandingGiftCardPreview = () => {
         const showTo = document.getElementById('gc-show-to').checked;
@@ -782,32 +900,37 @@ const paymentGuideDisplay = document.getElementById('landing-gc-payment-guide');
         }
     });
 
-    landingSignupForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const name = document.getElementById('signup-name').value;
-        const email = document.getElementById('signup-email').value;
-        const password = document.getElementById('signup-password').value;
-        const signupBtn = document.getElementById('landing-signup-btn');
-        const btnText = signupBtn.querySelector('.btn-text');
-        const spinner = signupBtn.querySelector('i');
+// In initLandingPage, REPLACE the landingSignupForm listener
+landingSignupForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('signup-name').value;
+    const email = document.getElementById('signup-email').value;
+    const password = document.getElementById('signup-password').value;
+    const signupBtn = document.getElementById('landing-signup-btn');
+    const btnText = signupBtn.querySelector('.btn-text');
+    const spinner = signupBtn.querySelector('i');
 
-        btnText.textContent = 'Signing Up...';
-        spinner.classList.remove('hidden');
-        signupBtn.disabled = true;
+    btnText.textContent = 'Signing Up...';
+    spinner.classList.remove('hidden');
+    signupBtn.disabled = true;
 
-        try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
-            await setDoc(doc(db, "clients", user.uid), { name: name, email: email, role: 'client', createdAt: serverTimestamp() });
-            closeAuthModal(); 
-        } catch (error) {
-            alert(`Sign Up Failed: ${error.message}`);
-        } finally {
-            btnText.textContent = 'Sign Up';
-            spinner.classList.add('hidden');
-            signupBtn.disabled = false;
-        }
-    });
+    try {
+        // Store signup details in session storage before creating user
+        const signupDetails = { name, email, phone: password };
+        sessionStorage.setItem('signupDetails', JSON.stringify(signupDetails));
+
+        await createUserWithEmailAndPassword(auth, email, password);
+        // The onAuthStateChanged listener will now handle creating the client document
+        closeAuthModal(); 
+    } catch (error) {
+        alert(`Sign Up Failed: ${error.message}`);
+        sessionStorage.removeItem('signupDetails'); // Clean up on failure
+    } finally {
+        btnText.textContent = 'Sign Up';
+        spinner.classList.add('hidden');
+        signupBtn.disabled = false;
+    }
+});
 
     const peopleSelect = document.getElementById('appointment-people-landing');
     for (let i = 1; i <= 20; i++) {
@@ -978,7 +1101,7 @@ getDoc(doc(db, "public_data", "technicians")).then(docSnap => {
     const membershipNavLink = document.querySelector('a[href="#memberships-landing"]');
     if (membershipSection) membershipSection.style.display = showMemberships ? '' : 'none';
     if (membershipNavLink) membershipNavLink.style.display = showMemberships ? '' : 'none';
-    
+
     };
 
     onSnapshot(doc(db, "settings", "features"), (docSnap) => {
@@ -996,33 +1119,79 @@ function initClientDashboard(clientId, clientData) {
     document.getElementById('client-welcome-name').textContent = `Welcome back, ${clientData.name}!`;
     document.getElementById('client-sign-out-btn').addEventListener('click', () => signOut(auth));
 
-        const renderClientMembership = (client, tiers) => {
+    const openMembershipCardForPrint = (client, tier) => {
+        const joinDate = client.membership.startDate.toDate().toLocaleDateString();
+        const cardHTML = `
+            <html><head><title>${tier.name} Membership Card</title>
+            <script src="https://cdn.tailwindcss.com"></script>
+            <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&family=Parisienne&display=swap" rel="stylesheet">
+            <style> body { font-family: 'Poppins', sans-serif; display: flex; align-items: center; justify-content: center; margin: 0; background-color: #f0f0f0; } .card { text-shadow: 1px 1px 3px rgba(0,0,0,0.4); } </style>
+            </head><body>
+            <div class="card w-[400px] h-[228px] rounded-lg p-4 flex flex-col justify-between bg-gradient-to-br from-pink-500 to-purple-600 text-white">
+                <div class="flex justify-between items-start">
+                    <div class="font-bold text-lg">
+                        <p>${tier.name}</p>
+                        <p class="text-xs font-normal opacity-80">MEMBERSHIP</p>
+                    </div>
+                    <p class="font-parisienne text-3xl">Nails Express</p>
+                </div>
+                <div class="text-left">
+                    <p class="text-xs opacity-80">MEMBER</p>
+                    <p class="text-2xl font-semibold tracking-wider">${client.name}</p>
+                </div>
+                <div class="text-right text-xs opacity-80">
+                    <p>Member Since: ${joinDate}</p>
+                </div>
+            </div>
+            </body></html>`;
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(cardHTML);
+        printWindow.document.close();
+        printWindow.focus();
+    };
+
+    const renderClientMembership = (client, tiers) => {
         const container = document.getElementById('client-membership-display');
         if (!container) return;
 
         if (client.membership && client.membership.tierId) {
             const tier = tiers.find(t => t.id === client.membership.tierId);
-            const joinDate = client.membership.startDate.toDate().toLocaleDateString();
             if (tier) {
+                const joinDate = client.membership.startDate.toDate().toLocaleDateString();
                 container.innerHTML = `
-                    <div class="bg-green-50 border-l-4 border-green-500 p-6 rounded-lg">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <p class="text-sm font-semibold text-green-700">YOUR MEMBERSHIP</p>
-                                <h3 class="text-2xl font-bold text-green-800">${tier.name}</h3>
+                    <div class="p-3 rounded-lg shadow-md space-y-3">
+                        <div class="w-full h-auto aspect-[1.75/1] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-gradient-to-br from-pink-500 to-purple-600 text-white" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.4);">
+                            <div class="flex justify-between items-start">
+                                <div class="font-bold text-lg">
+                                    <p>${tier.name}</p>
+                                    <p class="text-xs font-normal opacity-80">MEMBERSHIP</p>
+                                </div>
+                                <p class="font-parisienne text-3xl">Nails Express</p>
                             </div>
-                            <span class="text-lg font-bold text-green-600">$${tier.price}/month</span>
+                            <div class="text-left">
+                                <p class="text-xs opacity-80">MEMBER</p>
+                                <p class="text-2xl font-semibold tracking-wider">${client.name}</p>
+                            </div>
+                            <div class="text-right text-xs opacity-80">Member Since: ${joinDate}</div>
                         </div>
-                        <div class="mt-4 border-t pt-4">
-                            <h4 class="font-semibold mb-2">Your Benefits:</h4>
-                            <ul class="list-disc list-inside text-gray-700 space-y-1">
-                                <li>${tier.discount}% off all services</li>
-                                ${tier.benefits.split('\n').map(b => `<li>${b}</li>`).join('')}
-                            </ul>
+                        <div class="flex justify-between items-center pt-2">
+                             <p class="text-sm font-semibold text-green-700">Status: Active</p>
+                             <div class="flex gap-2">
+                                <button id="download-membership-btn" class="text-gray-500 hover:text-blue-600" title="Download/Print"><i class="fas fa-download"></i></button>
+                                <button id="share-membership-btn" class="text-gray-500 hover:text-pink-600" title="Share"><i class="fas fa-share-alt"></i></button>
+                             </div>
                         </div>
-                        <p class="text-xs text-gray-500 mt-4">Member since: ${joinDate}</p>
-                    </div>
-                `;
+                    </div>`;
+                
+                document.getElementById('download-membership-btn').addEventListener('click', () => openMembershipCardForPrint(client, tier));
+                document.getElementById('share-membership-btn').addEventListener('click', () => {
+                     if (navigator.share) {
+                        navigator.share({ title: 'Nails Express Membership', text: `I'm a ${tier.name} member at Nails Express!`, url: window.location.href }).catch(console.error);
+                    } else {
+                        alert('Sharing is not supported on this browser. Try the download button!');
+                    }
+                });
+
             }
         } else {
             container.innerHTML = `
@@ -1030,8 +1199,7 @@ function initClientDashboard(clientId, clientData) {
                     <h3 class="text-xl font-bold text-gray-800">You are not a member yet.</h3>
                     <p class="text-gray-600 mt-2">Join today to unlock exclusive discounts and perks!</p>
                     <button id="client-join-membership-btn" class="mt-4 bg-pink-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-pink-700">View Plans</button>
-                </div>
-            `;
+                </div>`;
             document.getElementById('client-join-membership-btn').addEventListener('click', openViewMembershipsModal);
         }
     };
@@ -1042,6 +1210,32 @@ function initClientDashboard(clientId, clientData) {
             renderClientMembership(updatedClientData, allMembershipTiers);
         }
     });
+    
+    // Add listener for purchase button inside the client dashboard
+    document.getElementById('view-memberships-container').addEventListener('click', async (e) => {
+        const purchaseBtn = e.target.closest('.purchase-membership-btn');
+        if (purchaseBtn) {
+            const tierId = purchaseBtn.dataset.id;
+            const tier = allMembershipTiers.find(t => t.id === tierId);
+            showConfirmModal(`Sign up for the ${tier.name} membership for $${tier.price}/month?`, async () => {
+                try {
+                    await updateDoc(doc(db, "clients", clientId), {
+                        membership: {
+                            tierId: tierId,
+                            tierName: tier.name,
+                            startDate: serverTimestamp()
+                        }
+                    });
+                    alert("Welcome! You are now a member.");
+                    closeViewMembershipsModal();
+                } catch (error) {
+                    console.error("Error signing up for membership: ", error);
+                    alert("Could not complete membership signup.");
+                }
+            }, "Confirm & Sign Up");
+        }
+    });
+
 
     const openPurchaseModalForClient = (client) => {
         const purchaseModal = document.getElementById('gift-card-purchase-modal');

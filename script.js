@@ -550,6 +550,74 @@ const openViewMembershipsModal = () => {
 const closeViewMembershipsModal = () => {
     document.getElementById('view-memberships-modal').classList.add('hidden');
 };
+
+// ADD THIS ENTIRE NEW BLOCK OF FUNCTIONS
+
+const initializeMembershipPurchaseForm = (selectedTierId) => {
+    const form = document.getElementById('landing-membership-form');
+    const tierSelect = document.getElementById('ms-tier-select');
+    const amountInput = document.getElementById('ms-amount');
+    const previewCard = document.getElementById('ms-preview-card');
+
+    form.reset();
+    tierSelect.innerHTML = '';
+
+    // Populate the dropdown
+    allMembershipTiers.forEach(tier => {
+        const isSelected = tier.id === selectedTierId ? 'selected' : '';
+        tierSelect.innerHTML += `<option value="${tier.id}" ${isSelected}>${tier.name}</option>`;
+    });
+
+    const updatePreview = () => {
+        const tierId = tierSelect.value;
+        const tier = allMembershipTiers.find(t => t.id === tierId);
+        const buyerName = document.getElementById('ms-buyer-name').value || 'Client Name';
+
+        if (tier) {
+            amountInput.value = tier.price.toFixed(2);
+            
+            // Define unique card styles per tier name
+            let cardStyle = 'from-gray-700 via-gray-900 to-black'; // Default
+            if (tier.name.toLowerCase().includes('silver')) cardStyle = 'from-gray-400 via-gray-500 to-gray-600';
+            if (tier.name.toLowerCase().includes('gold')) cardStyle = 'from-yellow-400 via-yellow-500 to-yellow-600';
+            if (tier.name.toLowerCase().includes('platinum')) cardStyle = 'from-indigo-500 via-purple-600 to-pink-600';
+
+            previewCard.className = `w-[350px] h-[200px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-gradient-to-br ${cardStyle} text-white transition-all duration-300`;
+            previewCard.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div class="font-bold text-lg"><p>${tier.name}</p><p class="text-xs font-normal opacity-80">MEMBERSHIP</p></div>
+                    <p class="font-parisienne text-3xl">Nails Express</p>
+                </div>
+                <div class="text-left"><p class="text-xs opacity-80">MEMBER</p><p class="text-2xl font-semibold tracking-wider">${buyerName}</p></div>
+                <div class="text-right text-xs opacity-80">Member Since: ${new Date().toLocaleDateString()}</div>
+            `;
+        }
+    };
+    
+    tierSelect.addEventListener('change', updatePreview);
+    document.getElementById('ms-buyer-name').addEventListener('input', updatePreview);
+    
+    updatePreview(); // Initial call
+};
+
+const openMembershipPurchaseModal = (tierId) => {
+    initializeMembershipPurchaseForm(tierId);
+    
+    getDoc(doc(db, "settings", "paymentGuide")).then(docSnap => {
+        const paymentGuideDisplay = document.getElementById('membership-payment-guide');
+        if (docSnap.exists() && docSnap.data().text) {
+            paymentGuideDisplay.innerHTML = `<p class="font-semibold mb-2">How to Pay:</p><p>${docSnap.data().text.replace(/\n/g, '<br>')}</p>`;
+        } else {
+            paymentGuideDisplay.textContent = 'Please contact the salon to complete your payment.';
+        }
+    });
+
+    document.getElementById('membership-purchase-modal').classList.remove('hidden');
+};
+
+const closeMembershipPurchaseModal = () => {
+    document.getElementById('membership-purchase-modal').classList.add('hidden');
+};
 // --- LANDING PAGE SCRIPT ---
 function initLandingPage() {
     const signupLoginModal = document.getElementById('signup-login-modal');
@@ -566,40 +634,59 @@ function initLandingPage() {
     const purchaseForm = document.getElementById('landing-gift-card-form');
     const previewCard = document.getElementById('landing-gc-preview-card');
 
-    // Fetch and render membership tiers on the landing page
     onSnapshot(query(collection(db, "memberships"), orderBy("price")), (snapshot) => {
         allMembershipTiers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderMembershipTiers(allMembershipTiers, 'landing-memberships-container', false);
     });
 
+    // UPDATED listener to open the new purchase modal
     document.getElementById('landing-memberships-container').addEventListener('click', (e) => {
-        if (e.target.closest('.purchase-membership-btn')) {
-            openViewMembershipsModal();
+        const btn = e.target.closest('.purchase-membership-btn');
+        if (btn) {
+            openMembershipPurchaseModal(btn.dataset.tierId);
         }
     });
     
-    // Logic for opening and closing the purchase modal
-    document.getElementById('close-view-memberships-modal-btn').addEventListener('click', closeViewMembershipsModal);
-    document.getElementById('view-memberships-modal').querySelector('.modal-overlay').addEventListener('click', closeViewMembershipsModal);
+    // Listeners for the new modal
+    document.getElementById('close-membership-purchase-modal-btn').addEventListener('click', closeMembershipPurchaseModal);
+    document.getElementById('membership-purchase-modal').querySelector('.modal-overlay').addEventListener('click', closeMembershipPurchaseModal);
     
-    document.getElementById('view-memberships-container').addEventListener('click', async (e) => {
-        const purchaseBtn = e.target.closest('.purchase-membership-btn');
-        if (purchaseBtn) {
-            const tierId = purchaseBtn.dataset.tierId;
-            const isLoggedIn = auth.currentUser && !auth.currentUser.isAnonymous;
-            
-            if (isLoggedIn) {
-                // Logic for logged-in user is handled in initClientDashboard
-            } else {
-                // Logic for anonymous user: store intent and open signup modal
-                sessionStorage.setItem('pendingMembershipPurchase', tierId);
-                closeViewMembershipsModal();
-                signupLoginModal.classList.remove('hidden');
-                signupLoginModal.classList.add('flex');
-            }
-        }
-    });
+    // NEW submit listener for the membership form
+    document.getElementById('landing-membership-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const submitBtn = document.getElementById('landing-ms-submit-btn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Processing...';
 
+        try {
+            const name = document.getElementById('ms-buyer-name').value;
+            const email = document.getElementById('ms-buyer-email').value;
+            const phone = document.getElementById('ms-buyer-phone').value;
+            
+            if (!name || !email || !phone) {
+                alert("Please fill out all your information to create an account.");
+                throw new Error("Missing buyer info");
+            }
+            
+            const tierId = document.getElementById('ms-tier-select').value;
+            sessionStorage.setItem('pendingMembershipPurchase', tierId);
+            sessionStorage.setItem('signupDetails', JSON.stringify({ name, email, phone }));
+
+            await createUserWithEmailAndPassword(auth, email, phone);
+            // onAuthStateChanged will handle the rest
+            
+        } catch (error) {
+            if (error.code === 'auth/email-already-in-use') {
+                alert("An account with this email already exists. Please log in to purchase a membership.");
+            } else {
+                console.error("Error during membership purchase:", error);
+                alert(`Could not process your request. Error: ${error.message}`);
+            }
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Membership Request';
+        }
+    });
 
     const updateLandingGiftCardPreview = () => {
         const showTo = document.getElementById('gc-show-to').checked;
@@ -5755,7 +5842,73 @@ clientProfileModal.querySelector('.modal-overlay').addEventListener('click', () 
 
 
 // ADD ALL THIS CODE AT THE END OF THE initMainApp FUNCTION
+// ADD ALL THIS CODE AT THE END OF THE initMainApp FUNCTION
 
+    // --- CLIENT MEMBERSHIP REPORT (ADMIN) ---
+    const renderClientMembershipsTable = (members) => {
+        const tbody = document.querySelector('#client-memberships-table tbody');
+        if(!tbody) return;
+        tbody.innerHTML = '';
+        members.forEach(member => {
+            const row = tbody.insertRow();
+            const status = member.membership.status || 'Active';
+            const statusColor = status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
+
+            let actionButtons = `<button data-id="${member.id}" class="delete-membership-record-btn text-red-500"><i class="fas fa-trash"></i></button>`;
+            if (status === 'Pending') {
+                actionButtons = `<button data-id="${member.id}" class="activate-membership-btn text-green-500 mr-2"><i class="fas fa-check-circle"></i></button>` + actionButtons;
+            }
+
+            row.innerHTML = `
+                <td class="px-6 py-4">${member.name}</td>
+                <td class="px-6 py-4">${member.membership.tierName}</td>
+                <td class="px-6 py-4">${member.membership.startDate.toDate().toLocaleDateString()}</td>
+                <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-semibold rounded-full ${statusColor}">${status}</span></td>
+                <td class="px-6 py-4 text-center">${actionButtons}</td>
+            `;
+        });
+    };
+
+    let allClientMemberships = [];
+    onSnapshot(query(collection(db, "clients"), where("membership", "!=", null)), (snapshot) => {
+        allClientMemberships = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const searchTerm = document.getElementById('search-memberships').value.toLowerCase();
+        const filtered = allClientMemberships.filter(m => 
+            m.name.toLowerCase().includes(searchTerm) || 
+            m.membership.tierName.toLowerCase().includes(searchTerm)
+        );
+        renderClientMembershipsTable(filtered);
+    });
+
+    document.getElementById('search-memberships').addEventListener('input', () => {
+        const searchTerm = document.getElementById('search-memberships').value.toLowerCase();
+        const filtered = allClientMemberships.filter(m => 
+            m.name.toLowerCase().includes(searchTerm) || 
+            m.membership.tierName.toLowerCase().includes(searchTerm)
+        );
+        renderClientMembershipsTable(filtered);
+    });
+
+    document.querySelector('#client-memberships-table tbody').addEventListener('click', async (e) => {
+        const activateBtn = e.target.closest('.activate-membership-btn');
+        if (activateBtn) {
+            const clientId = activateBtn.dataset.id;
+            showConfirmModal("Activate this membership?", async () => {
+                await updateDoc(doc(db, "clients", clientId), { "membership.status": "Active" });
+                alert("Membership activated!");
+            }, "Activate");
+        }
+
+        const deleteBtn = e.target.closest('.delete-membership-record-btn');
+        if (deleteBtn) {
+            const clientId = deleteBtn.dataset.id;
+             showConfirmModal("Remove this membership from the client?", async () => {
+                await updateDoc(doc(db, "clients", clientId), { membership: null });
+                alert("Membership removed.");
+            });
+        }
+    });
+    
 // --- MEMBERSHIP MANAGEMENT (ADMIN) ---
 const membershipModal = document.getElementById('membership-tier-modal');
 const membershipForm = document.getElementById('membership-tier-form');
@@ -5837,6 +5990,9 @@ const initMembershipManagement = () => {
             });
         }
     });
+
+
+    
 };
 
     

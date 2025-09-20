@@ -216,7 +216,8 @@ document.querySelector('#policy-modal .policy-modal-overlay').addEventListener('
 // This function is in the global scope
 const openAddAppointmentModal = (date, clientData = null, appointmentData = null) => {
     addAppointmentForm.reset();
-    const title = document.getElementById('add-appointment-modal-title');
+    // *** FIX IS HERE: Correctly selecting the elements by their ID ***
+    const titleEl = document.getElementById('add-appointment-modal-title');
     const submitBtn = document.getElementById('add-appointment-submit-btn');
     const appointmentIdInput = document.getElementById('edit-appointment-id');
 
@@ -234,7 +235,7 @@ const openAddAppointmentModal = (date, clientData = null, appointmentData = null
 
     if (appointmentData) {
         // --- EDIT MODE ---
-        title.textContent = 'Edit Appointment';
+        titleEl.textContent = 'Edit Appointment';
         submitBtn.textContent = 'Update Appointment';
         appointmentIdInput.value = appointmentData.id;
 
@@ -257,7 +258,7 @@ const openAddAppointmentModal = (date, clientData = null, appointmentData = null
 
     } else {
         // --- ADD NEW MODE (Original logic) ---
-        title.textContent = 'Add New Appointment';
+        titleEl.textContent = 'Add New Appointment';
         submitBtn.textContent = 'Save Appointment';
         appointmentIdInput.value = '';
 

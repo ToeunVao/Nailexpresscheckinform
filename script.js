@@ -213,29 +213,63 @@ document.addEventListener('click', (e) => { if (e.target.closest('.view-policy-b
 document.getElementById('policy-close-btn').addEventListener('click', closePolicyModal);
 document.querySelector('#policy-modal .policy-modal-overlay').addEventListener('click', closePolicyModal);
 
-// --- Shared Appointment Modal Logic ---
-const openAddAppointmentModal = (date, clientData = null) => {
+// This function is in the global scope
+const openAddAppointmentModal = (date, clientData = null, appointmentData = null) => {
     addAppointmentForm.reset();
-    const now = new Date();
-    const defaultDateTime = `${date}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    document.getElementById('appointment-datetime').value = defaultDateTime;
+    const title = document.getElementById('add-appointment-modal-title');
+    const submitBtn = document.getElementById('add-appointment-submit-btn');
+    const appointmentIdInput = document.getElementById('edit-appointment-id');
 
-    if (clientData) {
-        document.getElementById('appointment-client-name').value = clientData.name || '';
-        document.getElementById('appointment-phone').value = clientData.phone || '';
-    }
-
+    // Populate dropdowns (this is needed for both new and edit)
     const clientList = document.getElementById('client-names-list');
     const appointmentPhoneList = document.getElementById('appointment-client-phones');
     const uniqueNames = [...new Set(allFinishedClients.map(c => c.name))];
     const uniquePhones = [...new Set(allFinishedClients.filter(c => c.phone && c.phone !== 'N/A').map(c => c.phone))];
     clientList.innerHTML = uniqueNames.map(name => `<option value="${name}"></option>`).join('');
     appointmentPhoneList.innerHTML = uniquePhones.map(phone => `<option value="${phone}"></option>`).join('');
-    
     const mainServicesList = document.getElementById('main-services-list');
     mainServicesList.innerHTML = Object.keys(servicesData).flatMap(category => 
         servicesData[category].map(service => `<option value="${service.p || ''}${service.name}${service.price ? ' ' + service.price : ''}"></option>`)
     ).join('');
+
+    if (appointmentData) {
+        // --- EDIT MODE ---
+        title.textContent = 'Edit Appointment';
+        submitBtn.textContent = 'Update Appointment';
+        appointmentIdInput.value = appointmentData.id;
+
+        // Convert Firestore timestamp to a string for the datetime-local input
+        const apptDate = appointmentData.appointmentTimestamp.toDate();
+        const year = apptDate.getFullYear();
+        const month = String(apptDate.getMonth() + 1).padStart(2, '0');
+        const day = String(apptDate.getDate()).padStart(2, '0');
+        const hours = String(apptDate.getHours()).padStart(2, '0');
+        const minutes = String(apptDate.getMinutes()).padStart(2, '0');
+        document.getElementById('appointment-datetime').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+
+        document.getElementById('appointment-client-name').value = appointmentData.name || '';
+        document.getElementById('appointment-phone').value = appointmentData.phone || '';
+        document.getElementById('appointment-people').value = appointmentData.people || 1;
+        document.getElementById('appointment-booking-type').value = appointmentData.bookingType || 'Booked - Calendar';
+        document.getElementById('appointment-services').value = Array.isArray(appointmentData.services) ? appointmentData.services.join(', ') : (appointmentData.services || '');
+        document.getElementById('appointment-technician-select').value = appointmentData.technician || 'Any Technician';
+        document.getElementById('appointment-notes').value = appointmentData.notes || '';
+
+    } else {
+        // --- ADD NEW MODE (Original logic) ---
+        title.textContent = 'Add New Appointment';
+        submitBtn.textContent = 'Save Appointment';
+        appointmentIdInput.value = '';
+
+        const now = new Date();
+        const defaultDateTime = `${date}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        document.getElementById('appointment-datetime').value = defaultDateTime;
+
+        if (clientData) {
+            document.getElementById('appointment-client-name').value = clientData.name || '';
+            document.getElementById('appointment-phone').value = clientData.phone || '';
+        }
+    }
 
     addAppointmentModal.classList.remove('hidden'); 
     addAppointmentModal.classList.add('flex');
@@ -257,6 +291,7 @@ document.getElementById('appointment-phone').addEventListener('input', (e) => {
     if (client) { document.getElementById('appointment-client-name').value = client.name; } 
 });
 
+// This listener is in the global scope
 addAppointmentForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const datetimeString = document.getElementById('appointment-datetime').value;
@@ -274,18 +309,28 @@ addAppointmentForm.addEventListener('submit', async (e) => {
         phone: document.getElementById('appointment-phone').value,
         people: document.getElementById('appointment-people').value,
         bookingType: document.getElementById('appointment-booking-type').value,
-        services: [document.getElementById('appointment-services').value],
+        services: [document.getElementById('appointment-services').value], // Kept as an array for consistency
         technician: document.getElementById('appointment-technician-select').value,
         notes: document.getElementById('appointment-notes').value,
         appointmentTimestamp: Timestamp.fromDate(bookingDate)
     };
     
+    const appointmentId = document.getElementById('edit-appointment-id').value;
+
     try {
-        await addDoc(collection(db, "appointments"), appointmentData);
-        await sendBookingNotificationEmail(appointmentData);
+        if (appointmentId) {
+            // If an ID exists, UPDATE the existing document
+            await updateDoc(doc(db, "appointments", appointmentId), appointmentData);
+            alert("Appointment updated successfully!");
+        } else {
+            // If no ID, ADD a new document
+            await addDoc(collection(db, "appointments"), appointmentData);
+            await sendBookingNotificationEmail(appointmentData);
+            alert("Appointment saved successfully!");
+        }
         closeAddAppointmentModal();
     } catch (err) {
-        console.error("Error adding appointment:", err);
+        console.error("Error saving appointment:", err);
         alert("Could not save appointment.");
     }
 });
@@ -2457,52 +2502,67 @@ const renderAllStaffEarnings = () => {
         }
     });
 
-    const openViewDetailModal = (client, title = "Client Details") => {
-        if (!client) return;
-        document.getElementById('view-detail-title').textContent = title;
-        const content = document.getElementById('view-detail-content');
-        const actions = document.getElementById('view-detail-actions');
-        let appointmentDetailsHTML = '<div class="space-y-2"><h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Appointment Details</h4>';
-        let appointmentTime = 'N/A';
-        if (client.appointmentTimestamp) { appointmentTime = new Date(client.appointmentTimestamp.seconds * 1000).toLocaleString(); } 
-        else if (client.checkInTimestamp) { appointmentTime = new Date(client.checkInTimestamp.seconds * 1000).toLocaleString(); }
-        appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Date:</strong> ${appointmentTime}</div>`;
-        appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Services:</strong> ${Array.isArray(client.services) ? client.services.join(', ') : client.services || 'N/A'}</div>`;
-        appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Technician:</strong> ${client.technician || 'N/A'}</div>`;
-        appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Booking Type:</strong> ${client.bookingType || 'N/A'}</div>`;
-        if (client.colorCode) { appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Color Code:</strong> ${client.colorCode}</div>`; }
-        if (client.notes) { appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Notes:</strong> ${client.notes}</div>`; }
-        appointmentDetailsHTML += '</div>';
-        const lastFinished = allFinishedClients.filter(c => c.name === client.name && c.id !== client.id).sort((a,b) => b.checkOutTimestamp.toMillis() - a.checkOutTimestamp.toMillis())[0];
-        let lastVisitHTML = '';
-        if (lastFinished) { lastVisitHTML = `<div class="space-y-2"><h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Previous Visit</h4><div><strong class="font-semibold text-gray-700">Date:</strong> ${new Date(lastFinished.checkOutTimestamp.seconds * 1000).toLocaleString()}</div><div><strong class="font-semibold text-gray-700">Services:</strong> ${lastFinished.services || 'N/A'}</div><div><strong class="font-semibold text-gray-700">Color Code:</strong> ${lastFinished.colorCode || 'N/A'}</div><div><strong class="font-semibold text-gray-700">Technician:</strong> ${lastFinished.technician || 'N/A'}</div>${lastFinished.notes ? `<div><strong class="font-semibold text-gray-700">Notes:</strong> ${lastFinished.notes}</div>` : ''}</div>`; }
-        const nextAppointment = allAppointments.filter(appt => appt.name === client.name && appt.appointmentTimestamp.toMillis() > Date.now()).sort((a, b) => a.appointmentTimestamp.toMillis() - b.appointmentTimestamp.toMillis())[0];
-        let nextAppointmentHTML = `<div class="space-y-2"><h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Next Appointment</h4><div class="font-bold text-pink-600">${nextAppointment ? new Date(nextAppointment.appointmentTimestamp.seconds * 1000).toLocaleString() : 'Not scheduled'}</div></div>`;
-        content.innerHTML = `<div class="space-y-2"><h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Client Details</h4><div><strong class="font-semibold text-gray-700">Name:</strong> ${client.name || 'N/A'}</div><div><strong class="font-semibold text-gray-700">Phone:</strong> ${client.phone || 'N/A'}</div><div><strong class="font-semibold text-gray-700">Group Size:</strong> ${client.people || '1'}</div></div>${appointmentDetailsHTML}${lastVisitHTML}${nextAppointmentHTML}`;
-        actions.innerHTML = '<button type="button" id="view-detail-close-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Close</button>';
-        if(client.appointmentTimestamp && client.status !== 'waiting' && client.status !== 'processing') { actions.insertAdjacentHTML('afterbegin', `<button type="button" data-id="${client.id}" class="bg-blue-500 text-white font-semibold py-2 px-6 rounded-lg booking-action-btn" data-action="checkin">Check In</button><button type="button" data-id="${client.id}" class="bg-red-500 text-white font-semibold py-2 px-6 rounded-lg booking-action-btn" data-action="cancel">Cancel</button>`); }
-        document.getElementById('view-detail-close-btn').addEventListener('click', closeViewDetailModal);
-        viewDetailModal.classList.remove('hidden'); viewDetailModal.classList.add('flex');
-    };
+ // Located inside initMainApp()
+const openViewDetailModal = (client, title = "Client Details") => {
+    if (!client) return;
+    document.getElementById('view-detail-title').textContent = title;
+    const content = document.getElementById('view-detail-content');
+    const actions = document.getElementById('view-detail-actions');
+    let appointmentDetailsHTML = '<div class="space-y-2"><h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Appointment Details</h4>';
+    let appointmentTime = 'N/A';
+    if (client.appointmentTimestamp) { appointmentTime = new Date(client.appointmentTimestamp.seconds * 1000).toLocaleString(); } 
+    else if (client.checkInTimestamp) { appointmentTime = new Date(client.checkInTimestamp.seconds * 1000).toLocaleString(); }
+    appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Date:</strong> ${appointmentTime}</div>`;
+    appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Services:</strong> ${Array.isArray(client.services) ? client.services.join(', ') : client.services || 'N/A'}</div>`;
+    appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Technician:</strong> ${client.technician || 'N/A'}</div>`;
+    appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Booking Type:</strong> ${client.bookingType || 'N/A'}</div>`;
+    if (client.colorCode) { appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Color Code:</strong> ${client.colorCode}</div>`; }
+    if (client.notes) { appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Notes:</strong> ${client.notes}</div>`; }
+    appointmentDetailsHTML += '</div>';
+    const lastFinished = allFinishedClients.filter(c => c.name === client.name && c.id !== client.id).sort((a,b) => b.checkOutTimestamp.toMillis() - a.checkOutTimestamp.toMillis())[0];
+    let lastVisitHTML = '';
+    if (lastFinished) { lastVisitHTML = `<div class="space-y-2"><h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Previous Visit</h4><div><strong class="font-semibold text-gray-700">Date:</strong> ${new Date(lastFinished.checkOutTimestamp.seconds * 1000).toLocaleString()}</div><div><strong class="font-semibold text-gray-700">Services:</strong> ${lastFinished.services || 'N/A'}</div><div><strong class="font-semibold text-gray-700">Color Code:</strong> ${lastFinished.colorCode || 'N/A'}</div><div><strong class="font-semibold text-gray-700">Technician:</strong> ${lastFinished.technician || 'N/A'}</div>${lastFinished.notes ? `<div><strong class="font-semibold text-gray-700">Notes:</strong> ${lastFinished.notes}</div>` : ''}</div>`; }
+    const nextAppointment = allAppointments.filter(appt => appt.name === client.name && appt.appointmentTimestamp.toMillis() > Date.now()).sort((a, b) => a.appointmentTimestamp.toMillis() - b.appointmentTimestamp.toMillis())[0];
+    let nextAppointmentHTML = `<div class="space-y-2"><h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Next Appointment</h4><div class="font-bold text-pink-600">${nextAppointment ? new Date(nextAppointment.appointmentTimestamp.seconds * 1000).toLocaleString() : 'Not scheduled'}</div></div>`;
+    content.innerHTML = `<div class="space-y-2"><h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Client Details</h4><div><strong class="font-semibold text-gray-700">Name:</strong> ${client.name || 'N/A'}</div><div><strong class="font-semibold text-gray-700">Phone:</strong> ${client.phone || 'N/A'}</div><div><strong class="font-semibold text-gray-700">Group Size:</strong> ${client.people || '1'}</div></div>${appointmentDetailsHTML}${lastVisitHTML}${nextAppointmentHTML}`;
+    
+    // *** UPDATED ACTIONS HTML ***
+    actions.innerHTML = '<button type="button" id="view-detail-close-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Close</button>';
+    if(client.appointmentTimestamp && client.status !== 'waiting' && client.status !== 'processing') { 
+        actions.insertAdjacentHTML('afterbegin', 
+            `<button type="button" data-id="${client.id}" class="bg-yellow-500 text-white font-semibold py-2 px-4 rounded-lg booking-action-btn" data-action="edit">Edit</button>
+             <button type="button" data-id="${client.id}" class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg booking-action-btn" data-action="checkin">Check In</button>
+             <button type="button" data-id="${client.id}" class="bg-red-500 text-white font-semibold py-2 px-4 rounded-lg booking-action-btn" data-action="cancel">Cancel</button>`
+        ); 
+    }
 
+    document.getElementById('view-detail-close-btn').addEventListener('click', closeViewDetailModal);
+    viewDetailModal.classList.remove('hidden'); viewDetailModal.classList.add('flex');
+};
     const closeViewDetailModal = () => { viewDetailModal.classList.add('hidden'); viewDetailModal.classList.remove('flex'); };
     document.getElementById('view-detail-close-btn').addEventListener('click', closeViewDetailModal);
     document.querySelector('.view-detail-modal-overlay').addEventListener('click', closeViewDetailModal);
 
-    document.getElementById('view-detail-actions').addEventListener('click', async (e) => {
-         if (e.target.classList.contains('booking-action-btn')) {
-            const action = e.target.dataset.action;
-            const bookingId = e.target.dataset.id;
-            const appointment = allAppointments.find(a => a.id === bookingId);
-            if (!appointment) return;
-            if (action === 'cancel') { showConfirmModal("Are you sure you want to cancel this booking?", async () => { await deleteDoc(doc(db, "appointments", bookingId)); }); } 
-            else if (action === 'checkin') {
-                 await addDoc(collection(db, "active_queue"), { name: appointment.name, phone: appointment.phone, people: appointment.people || 1, bookingType: 'Booked - Calendar', services: Array.isArray(appointment.services) ? appointment.services : [appointment.services], technician: appointment.technician, notes: appointment.notes || '', checkInTimestamp: serverTimestamp(), status: 'waiting' });
-                await deleteDoc(doc(db, "appointments", bookingId));
-            }
-            closeViewDetailModal();
+// Located inside initMainApp()
+document.getElementById('view-detail-actions').addEventListener('click', async (e) => {
+    if (e.target.classList.contains('booking-action-btn')) {
+        const action = e.target.dataset.action;
+        const bookingId = e.target.dataset.id;
+        const appointment = allAppointments.find(a => a.id === bookingId);
+        if (!appointment) return;
+
+        if (action === 'cancel') {
+            showConfirmModal("Are you sure you want to cancel this booking?", async () => { await deleteDoc(doc(db, "appointments", bookingId)); });
+        } else if (action === 'checkin') {
+            await addDoc(collection(db, "active_queue"), { name: appointment.name, phone: appointment.phone, people: appointment.people || 1, bookingType: 'Booked - Calendar', services: Array.isArray(appointment.services) ? appointment.services : [appointment.services], technician: appointment.technician, notes: appointment.notes || '', checkInTimestamp: serverTimestamp(), status: 'waiting' });
+            await deleteDoc(doc(db, "appointments", bookingId));
+        } else if (action === 'edit') { // *** ADD THIS EDIT LOGIC ***
+            openAddAppointmentModal(null, null, appointment);
         }
-    });
+        
+        closeViewDetailModal();
+    }
+});
 
 // Located inside initMainApp()
 const openClientProfileModal = async (client) => {

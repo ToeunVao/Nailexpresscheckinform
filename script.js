@@ -1077,40 +1077,50 @@ getDoc(doc(db, "public_data", "technicians")).then(docSnap => {
         }
     });
 
-    const updateFeatureVisibility = (settings) => {
-        const showClientRegistration = settings.showClientLogin !== false;
-        const showPromos = settings.showPromotions !== false;
-        const showGiftCards = settings.showGiftCards !== false;
-        const showNailArt = settings.showNailArt !== false;
-        
-        const signupTab = document.getElementById('signup-tab-btn').parentElement;
-        if (signupTab) {
-             signupTab.style.display = showClientRegistration ? 'block' : 'none';
-        }
-        
-        document.getElementById('promotions-landing').style.display = showPromos ? '' : 'none';
-        document.querySelector('.nav-item-promotions').style.display = showPromos ? '' : 'none';
-        
-        document.getElementById('gift-card-landing').style.display = showGiftCards ? '' : 'none';
-        document.querySelector('.nav-item-gift-card').style.display = showGiftCards ? '' : 'none';
+// Located inside initLandingPage()
+const updateFeatureVisibility = (settings) => {
+    const showClientRegistration = settings.showClientLogin !== false;
+    const showPromos = settings.showPromotions !== false;
+    const showGiftCards = settings.showGiftCards !== false;
+    const showNailArt = settings.showNailArt !== false;
+    // Safely check for the memberships property
+    const showMemberships = settings.showMemberships !== false;
 
-        document.getElementById('nails-idea-landing').style.display = showNailArt ? '' : 'none';
-        document.querySelector('.nav-item-nails-idea').style.display = showNailArt ? '' : 'none';
-        // Add this block to control the Memberships section
+    const signupTab = document.getElementById('signup-tab-btn').parentElement;
+    if (signupTab) {
+        signupTab.style.display = showClientRegistration ? 'block' : 'none';
+    }
+
+    document.getElementById('promotions-landing').style.display = showPromos ? '' : 'none';
+    document.querySelector('.nav-item-promotions').style.display = showPromos ? '' : 'none';
+
+    document.getElementById('gift-card-landing').style.display = showGiftCards ? '' : 'none';
+    document.querySelector('.nav-item-gift-card').style.display = showGiftCards ? '' : 'none';
+
+    document.getElementById('nails-inspo-landing').style.display = showNailArt ? '' : 'none';
+    document.querySelector('.nav-item-nails-inspo').style.display = showNailArt ? '' : 'none';
+
     const membershipSection = document.getElementById('memberships-landing');
     const membershipNavLink = document.querySelector('a[href="#memberships-landing"]');
     if (membershipSection) membershipSection.style.display = showMemberships ? '' : 'none';
     if (membershipNavLink) membershipNavLink.style.display = showMemberships ? '' : 'none';
+};
 
-    };
-
-    onSnapshot(doc(db, "settings", "features"), (docSnap) => {
-        if (docSnap.exists()) {
-            updateFeatureVisibility(docSnap.data());
-        } else {
-            updateFeatureVisibility({ showClientLogin: true, showPromotions: true, showGiftCards: true, showNailArt: true });
-        }
-    });
+// Located at the end of initLandingPage()
+onSnapshot(doc(db, "settings", "features"), (docSnap) => {
+    if (docSnap.exists()) {
+        updateFeatureVisibility(docSnap.data());
+    } else {
+        // FIX IS HERE: Added showMemberships to the default object
+        updateFeatureVisibility({ 
+            showClientLogin: true, 
+            showPromotions: true, 
+            showGiftCards: true, 
+            showNailArt: true,
+            showMemberships: true 
+        });
+    }
+});
 }
 
 // --- CLIENT DASHBOARD SCRIPT ---
@@ -4017,7 +4027,8 @@ const loadFeatureToggles = async () => {
         document.getElementById('toggle-promotions').checked = settings.showPromotions !== false;
         document.getElementById('toggle-gift-card').checked = settings.showGiftCards !== false;
         document.getElementById('toggle-nails-idea').checked = settings.showNailArt !== false;
-        document.getElementById('toggle-memberships').checked = settings.showMemberships !== false; // Add this line
+        // Safely check for the memberships property
+        document.getElementById('toggle-memberships').checked = settings.showMemberships !== false;
     } else {
         // Default all to true if no settings exist yet
         document.getElementById('toggle-client-login').checked = true;

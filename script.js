@@ -510,7 +510,8 @@ onAuthStateChanged(auth, async (user) => {
                     } else {
                         const pendingPurchaseJSON = sessionStorage.getItem('pendingGiftCardPurchase');
                         const pendingMembershipId = sessionStorage.getItem('pendingMembershipPurchase'); // Check for pending membership
-
+                        let newClientData;
+                        
                         if (pendingPurchaseJSON) {
                             // --- GIFT CARD PURCHASE LOGIC (No changes here) ---
                             const details = JSON.parse(pendingPurchaseJSON);
@@ -575,7 +576,8 @@ onAuthStateChanged(auth, async (user) => {
                                 membership: {
                                     tierId: pendingMembershipId,
                                     tierName: allMembershipTiers.find(t => t.id === pendingMembershipId)?.name || 'Unknown',
-                                    startDate: serverTimestamp()
+                                    startDate: serverTimestamp(),
+                                    status: 'Pending' // **SET TO PENDING**
                                 }
                             };
                             

@@ -29,14 +29,11 @@
 
 <body class="bg-gray-100">
 
-    <!-- Loading Screen (Visible initially) -->
     <div id="loading-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-white">
         <h2 class="text-3xl font-bold text-pink-700">Loading Nail Express...</h2>
     </div>
 
-    <!-- Login/Landing Page Content (Hidden initially) -->
     <div id="landing-page-content" style="display: none;">
-        <!-- Header -->
         <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50">
             <div class="container mx-auto px-6 py-4 flex justify-between items-center">
                 <div id="landing-logo">
@@ -61,7 +58,6 @@
                 </div>
             </div>
         </header>
-        <!-- Hero Section -->
         <section class="hero-section-new relative">
             <div class="hero-overlay-new w-full h-full flex items-center justify-center text-center">
                 <div class="container mx-auto px-6 py-16">
@@ -96,26 +92,21 @@
         </section>
 
 
-        <!-- Promotions Section -->
         <section id="promotions-landing" class="py-20 bg-pink-50">
             <div class="container mx-auto px-6">
                 <h2 class="text-3xl font-bold text-center text-pink-700 mb-8">Current Promotions</h2>
                 <div id="promotions-container-landing" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <!-- Promotions will be dynamically inserted here -->
-                </div>
+                    </div>
             </div>
         </section>
 
-        <!-- Nails Idea Section -->
         <section id="nails-idea-landing" class="py-20 bg-white">
             <div class="container mx-auto px-6">
                 <h2 class="text-3xl font-bold text-center text-pink-700 mb-8">Nail Art Inspiration</h2>
                 <div id="nails-idea-container-landing" class="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
-                    <!-- Nail ideas will be dynamically inserted here -->
-                </div>
+                    </div>
             </div>
         </section>
-        <!-- Gift Card Section -->
         <section id="gift-card-landing" class="py-20 bg-pink-50">
             <div class="container mx-auto px-6 text-center">
                 <h2 class="text-3xl font-bold mb-4 text-pink-700">Give the Gift of Glamour</h2>
@@ -142,7 +133,6 @@
 </section>
         <main class="container mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
 
-        <!-- Booking Section -->
         <section id="booking-landing" class="py-20">
             <div class="container mx-auto px-6">
                 <div class="bg-white p-8 md:p-12 rounded-2xl shadow-2xl max-w-4xl mx-auto">
@@ -150,7 +140,6 @@
                     <p class="text-center text-gray-600 mb-8">Your moment of relaxation is just a few clicks away.</p>
                     <form id="add-appointment-form-landing" class="relative">
 
-                        <!-- Step 1: Your Information -->
                         <div id="booking-step-1">
                             <h3 class="text-xl font-semibold text-gray-700 border-b pb-3 mb-6">Step 1: Your Information
                             </h3>
@@ -194,17 +183,14 @@
                             </div>
                         </div>
 
-                        <!-- Step 2: Select Services -->
                         <div id="booking-step-2" class="hidden">
                             <div class="flex justify-between items-center border-b pb-3 mb-6">
                                 <h3 class="text-xl font-semibold text-gray-700">Step 2: Select Your Services</h3>
                             </div>
                             <div id="services-container-landing" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <!-- Category buttons will be injected here -->
-                            </div>
+                                </div>
                             <div id="hidden-checkbox-container-landing" class="hidden">
-                                <!-- Hidden checkboxes will be injected here -->
-                            </div>
+                                </div>
                             <div class="mt-8 text-center">
                                 <label class="flex items-center justify-center">
                                     <input type="checkbox" id="appointment-policy-agree-landing" class="form-checkbox"
@@ -227,7 +213,6 @@
             </div>
         </section>
 
-        <!-- About Us Section -->
         <section id="about-landing" class="py-20 bg-white">
             <div class="container mx-auto px-6 text-center">
                 <h2 class="text-3xl font-bold mb-4 text-pink-700">Your Sanctuary for Beauty & Relaxation</h2>
@@ -240,7 +225,6 @@
             </div>
         </section>
 
-        <!-- Contact Us Section -->
         <section id="contact-landing" class="py-20">
             <div class="container mx-auto px-6 text-center">
                 <h2 class="text-3xl font-bold mb-4 text-pink-700">Get In Touch</h2>
@@ -268,7 +252,6 @@
         </section>
     </div>
 
-    <!-- Client Dashboard Content (Hidden initially) -->
     <div id="client-dashboard-content" style="display: none;">
         <header class="bg-white shadow-md">
             <div class="container mx-auto max-w-5xl p-4 flex justify-between items-center">
@@ -299,7 +282,6 @@
                 </ul>
             </div>
 
-            <!-- Client Appointments Content -->
             <div id="appointments-content" class="client-tab-content">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-xl font-semibold text-gray-700">Upcoming Appointments</h3>
@@ -308,19 +290,15 @@
                         Appointment</button>
                 </div>
                 <div id="client-upcoming-appointments" class="space-y-4">
-                    <!-- Upcoming appointments will be loaded here -->
-                </div>
+                    </div>
             </div>
 
-            <!-- Client History Content -->
             <div id="history-content" class="client-tab-content hidden">
                 <h3 class="text-xl font-semibold text-gray-700 mb-4">Appointment History</h3>
                 <div id="client-appointment-history" class="space-y-4">
-                    <!-- History will be loaded here -->
-                </div>
+                    </div>
             </div>
 
-            <!-- Client Favorites Content -->
             <div id="favorites-content" class="client-tab-content hidden">
                 <h3 class="text-xl font-semibold text-gray-700 mb-4">My Favorites</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -336,8 +314,7 @@
             </div>
 
 
-             <!-- Client Gift Cards Content -->
-           <div id="gift-cards-content" class="client-tab-content hidden">
+             <div id="gift-cards-content" class="client-tab-content hidden">
     <div class="flex justify-between items-center mb-4">
         <h3 class="text-xl font-semibold text-gray-700">My Gift Cards</h3>
         <button id="client-buy-gift-card-btn" class="bg-pink-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-pink-700">
@@ -355,7 +332,6 @@
         </main>
     </div>
 
-    <!-- Main Check-in App Content (Hidden initially) -->
     <div id="app-content" style="display: none;">
         <header class="bg-white shadow-md">
             <div class="container mx-auto max-w-7xl p-4 flex justify-between items-center">
@@ -399,10 +375,8 @@
                 </nav>
         </div>
         <main class="container mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
-            <!-- DASHBOARD CONTENT -->
             <div id="dashboard-content">
 
-                <!-- Admin Dashboard View -->
                 <div id="admin-dashboard-view" class="hidden">
                   <div class="flex justify-end items-center mb-6 gap-2">
     <label class="text-sm font-medium text-gray-700">Date Range:</label>
@@ -412,7 +386,6 @@
         class="p-2 border border-gray-300 rounded-lg hidden">
 </div>
 
-                    <!-- Summary Cards -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                         <div class="dashboard-card bg-pink-100">
                             <h4 class="font-bold text-pink-800">Total Salon Revenue</h4>
@@ -447,27 +420,21 @@
                             <p id="total-expense-card" class="text-3xl font-bold text-red-600">$0</p>
                         </div>
                     </div>
-                     <!-- Staff Earning Cards & Graph -->
-                    <div class="mt-8 mb-8 bg-white p-6 rounded-2xl shadow-lg">
+                     <div class="mt-8 mb-8 bg-white p-6 rounded-2xl shadow-lg">
                         <h3 class="text-xl font-bold text-gray-700 mb-4">Staff Earnings Summary</h3>
-                        <!-- Container for dynamically generated staff cards -->
                         <div id="staff-earning-cards-container" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
-                            <!-- JS will populate this with a card for each staff member -->
-                        </div>
-                        <!-- Container for the new graph -->
+                            </div>
                         <div class="h-96">
                              <canvas id="staff-earnings-chart"></canvas>
                         </div>
                     </div>
                   
-                    <!-- Salon Revenue Chart -->
                     <div class="bg-white p-6 rounded-2xl shadow-lg h-96 mb-8">
                         <h3 class="text-xl font-bold text-gray-700 mb-4">Salon Revenue Trend</h3>
                         <canvas id="salon-revenue-chart"></canvas>
                     </div>
 
-                     <!-- Upcoming Appointments List -->
-                 <div class="mt-8 mb-8 bg-white p-6 rounded-2xl shadow-lg">
+                     <div class="mt-8 mb-8 bg-white p-6 rounded-2xl shadow-lg">
     <div class="flex justify-between items-center mb-4">
         <h3 class="text-xl font-bold text-gray-700">Upcoming Appointments</h3>
         <div id="tech-filter-container-dashboard-appointments" class="tech-filter-container flex gap-2 flex-wrap">
@@ -480,7 +447,6 @@
 </div>
                     
 
-                    <!-- Staff Earning Report on Dashboard -->
                     <div class="mt-8 bg-white p-6 rounded-2xl shadow-lg">
                         <h3
                             class="text-xl font-bold text-gray-700 border-b pb-3 mb-6 flex justify-between items-center">
@@ -492,7 +458,6 @@
                                     class="ml-2 bg-green-100 text-green-800 text-sm font-semibold px-2.5 py-0.5 rounded-full"></span>
                             </div>
                         </h3>
-                        <!-- Earning Submission Form (Admin Only) -->
                         <form id="dashboard-staff-earning-form-full"
                             class="grid grid-cols-1 md:grid-cols-6 gap-6 mb-8 items-end p-4 border-b">
                             <div>
@@ -576,7 +541,6 @@
                     </div>
                 </div>
 
-                <!-- Staff Dashboard View -->
                 <div id="staff-dashboard-view" class="hidden">
                     <div class="flex justify-end items-center mb-6 gap-2">
     <label class="text-sm font-medium text-gray-700">Date Range:</label>
@@ -621,21 +585,17 @@
                         </div>
                     </div>
                     
-                    <!-- My Upcoming Appointments List -->
                     <div class="mt-8 mb-8 bg-white p-6 rounded-2xl shadow-lg">
                         <h3 class="text-xl font-bold text-gray-700 mb-4">My Upcoming Appointments</h3>
                         <div id="staff-upcoming-appointments-list" class="overflow-x-auto max-h-72">
-                            <!-- JS will populate this table -->
-                        </div>
+                            </div>
                     </div>
 
-                    <!-- Staff Earning Chart -->
                     <div class="bg-white p-6 rounded-2xl shadow-lg h-96 mb-8">
                         <h3 class="text-xl font-bold text-gray-700 mb-4">My Earning Trend</h3>
                         <canvas id="my-earnings-chart"></canvas>
                     </div>
 
-                    <!-- Staff Earning Report Table -->
                     <div class="mt-8 bg-white p-6 rounded-2xl shadow-lg">
                         <h3
                             class="text-xl font-bold text-gray-700 border-b pb-3 mb-6 flex justify-between items-center flex-wrap">
@@ -676,7 +636,6 @@
                     </div>
                 </div>
             </div>
-            <!-- MAIN APP CONTAINER -->
             <div id="main-app-container" class="hidden">
                 <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-xl">
 
@@ -914,27 +873,22 @@
                         </div>
                     </div>
 
-                    <!-- NEW: Nails Idea Section -->
                     <div id="nails-idea-content" class="main-section hidden">
                         <div class="mb-6 border-b pb-3">
                             <h3 class="text-xl font-semibold text-gray-700">Nail Art Gallery</h3>
                         </div>
-                        <!-- Filters -->
                         <div class="flex flex-wrap gap-4 mb-8">
                             <input type="text" id="nail-idea-search" placeholder="Search by name or category..."
                                 class="form-input p-2 border border-gray-300 rounded-lg flex-grow">
                             <select id="nail-idea-shape-filter"
                                 class="form-select p-2 border border-gray-300 rounded-lg">
                                 <option value="">All Shapes</option>
-                                <!-- JS will populate this -->
-                            </select>
+                                </select>
                             <select id="nail-idea-category-filter"
                                 class="form-select p-2 border border-gray-300 rounded-lg">
                                 <option value="">All Categories</option>
-                                <!-- JS will populate this -->
-                            </select>
+                                </select>
                         </div>
-                        <!-- Gallery -->
                         <div id="nails-idea-gallery" class="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
                         </div>
                     </div>
@@ -987,7 +941,6 @@
                             </ul>
                         </div>
 
-                        <!-- Salon Earning Content -->
                         <div id="salon-earning-report-content" class="sub-tab-content">
                             <div class="mb-6 border-b pb-3">
                                 <h3 class="text-xl font-semibold text-gray-700">Salon Earning Report</h3>
@@ -1072,7 +1025,6 @@
                             </div>
                         </div>
 
-                        <!-- Staff Earning Content -->
                         <div id="staff-earning-report-content" class="sub-tab-content hidden">
                             <h3
                                 class="text-xl font-semibold text-gray-700 border-b pb-3 mb-6 flex justify-between items-center">
@@ -1153,7 +1105,6 @@
                             </div>
                         </div>
 
-                        <!-- Expense Report Content -->
                         <div id="expense-report-content" class="sub-tab-content hidden">
                             <h3 class="text-xl font-semibold text-gray-700 mb-4">Monthly Expense Report</h3>
                             <form id="add-expense-form"
@@ -1231,7 +1182,6 @@
                             </div>
                         </div>
 
-                        <!-- Clients List Content -->
                         <div id="clients-list-report-content" class="sub-tab-content hidden">
                             <div class="flex justify-between items-center mb-4">
                                 <input type="text" id="search-clients-list"
@@ -1266,7 +1216,6 @@
                             </div>
                         </div>
 
-                        <!-- Gift Card Report Content -->
                         <div id="gift-card-report-content" class="sub-tab-content hidden">
                             <div class="flex justify-between items-center mb-4">
                                 <h3 class="text-xl font-semibold text-gray-700">Gift Card Sales</h3>
@@ -1341,7 +1290,6 @@
                             </ul>
                         </div>
 
-                        <!-- User Management Content -->
                         <div id="user-management-content" class="sub-tab-content">
                             <h3 class="text-xl font-semibold text-gray-700 mb-4">Manage Users</h3>
                             <form id="add-user-form"
@@ -1387,7 +1335,6 @@
                             </div>
                         </div>
 
-                        <!-- Inventory Management Content -->
                         <div id="inventory-management-content" class="sub-tab-content hidden">
                             <div class="flex justify-between items-center mb-4">
                                 <h3 class="text-xl font-semibold text-gray-700">Manage Inventory</h3>
@@ -1445,7 +1392,6 @@
                             </div>
                         </div>
 
-                        <!-- Inventory Report Content -->
                         <div id="inventory-report-content" class="sub-tab-content hidden">
                             <h3 class="text-xl font-semibold text-gray-700 mb-4">Inventory Reorder Suggestions</h3>
                             <p class="text-sm text-gray-600 mb-6">This report shows items that are below their low stock
@@ -1467,7 +1413,6 @@
                             </div>
                         </div>
 
-                        <!-- Nail Ideas Management Content -->
                         <div id="nail-ideas-management-content" class="sub-tab-content hidden">
                             <h3 class="text-xl font-semibold text-gray-700 mb-4">Manage Nail Ideas</h3>
                             <form id="add-nail-idea-form"
@@ -1572,7 +1517,6 @@
     <div id="color-brands-admin-list" class="space-y-2">
         </div>
 </div>
-                        <!-- Gift Card Management Content -->
                         <div id="gift-card-management-content" class="sub-tab-content hidden">
                             <h3 class="text-xl font-semibold text-gray-700 border-b pb-3 mb-6">Gift Card Management</h3>
 
@@ -2024,7 +1968,6 @@
         </button>
     </div>
 
-    <!-- ========= MODALS (Moved to top level) ========= -->
     <div id="service-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
         <div class="absolute inset-0 bg-black opacity-50 modal-overlay"></div>
         <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
@@ -2182,7 +2125,7 @@
                             Policy</button>.</span></label></div>
             <div class="mt-6 flex justify-end gap-3"><button type="button" id="add-appointment-cancel-btn"
                     class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Cancel</button><button
-                    type="submit" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Save
+                    type="submit" id="add-appointment-submit-btn" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Save
                     Appointment</button></div>
         </form>
     </div>
@@ -2597,7 +2540,6 @@
             </div>
         </div>
     </div>
-<!-- REPLACE THE OLD #gift-card-modal WITH THIS NEW ONE -->
 <div id="gift-card-purchase-modal" class="modal hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
     <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
     <div class="relative bg-white w-full max-w-4xl p-6 rounded-2xl shadow-xl m-4 max-h-[90vh] overflow-y-auto">
@@ -2605,9 +2547,7 @@
         <h2 class="text-3xl font-bold text-center text-pink-700 mb-6">Purchase a Gift Card</h2>
 
         <form id="landing-gift-card-form" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Left Column: User & Gift Card Info -->
             <div class="space-y-6">
-                <!-- User Information Section -->
                 <div id="gc-user-info-section">
                     <h3 class="text-xl font-semibold text-gray-700 border-b pb-2 mb-4">Your Information</h3>
                     <div class="space-y-4">
@@ -2626,7 +2566,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- Gift Card Information Section -->
                 <div>
                     <h3 class="text-xl font-semibold text-gray-700 border-b pb-2 mb-4">Gift Card Details</h3>
                     <div class="space-y-4">
@@ -2648,7 +2587,6 @@
                 </div>
             </div>
 
-            <!-- Right Column: Card Designer & Summary -->
             <div class="space-y-6">
                 <div>
                      <h3 class="font-semibold text-gray-700 border-b pb-2">Card Style</h3>
@@ -2679,10 +2617,8 @@
                         <span>Total:</span>
                         <span id="landing-gc-total-amount" class="font-bold text-xl">$0.00</span>
                     </div>
-                    <!-- ADD THIS NEW PAYMENT GUIDE DIV -->
-                        <div id="landing-gc-payment-guide" class="text-sm text-gray-600 bg-gray-100 p-3 rounded-lg border">
-                            <!-- Payment guide from settings will be loaded here -->
-                        </div>
+                    <div id="landing-gc-payment-guide" class="text-sm text-gray-600 bg-gray-100 p-3 rounded-lg border">
+                            </div>
                     <button type="submit" id="landing-gc-submit-btn" class="w-full bg-pink-600 text-white font-bold py-3 px-12 rounded-full hover:bg-pink-700">
                         Submit Purchase Request
                     </button>

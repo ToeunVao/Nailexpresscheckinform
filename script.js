@@ -41,7 +41,7 @@ let initialAppointmentsLoaded = false;
 let initialInventoryLoaded = false;
 let allFinishedClients = [], allAppointments = [], allClients = [], allActiveClients = [], servicesData = {};
 let allColorBrands = [];
-let allMembershipTiers
+let allMembershipTiers = [];
 
 const giftCardBackgrounds = {
     'General': [

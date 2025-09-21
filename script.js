@@ -362,16 +362,6 @@ const renderMembershipTiers = (tiers, containerId, isLoggedIn) => {
     });
 };
 
-// --- GLOBAL DATA FETCHING ---
-// Fetch membership tiers as soon as the app loads
-onSnapshot(query(collection(db, "memberships"), orderBy("price")), (snapshot) => {
-    allMembershipTiers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    // If landing page is currently visible, render the tiers there
-    if (landingPageContent.style.display === 'block') {
-        renderMembershipTiers(allMembershipTiers, 'landing-memberships-container', false);
-    }
-});
-
 const initializeMembershipPurchaseForm = (selectedTierId) => {
     const form = document.getElementById('landing-membership-form');
     const tierSelect = document.getElementById('ms-tier-select');
@@ -456,6 +446,18 @@ const renderClientMembershipsTable = (members) => {
         `;
     });
 };
+
+
+// --- GLOBAL DATA FETCHING ---
+// Fetch membership tiers as soon as the app loads
+onSnapshot(query(collection(db, "memberships"), orderBy("price")), (snapshot) => {
+    allMembershipTiers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // If landing page is currently visible, render the tiers there
+    if (landingPageContent.style.display === 'block') {
+        renderMembershipTiers(allMembershipTiers, 'landing-memberships-container', false);
+    }
+});
+
 // --- Primary Authentication Router ---
 // REPLACE the entire onAuthStateChanged function
 onAuthStateChanged(auth, async (user) => {

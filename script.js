@@ -41,6 +41,7 @@ let initialAppointmentsLoaded = false;
 let initialInventoryLoaded = false;
 let allFinishedClients = [], allAppointments = [], allClients = [], allActiveClients = [], servicesData = {};
 let allColorBrands = [];
+let allMembershipTiers
 
 const giftCardBackgrounds = {
     'General': [
@@ -501,6 +502,11 @@ onAuthStateChanged(auth, async (user) => {
         console.error("Authentication Error:", error);
         loadingScreen.innerHTML = `<div class="text-center"><h2 class="text-3xl font-bold text-red-700">Connection Error</h2><p class="text-gray-600 mt-2">Could not connect to services. Please check your internet connection and refresh the page.</p><p class="text-xs text-gray-400 mt-4">Error: ${error.message}</p></div>`;
     }
+});
+
+// Fetch membership tiers as soon as the app loads
+onSnapshot(query(collection(db, "memberships"), orderBy("price")), (snapshot) => {
+    allMembershipTiers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 });
 
 

@@ -337,7 +337,115 @@ addAppointmentForm.addEventListener('submit', async (e) => {
     }
 });
 
+// --- GLOBAL MEMBERSHIP FUNCTIONS ---
+// (Moved here to be accessible everywhere)
 
+const renderMembershipTiers = (tiers, containerId, isLoggedIn) => {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    
+    tiers.forEach(tier => {
+        const benefitsList = tier.benefits.split('\n').map(b => `<li class="flex items-start"><span class="text-green-500 mr-2">✔</span><span>${b}</span></li>`).join('');
+        const buttonText = isLoggedIn ? 'Select Plan' : 'Become a Member';
+
+        const tierEl = document.createElement('div');
+        tierEl.className = 'border rounded-lg p-6 text-left flex flex-col hover:shadow-lg transition-shadow';
+        tierEl.innerHTML = `
+            <h3 class="text-2xl font-bold text-pink-700">${tier.name}</h3>
+            <p class="text-4xl font-bold my-4">$${tier.price}<span class="text-lg font-normal text-gray-500">/month</span></p>
+            <p class="text-sm text-gray-600 mb-4">${tier.discount}% off all additional services.</p>
+            <ul class="space-y-2 text-gray-700 flex-grow">${benefitsList}</ul>
+            <button data-tier-id="${tier.id}" class="purchase-membership-btn mt-6 w-full bg-pink-600 text-white font-bold py-3 rounded-lg hover:bg-pink-700">${buttonText}</button>
+        `;
+        container.appendChild(tierEl);
+    });
+};
+
+const initializeMembershipPurchaseForm = (selectedTierId) => {
+    const form = document.getElementById('landing-membership-form');
+    const tierSelect = document.getElementById('ms-tier-select');
+    const amountInput = document.getElementById('ms-amount');
+    const previewCard = document.getElementById('ms-preview-card');
+
+    form.reset();
+    tierSelect.innerHTML = '';
+
+    allMembershipTiers.forEach(tier => {
+        const isSelected = tier.id === selectedTierId ? 'selected' : '';
+        tierSelect.innerHTML += `<option value="${tier.id}" ${isSelected}>${tier.name}</option>`;
+    });
+
+    const updatePreview = () => {
+        const tierId = tierSelect.value;
+        const tier = allMembershipTiers.find(t => t.id === tierId);
+        const buyerName = document.getElementById('ms-buyer-name').value || 'Client Name';
+
+        if (tier) {
+            amountInput.value = tier.price.toFixed(2);
+            let cardStyle = 'from-gray-700 via-gray-900 to-black';
+            if (tier.name.toLowerCase().includes('silver')) cardStyle = 'from-gray-400 via-gray-500 to-gray-600';
+            if (tier.name.toLowerCase().includes('gold')) cardStyle = 'from-yellow-400 via-yellow-500 to-yellow-600';
+            if (tier.name.toLowerCase().includes('platinum')) cardStyle = 'from-indigo-500 via-purple-600 to-pink-600';
+
+            previewCard.className = `w-[350px] h-[200px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-gradient-to-br ${cardStyle} text-white transition-all duration-300`;
+            previewCard.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div class="font-bold text-lg"><p>${tier.name}</p><p class="text-xs font-normal opacity-80">MEMBERSHIP</p></div>
+                    <p class="font-parisienne text-3xl">Nails Express</p>
+                </div>
+                <div class="text-left"><p class="text-xs opacity-80">MEMBER</p><p class="text-2xl font-semibold tracking-wider">${buyerName}</p></div>
+                <div class="text-right text-xs opacity-80">Member Since: ${new Date().toLocaleDateString()}</div>
+            `;
+        }
+    };
+    
+    tierSelect.addEventListener('change', updatePreview);
+    document.getElementById('ms-buyer-name').addEventListener('input', updatePreview);
+    updatePreview();
+};
+
+const openMembershipPurchaseModal = (tierId) => {
+    initializeMembershipPurchaseForm(tierId);
+    getDoc(doc(db, "settings", "paymentGuide")).then(docSnap => {
+        const paymentGuideDisplay = document.getElementById('membership-payment-guide');
+        if (docSnap.exists() && docSnap.data().text) {
+            paymentGuideDisplay.innerHTML = `<p class="font-semibold mb-2">How to Pay:</p><p>${docSnap.data().text.replace(/\n/g, '<br>')}</p>`;
+        } else {
+            paymentGuideDisplay.textContent = 'Please contact the salon to complete your payment.';
+        }
+    });
+    document.getElementById('membership-purchase-modal').classList.remove('hidden');
+};
+
+const closeMembershipPurchaseModal = () => {
+    document.getElementById('membership-purchase-modal').classList.add('hidden');
+};
+
+// **THIS IS THE MISSING FUNCTION**
+const renderClientMembershipsTable = (members) => {
+    const tbody = document.querySelector('#client-memberships-table tbody');
+    if(!tbody) return;
+    tbody.innerHTML = '';
+    members.forEach(member => {
+        const row = tbody.insertRow();
+        const status = member.membership.status || 'Active';
+        const statusColor = status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
+
+        let actionButtons = `<button data-id="${member.id}" class="delete-membership-record-btn text-red-500"><i class="fas fa-trash"></i></button>`;
+        if (status === 'Pending') {
+            actionButtons = `<button data-id="${member.id}" class="activate-membership-btn text-green-500 mr-2"><i class="fas fa-check-circle"></i></button>` + actionButtons;
+        }
+
+        row.innerHTML = `
+            <td class="px-6 py-4">${member.name}</td>
+            <td class="px-6 py-4">${member.membership.tierName}</td>
+            <td class="px-6 py-4">${member.membership.startDate.toDate().toLocaleDateString()}</td>
+            <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-semibold rounded-full ${statusColor}">${status}</span></td>
+            <td class="px-6 py-4 text-center">${actionButtons}</td>
+        `;
+    });
+};
 // --- Primary Authentication Router ---
 // REPLACE the entire onAuthStateChanged function
 onAuthStateChanged(auth, async (user) => {
@@ -508,75 +616,6 @@ onAuthStateChanged(auth, async (user) => {
 onSnapshot(query(collection(db, "memberships"), orderBy("price")), (snapshot) => {
     allMembershipTiers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 });
-
-
-// ADD THIS ENTIRE NEW BLOCK OF FUNCTIONS
-
-const initializeMembershipPurchaseForm = (selectedTierId) => {
-    const form = document.getElementById('landing-membership-form');
-    const tierSelect = document.getElementById('ms-tier-select');
-    const amountInput = document.getElementById('ms-amount');
-    const previewCard = document.getElementById('ms-preview-card');
-
-    form.reset();
-    tierSelect.innerHTML = '';
-
-    // Populate the dropdown
-    allMembershipTiers.forEach(tier => {
-        const isSelected = tier.id === selectedTierId ? 'selected' : '';
-        tierSelect.innerHTML += `<option value="${tier.id}" ${isSelected}>${tier.name}</option>`;
-    });
-
-    const updatePreview = () => {
-        const tierId = tierSelect.value;
-        const tier = allMembershipTiers.find(t => t.id === tierId);
-        const buyerName = document.getElementById('ms-buyer-name').value || 'Client Name';
-
-        if (tier) {
-            amountInput.value = tier.price.toFixed(2);
-            
-            // Define unique card styles per tier name
-            let cardStyle = 'from-gray-700 via-gray-900 to-black'; // Default
-            if (tier.name.toLowerCase().includes('silver')) cardStyle = 'from-gray-400 via-gray-500 to-gray-600';
-            if (tier.name.toLowerCase().includes('gold')) cardStyle = 'from-yellow-400 via-yellow-500 to-yellow-600';
-            if (tier.name.toLowerCase().includes('platinum')) cardStyle = 'from-indigo-500 via-purple-600 to-pink-600';
-
-            previewCard.className = `w-[350px] h-[200px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-gradient-to-br ${cardStyle} text-white transition-all duration-300`;
-            previewCard.innerHTML = `
-                <div class="flex justify-between items-start">
-                    <div class="font-bold text-lg"><p>${tier.name}</p><p class="text-xs font-normal opacity-80">MEMBERSHIP</p></div>
-                    <p class="font-parisienne text-3xl">Nails Express</p>
-                </div>
-                <div class="text-left"><p class="text-xs opacity-80">MEMBER</p><p class="text-2xl font-semibold tracking-wider">${buyerName}</p></div>
-                <div class="text-right text-xs opacity-80">Member Since: ${new Date().toLocaleDateString()}</div>
-            `;
-        }
-    };
-    
-    tierSelect.addEventListener('change', updatePreview);
-    document.getElementById('ms-buyer-name').addEventListener('input', updatePreview);
-    
-    updatePreview(); // Initial call
-};
-
-const openMembershipPurchaseModal = (tierId) => {
-    initializeMembershipPurchaseForm(tierId);
-    
-    getDoc(doc(db, "settings", "paymentGuide")).then(docSnap => {
-        const paymentGuideDisplay = document.getElementById('membership-payment-guide');
-        if (docSnap.exists() && docSnap.data().text) {
-            paymentGuideDisplay.innerHTML = `<p class="font-semibold mb-2">How to Pay:</p><p>${docSnap.data().text.replace(/\n/g, '<br>')}</p>`;
-        } else {
-            paymentGuideDisplay.textContent = 'Please contact the salon to complete your payment.';
-        }
-    });
-
-    document.getElementById('membership-purchase-modal').classList.remove('hidden');
-};
-
-const closeMembershipPurchaseModal = () => {
-    document.getElementById('membership-purchase-modal').classList.add('hidden');
-};
 
 // --- LANDING PAGE SCRIPT ---
 function initLandingPage() {

@@ -337,226 +337,6 @@ addAppointmentForm.addEventListener('submit', async (e) => {
 });
 
 
-function initClientDashboard(clientId, clientData) {
-    document.getElementById('client-welcome-name').textContent = `Welcome back, ${clientData.name}!`;
-    document.getElementById('client-sign-out-btn').addEventListener('click', () => signOut(auth));
-
-    const openPurchaseModalForClient = (client) => {
-        const purchaseModal = document.getElementById('gift-card-purchase-modal');
-        const userInfoSection = document.getElementById('gc-user-info-section');
-
-        if (userInfoSection) {
-            userInfoSection.classList.add('hidden');
-        }
-        document.getElementById('gc-buyer-name').value = client.name;
-        document.getElementById('gc-buyer-name').disabled = true;
-        document.getElementById('gc-buyer-phone').value = client.phone || '';
-        document.getElementById('gc-buyer-phone').disabled = true;
-        document.getElementById('gc-buyer-email').value = clientData.email;
-        document.getElementById('gc-buyer-email').disabled = true;
-
-        initializeLandingGiftCardDesigner();
-        purchaseModal.classList.remove('hidden');
-    };
-    
-    const openCardForPrint = (card) => {
-        const expiryText = card.expiresAt ? `Expires: ${card.expiresAt.toDate().toLocaleDateString()}` : '';
-        const cardHTML = `
-            <html>
-                <head>
-                    <title>Your Gift Card ${card.code}</title>
-                    <script src="https://cdn.tailwindcss.com"></script>
-                    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&family=Parisienne&display=swap" rel="stylesheet">
-                    <style>
-                        body { font-family: 'Poppins', sans-serif; display: flex; align-items: center; justify-content: center; margin: 0; background-color: #f0f0f0; }
-                        .font-parisienne { font-family: 'Parisienne', cursive; }
-                        .card { text-shadow: 1px 1px 3px rgba(0,0,0,0.6); }
-                    </style>
-                </head>
-                <body>
-                    <div class="card w-[400px] h-[228px] rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" 
-                         style="background-image: url('${card.backgroundUrl}');">
-                        <div class="flex justify-between items-start">
-                            <img src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white" />
-                            <div class="text-right">
-                                <p class="font-parisienne text-3xl">Gift Card</p>
-                                <p class="text-xs font-semibold tracking-wider">Nails Express</p>
-                            </div>
-                        </div>
-                        <div class="text-center"><p class="text-5xl font-bold">$${card.balance.toFixed(2)}</p></div>
-                        <div class="text-xs">
-                            <div class="flex justify-between font-semibold">
-                                <span style="display: ${card.recipientName ? 'inline' : 'none'}">FOR: <span class="font-normal">${card.recipientName}</span></span>
-                                <span style="display: ${card.senderName ? 'inline' : 'none'}">FROM: <span class="font-normal">${card.senderName}</span></span>
-                            </div>
-                            <p class="mt-2 text-center font-mono tracking-widest text-sm">${card.code}</p>
-                            <p class="mt-1 text-center text-[10px] opacity-80" style="display: ${expiryText ? 'block' : 'none'}">${expiryText}</p>
-                        </div>
-                    </div>
-                </body>
-            </html>
-        `;
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(cardHTML);
-        printWindow.document.close();
-        printWindow.focus();
-    };
-
-    const renderClientGiftCards = (cards) => {
-        const container = document.getElementById('client-gift-cards-container');
-        if (!container) return;
-        container.innerHTML = '';
-        if (cards.length === 0) {
-            container.innerHTML = '<p class="text-gray-500 text-center col-span-full">You do not have any gift cards.</p>';
-            return;
-        }
-        cards.forEach(card => {
-            const cardEl = document.createElement('div');
-            cardEl.className = 'bg-white p-3 rounded-lg shadow-md space-y-3';
-            const expiryText = card.expiresAt ? `Expires: ${card.expiresAt.toDate().toLocaleDateString()}` : '';
-            cardEl.innerHTML = `
-                <div class="w-full h-[200px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" 
-                     style="background-image: url('${card.backgroundUrl}'); text-shadow: 1px 1px 3px rgba(0,0,0,0.6);">
-                    <div class="flex justify-between items-start">
-                        <img src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white" />
-                        <div class="text-right">
-                            <p class="font-parisienne text-3xl">Gift Card</p>
-                            <p class="text-xs font-semibold tracking-wider">Nails Express</p>
-                        </div>
-                    </div>
-                    <div class="text-center"><p class="text-5xl font-bold">$${card.balance.toFixed(2)}</p></div>
-                    <div class="text-xs">
-                        <div class="flex justify-between font-semibold">
-                            <span>FOR: <span class="font-normal">${card.recipientName}</span></span>
-                            <span>FROM: <span class="font-normal">${card.senderName}</span></span>
-                        </div>
-                        <p class="mt-2 text-center font-mono tracking-widest text-sm">${card.code}</p>
-                        <p class="mt-1 text-center text-[10px] opacity-80" style="display: ${expiryText ? 'block' : 'none'}">${expiryText}</p>
-                    </div>
-                </div>
-                <div class="flex justify-between items-center pt-2">
-                     <span class="px-2 py-1 text-xs font-semibold rounded-full ${card.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${card.status}</span>
-                     <div class="flex gap-2">
-                        <button data-card-id="${card.id}" class="download-card-btn text-gray-500 hover:text-blue-600" title="Download/Print"><i class="fas fa-download"></i></button>
-                        <button data-card-id="${card.id}" class="share-card-btn text-gray-500 hover:text-pink-600" title="Share"><i class="fas fa-share-alt"></i></button>
-                     </div>
-                </div>
-            `;
-            container.appendChild(cardEl);
-        });
-    };
-
-    const setupClientTabs = () => {
-        const tabs = document.getElementById('client-dashboard-tabs');
-        tabs.addEventListener('click', (e) => {
-            const button = e.target.closest('button');
-            if (!button) return;
-            document.querySelectorAll('#client-dashboard-tabs .tab-btn').forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            document.querySelectorAll('.client-tab-content').forEach(content => content.classList.add('hidden'));
-            document.getElementById(button.id.replace('-tab', '-content')).classList.remove('hidden');
-        });
-    };
-
-    const renderClientAppointments = (appointments) => {
-        const container = document.getElementById('client-upcoming-appointments');
-        container.innerHTML = '';
-        const upcoming = appointments.filter(a => a.appointmentTimestamp.toDate() > new Date());
-        if (upcoming.length === 0) {
-            container.innerHTML = '<p class="text-gray-500">You have no upcoming appointments.</p>';
-            return;
-        }
-        upcoming.forEach(appt => {
-            const el = document.createElement('div');
-            el.className = 'bg-white p-4 rounded-lg shadow';
-            el.innerHTML = `<p class="font-bold">${new Date(appt.appointmentTimestamp.seconds * 1000).toLocaleString()}</p><p>${appt.services.join(', ')}</p><p class="text-sm text-gray-600">With: ${appt.technician}</p>`;
-            container.appendChild(el);
-        });
-    };
-
-    const renderClientHistory = (history) => {
-         const container = document.getElementById('client-appointment-history');
-        container.innerHTML = '';
-        if (history.length === 0) {
-            container.innerHTML = '<p class="text-gray-500">You have no past appointments.</p>';
-            return;
-        }
-        history.forEach(visit => {
-            const el = document.createElement('div');
-            el.className = 'bg-white p-4 rounded-lg shadow';
-            el.innerHTML = `<p class="font-bold">${new Date(visit.checkOutTimestamp.seconds * 1000).toLocaleDateString()}</p><p>${visit.services}</p><p class="text-sm text-gray-600">With: ${visit.technician}</p>${visit.colorCode ? `<p class="text-sm text-gray-600">Color: ${visit.colorCode}</p>` : ''}`;
-            container.appendChild(el);
-        });
-    };
-
-    const calculateAndRenderFavorites = (history) => {
-        if (history.length === 0) return;
-        const techCounts = history.reduce((acc, visit) => {
-            if (visit.technician) acc[visit.technician] = (acc[visit.technician] || 0) + 1;
-            return acc;
-        }, {});
-        const colorCounts = history.reduce((acc, visit) => {
-            if(visit.colorCode) acc[visit.colorCode] = (acc[visit.colorCode] || 0) + 1;
-            return acc;
-        }, {});
-        const favTech = Object.keys(techCounts).length > 0 ? Object.keys(techCounts).reduce((a, b) => techCounts[a] > techCounts[b] ? a : b) : 'N/A';
-        const favColor = Object.keys(colorCounts).length > 0 ? Object.keys(colorCounts).reduce((a, b) => colorCounts[a] > colorCounts[b] ? a : b) : 'N/A';
-        document.getElementById('favorite-technician').textContent = favTech;
-        document.getElementById('favorite-color').textContent = favColor;
-    };
-
-    onSnapshot(query(collection(db, "appointments"), where("name", "==", clientData.name)), (snapshot) => {
-        const appointments = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
-        renderClientAppointments(appointments);
-    });
-     onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientData.name), orderBy("checkOutTimestamp", "desc")), (snapshot) => {
-        const history = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
-        allFinishedClients = history;
-        renderClientHistory(history);
-        calculateAndRenderFavorites(history);
-    });
-
-    let allClientGiftCards = [];
-    onSnapshot(query(collection(db, "gift_cards"), where("createdBy", "==", clientId), orderBy("createdAt", "desc")), (snapshot) => {
-        allClientGiftCards = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-        renderClientGiftCards(allClientGiftCards);
-    });
-
-    document.getElementById('client-gift-cards-container').addEventListener('click', (e) => {
-        const downloadBtn = e.target.closest('.download-card-btn');
-        const shareBtn = e.target.closest('.share-card-btn');
-        if (downloadBtn) {
-            const cardId = downloadBtn.dataset.cardId;
-            const card = allClientGiftCards.find(c => c.id === cardId);
-            if (card) openCardForPrint(card);
-        }
-        if (shareBtn) {
-            const cardId = shareBtn.dataset.cardId;
-            const card = allClientGiftCards.find(c => c.id === cardId);
-            if (card) {
-                if (navigator.share) {
-                    navigator.share({
-                        title: 'Nails Express Gift Card',
-                        text: `Check out this gift card for Nails Express! Code: ${card.code}`,
-                        url: window.location.href,
-                    }).catch(console.error);
-                } else {
-                    alert('Sharing is not supported on this browser. Try the download button!');
-                }
-            }
-        }
-    });
-
-    document.getElementById('client-book-new-btn').addEventListener('click', () => {
-        openAddAppointmentModal(getLocalDateString(), clientData);
-    });
-    
-    document.getElementById('client-buy-gift-card-btn').addEventListener('click', () => {
-        openPurchaseModalForClient(clientData);
-    });
-
-    setupClientTabs();
-}
 // --- Primary Authentication Router ---
 // REPLACE the entire onAuthStateChanged function
 onAuthStateChanged(auth, async (user) => {
@@ -1384,6 +1164,227 @@ onSnapshot(doc(db, "settings", "features"), (docSnap) => {
 });
 }
 
+
+function initClientDashboard(clientId, clientData) {
+    document.getElementById('client-welcome-name').textContent = `Welcome back, ${clientData.name}!`;
+    document.getElementById('client-sign-out-btn').addEventListener('click', () => signOut(auth));
+
+    const openPurchaseModalForClient = (client) => {
+        const purchaseModal = document.getElementById('gift-card-purchase-modal');
+        const userInfoSection = document.getElementById('gc-user-info-section');
+
+        if (userInfoSection) {
+            userInfoSection.classList.add('hidden');
+        }
+        document.getElementById('gc-buyer-name').value = client.name;
+        document.getElementById('gc-buyer-name').disabled = true;
+        document.getElementById('gc-buyer-phone').value = client.phone || '';
+        document.getElementById('gc-buyer-phone').disabled = true;
+        document.getElementById('gc-buyer-email').value = clientData.email;
+        document.getElementById('gc-buyer-email').disabled = true;
+
+        initializeLandingGiftCardDesigner();
+        purchaseModal.classList.remove('hidden');
+    };
+    
+    const openCardForPrint = (card) => {
+        const expiryText = card.expiresAt ? `Expires: ${card.expiresAt.toDate().toLocaleDateString()}` : '';
+        const cardHTML = `
+            <html>
+                <head>
+                    <title>Your Gift Card ${card.code}</title>
+                    <script src="https://cdn.tailwindcss.com"></script>
+                    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&family=Parisienne&display=swap" rel="stylesheet">
+                    <style>
+                        body { font-family: 'Poppins', sans-serif; display: flex; align-items: center; justify-content: center; margin: 0; background-color: #f0f0f0; }
+                        .font-parisienne { font-family: 'Parisienne', cursive; }
+                        .card { text-shadow: 1px 1px 3px rgba(0,0,0,0.6); }
+                    </style>
+                </head>
+                <body>
+                    <div class="card w-[400px] h-[228px] rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" 
+                         style="background-image: url('${card.backgroundUrl}');">
+                        <div class="flex justify-between items-start">
+                            <img src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white" />
+                            <div class="text-right">
+                                <p class="font-parisienne text-3xl">Gift Card</p>
+                                <p class="text-xs font-semibold tracking-wider">Nails Express</p>
+                            </div>
+                        </div>
+                        <div class="text-center"><p class="text-5xl font-bold">$${card.balance.toFixed(2)}</p></div>
+                        <div class="text-xs">
+                            <div class="flex justify-between font-semibold">
+                                <span style="display: ${card.recipientName ? 'inline' : 'none'}">FOR: <span class="font-normal">${card.recipientName}</span></span>
+                                <span style="display: ${card.senderName ? 'inline' : 'none'}">FROM: <span class="font-normal">${card.senderName}</span></span>
+                            </div>
+                            <p class="mt-2 text-center font-mono tracking-widest text-sm">${card.code}</p>
+                            <p class="mt-1 text-center text-[10px] opacity-80" style="display: ${expiryText ? 'block' : 'none'}">${expiryText}</p>
+                        </div>
+                    </div>
+                </body>
+            </html>
+        `;
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(cardHTML);
+        printWindow.document.close();
+        printWindow.focus();
+    };
+
+    const renderClientGiftCards = (cards) => {
+        const container = document.getElementById('client-gift-cards-container');
+        if (!container) return;
+        container.innerHTML = '';
+        if (cards.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 text-center col-span-full">You do not have any gift cards.</p>';
+            return;
+        }
+        cards.forEach(card => {
+            const cardEl = document.createElement('div');
+            cardEl.className = 'bg-white p-3 rounded-lg shadow-md space-y-3';
+            const expiryText = card.expiresAt ? `Expires: ${card.expiresAt.toDate().toLocaleDateString()}` : '';
+            cardEl.innerHTML = `
+                <div class="w-full h-[200px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" 
+                     style="background-image: url('${card.backgroundUrl}'); text-shadow: 1px 1px 3px rgba(0,0,0,0.6);">
+                    <div class="flex justify-between items-start">
+                        <img src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white" />
+                        <div class="text-right">
+                            <p class="font-parisienne text-3xl">Gift Card</p>
+                            <p class="text-xs font-semibold tracking-wider">Nails Express</p>
+                        </div>
+                    </div>
+                    <div class="text-center"><p class="text-5xl font-bold">$${card.balance.toFixed(2)}</p></div>
+                    <div class="text-xs">
+                        <div class="flex justify-between font-semibold">
+                            <span>FOR: <span class="font-normal">${card.recipientName}</span></span>
+                            <span>FROM: <span class="font-normal">${card.senderName}</span></span>
+                        </div>
+                        <p class="mt-2 text-center font-mono tracking-widest text-sm">${card.code}</p>
+                        <p class="mt-1 text-center text-[10px] opacity-80" style="display: ${expiryText ? 'block' : 'none'}">${expiryText}</p>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center pt-2">
+                     <span class="px-2 py-1 text-xs font-semibold rounded-full ${card.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${card.status}</span>
+                     <div class="flex gap-2">
+                        <button data-card-id="${card.id}" class="download-card-btn text-gray-500 hover:text-blue-600" title="Download/Print"><i class="fas fa-download"></i></button>
+                        <button data-card-id="${card.id}" class="share-card-btn text-gray-500 hover:text-pink-600" title="Share"><i class="fas fa-share-alt"></i></button>
+                     </div>
+                </div>
+            `;
+            container.appendChild(cardEl);
+        });
+    };
+
+    const setupClientTabs = () => {
+        const tabs = document.getElementById('client-dashboard-tabs');
+        tabs.addEventListener('click', (e) => {
+            const button = e.target.closest('button');
+            if (!button) return;
+            document.querySelectorAll('#client-dashboard-tabs .tab-btn').forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            document.querySelectorAll('.client-tab-content').forEach(content => content.classList.add('hidden'));
+            document.getElementById(button.id.replace('-tab', '-content')).classList.remove('hidden');
+        });
+    };
+
+    const renderClientAppointments = (appointments) => {
+        const container = document.getElementById('client-upcoming-appointments');
+        container.innerHTML = '';
+        const upcoming = appointments.filter(a => a.appointmentTimestamp.toDate() > new Date());
+        if (upcoming.length === 0) {
+            container.innerHTML = '<p class="text-gray-500">You have no upcoming appointments.</p>';
+            return;
+        }
+        upcoming.forEach(appt => {
+            const el = document.createElement('div');
+            el.className = 'bg-white p-4 rounded-lg shadow';
+            el.innerHTML = `<p class="font-bold">${new Date(appt.appointmentTimestamp.seconds * 1000).toLocaleString()}</p><p>${appt.services.join(', ')}</p><p class="text-sm text-gray-600">With: ${appt.technician}</p>`;
+            container.appendChild(el);
+        });
+    };
+
+    const renderClientHistory = (history) => {
+         const container = document.getElementById('client-appointment-history');
+        container.innerHTML = '';
+        if (history.length === 0) {
+            container.innerHTML = '<p class="text-gray-500">You have no past appointments.</p>';
+            return;
+        }
+        history.forEach(visit => {
+            const el = document.createElement('div');
+            el.className = 'bg-white p-4 rounded-lg shadow';
+            el.innerHTML = `<p class="font-bold">${new Date(visit.checkOutTimestamp.seconds * 1000).toLocaleDateString()}</p><p>${visit.services}</p><p class="text-sm text-gray-600">With: ${visit.technician}</p>${visit.colorCode ? `<p class="text-sm text-gray-600">Color: ${visit.colorCode}</p>` : ''}`;
+            container.appendChild(el);
+        });
+    };
+
+    const calculateAndRenderFavorites = (history) => {
+        if (history.length === 0) return;
+        const techCounts = history.reduce((acc, visit) => {
+            if (visit.technician) acc[visit.technician] = (acc[visit.technician] || 0) + 1;
+            return acc;
+        }, {});
+        const colorCounts = history.reduce((acc, visit) => {
+            if(visit.colorCode) acc[visit.colorCode] = (acc[visit.colorCode] || 0) + 1;
+            return acc;
+        }, {});
+        const favTech = Object.keys(techCounts).length > 0 ? Object.keys(techCounts).reduce((a, b) => techCounts[a] > techCounts[b] ? a : b) : 'N/A';
+        const favColor = Object.keys(colorCounts).length > 0 ? Object.keys(colorCounts).reduce((a, b) => colorCounts[a] > colorCounts[b] ? a : b) : 'N/A';
+        document.getElementById('favorite-technician').textContent = favTech;
+        document.getElementById('favorite-color').textContent = favColor;
+    };
+
+    onSnapshot(query(collection(db, "appointments"), where("name", "==", clientData.name)), (snapshot) => {
+        const appointments = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
+        renderClientAppointments(appointments);
+    });
+     onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientData.name), orderBy("checkOutTimestamp", "desc")), (snapshot) => {
+        const history = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
+        allFinishedClients = history;
+        renderClientHistory(history);
+        calculateAndRenderFavorites(history);
+    });
+
+    let allClientGiftCards = [];
+    onSnapshot(query(collection(db, "gift_cards"), where("createdBy", "==", clientId), orderBy("createdAt", "desc")), (snapshot) => {
+        allClientGiftCards = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+        renderClientGiftCards(allClientGiftCards);
+    });
+
+    document.getElementById('client-gift-cards-container').addEventListener('click', (e) => {
+        const downloadBtn = e.target.closest('.download-card-btn');
+        const shareBtn = e.target.closest('.share-card-btn');
+        if (downloadBtn) {
+            const cardId = downloadBtn.dataset.cardId;
+            const card = allClientGiftCards.find(c => c.id === cardId);
+            if (card) openCardForPrint(card);
+        }
+        if (shareBtn) {
+            const cardId = shareBtn.dataset.cardId;
+            const card = allClientGiftCards.find(c => c.id === cardId);
+            if (card) {
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'Nails Express Gift Card',
+                        text: `Check out this gift card for Nails Express! Code: ${card.code}`,
+                        url: window.location.href,
+                    }).catch(console.error);
+                } else {
+                    alert('Sharing is not supported on this browser. Try the download button!');
+                }
+            }
+        }
+    });
+
+    document.getElementById('client-book-new-btn').addEventListener('click', () => {
+        openAddAppointmentModal(getLocalDateString(), clientData);
+    });
+    
+    document.getElementById('client-buy-gift-card-btn').addEventListener('click', () => {
+        openPurchaseModalForClient(clientData);
+    });
+
+    setupClientTabs();
+}
 // --- MAIN CHECK-IN APP SCRIPT ---
 function initMainApp(userRole, userName) {
     // --- START: MOBILE MENU LOGIC (REPLACE YOUR OLD BLOCK WITH THIS) ---

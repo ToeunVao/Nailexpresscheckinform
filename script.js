@@ -594,10 +594,7 @@ function initLandingPage() {
     const purchaseForm = document.getElementById('landing-gift-card-form');
     const previewCard = document.getElementById('landing-gc-preview-card');
 
-    onSnapshot(query(collection(db, "memberships"), orderBy("price")), (snapshot) => {
-        allMembershipTiers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        renderMembershipTiers(allMembershipTiers, 'landing-memberships-container', false);
-    });
+
 
     // UPDATED listener to open the new purchase modal
     document.getElementById('landing-memberships-container').addEventListener('click', (e) => {
@@ -1170,6 +1167,14 @@ onSnapshot(doc(db, "settings", "features"), (docSnap) => {
 });
 }
 
+// **MOVED TO GLOBAL SCOPE**
+onSnapshot(query(collection(db, "memberships"), orderBy("price")), (snapshot) => {
+    allMembershipTiers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // If landing page is visible, render the tiers there
+    if (landingPageContent.style.display === 'block') {
+        renderMembershipTiers(allMembershipTiers, 'landing-memberships-container', false);
+    }
+});
 
 function initClientDashboard(clientId, clientData) {
     document.getElementById('client-welcome-name').textContent = `Welcome back, ${clientData.name}!`;

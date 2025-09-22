@@ -679,7 +679,10 @@ const renderClientMembership = (clientData) => {
         const tier = allMembershipTiers.find(t => t.id === clientData.membership.tierId);
         if (tier) {
             const benefitsList = tier.benefits.split('\n').map(b => `<li class="flex items-start"><span class="text-green-500 mr-2">✔</span><span>${b}</span></li>`).join('');
-            const startDate = clientData.membership.startDate.toDate().toLocaleDateString();
+           let startDate = new Date().toLocaleDateString(); // Default to today for new signups
+if (clientData.membership.startDate && typeof clientData.membership.startDate.toDate === 'function') {
+    startDate = clientData.membership.startDate.toDate().toLocaleDateString();
+}
             const status = clientData.membership.status || 'Active';
             const statusColor = status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
 

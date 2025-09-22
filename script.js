@@ -414,8 +414,8 @@ const initializeMembershipPurchaseForm = (selectedTierId) => {
     updatePreview();
 };
 
-const openMembershipPurchaseModal = (tierId) => {
-    initializeMembershipPurchaseForm(tierId);
+const openMembershipPurchaseModal = (tierId, clientData = null) => {
+    initializeMembershipPurchaseForm(tierId, clientData);
     getDoc(doc(db, "settings", "paymentGuide")).then(docSnap => {
         const paymentGuideDisplay = document.getElementById('membership-payment-guide');
         if (docSnap.exists() && docSnap.data().text) {
@@ -886,21 +886,10 @@ if (clientData.membership.startDate && typeof clientData.membership.startDate.to
 
 clientDashboardContent.addEventListener('click', (e) => {
     const joinBtn = e.target.closest('.join-membership-btn');
-    if (joinBtn) {
-        // Hide the user info section in the modal since we are pre-filling it
-        const userInfoSection = document.getElementById('membership-user-info-section');
-        if (userInfoSection) {
-            userInfoSection.classList.add('hidden');
-        }
-
-        // Pre-fill the form with the logged-in client's data
-        document.getElementById('ms-buyer-name').value = clientData.name;
-        document.getElementById('ms-buyer-phone').value = clientData.phone || '';
-        document.getElementById('ms-buyer-email').value = clientData.email;
-
-        // Open the modal (without a pre-selected tier)
-        openMembershipPurchaseModal();
-    }
+if (joinBtn) {
+    // Open the modal, passing the client's data to be handled internally
+    openMembershipPurchaseModal(null, clientData);
+}
 });
 
 

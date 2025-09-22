@@ -791,6 +791,9 @@ function initLandingPage() {
     const landingSignupForm = document.getElementById('landing-signup-form');
     const addAppointmentFormLanding = document.getElementById('add-appointment-form-landing');
     const lockoutMessageDiv = document.getElementById('login-lockout-message');
+    // **** ADD THIS LINE ****
+    renderMembershipTiers(allMembershipTiers, 'landing-memberships-container', false);
+    // **** END OF FIX ****
 // --- NEW E-COMMERCE GIFT CARD LOGIC ---
     const purchaseModal = document.getElementById('gift-card-purchase-modal');
     const buyGiftCardBtn = document.getElementById('buy-gift-card-btn');

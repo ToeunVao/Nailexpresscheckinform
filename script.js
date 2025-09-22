@@ -971,6 +971,21 @@ document.getElementById('landing-membership-form').addEventListener('submit', as
     }
 });
 
+// *** ADD THIS CORRECTED BLOCK ***
+    const closePurchaseModal = () => {
+        const purchaseModal = document.getElementById('gift-card-purchase-modal');
+        const userInfoSection = document.getElementById('gc-user-info-section');
+        purchaseModal.classList.add('hidden');
+        // Reset the form fields for the next user
+        document.getElementById('gc-buyer-name').disabled = false;
+        document.getElementById('gc-buyer-phone').disabled = false;
+        document.getElementById('gc-buyer-email').disabled = false;
+        // *** SHOW the user info section again for the next user ***
+        if (userInfoSection) {
+            userInfoSection.classList.remove('hidden');
+        }
+    };
+    
 const purchaseForm = document.getElementById('landing-gift-card-form');
 
    // Located inside initLandingPage()
@@ -1199,20 +1214,7 @@ function initLandingPage() {
     });
 
 
-// *** ADD THIS CORRECTED BLOCK ***
-    const closePurchaseModal = () => {
-        const purchaseModal = document.getElementById('gift-card-purchase-modal');
-        const userInfoSection = document.getElementById('gc-user-info-section');
-        purchaseModal.classList.add('hidden');
-        // Reset the form fields for the next user
-        document.getElementById('gc-buyer-name').disabled = false;
-        document.getElementById('gc-buyer-phone').disabled = false;
-        document.getElementById('gc-buyer-email').disabled = false;
-        // *** SHOW the user info section again for the next user ***
-        if (userInfoSection) {
-            userInfoSection.classList.remove('hidden');
-        }
-    };
+
 
     // Note: The 'purchaseModal' and 'closePurchaseModalBtn' variables are already
     // declared at the top of the gift card logic section, so we just use them here.

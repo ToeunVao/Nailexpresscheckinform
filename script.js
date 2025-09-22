@@ -741,7 +741,127 @@ const applyNailIdeaFilters = () => {
     });
     renderNailIdeasGallery(filteredIdeas);
 };
+    const openShareModal = (idea) => {
+        const salonUrl = "http://www.nailsxpressky.com";
+        const shareText = `Check out this amazing nail design: ${idea.name}!`;
+        document.getElementById('share-facebook').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(salonUrl)}`;
+        document.getElementById('share-pinterest').href = `http://pinterest.com/pin/create/button/?url=${encodeURIComponent(salonUrl)}&media=${encodeURIComponent(idea.imageURL)}&description=${encodeURIComponent(shareText)}`;
+        document.getElementById('share-twitter').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(salonUrl)}`;
+        document.getElementById('share-copy-link').onclick = () => { navigator.clipboard.writeText(salonUrl).then(() => alert('Link copied to clipboard!')); };
+        shareModal.classList.remove('hidden');
+        shareModal.classList.add('flex');
+    };
 
+    const closeShareModal = () => { shareModal.classList.add('hidden'); shareModal.classList.remove('flex'); };
+    document.getElementById('share-close-btn').addEventListener('click', closeShareModal);
+    document.querySelector('.share-modal-overlay').addEventListener('click', closeShareModal);
+
+
+    // ADD THIS ENTIRE NEW BLOCK for the lightbox functions
+    const openLightbox = (index) => {
+        if (index < 0 || index >= currentGalleryData.length) return;
+
+        currentLightboxIndex = index;
+        const idea = currentGalleryData[index];
+
+        lightboxImage.src = idea.imageURL;
+        currentRotation = 0; // ADD THIS LINE TO RESET ROTATION
+        lightboxImage.style.transform = `rotate(0deg)`; // AND THIS LINE TO RESET THE STYLE
+        lightboxTitle.textContent = idea.name;
+        lightboxShape.textContent = idea.shape || 'N/A';
+        lightboxColor.textContent = idea.color || 'N/A';
+        lightboxDescription.textContent = idea.description || ''; // ADD THIS LINE
+        lightboxCategories.innerHTML = idea.categories.map(cat =>
+            `<span class="bg-pink-100 text-pink-700 text-xs font-semibold px-2 py-1 rounded-full">${cat}</span>`
+        ).join('');
+
+        lightboxPrevBtn.classList.toggle('hidden', index === 0);
+        lightboxNextBtn.classList.toggle('hidden', index === currentGalleryData.length - 1);
+
+        nailIdeaLightbox.classList.remove('hidden');
+        nailIdeaLightbox.classList.add('flex');
+    };
+    // --- ADD THESE TWO NEW FUNCTIONS ---
+    const toggleFullScreen = () => {
+        const lightbox = document.getElementById('nail-idea-lightbox');
+        const icon = document.getElementById('lightbox-fullscreen-btn').querySelector('i');
+        if (!document.fullscreenElement) {
+            lightbox.requestFullscreen().catch(err => {
+                alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+            });
+            icon.classList.replace('fa-expand', 'fa-compress');
+        } else {
+            document.exitFullscreen();
+            icon.classList.replace('fa-compress', 'fa-expand');
+        }
+    };
+
+    const rotateImage = () => {
+        currentRotation += 90;
+        if (currentRotation >= 360) {
+            currentRotation = 0;
+        }
+        document.getElementById('lightbox-image').style.transform = `rotate(${currentRotation}deg)`;
+    };
+    // --- END OF NEW FUNCTIONS ---
+
+    const closeLightbox = () => {
+        nailIdeaLightbox.classList.add('hidden');
+        nailIdeaLightbox.classList.remove('flex');
+    };
+
+    const showNextImage = () => {
+        openLightbox(currentLightboxIndex + 1);
+    };
+
+    const showPrevImage = () => {
+        openLightbox(currentLightboxIndex - 1);
+    };
+    // REPLACE the old galleryClickHandler listeners with this new block ok
+    const galleryClickHandler = (e) => {
+        const shareBtn = e.target.closest('.share-nail-idea-btn');
+        const img = e.target.closest('img[data-index]');
+
+        if (shareBtn) {
+            const ideaId = shareBtn.dataset.id;
+            const idea = allNailIdeas.find(i => i.id === ideaId);
+            if (idea) { openShareModal(idea); }
+        } else if (img) {
+            const index = parseInt(img.dataset.index, 10);
+            openLightbox(index);
+        }
+    };
+
+    document.getElementById('nails-idea-gallery').addEventListener('click', galleryClickHandler);
+    document.getElementById('nails-idea-landing').addEventListener('click', galleryClickHandler);
+
+    // ADD THIS NEW BLOCK for the lightbox buttons
+    lightboxCloseBtn.addEventListener('click', closeLightbox);
+    lightboxNextBtn.addEventListener('click', showNextImage);
+    lightboxPrevBtn.addEventListener('click', showPrevImage);
+    // ADD THESE TWO NEW LISTENERS
+    document.getElementById('lightbox-fullscreen-btn').addEventListener('click', toggleFullScreen);
+    document.getElementById('lightbox-rotate-btn').addEventListener('click', rotateImage);
+    // END OF NEW LISTENERS
+
+    // Add keyboard navigation
+    document.addEventListener('keydown', (e) => {
+        if (!nailIdeaLightbox.classList.contains('hidden')) {
+            if (e.key === 'ArrowRight') showNextImage();
+            if (e.key === 'ArrowLeft') showPrevImage();
+            if (e.key === 'Escape') closeLightbox();
+        }
+    });
+
+    // ADD THIS NEW BLOCK to close the lightbox on overlay click
+    nailIdeaLightbox.addEventListener('click', (e) => {
+        // If the click is on the dark background itself (the overlay)
+        // and not on the content inside it, close the modal.
+        if (e.target === nailIdeaLightbox) {
+            closeLightbox();
+        }
+    });
+  
 
 // **** PASTE THESE TWO FUNCTIONS into your script ****
 
@@ -4279,127 +4399,7 @@ function initMainApp(userRole, userName) {
             }
         });
     });
-    const openShareModal = (idea) => {
-        const salonUrl = "http://www.nailsxpressky.com";
-        const shareText = `Check out this amazing nail design: ${idea.name}!`;
-        document.getElementById('share-facebook').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(salonUrl)}`;
-        document.getElementById('share-pinterest').href = `http://pinterest.com/pin/create/button/?url=${encodeURIComponent(salonUrl)}&media=${encodeURIComponent(idea.imageURL)}&description=${encodeURIComponent(shareText)}`;
-        document.getElementById('share-twitter').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(salonUrl)}`;
-        document.getElementById('share-copy-link').onclick = () => { navigator.clipboard.writeText(salonUrl).then(() => alert('Link copied to clipboard!')); };
-        shareModal.classList.remove('hidden');
-        shareModal.classList.add('flex');
-    };
 
-    const closeShareModal = () => { shareModal.classList.add('hidden'); shareModal.classList.remove('flex'); };
-    document.getElementById('share-close-btn').addEventListener('click', closeShareModal);
-    document.querySelector('.share-modal-overlay').addEventListener('click', closeShareModal);
-
-
-    // ADD THIS ENTIRE NEW BLOCK for the lightbox functions
-    const openLightbox = (index) => {
-        if (index < 0 || index >= currentGalleryData.length) return;
-
-        currentLightboxIndex = index;
-        const idea = currentGalleryData[index];
-
-        lightboxImage.src = idea.imageURL;
-        currentRotation = 0; // ADD THIS LINE TO RESET ROTATION
-        lightboxImage.style.transform = `rotate(0deg)`; // AND THIS LINE TO RESET THE STYLE
-        lightboxTitle.textContent = idea.name;
-        lightboxShape.textContent = idea.shape || 'N/A';
-        lightboxColor.textContent = idea.color || 'N/A';
-        lightboxDescription.textContent = idea.description || ''; // ADD THIS LINE
-        lightboxCategories.innerHTML = idea.categories.map(cat =>
-            `<span class="bg-pink-100 text-pink-700 text-xs font-semibold px-2 py-1 rounded-full">${cat}</span>`
-        ).join('');
-
-        lightboxPrevBtn.classList.toggle('hidden', index === 0);
-        lightboxNextBtn.classList.toggle('hidden', index === currentGalleryData.length - 1);
-
-        nailIdeaLightbox.classList.remove('hidden');
-        nailIdeaLightbox.classList.add('flex');
-    };
-    // --- ADD THESE TWO NEW FUNCTIONS ---
-    const toggleFullScreen = () => {
-        const lightbox = document.getElementById('nail-idea-lightbox');
-        const icon = document.getElementById('lightbox-fullscreen-btn').querySelector('i');
-        if (!document.fullscreenElement) {
-            lightbox.requestFullscreen().catch(err => {
-                alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
-            });
-            icon.classList.replace('fa-expand', 'fa-compress');
-        } else {
-            document.exitFullscreen();
-            icon.classList.replace('fa-compress', 'fa-expand');
-        }
-    };
-
-    const rotateImage = () => {
-        currentRotation += 90;
-        if (currentRotation >= 360) {
-            currentRotation = 0;
-        }
-        document.getElementById('lightbox-image').style.transform = `rotate(${currentRotation}deg)`;
-    };
-    // --- END OF NEW FUNCTIONS ---
-
-    const closeLightbox = () => {
-        nailIdeaLightbox.classList.add('hidden');
-        nailIdeaLightbox.classList.remove('flex');
-    };
-
-    const showNextImage = () => {
-        openLightbox(currentLightboxIndex + 1);
-    };
-
-    const showPrevImage = () => {
-        openLightbox(currentLightboxIndex - 1);
-    };
-    // REPLACE the old galleryClickHandler listeners with this new block ok
-    const galleryClickHandler = (e) => {
-        const shareBtn = e.target.closest('.share-nail-idea-btn');
-        const img = e.target.closest('img[data-index]');
-
-        if (shareBtn) {
-            const ideaId = shareBtn.dataset.id;
-            const idea = allNailIdeas.find(i => i.id === ideaId);
-            if (idea) { openShareModal(idea); }
-        } else if (img) {
-            const index = parseInt(img.dataset.index, 10);
-            openLightbox(index);
-        }
-    };
-
-    document.getElementById('nails-idea-gallery').addEventListener('click', galleryClickHandler);
-    document.getElementById('nails-idea-landing').addEventListener('click', galleryClickHandler);
-
-    // ADD THIS NEW BLOCK for the lightbox buttons
-    lightboxCloseBtn.addEventListener('click', closeLightbox);
-    lightboxNextBtn.addEventListener('click', showNextImage);
-    lightboxPrevBtn.addEventListener('click', showPrevImage);
-    // ADD THESE TWO NEW LISTENERS
-    document.getElementById('lightbox-fullscreen-btn').addEventListener('click', toggleFullScreen);
-    document.getElementById('lightbox-rotate-btn').addEventListener('click', rotateImage);
-    // END OF NEW LISTENERS
-
-    // Add keyboard navigation
-    document.addEventListener('keydown', (e) => {
-        if (!nailIdeaLightbox.classList.contains('hidden')) {
-            if (e.key === 'ArrowRight') showNextImage();
-            if (e.key === 'ArrowLeft') showPrevImage();
-            if (e.key === 'Escape') closeLightbox();
-        }
-    });
-
-    // ADD THIS NEW BLOCK to close the lightbox on overlay click
-    nailIdeaLightbox.addEventListener('click', (e) => {
-        // If the click is on the dark background itself (the overlay)
-        // and not on the content inside it, close the modal.
-        if (e.target === nailIdeaLightbox) {
-            closeLightbox();
-        }
-    });
-  
 
     const renderNailIdeasAdminTable = (ideas) => {
         nailIdeasTableBody.innerHTML = '';

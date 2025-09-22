@@ -675,7 +675,43 @@ function initClientDashboard(clientId, clientData) {
         printWindow.document.close();
         printWindow.focus();
     };
+// **** ADD THIS ENTIRE NEW FUNCTION ****
 
+const openMembershipCardForPrint = (client, tier) => {
+    let cardStyle = 'from-gray-700 via-gray-900 to-black';
+    if (tier.name.toLowerCase().includes('silver')) cardStyle = 'from-gray-400 via-gray-500 to-gray-600';
+    if (tier.name.toLowerCase().includes('gold')) cardStyle = 'from-yellow-400 via-yellow-500 to-yellow-600';
+    if (tier.name.toLowerCase().includes('platinum')) cardStyle = 'from-indigo-500 via-purple-600 to-pink-600';
+
+    const cardHTML = `
+        <html>
+            <head>
+                <title>Your Membership Card</title>
+                <script src="https://cdn.tailwindcss.com"><\/script>
+                <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&family=Parisienne&display=swap" rel="stylesheet">
+                <style>
+                    body { font-family: 'Poppins', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-color: #f0f0f0; }
+                    .font-parisienne { font-family: 'Parisienne', cursive; }
+                    .card { text-shadow: 1px 1px 3px rgba(0,0,0,0.4); }
+                </style>
+            </head>
+            <body>
+                <div class="card w-[400px] h-[228px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-gradient-to-br ${cardStyle} text-white">
+                    <div class="flex justify-between items-start">
+                        <div class="font-bold text-lg"><p>${tier.name}</p><p class="text-xs font-normal opacity-80">MEMBERSHIP</p></div>
+                        <p class="font-parisienne text-3xl">Nails Express</p>
+                    </div>
+                    <div class="text-left"><p class="text-xs opacity-80">MEMBER</p><p class="text-2xl font-semibold tracking-wider">${client.name}</p></div>
+                    <div class="text-right text-xs opacity-80">Member Since: ${client.membership.startDate.toDate().toLocaleDateString()}</div>
+                </div>
+            </body>
+        </html>
+    `;
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(cardHTML);
+    printWindow.document.close();
+    printWindow.focus();
+};
     const renderClientGiftCards = (cards) => {
         const container = document.getElementById('client-gift-cards-container');
         if (!container) return;
@@ -728,35 +764,58 @@ const renderClientMembership = (clientData) => {
         const tier = allMembershipTiers.find(t => t.id === clientData.membership.tierId);
         if (tier) {
             const benefitsList = tier.benefits.split('\n').map(b => `<li class="flex items-start"><span class="text-green-500 mr-2">✔</span><span>${b}</span></li>`).join('');
-           let startDate = new Date().toLocaleDateString(); // Default to today for new signups
-if (clientData.membership.startDate && typeof clientData.membership.startDate.toDate === 'function') {
-    startDate = clientData.membership.startDate.toDate().toLocaleDateString();
-}
+            const startDate = clientData.membership.startDate.toDate().toLocaleDateString();
             const status = clientData.membership.status || 'Active';
             const statusColor = status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
 
+            // Card style logic
+            let cardStyle = 'from-gray-700 via-gray-900 to-black';
+            if (tier.name.toLowerCase().includes('silver')) cardStyle = 'from-gray-400 via-gray-500 to-gray-600';
+            if (tier.name.toLowerCase().includes('gold')) cardStyle = 'from-yellow-400 via-yellow-500 to-yellow-600';
+            if (tier.name.toLowerCase().includes('platinum')) cardStyle = 'from-indigo-500 via-purple-600 to-pink-600';
+
             container.innerHTML = `
-                <div class="bg-white p-6 rounded-lg shadow-lg">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <h3 class="text-2xl font-bold text-pink-700">${tier.name} Tier</h3>
-                            <p class="text-sm text-gray-500">Member since ${startDate}</p>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                    <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-lg">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-2xl font-bold text-pink-700">${tier.name} Tier</h3>
+                                <p class="text-sm text-gray-500">Member since ${startDate}</p>
+                            </div>
+                            <span class="px-3 py-1 text-sm font-semibold rounded-full ${statusColor}">${status}</span>
                         </div>
-                        <span class="px-3 py-1 text-sm font-semibold rounded-full ${statusColor}">${status}</span>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h4 class="font-semibold text-gray-800 mb-2">Your Benefits:</h4>
+                                <ul class="space-y-2 text-gray-700">${benefitsList}</ul>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h4 class="font-semibold text-gray-800 mb-2">Perks</h4>
+                                <p class="text-lg font-bold">${tier.discount}% off</p>
+                                <p class="text-sm text-gray-600">all additional services.</p>
+                                <p class="mt-4 text-4xl font-bold text-pink-600">$${tier.price}<span class="text-lg font-normal text-gray-500">/month</span></p>
+                            </div>
+                        </div>
+                        ${status === 'Pending' ? '<p class="mt-4 text-center text-sm bg-yellow-100 text-yellow-800 p-3 rounded-lg">Your membership is pending approval. Please contact the salon to complete payment and activate your benefits.</p>' : ''}
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <h4 class="font-semibold text-gray-800 mb-2">Your Benefits:</h4>
-                            <ul class="space-y-2 text-gray-700">${benefitsList}</ul>
+
+                    <div class="space-y-3">
+                        <div class="w-full h-[200px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-gradient-to-br ${cardStyle} text-white" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.4);">
+                            <div class="flex justify-between items-start">
+                                <div class="font-bold text-lg"><p>${tier.name}</p><p class="text-xs font-normal opacity-80">MEMBERSHIP</p></div>
+                                <p class="font-parisienne text-3xl">Nails Express</p>
+                            </div>
+                            <div class="text-left"><p class="text-xs opacity-80">MEMBER</p><p class="text-2xl font-semibold tracking-wider">${clientData.name}</p></div>
+                            <div class="text-right text-xs opacity-80">Member Since: ${startDate}</div>
                         </div>
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <h4 class="font-semibold text-gray-800 mb-2">Perks</h4>
-                            <p class="text-lg font-bold">${tier.discount}% off</p>
-                            <p class="text-sm text-gray-600">all additional services.</p>
-                            <p class="mt-4 text-4xl font-bold text-pink-600">$${tier.price}<span class="text-lg font-normal text-gray-500">/month</span></p>
+                        <div class="flex justify-between items-center pt-2 px-2">
+                            <span class="text-sm text-gray-500">Your digital card</span>
+                            <div class="flex gap-4">
+                                <button data-client-id="${clientData.id}" class="download-membership-btn text-gray-500 hover:text-blue-600 text-xl" title="Download/Print"><i class="fas fa-download"></i></button>
+                                <button data-client-id="${clientData.id}" class="share-membership-btn text-gray-500 hover:text-pink-600 text-xl" title="Share"><i class="fas fa-share-alt"></i></button>
+                            </div>
                         </div>
                     </div>
-                    ${status === 'Pending' ? '<p class="mt-4 text-center text-sm bg-yellow-100 text-yellow-800 p-3 rounded-lg">Your membership is pending approval. Please contact the salon to complete payment and activate your benefits.</p>' : ''}
                 </div>
             `;
         } else {
@@ -886,7 +945,31 @@ if (clientData.membership.startDate && typeof clientData.membership.startDate.to
         openPurchaseModalForClient(clientData);
     });
 
+// **** ADD THIS BLOCK inside the initClientDashboard function ****
 
+document.getElementById('client-membership-display').addEventListener('click', (e) => {
+    const downloadBtn = e.target.closest('.download-membership-btn');
+    const shareBtn = e.target.closest('.share-membership-btn');
+
+    if (downloadBtn) {
+        const tier = allMembershipTiers.find(t => t.id === clientData.membership.tierId);
+        if (clientData && tier) {
+            openMembershipCardForPrint(clientData, tier);
+        }
+    }
+    if (shareBtn) {
+        const tier = allMembershipTiers.find(t => t.id === clientData.membership.tierId);
+        if (navigator.share && clientData && tier) {
+            navigator.share({
+                title: 'Nails Express VIP Membership',
+                text: `Check out my ${tier.name} VIP Membership at Nails Express!`,
+                url: window.location.href,
+            }).catch(console.error);
+        } else {
+            alert('Sharing is not supported on this browser. Try the download button!');
+        }
+    }
+});
     // **** COPY AND PASTE THIS ENTIRE BLOCK ****
 // Located inside the initClientDashboard function
 

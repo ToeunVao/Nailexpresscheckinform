@@ -477,7 +477,8 @@ onSnapshot(query(collection(db, "memberships"), orderBy("price")), (snapshot) =>
     }
 });
 
-// --- Primary Authentication Router ---
+// **** REPLACE your entire onAuthStateChanged function with this one ****
+
 onAuthStateChanged(auth, async (user) => {
     try {
         const hoursDoc = await getDoc(doc(db, "settings", "salonHours"));
@@ -526,53 +527,42 @@ onAuthStateChanged(auth, async (user) => {
                         landingPageContent.style.display = 'none';
                         appContent.style.display = 'none';
                         clientDashboardContent.style.display = 'block';
+                        // Always initialize the dashboard to ensure listeners are attached
                         initClientDashboard(user.uid, clientDoc.data());
+
                     } else {
                         // NEW Client User (just signed up)
                         const pendingPurchaseJSON = sessionStorage.getItem('pendingGiftCardPurchase');
                         const pendingMembershipId = sessionStorage.getItem('pendingMembershipPurchase');
                         let newClientData;
 
-                       if (pendingPurchaseJSON) {
-    const details = JSON.parse(pendingPurchaseJSON);
-    newClientData = { name: details.buyerName, email: details.buyerEmail, phone: details.buyerPhone, role: 'client', createdAt: serverTimestamp() };
-    await setDoc(doc(db, "clients", user.uid), newClientData);
+                        if (pendingPurchaseJSON) {
+                            const details = JSON.parse(pendingPurchaseJSON);
+                            newClientData = { name: details.buyerName, email: details.buyerEmail, phone: details.buyerPhone, role: 'client', createdAt: serverTimestamp() };
+                            await setDoc(doc(db, "clients", user.uid), newClientData);
+                        
+                            const batch = writeBatch(db);
+                            const expiryDate = new Date();
+                            expiryDate.setMonth(expiryDate.getMonth() + 6);
+                            const buyerInfo = { name: details.buyerName, email: details.buyerEmail, phone: details.buyerPhone };
+                        
+                            for (let i = 0; i < details.quantity; i++) {
+                                const cardData = {
+                                    amount: details.amount, balance: details.amount, history: [],
+                                    recipientName: details.recipientName, senderName: details.senderName,
+                                    backgroundUrl: details.backgroundUrl, code: `GC-${Date.now()}-${i}`,
+                                    status: 'Pending', type: 'E-Gift', createdBy: user.uid,
+                                    buyerInfo: buyerInfo, createdAt: serverTimestamp(),
+                                    expiresAt: Timestamp.fromDate(expiryDate)
+                                };
+                                const newCardRef = doc(collection(db, "gift_cards"));
+                                batch.set(newCardRef, cardData);
+                            }
+                            await batch.commit();
+                            sessionStorage.removeItem('pendingGiftCardPurchase');
+                            alert("Success! Your account has been created and your gift card request has been sent.");
 
-    // **** COPY AND PASTE THIS ENTIRE BLOCK TO FIX THE BUG ****
-    const batch = writeBatch(db);
-    const expiryDate = new Date();
-    expiryDate.setMonth(expiryDate.getMonth() + 6);
-    const buyerInfo = {
-        name: details.buyerName,
-        email: details.buyerEmail,
-        phone: details.buyerPhone,
-    };
-
-    for (let i = 0; i < details.quantity; i++) {
-        const cardData = {
-            amount: details.amount,
-            balance: details.amount,
-            history: [],
-            recipientName: details.recipientName,
-            senderName: details.senderName,
-            backgroundUrl: details.backgroundUrl,
-            code: `GC-${Date.now()}-${i}`,
-            status: 'Pending',
-            type: 'E-Gift',
-            createdBy: user.uid, // Use the new user's ID
-            buyerInfo: buyerInfo,
-            createdAt: serverTimestamp(),
-            expiresAt: Timestamp.fromDate(expiryDate)
-        };
-        const newCardRef = doc(collection(db, "gift_cards"));
-        batch.set(newCardRef, cardData);
-    }
-    await batch.commit();
-    // **** END OF FIX ****
-
-    sessionStorage.removeItem('pendingGiftCardPurchase');
-    alert("Success! Your account has been created and your gift card request has been sent.");
-} else if (pendingMembershipId) {
+                        } else if (pendingMembershipId) {
                             const details = JSON.parse(sessionStorage.getItem('signupDetails'));
                             newClientData = {
                                 name: details.name, email: details.email, phone: details.phone, role: 'client', createdAt: serverTimestamp(),
@@ -580,7 +570,7 @@ onAuthStateChanged(auth, async (user) => {
                                     tierId: pendingMembershipId,
                                     tierName: allMembershipTiers.find(t => t.id === pendingMembershipId)?.name || 'Unknown',
                                     startDate: serverTimestamp(),
-                                    status: 'Pending' // **SET TO PENDING**
+                                    status: 'Pending'
                                 }
                             };
                             await setDoc(doc(db, "clients", user.uid), newClientData);
@@ -620,9 +610,8 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// **** PASTE THESE TWO COMPLETE FUNCTIONS in place of your old initClientDashboard ****
+// **** PASTE THESE TWO FUNCTIONS into your script ****
 
-// **** Function 1: The Helper Function ****
 const renderClientMembership = (clientData) => {
     const container = document.getElementById('client-membership-display');
     if (!container) return;
@@ -630,15 +619,13 @@ const renderClientMembership = (clientData) => {
     if (clientData.membership && allMembershipTiers.length > 0) {
         const tier = allMembershipTiers.find(t => t.id === clientData.membership.tierId);
         if (tier) {
-            let startDate = new Date().toLocaleDateString(); // Default to today for new signups
+            let startDate = new Date().toLocaleDateString();
             if (clientData.membership.startDate && typeof clientData.membership.startDate.toDate === 'function') {
                 startDate = clientData.membership.startDate.toDate().toLocaleDateString();
             }
-
             const benefitsList = tier.benefits.split('\n').map(b => `<li class="flex items-start"><span class="text-green-500 mr-2">✔</span><span>${b}</span></li>`).join('');
             const status = clientData.membership.status || 'Active';
             const statusColor = status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
-
             let cardStyle = 'from-gray-700 via-gray-900 to-black';
             if (tier.name.toLowerCase().includes('silver')) cardStyle = 'from-gray-400 via-gray-500 to-gray-600';
             if (tier.name.toLowerCase().includes('gold')) cardStyle = 'from-yellow-400 via-yellow-500 to-yellow-600';
@@ -665,17 +652,9 @@ const renderClientMembership = (clientData) => {
                     </div>
                     <div class="space-y-3">
                         <div class="w-full h-[200px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-gradient-to-br ${cardStyle} text-white" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.4);">
-                            <div class="flex justify-between items-start">
-                                <div class="font-bold text-lg"><p>${tier.name}</p><p class="text-xs font-normal opacity-80">MEMBERSHIP</p></div>
-                                <p class="font-parisienne text-3xl">Nails Express</p>
-                            </div>
-                            <div class="text-center">
-                                <p class="font-bold text-lg">${tier.discount}% off all additional services.</p>
-                            </div>
-                            <div class="flex justify-between items-end">
-                                <div class="text-left"><p class="text-xs opacity-80">MEMBER</p><p class="text-xl font-semibold tracking-wider">${clientData.name}</p></div>
-                                <div class="text-right text-xs opacity-80">Since: ${startDate}</div>
-                            </div>
+                            <div class="flex justify-between items-start"><div class="font-bold text-lg"><p>${tier.name}</p><p class="text-xs font-normal opacity-80">MEMBERSHIP</p></div><p class="font-parisienne text-3xl">Nails Express</p></div>
+                            <div class="text-center"><p class="font-bold text-lg">${tier.discount}% off all additional services.</p></div>
+                            <div class="flex justify-between items-end"><div class="text-left"><p class="text-xs opacity-80">MEMBER</p><p class="text-xl font-semibold tracking-wider">${clientData.name}</p></div><div class="text-right text-xs opacity-80">Since: ${startDate}</div></div>
                         </div>
                         <div class="flex justify-between items-center pt-2 px-2">
                             <span class="text-sm text-gray-500">Your digital card</span>
@@ -685,55 +664,36 @@ const renderClientMembership = (clientData) => {
                             </div>
                         </div>
                     </div>
-                </div>
-            `;
-        } else {
-             container.innerHTML = '<p class="text-gray-500 text-center col-span-full">Your membership tier could not be found. Please contact the salon.</p>';
-        }
+                </div>`;
+        } else { container.innerHTML = '<p class="text-gray-500 text-center col-span-full">Your membership tier could not be found. Please contact the salon.</p>'; }
     } else {
-        container.innerHTML = `
-            <div class="text-center p-8 bg-gray-50 rounded-lg">
-                <h3 class="text-xl font-semibold text-gray-700">You are not a member yet.</h3>
-                <p class="text-gray-500 mt-2 mb-4">Join our VIP program to enjoy exclusive discounts and benefits!</p>
-                <button class="join-membership-btn bg-pink-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-pink-700">Join Our Membership</button>
-            </div>
-        `;
+        container.innerHTML = `<div class="text-center p-8 bg-gray-50 rounded-lg"><h3 class="text-xl font-semibold text-gray-700">You are not a member yet.</h3><p class="text-gray-500 mt-2 mb-4">Join our VIP program to enjoy exclusive discounts and benefits!</p><button class="join-membership-btn bg-pink-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-pink-700">Join Our Membership</button></div>`;
     }
 };
 
-// **** Function 2: The Main Dashboard Function ****
 async function initClientDashboard(clientId, clientData) {
     const featuresDoc = await getDoc(doc(db, "settings", "features"));
     const features = featuresDoc.exists() ? featuresDoc.data() : { showGiftCards: true, showMemberships: true };
-
     const giftCardTab = document.getElementById('gift-cards-tab')?.parentElement;
     const giftCardContent = document.getElementById('gift-cards-content');
     if (features.showGiftCards === false) {
         if (giftCardTab) giftCardTab.classList.add('hidden');
         if (giftCardContent) giftCardContent.classList.add('hidden');
-    } else {
-        if (giftCardTab) giftCardTab.classList.remove('hidden');
-    }
-
+    } else { if (giftCardTab) giftCardTab.classList.remove('hidden'); }
     const membershipTab = document.getElementById('membership-tab')?.parentElement;
     const membershipContent = document.getElementById('membership-content');
     if (features.showMemberships === false) {
         if (membershipTab) membershipTab.classList.add('hidden');
         if (membershipContent) membershipContent.classList.add('hidden');
-    } else {
-        if (membershipTab) membershipTab.classList.remove('hidden');
-    }
+    } else { if (membershipTab) membershipTab.classList.remove('hidden'); }
 
     document.getElementById('client-welcome-name').textContent = `Welcome back, ${clientData.name}!`;
     document.getElementById('client-sign-out-btn').addEventListener('click', () => signOut(auth));
-
     const openPurchaseModalForClient = (client) => {
         const purchaseModal = document.getElementById('gift-card-purchase-modal');
         const userInfoSection = document.getElementById('gc-user-info-section');
         initializeLandingGiftCardDesigner();
-        if (userInfoSection) {
-            userInfoSection.classList.add('hidden');
-        }
+        if (userInfoSection) { userInfoSection.classList.add('hidden'); }
         document.getElementById('gc-buyer-name').value = client.name;
         document.getElementById('gc-buyer-name').readOnly = true;
         document.getElementById('gc-buyer-phone').value = client.phone || '';
@@ -742,18 +702,14 @@ async function initClientDashboard(clientId, clientData) {
         document.getElementById('gc-buyer-email').readOnly = true;
         purchaseModal.classList.remove('hidden');
     };
-    
     const openCardForPrint = (card) => {
         const expiryText = card.expiresAt ? `Expires: ${card.expiresAt.toDate().toLocaleDateString()}` : '';
-        const cardHTML = `
-            <html><head><title>Your Gift Card ${card.code}</title><script src="https://cdn.tailwindcss.com"><\/script><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&family=Parisienne&display=swap" rel="stylesheet"><style>body{font-family:'Poppins',sans-serif;display:flex;align-items:center;justify-content:center;margin:0;background-color:#f0f0f0;}.font-parisienne{font-family:'Parisienne',cursive;}.card{text-shadow:1px 1px 3px rgba(0,0,0,0.6);}</style></head><body><div class="card w-[400px] h-[228px] rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" style="background-image: url('${card.backgroundUrl}');"><div class="flex justify-between items-start"><img src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white" /><div class="text-right"><p class="font-parisienne text-3xl">Gift Card</p><p class="text-xs font-semibold tracking-wider">Nails Express</p></div></div><div class="text-center"><p class="text-5xl font-bold">$${card.balance.toFixed(2)}</p></div><div class="text-xs"><div class="flex justify-between font-semibold"><span style="display:${card.recipientName?'inline':'none'}">FOR: <span class="font-normal">${card.recipientName}</span></span><span style="display:${card.senderName?'inline':'none'}">FROM: <span class="font-normal">${card.senderName}</span></span></div><p class="mt-2 text-center font-mono tracking-widest text-sm">${card.code}</p><p class="mt-1 text-center text-[10px] opacity-80" style="display:${expiryText?'block':'none'}">${expiryText}</p></div></div></body></html>
-        `;
+        const cardHTML = `<html><head><title>Your Gift Card ${card.code}</title><script src="https://cdn.tailwindcss.com"><\/script><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&family=Parisienne&display=swap" rel="stylesheet"><style>body{font-family:'Poppins',sans-serif;display:flex;align-items:center;justify-content:center;margin:0;background-color:#f0f0f0;}.font-parisienne{font-family:'Parisienne',cursive;}.card{text-shadow:1px 1px 3px rgba(0,0,0,0.6);}</style></head><body><div class="card w-[400px] h-[228px] rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" style="background-image: url('${card.backgroundUrl}');"><div class="flex justify-between items-start"><img src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white" /><div class="text-right"><p class="font-parisienne text-3xl">Gift Card</p><p class="text-xs font-semibold tracking-wider">Nails Express</p></div></div><div class="text-center"><p class="text-5xl font-bold">$${card.balance.toFixed(2)}</p></div><div class="text-xs"><div class="flex justify-between font-semibold"><span style="display:${card.recipientName?'inline':'none'}">FOR: <span class="font-normal">${card.recipientName}</span></span><span style="display:${card.senderName?'inline':'none'}">FROM: <span class="font-normal">${card.senderName}</span></span></div><p class="mt-2 text-center font-mono tracking-widest text-sm">${card.code}</p><p class="mt-1 text-center text-[10px] opacity-80" style="display:${expiryText?'block':'none'}">${expiryText}</p></div></div></body></html>`;
         const printWindow = window.open('', '_blank');
         printWindow.document.write(cardHTML);
         printWindow.document.close();
         printWindow.focus();
     };
-
     const renderClientGiftCards = (cards) => {
         const container = document.getElementById('client-gift-cards-container');
         if (!container) return;
@@ -766,15 +722,11 @@ async function initClientDashboard(clientId, clientData) {
             const cardEl = document.createElement('div');
             cardEl.className = 'bg-white p-3 rounded-lg shadow-md space-y-3';
             const expiryText = card.expiresAt ? `Expires: ${card.expiresAt.toDate().toLocaleDateString()}` : '';
-            cardEl.innerHTML = `
-                <div class="w-full h-[200px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" style="background-image: url('${card.backgroundUrl}'); text-shadow: 1px 1px 3px rgba(0,0,0,0.6);"><div class="flex justify-between items-start"><img src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white" /><div class="text-right"><p class="font-parisienne text-3xl">Gift Card</p><p class="text-xs font-semibold tracking-wider">Nails Express</p></div></div><div class="text-center"><p class="text-5xl font-bold">$${card.balance.toFixed(2)}</p></div><div class="text-xs"><div class="flex justify-between font-semibold"><span>FOR: <span class="font-normal">${card.recipientName}</span></span><span>FROM: <span class="font-normal">${card.senderName}</span></span></div><p class="mt-2 text-center font-mono tracking-widest text-sm">${card.code}</p><p class="mt-1 text-center text-[10px] opacity-80" style="display:${expiryText?'block':'none'}">${expiryText}</p></div></div><div class="flex justify-between items-center pt-2"><span class="px-2 py-1 text-xs font-semibold rounded-full ${card.status==='Active'?'bg-green-100 text-green-800':'bg-yellow-100 text-yellow-800'}">${card.status}</span><div class="flex gap-2"><button data-card-id="${card.id}" class="download-card-btn text-gray-500 hover:text-blue-600" title="Download/Print"><i class="fas fa-download"></i></button><button data-card-id="${card.id}" class="share-card-btn text-gray-500 hover:text-pink-600" title="Share"><i class="fas fa-share-alt"></i></button></div></div>
-            `;
+            cardEl.innerHTML = `<div class="w-full h-[200px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" style="background-image: url('${card.backgroundUrl}'); text-shadow: 1px 1px 3px rgba(0,0,0,0.6);"><div class="flex justify-between items-start"><img src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white" /><div class="text-right"><p class="font-parisienne text-3xl">Gift Card</p><p class="text-xs font-semibold tracking-wider">Nails Express</p></div></div><div class="text-center"><p class="text-5xl font-bold">$${card.balance.toFixed(2)}</p></div><div class="text-xs"><div class="flex justify-between font-semibold"><span>FOR: <span class="font-normal">${card.recipientName}</span></span><span>FROM: <span class="font-normal">${card.senderName}</span></span></div><p class="mt-2 text-center font-mono tracking-widest text-sm">${card.code}</p><p class="mt-1 text-center text-[10px] opacity-80" style="display:${expiryText?'block':'none'}">${expiryText}</p></div></div><div class="flex justify-between items-center pt-2"><span class="px-2 py-1 text-xs font-semibold rounded-full ${card.status==='Active'?'bg-green-100 text-green-800':'bg-yellow-100 text-yellow-800'}">${card.status}</span><div class="flex gap-2"><button data-card-id="${card.id}" class="download-card-btn text-gray-500 hover:text-blue-600" title="Download/Print"><i class="fas fa-download"></i></button><button data-card-id="${card.id}" class="share-card-btn text-gray-500 hover:text-pink-600" title="Share"><i class="fas fa-share-alt"></i></button></div></div>`;
             container.appendChild(cardEl);
         });
     };
-
     renderClientMembership(clientData);
-
     const setupClientTabs = () => {
         const tabs = document.getElementById('client-dashboard-tabs');
         tabs.addEventListener('click', (e) => {
@@ -786,7 +738,6 @@ async function initClientDashboard(clientId, clientData) {
             document.getElementById(button.id.replace('-tab', '-content')).classList.remove('hidden');
         });
     };
-
     const renderClientAppointments = (appointments) => {
         const container = document.getElementById('client-upcoming-appointments');
         container.innerHTML = '';
@@ -802,7 +753,6 @@ async function initClientDashboard(clientId, clientData) {
             container.appendChild(el);
         });
     };
-
     const renderClientHistory = (history) => {
          const container = document.getElementById('client-appointment-history');
         container.innerHTML = '';
@@ -817,7 +767,6 @@ async function initClientDashboard(clientId, clientData) {
             container.appendChild(el);
         });
     };
-
     const calculateAndRenderFavorites = (history) => {
         if (history.length === 0) return;
         const techCounts = history.reduce((acc, visit) => {
@@ -833,7 +782,6 @@ async function initClientDashboard(clientId, clientData) {
         document.getElementById('favorite-technician').textContent = favTech;
         document.getElementById('favorite-color').textContent = favColor;
     };
-
     onSnapshot(query(collection(db, "appointments"), where("name", "==", clientData.name)), (snapshot) => {
         const appointments = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
         renderClientAppointments(appointments);
@@ -844,13 +792,11 @@ async function initClientDashboard(clientId, clientData) {
         renderClientHistory(history);
         calculateAndRenderFavorites(history);
     });
-
     let allClientGiftCards = [];
     onSnapshot(query(collection(db, "gift_cards"), where("createdBy", "==", clientId), orderBy("createdAt", "desc")), (snapshot) => {
         allClientGiftCards = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
         renderClientGiftCards(allClientGiftCards);
     });
-
     document.getElementById('client-gift-cards-container').addEventListener('click', (e) => {
         const downloadBtn = e.target.closest('.download-card-btn');
         const shareBtn = e.target.closest('.share-card-btn');
@@ -864,57 +810,35 @@ async function initClientDashboard(clientId, clientData) {
             const card = allClientGiftCards.find(c => c.id === cardId);
             if (card) {
                 if (navigator.share) {
-                    navigator.share({
-                        title: 'Nails Express Gift Card',
-                        text: `Check out this gift card for Nails Express! Code: ${card.code}`,
-                        url: window.location.href,
-                    }).catch(console.error);
-                } else {
-                    alert('Sharing is not supported on this browser. Try the download button!');
-                }
+                    navigator.share({ title: 'Nails Express Gift Card', text: `Check out this gift card for Nails Express! Code: ${card.code}`, url: window.location.href, }).catch(console.error);
+                } else { alert('Sharing is not supported on this browser. Try the download button!'); }
             }
         }
     });
-
     clientDashboardContent.addEventListener('click', (e) => {
         const joinBtn = e.target.closest('.join-membership-btn');
-        if (joinBtn) {
-            openMembershipPurchaseModal(null, clientData);
-        }
+        if (joinBtn) { openMembershipPurchaseModal(null, clientData); }
     });
-
     document.getElementById('client-membership-display').addEventListener('click', (e) => {
         const downloadBtn = e.target.closest('.download-membership-btn');
         const shareBtn = e.target.closest('.share-membership-btn');
-    
         if (downloadBtn) {
             const tier = allMembershipTiers.find(t => t.id === clientData.membership.tierId);
-            if (clientData && tier) {
-                openMembershipCardForPrint(clientData, tier);
-            }
+            if (clientData && tier) { openMembershipCardForPrint(clientData, tier); }
         }
         if (shareBtn) {
             const tier = allMembershipTiers.find(t => t.id === clientData.membership.tierId);
             if (navigator.share && clientData && tier) {
-                navigator.share({
-                    title: 'Nails Express VIP Membership',
-                    text: `Check out my ${tier.name} VIP Membership at Nails Express!`,
-                    url: window.location.href,
-                }).catch(console.error);
-            } else {
-                alert('Sharing is not supported on this browser. Try the download button!');
-            }
+                navigator.share({ title: 'Nails Express VIP Membership', text: `Check out my ${tier.name} VIP Membership at Nails Express!`, url: window.location.href, }).catch(console.error);
+            } else { alert('Sharing is not supported on this browser. Try the download button!'); }
         }
     });
-
     document.getElementById('client-book-new-btn').addEventListener('click', () => {
         openAddAppointmentModal(getLocalDateString(), clientData);
     });
-    
     document.getElementById('client-buy-gift-card-btn').addEventListener('click', () => {
         openPurchaseModalForClient(clientData);
     });
-
     setupClientTabs();
 }
 

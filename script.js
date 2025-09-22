@@ -655,6 +655,28 @@ onSnapshot(query(collection(db, "memberships"), orderBy("price")), (snapshot) =>
     }
 });
 
+ onSnapshot(query(collection(db, "promotions"), orderBy("startDate", "desc")), (snapshot) => {
+        allPromotions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderPromotionsAdminTable(allPromotions);
+        renderPromotionsLanding(allPromotions);
+    });
+    onSnapshot(query(collection(db, "nail_ideas"), orderBy("createdAt", "desc")), (snapshot) => {
+        allNailIdeas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // ADD THIS NEW BLOCK to populate the Nail Shape datalist
+        const shapesDatalist = document.getElementById('nail-shapes-list');
+        if (shapesDatalist) {
+            const uniqueShapes = [...new Set(allNailIdeas.map(idea => idea.shape).filter(Boolean))];
+            shapesDatalist.innerHTML = uniqueShapes.map(shape => `<option value="${shape}"></option>`).join('');
+        }
+        const shapes = [...new Set(allNailIdeas.map(i => i.shape).filter(Boolean))];
+        const categories = [...new Set(allNailIdeas.flatMap(i => i.categories).filter(Boolean))];
+        const shapeFilter = document.getElementById('nail-idea-shape-filter');
+        const categoryFilter = document.getElementById('nail-idea-category-filter');
+        shapeFilter.innerHTML = '<option value="">All Shapes</option>' + shapes.map(s => `<option value="${s}">${s}</option>`).join('');
+        categoryFilter.innerHTML = '<option value="">All Categories</option>' + categories.map(c => `<option value="${c}">${c}</option>`).join('');
+        applyNailIdeaFilters();
+        renderNailIdeasAdminTable(allNailIdeas);
+    });
 
 // **** START OF PRIMARY FIX: FUNCTION ORDERING ****
 // All functions related to the Client Dashboard are now placed BEFORE the main `initClientDashboard` function.
@@ -4424,23 +4446,7 @@ function initMainApp(userRole, userName) {
         renderNailIdeasGallery(filteredIdeas);
     };
 
-    onSnapshot(query(collection(db, "nail_ideas"), orderBy("createdAt", "desc")), (snapshot) => {
-        allNailIdeas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        // ADD THIS NEW BLOCK to populate the Nail Shape datalist
-        const shapesDatalist = document.getElementById('nail-shapes-list');
-        if (shapesDatalist) {
-            const uniqueShapes = [...new Set(allNailIdeas.map(idea => idea.shape).filter(Boolean))];
-            shapesDatalist.innerHTML = uniqueShapes.map(shape => `<option value="${shape}"></option>`).join('');
-        }
-        const shapes = [...new Set(allNailIdeas.map(i => i.shape).filter(Boolean))];
-        const categories = [...new Set(allNailIdeas.flatMap(i => i.categories).filter(Boolean))];
-        const shapeFilter = document.getElementById('nail-idea-shape-filter');
-        const categoryFilter = document.getElementById('nail-idea-category-filter');
-        shapeFilter.innerHTML = '<option value="">All Shapes</option>' + shapes.map(s => `<option value="${s}">${s}</option>`).join('');
-        categoryFilter.innerHTML = '<option value="">All Categories</option>' + categories.map(c => `<option value="${c}">${c}</option>`).join('');
-        applyNailIdeaFilters();
-        renderNailIdeasAdminTable(allNailIdeas);
-    });
+
 
     document.getElementById('nail-idea-search').addEventListener('input', applyNailIdeaFilters);
     document.getElementById('nail-idea-shape-filter').addEventListener('change', applyNailIdeaFilters);
@@ -5358,11 +5364,7 @@ function initMainApp(userRole, userName) {
         activePromos.forEach(promo => { const promoEl = document.createElement('div'); promoEl.className = 'bg-white p-6 rounded-lg shadow-md text-center'; promoEl.innerHTML = `<h3 class="text-xl font-bold text-pink-700 mb-2">${promo.title}</h3><p class="text-gray-600">${promo.description}</p>`; promotionsContainerLanding.appendChild(promoEl); });
     };
 
-    onSnapshot(query(collection(db, "promotions"), orderBy("startDate", "desc")), (snapshot) => {
-        allPromotions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        renderPromotionsAdminTable(allPromotions);
-        renderPromotionsLanding(allPromotions);
-    });
+
 
     addPromotionForm.addEventListener('submit', async (e) => {
         e.preventDefault();

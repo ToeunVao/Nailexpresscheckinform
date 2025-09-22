@@ -726,7 +726,7 @@ if (clientData.membership.startDate && typeof clientData.membership.startDate.to
     // **** ADD THIS LINE ****
     renderClientMembership(clientData);
     // **********************
-    
+
     const setupClientTabs = () => {
         const tabs = document.getElementById('client-dashboard-tabs');
         tabs.addEventListener('click', (e) => {
@@ -1056,6 +1056,8 @@ purchaseForm.addEventListener('submit', async (e) => {
             await batch.commit();
             alert("Success! Your gift card request has been sent. It will be activated once payment is confirmed.");
             document.getElementById('gift-card-purchase-modal').classList.add('hidden');
+            // **** FIX FOR LOGGED-IN USER ****
+        closePurchaseModal();
 
         } else {
             // SCENARIO 2: New or anonymous user (original flow)
@@ -1078,6 +1080,9 @@ purchaseForm.addEventListener('submit', async (e) => {
             };
             sessionStorage.setItem('pendingGiftCardPurchase', JSON.stringify(purchaseDetails));
             // onAuthStateChanged will handle the rest
+             // **** FIX FOR NEW USER ****
+        closePurchaseModal();
+        
         }
     } catch (error) {
         if (error.code === 'auth/email-already-in-use') {

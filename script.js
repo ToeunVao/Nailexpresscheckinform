@@ -755,7 +755,8 @@ const openMembershipCardForPrint = (client, tier) => {
             container.appendChild(cardEl);
         });
     };
-// **** COPY AND PASTE THIS ENTIRE NEW FUNCTION ****
+// **** REPLACE your old renderClientMembership function with this one ****
+
 const renderClientMembership = (clientData) => {
     const container = document.getElementById('client-membership-display');
     if (!container) return;
@@ -779,22 +780,17 @@ const renderClientMembership = (clientData) => {
                     <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-lg">
                         <div class="flex justify-between items-start mb-4">
                             <div>
-                                <h3 class="text-2xl font-bold text-pink-700">${tier.name} Tier</h3>
+                                <h3 class="text-2xl font-bold text-pink-700 flex items-end gap-3">
+                                    <span>💎 ${tier.name} Tier</span>
+                                    <span class="text-xl font-bold text-gray-600">$${tier.price}/month</span>
+                                </h3>
                                 <p class="text-sm text-gray-500">Member since ${startDate}</p>
                             </div>
                             <span class="px-3 py-1 text-sm font-semibold rounded-full ${statusColor}">${status}</span>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <h4 class="font-semibold text-gray-800 mb-2">Your Benefits:</h4>
-                                <ul class="space-y-2 text-gray-700">${benefitsList}</ul>
-                            </div>
-                            <div class="bg-gray-50 p-4 rounded-lg">
-                                <h4 class="font-semibold text-gray-800 mb-2">Perks</h4>
-                                <p class="text-lg font-bold">${tier.discount}% off</p>
-                                <p class="text-sm text-gray-600">all additional services.</p>
-                                <p class="mt-4 text-4xl font-bold text-pink-600">$${tier.price}<span class="text-lg font-normal text-gray-500">/month</span></p>
-                            </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Your Benefits:</h4>
+                            <ul class="space-y-2 text-gray-700">${benefitsList}</ul>
                         </div>
                         ${status === 'Pending' ? '<p class="mt-4 text-center text-sm bg-yellow-100 text-yellow-800 p-3 rounded-lg">Your membership is pending approval. Please contact the salon to complete payment and activate your benefits.</p>' : ''}
                     </div>
@@ -805,8 +801,13 @@ const renderClientMembership = (clientData) => {
                                 <div class="font-bold text-lg"><p>${tier.name}</p><p class="text-xs font-normal opacity-80">MEMBERSHIP</p></div>
                                 <p class="font-parisienne text-3xl">Nails Express</p>
                             </div>
-                            <div class="text-left"><p class="text-xs opacity-80">MEMBER</p><p class="text-2xl font-semibold tracking-wider">${clientData.name}</p></div>
-                            <div class="text-right text-xs opacity-80">Member Since: ${startDate}</div>
+                            <div class="text-center">
+                                <p class="font-bold text-lg">${tier.discount}% off all additional services.</p>
+                            </div>
+                            <div class="flex justify-between items-end">
+                                <div class="text-left"><p class="text-xs opacity-80">MEMBER</p><p class="text-xl font-semibold tracking-wider">${clientData.name}</p></div>
+                                <div class="text-right text-xs opacity-80">Since: ${startDate}</div>
+                            </div>
                         </div>
                         <div class="flex justify-between items-center pt-2 px-2">
                             <span class="text-sm text-gray-500">Your digital card</span>
@@ -819,18 +820,17 @@ const renderClientMembership = (clientData) => {
                 </div>
             `;
         } else {
-             container.innerHTML = '<p class="text-gray-500 text-center col-span-full">Your membership tier could not be found. Please contact the salon.</p>';
+            container.innerHTML = '<p class="text-gray-500 text-center col-span-full">Your membership tier could not be found. Please contact the salon.</p>';
         }
-// Inside the renderClientMembership function...
-} else {
-    container.innerHTML = `
-        <div class="text-center p-8 bg-gray-50 rounded-lg">
-            <h3 class="text-xl font-semibold text-gray-700">You are not a member yet.</h3>
-            <p class="text-gray-500 mt-2 mb-4">Join our VIP program to enjoy exclusive discounts and benefits!</p>
-            <button class="join-membership-btn bg-pink-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-pink-700">Join Our Membership</button>
-        </div>
-    `;
-}
+    } else {
+        container.innerHTML = `
+            <div class="text-center p-8 bg-gray-50 rounded-lg">
+                <h3 class="text-xl font-semibold text-gray-700">You are not a member yet.</h3>
+                <p class="text-gray-500 mt-2 mb-4">Join our VIP program to enjoy exclusive discounts and benefits!</p>
+                <button class="join-membership-btn bg-pink-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-pink-700">Join Our Membership</button>
+            </div>
+        `;
+    }
 };
     // **** ADD THIS LINE ****
     renderClientMembership(clientData);

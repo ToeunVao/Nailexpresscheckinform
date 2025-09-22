@@ -1038,6 +1038,8 @@ function initLandingPage() {
     const lockoutMessageDiv = document.getElementById('login-lockout-message');
     // **** ADD THIS LINE ****
     renderMembershipTiers(allMembershipTiers, 'landing-memberships-container', false);
+    renderPromotionsLanding(allPromotions);
+    applyNailIdeaFilters(); // This function already calls renderNailIdeasGallery
     // **** END OF FIX ****
     // --- NEW E-COMMERCE GIFT CARD LOGIC ---
     const purchaseModal = document.getElementById('gift-card-purchase-modal');

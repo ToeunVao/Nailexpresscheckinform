@@ -670,7 +670,56 @@ function initClientDashboard(clientId, clientData) {
             container.appendChild(cardEl);
         });
     };
+// **** COPY AND PASTE THIS ENTIRE NEW FUNCTION ****
+const renderClientMembership = (clientData) => {
+    const container = document.getElementById('client-membership-display');
+    if (!container) return;
 
+    if (clientData.membership && allMembershipTiers.length > 0) {
+        const tier = allMembershipTiers.find(t => t.id === clientData.membership.tierId);
+        if (tier) {
+            const benefitsList = tier.benefits.split('\n').map(b => `<li class="flex items-start"><span class="text-green-500 mr-2">✔</span><span>${b}</span></li>`).join('');
+            const startDate = clientData.membership.startDate.toDate().toLocaleDateString();
+            const status = clientData.membership.status || 'Active';
+            const statusColor = status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
+
+            container.innerHTML = `
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-2xl font-bold text-pink-700">${tier.name} Tier</h3>
+                            <p class="text-sm text-gray-500">Member since ${startDate}</p>
+                        </div>
+                        <span class="px-3 py-1 text-sm font-semibold rounded-full ${statusColor}">${status}</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Your Benefits:</h4>
+                            <ul class="space-y-2 text-gray-700">${benefitsList}</ul>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-semibold text-gray-800 mb-2">Perks</h4>
+                            <p class="text-lg font-bold">${tier.discount}% off</p>
+                            <p class="text-sm text-gray-600">all additional services.</p>
+                            <p class="mt-4 text-4xl font-bold text-pink-600">$${tier.price}<span class="text-lg font-normal text-gray-500">/month</span></p>
+                        </div>
+                    </div>
+                    ${status === 'Pending' ? '<p class="mt-4 text-center text-sm bg-yellow-100 text-yellow-800 p-3 rounded-lg">Your membership is pending approval. Please contact the salon to complete payment and activate your benefits.</p>' : ''}
+                </div>
+            `;
+        } else {
+             container.innerHTML = '<p class="text-gray-500 text-center col-span-full">Your membership tier could not be found. Please contact the salon.</p>';
+        }
+    } else {
+        container.innerHTML = `
+            <div class="text-center p-8 bg-gray-50 rounded-lg">
+                <h3 class="text-xl font-semibold text-gray-700">You are not a member yet.</h3>
+                <p class="text-gray-500 mt-2 mb-4">Join our VIP program to enjoy exclusive discounts and benefits!</p>
+                <a href="#memberships-landing" onclick="location.reload()" class="bg-pink-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-pink-700">View Membership Tiers</a>
+            </div>
+        `;
+    }
+};
     const setupClientTabs = () => {
         const tabs = document.getElementById('client-dashboard-tabs');
         tabs.addEventListener('click', (e) => {

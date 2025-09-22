@@ -367,6 +367,17 @@ const initializeMembershipPurchaseForm = (selectedTierId) => {
     const previewCard = document.getElementById('ms-preview-card');
 
     form.reset();
+    // **** ADD THIS BLOCK ****
+    if (clientData) {
+        document.getElementById('ms-buyer-name').value = clientData.name;
+        document.getElementById('ms-buyer-phone').value = clientData.phone || '';
+        document.getElementById('ms-buyer-email').value = clientData.email;
+        document.getElementById('membership-user-info-section').classList.add('hidden');
+    } else {
+        document.getElementById('membership-user-info-section').classList.remove('hidden');
+    }
+    // **** END OF BLOCK ****
+    
     tierSelect.innerHTML = '';
 
     allMembershipTiers.forEach(tier => {

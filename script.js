@@ -620,15 +620,92 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// **** REPLACE your old initClientDashboard function with this new one ****
+// **** PASTE THESE TWO COMPLETE FUNCTIONS in place of your old initClientDashboard ****
 
+// **** Function 1: The Helper Function ****
+const renderClientMembership = (clientData) => {
+    const container = document.getElementById('client-membership-display');
+    if (!container) return;
+
+    if (clientData.membership && allMembershipTiers.length > 0) {
+        const tier = allMembershipTiers.find(t => t.id === clientData.membership.tierId);
+        if (tier) {
+            let startDate = new Date().toLocaleDateString(); // Default to today for new signups
+            if (clientData.membership.startDate && typeof clientData.membership.startDate.toDate === 'function') {
+                startDate = clientData.membership.startDate.toDate().toLocaleDateString();
+            }
+
+            const benefitsList = tier.benefits.split('\n').map(b => `<li class="flex items-start"><span class="text-green-500 mr-2">✔</span><span>${b}</span></li>`).join('');
+            const status = clientData.membership.status || 'Active';
+            const statusColor = status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
+
+            let cardStyle = 'from-gray-700 via-gray-900 to-black';
+            if (tier.name.toLowerCase().includes('silver')) cardStyle = 'from-gray-400 via-gray-500 to-gray-600';
+            if (tier.name.toLowerCase().includes('gold')) cardStyle = 'from-yellow-400 via-yellow-500 to-yellow-600';
+            if (tier.name.toLowerCase().includes('platinum')) cardStyle = 'from-indigo-500 via-purple-600 to-pink-600';
+
+            container.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                    <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-lg">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-2xl font-bold text-pink-700 flex items-end gap-3">
+                                    <span>💎 ${tier.name} Tier</span>
+                                    <span class="text-xl font-bold text-gray-600">$${tier.price}/month</span>
+                                </h3>
+                                <p class="text-sm text-gray-500">Member since ${startDate}</p>
+                            </div>
+                            <span class="px-3 py-1 text-sm font-semibold rounded-full ${statusColor}">${status}</span>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Your Benefits:</h4>
+                            <ul class="space-y-2 text-gray-700">${benefitsList}</ul>
+                        </div>
+                        ${status === 'Pending' ? '<p class="mt-4 text-center text-sm bg-yellow-100 text-yellow-800 p-3 rounded-lg">Your membership is pending approval. Please contact the salon to complete payment and activate your benefits.</p>' : ''}
+                    </div>
+                    <div class="space-y-3">
+                        <div class="w-full h-[200px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-gradient-to-br ${cardStyle} text-white" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.4);">
+                            <div class="flex justify-between items-start">
+                                <div class="font-bold text-lg"><p>${tier.name}</p><p class="text-xs font-normal opacity-80">MEMBERSHIP</p></div>
+                                <p class="font-parisienne text-3xl">Nails Express</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="font-bold text-lg">${tier.discount}% off all additional services.</p>
+                            </div>
+                            <div class="flex justify-between items-end">
+                                <div class="text-left"><p class="text-xs opacity-80">MEMBER</p><p class="text-xl font-semibold tracking-wider">${clientData.name}</p></div>
+                                <div class="text-right text-xs opacity-80">Since: ${startDate}</div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center pt-2 px-2">
+                            <span class="text-sm text-gray-500">Your digital card</span>
+                            <div class="flex gap-4">
+                                <button data-client-id="${clientData.id}" class="download-membership-btn text-gray-500 hover:text-blue-600 text-xl" title="Download/Print"><i class="fas fa-download"></i></button>
+                                <button data-client-id="${clientData.id}" class="share-membership-btn text-gray-500 hover:text-pink-600 text-xl" title="Share"><i class="fas fa-share-alt"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+             container.innerHTML = '<p class="text-gray-500 text-center col-span-full">Your membership tier could not be found. Please contact the salon.</p>';
+        }
+    } else {
+        container.innerHTML = `
+            <div class="text-center p-8 bg-gray-50 rounded-lg">
+                <h3 class="text-xl font-semibold text-gray-700">You are not a member yet.</h3>
+                <p class="text-gray-500 mt-2 mb-4">Join our VIP program to enjoy exclusive discounts and benefits!</p>
+                <button class="join-membership-btn bg-pink-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-pink-700">Join Our Membership</button>
+            </div>
+        `;
+    }
+};
+
+// **** Function 2: The Main Dashboard Function ****
 async function initClientDashboard(clientId, clientData) {
-    // --- START: NEW FEATURE TOGGLE LOGIC ---
-    // Get the feature settings first
     const featuresDoc = await getDoc(doc(db, "settings", "features"));
     const features = featuresDoc.exists() ? featuresDoc.data() : { showGiftCards: true, showMemberships: true };
 
-    // Conditionally hide tabs and content based on settings
     const giftCardTab = document.getElementById('gift-cards-tab')?.parentElement;
     const giftCardContent = document.getElementById('gift-cards-content');
     if (features.showGiftCards === false) {
@@ -646,7 +723,6 @@ async function initClientDashboard(clientId, clientData) {
     } else {
         if (membershipTab) membershipTab.classList.remove('hidden');
     }
-    // --- END: NEW FEATURE TOGGLE LOGIC ---
 
     document.getElementById('client-welcome-name').textContent = `Welcome back, ${clientData.name}!`;
     document.getElementById('client-sign-out-btn').addEventListener('click', () => signOut(auth));
@@ -654,11 +730,7 @@ async function initClientDashboard(clientId, clientData) {
     const openPurchaseModalForClient = (client) => {
         const purchaseModal = document.getElementById('gift-card-purchase-modal');
         const userInfoSection = document.getElementById('gc-user-info-section');
-
-        // First, initialize the designer, which also resets the form
         initializeLandingGiftCardDesigner();
-
-        // NOW, pre-fill the form with the client's data
         if (userInfoSection) {
             userInfoSection.classList.add('hidden');
         }
@@ -668,47 +740,13 @@ async function initClientDashboard(clientId, clientData) {
         document.getElementById('gc-buyer-phone').readOnly = true;
         document.getElementById('gc-buyer-email').value = clientData.email;
         document.getElementById('gc-buyer-email').readOnly = true;
-        
-        // Finally, show the modal
         purchaseModal.classList.remove('hidden');
     };
     
     const openCardForPrint = (card) => {
         const expiryText = card.expiresAt ? `Expires: ${card.expiresAt.toDate().toLocaleDateString()}` : '';
         const cardHTML = `
-            <html>
-                <head>
-                    <title>Your Gift Card ${card.code}</title>
-                    <script src="https://cdn.tailwindcss.com"><\/script>
-                    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&family=Parisienne&display=swap" rel="stylesheet">
-                    <style>
-                        body { font-family: 'Poppins', sans-serif; display: flex; align-items: center; justify-content: center; margin: 0; background-color: #f0f0f0; }
-                        .font-parisienne { font-family: 'Parisienne', cursive; }
-                        .card { text-shadow: 1px 1px 3px rgba(0,0,0,0.6); }
-                    </style>
-                </head>
-                <body>
-                    <div class="card w-[400px] h-[228px] rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" 
-                         style="background-image: url('${card.backgroundUrl}');">
-                        <div class="flex justify-between items-start">
-                            <img src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white" />
-                            <div class="text-right">
-                                <p class="font-parisienne text-3xl">Gift Card</p>
-                                <p class="text-xs font-semibold tracking-wider">Nails Express</p>
-                            </div>
-                        </div>
-                        <div class="text-center"><p class="text-5xl font-bold">$${card.balance.toFixed(2)}</p></div>
-                        <div class="text-xs">
-                            <div class="flex justify-between font-semibold">
-                                <span style="display: ${card.recipientName ? 'inline' : 'none'}">FOR: <span class="font-normal">${card.recipientName}</span></span>
-                                <span style="display: ${card.senderName ? 'inline' : 'none'}">FROM: <span class="font-normal">${card.senderName}</span></span>
-                            </div>
-                            <p class="mt-2 text-center font-mono tracking-widest text-sm">${card.code}</p>
-                            <p class="mt-1 text-center text-[10px] opacity-80" style="display: ${expiryText ? 'block' : 'none'}">${expiryText}</p>
-                        </div>
-                    </div>
-                </body>
-            </html>
+            <html><head><title>Your Gift Card ${card.code}</title><script src="https://cdn.tailwindcss.com"><\/script><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&family=Parisienne&display=swap" rel="stylesheet"><style>body{font-family:'Poppins',sans-serif;display:flex;align-items:center;justify-content:center;margin:0;background-color:#f0f0f0;}.font-parisienne{font-family:'Parisienne',cursive;}.card{text-shadow:1px 1px 3px rgba(0,0,0,0.6);}</style></head><body><div class="card w-[400px] h-[228px] rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" style="background-image: url('${card.backgroundUrl}');"><div class="flex justify-between items-start"><img src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white" /><div class="text-right"><p class="font-parisienne text-3xl">Gift Card</p><p class="text-xs font-semibold tracking-wider">Nails Express</p></div></div><div class="text-center"><p class="text-5xl font-bold">$${card.balance.toFixed(2)}</p></div><div class="text-xs"><div class="flex justify-between font-semibold"><span style="display:${card.recipientName?'inline':'none'}">FOR: <span class="font-normal">${card.recipientName}</span></span><span style="display:${card.senderName?'inline':'none'}">FROM: <span class="font-normal">${card.senderName}</span></span></div><p class="mt-2 text-center font-mono tracking-widest text-sm">${card.code}</p><p class="mt-1 text-center text-[10px] opacity-80" style="display:${expiryText?'block':'none'}">${expiryText}</p></div></div></body></html>
         `;
         const printWindow = window.open('', '_blank');
         printWindow.document.write(cardHTML);
@@ -729,32 +767,7 @@ async function initClientDashboard(clientId, clientData) {
             cardEl.className = 'bg-white p-3 rounded-lg shadow-md space-y-3';
             const expiryText = card.expiresAt ? `Expires: ${card.expiresAt.toDate().toLocaleDateString()}` : '';
             cardEl.innerHTML = `
-                <div class="w-full h-[200px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" 
-                     style="background-image: url('${card.backgroundUrl}'); text-shadow: 1px 1px 3px rgba(0,0,0,0.6);">
-                    <div class="flex justify-between items-start">
-                        <img src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white" />
-                        <div class="text-right">
-                            <p class="font-parisienne text-3xl">Gift Card</p>
-                            <p class="text-xs font-semibold tracking-wider">Nails Express</p>
-                        </div>
-                    </div>
-                    <div class="text-center"><p class="text-5xl font-bold">$${card.balance.toFixed(2)}</p></div>
-                    <div class="text-xs">
-                        <div class="flex justify-between font-semibold">
-                            <span>FOR: <span class="font-normal">${card.recipientName}</span></span>
-                            <span>FROM: <span class="font-normal">${card.senderName}</span></span>
-                        </div>
-                        <p class="mt-2 text-center font-mono tracking-widest text-sm">${card.code}</p>
-                        <p class="mt-1 text-center text-[10px] opacity-80" style="display: ${expiryText ? 'block' : 'none'}">${expiryText}</p>
-                    </div>
-                </div>
-                <div class="flex justify-between items-center pt-2">
-                     <span class="px-2 py-1 text-xs font-semibold rounded-full ${card.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${card.status}</span>
-                     <div class="flex gap-2">
-                        <button data-card-id="${card.id}" class="download-card-btn text-gray-500 hover:text-blue-600" title="Download/Print"><i class="fas fa-download"></i></button>
-                        <button data-card-id="${card.id}" class="share-card-btn text-gray-500 hover:text-pink-600" title="Share"><i class="fas fa-share-alt"></i></button>
-                     </div>
-                </div>
+                <div class="w-full h-[200px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" style="background-image: url('${card.backgroundUrl}'); text-shadow: 1px 1px 3px rgba(0,0,0,0.6);"><div class="flex justify-between items-start"><img src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white" /><div class="text-right"><p class="font-parisienne text-3xl">Gift Card</p><p class="text-xs font-semibold tracking-wider">Nails Express</p></div></div><div class="text-center"><p class="text-5xl font-bold">$${card.balance.toFixed(2)}</p></div><div class="text-xs"><div class="flex justify-between font-semibold"><span>FOR: <span class="font-normal">${card.recipientName}</span></span><span>FROM: <span class="font-normal">${card.senderName}</span></span></div><p class="mt-2 text-center font-mono tracking-widest text-sm">${card.code}</p><p class="mt-1 text-center text-[10px] opacity-80" style="display:${expiryText?'block':'none'}">${expiryText}</p></div></div><div class="flex justify-between items-center pt-2"><span class="px-2 py-1 text-xs font-semibold rounded-full ${card.status==='Active'?'bg-green-100 text-green-800':'bg-yellow-100 text-yellow-800'}">${card.status}</span><div class="flex gap-2"><button data-card-id="${card.id}" class="download-card-btn text-gray-500 hover:text-blue-600" title="Download/Print"><i class="fas fa-download"></i></button><button data-card-id="${card.id}" class="share-card-btn text-gray-500 hover:text-pink-600" title="Share"><i class="fas fa-share-alt"></i></button></div></div>
             `;
             container.appendChild(cardEl);
         });
@@ -866,7 +879,6 @@ async function initClientDashboard(clientId, clientData) {
     clientDashboardContent.addEventListener('click', (e) => {
         const joinBtn = e.target.closest('.join-membership-btn');
         if (joinBtn) {
-            // Open the modal, passing the client's data to be handled internally
             openMembershipPurchaseModal(null, clientData);
         }
     });

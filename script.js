@@ -54,7 +54,7 @@ const giftCardBackgrounds = {
         'https://media.istockphoto.com/id/1180986336/vector/red-bokeh-snowflakes-background.jpg?s=612x612&w=0&k=20&c=NR_Hf8C2owuvtCxtjk789Ckynqdm6l2oDWLHwI7uqlE=',
         'https://png.pngtree.com/background/20210710/original/pngtree-red-christmas-snow-winter-cartoon-show-board-background-picture-image_979028.jpg'
     ],
-      'Valentines': [
+    'Valentines': [
         'https://slidescorner.com/wp-content/uploads/2023/02/01-Cute-Pink-Hearts-Valentines-Day-Background-Aesthetic-FREE-by-SlidesCorner.com_.jpg',
         'https://images.rawpixel.com/image_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDIzLTExL2xhdXJhc3RlZmFubzI2Nl9waW5rX3ZhbGVudGluZXNfZGF5X2JhY2tncm91bmRfd2l0aF9oZWFydHNfYm9rZV9kZTAzMWNjMy05MmJmLTQ2NzAtYjliZC0wN2Y2ZDkzYTM1ZDBfMS5qcGc.jpg',
         'https://cms-artifacts.artlist.io/content/motion_array/1390934/Valentines_Day_Romantic_Background_high_resolution_preview_1390934.jpg?Expires=2037527646045&Key-Pair-Id=K2ZDLYDZI2R1DF&Signature=fCbOC95RTvVc0Ld-pyxhFN5gzuS-VqGG1UYsxvu48kx8A6rdAPf~gjuv0sVBrV~0p0~2u99BYafKT5oRUsRbluBt9c8eH4k~YXVcT2KdNrQUjVD-wKS2qTcgdp8aVDYCCILMkFT4hrWRWzKlsjjgoBe7mAIaHV3cc2iqMErb-qGWlk8jX0J8vLfCvXH~daNNPMqO7tssbeYiHVrD7y89fbJ0YRVfR6wwb1AoBLseF8-7IsAZe8Hh2bn-kUEp8KocRZ4X7DBTFD~9Ho-E0HeRym4oZ37u3BdLAqY-y0a1HdIf3dOXXkF6X~UQpMlPtxTvWj4857QSez20b1mhnBhpsQ__'
@@ -65,6 +65,435 @@ const giftCardBackgrounds = {
         'https://www.creativefabrica.com/wp-content/uploads/2021/08/30/Happy-birthday-background-design-Graphics-16518598-1-1-580x430.jpg'
     ]
 };
+
+// --- Global Helper Functions ---
+const getLocalDateString = (date = new Date()) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+// --- Email Notification Logic ---
+async function sendBookingNotificationEmail(appointmentData) {
+    try {
+        const adminsQuery = query(collection(db, "users"), where("role", "==", "admin"));
+        const adminSnapshot = await getDocs(adminsQuery);
+        const adminEmails = adminSnapshot.docs.map(doc => doc.data().email).filter(Boolean);
+
+        let technicianEmail = null;
+        if (appointmentData.technician && appointmentData.technician !== 'Any Technician') {
+            const techQuery = query(collection(db, "users"), where("name", "==", appointmentData.technician));
+            const techSnapshot = await getDocs(techQuery);
+            if (!techSnapshot.empty) {
+                const techData = techSnapshot.docs[0].data();
+                if (techData.email) {
+                    technicianEmail = techData.email;
+                }
+            }
+        }
+
+        const recipients = [...new Set([...adminEmails, technicianEmail].filter(Boolean))];
+
+        if (recipients.length === 0) {
+            console.log("No recipients found for booking notification email.");
+            return;
+        }
+
+        const appointmentTime = appointmentData.appointmentTimestamp.toDate().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+        const subject = `New Booking: ${appointmentData.name} @ ${appointmentTime}`;
+        const servicesList = Array.isArray(appointmentData.services) ? appointmentData.services.join(', ') : appointmentData.services;
+
+        const html = `<div style="font-family: Arial, sans-serif; color: #333;"><h2 style="color: #d63384;">New Appointment Booked</h2><p>A new appointment has been scheduled for <strong>${appointmentData.name}</strong>.</p><table style="width: 100%; border-collapse: collapse; margin-top: 15px;"><tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px; width: 120px;"><strong>Client:</strong></td><td style="padding: 8px;">${appointmentData.name}</td></tr><tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px;"><strong>Phone:</strong></td><td style="padding: 8px;">${appointmentData.phone || 'N/A'}</td></tr><tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px;"><strong>Time:</strong></td><td style="padding: 8px;">${appointmentTime}</td></tr><tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px;"><strong>Technician:</strong></td><td style="padding: 8px;">${appointmentData.technician}</td></tr><tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px;"><strong>Services:</strong></td><td style="padding: 8px;">${servicesList}</td></tr><tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px;"><strong>Notes:</strong></td><td style="padding: 8px;">${appointmentData.notes || 'None'}</td></tr></table></div>`;
+
+        const mailPromises = recipients.map(email => {
+            return addDoc(collection(db, "mail"), {
+                to: email,
+                message: { subject: subject, html: html },
+            });
+        });
+
+        await Promise.all(mailPromises);
+        console.log("Booking notification emails queued for:", recipients.join(', '));
+
+    } catch (error) {
+        console.error("Error queuing booking notification email:", error);
+    }
+}
+// --- Booking Validation Logic ---
+function isBookingTimeValid(bookingDate) {
+    const dayOfWeek = bookingDate.getDay();
+    const dayName = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][dayOfWeek];
+
+    const dayHours = salonHours[dayName];
+
+    if (!dayHours || !dayHours.isOpen) {
+        return { valid: false, message: `Sorry, the salon is closed on ${dayName.charAt(0).toUpperCase() + dayName.slice(1)}s.` };
+    }
+
+    const bookingTime = bookingDate.getHours() * 60 + bookingDate.getMinutes();
+
+    const [openHour, openMinute] = dayHours.open.split(':').map(Number);
+    const openTime = openHour * 60 + openMinute;
+
+    const [closeHour, closeMinute] = dayHours.close.split(':').map(Number);
+    const closeTime = closeHour * 60 + closeMinute;
+
+    if (bookingTime < openTime || bookingTime > closeTime) {
+        const formatTime = (timeStr) => new Date(`1970-01-01T${timeStr}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        return { valid: false, message: `Sorry, our hours on ${dayName.charAt(0).toUpperCase() + dayName.slice(1)}s are from ${formatTime(dayHours.open)} to ${formatTime(dayHours.close)}.` };
+    }
+
+    return { valid: true };
+}
+// --- Global Modal Logic ---
+const openPolicyModal = () => { policyModal.classList.add('flex'); policyModal.classList.remove('hidden'); };
+const closePolicyModal = () => { policyModal.classList.add('hidden'); policyModal.classList.remove('flex'); };
+document.addEventListener('click', (e) => { if (e.target.closest('.view-policy-btn')) { openPolicyModal(); } });
+document.getElementById('policy-close-btn').addEventListener('click', closePolicyModal);
+document.querySelector('#policy-modal .policy-modal-overlay').addEventListener('click', closePolicyModal);
+
+// This function is in the global scope
+const openAddAppointmentModal = (date, clientData = null, appointmentData = null) => {
+    addAppointmentForm.reset();
+    // *** FIX IS HERE: Correctly selecting the elements by their ID ***
+    const titleEl = document.getElementById('add-appointment-modal-title');
+    const submitBtn = document.getElementById('add-appointment-submit-btn');
+    const appointmentIdInput = document.getElementById('edit-appointment-id');
+
+    // Populate dropdowns (this is needed for both new and edit)
+    const clientList = document.getElementById('client-names-list');
+    const appointmentPhoneList = document.getElementById('appointment-client-phones');
+    const uniqueNames = [...new Set(allFinishedClients.map(c => c.name))];
+    const uniquePhones = [...new Set(allFinishedClients.filter(c => c.phone && c.phone !== 'N/A').map(c => c.phone))];
+    clientList.innerHTML = uniqueNames.map(name => `<option value="${name}"></option>`).join('');
+    appointmentPhoneList.innerHTML = uniquePhones.map(phone => `<option value="${phone}"></option>`).join('');
+    const mainServicesList = document.getElementById('main-services-list');
+    mainServicesList.innerHTML = Object.keys(servicesData).flatMap(category =>
+        servicesData[category].map(service => `<option value="${service.p || ''}${service.name}${service.price ? ' ' + service.price : ''}"></option>`)
+    ).join('');
+
+    if (appointmentData) {
+        // --- EDIT MODE ---
+        titleEl.textContent = 'Edit Appointment';
+        submitBtn.textContent = 'Update Appointment';
+        appointmentIdInput.value = appointmentData.id;
+
+        // Convert Firestore timestamp to a string for the datetime-local input
+        const apptDate = appointmentData.appointmentTimestamp.toDate();
+        const year = apptDate.getFullYear();
+        const month = String(apptDate.getMonth() + 1).padStart(2, '0');
+        const day = String(apptDate.getDate()).padStart(2, '0');
+        const hours = String(apptDate.getHours()).padStart(2, '0');
+        const minutes = String(apptDate.getMinutes()).padStart(2, '0');
+        document.getElementById('appointment-datetime').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+
+        document.getElementById('appointment-client-name').value = appointmentData.name || '';
+        document.getElementById('appointment-phone').value = appointmentData.phone || '';
+        document.getElementById('appointment-people').value = appointmentData.people || 1;
+        document.getElementById('appointment-booking-type').value = appointmentData.bookingType || 'Booked - Calendar';
+        document.getElementById('appointment-services').value = Array.isArray(appointmentData.services) ? appointmentData.services.join(', ') : (appointmentData.services || '');
+        document.getElementById('appointment-technician-select').value = appointmentData.technician || 'Any Technician';
+        document.getElementById('appointment-notes').value = appointmentData.notes || '';
+
+    } else {
+        // --- ADD NEW MODE (Original logic) ---
+        titleEl.textContent = 'Add New Appointment';
+        submitBtn.textContent = 'Save Appointment';
+        appointmentIdInput.value = '';
+
+        const now = new Date();
+        const defaultDateTime = `${date}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        document.getElementById('appointment-datetime').value = defaultDateTime;
+
+        if (clientData) {
+            document.getElementById('appointment-client-name').value = clientData.name || '';
+            document.getElementById('appointment-phone').value = clientData.phone || '';
+        }
+    }
+
+    addAppointmentModal.classList.remove('hidden');
+    addAppointmentModal.classList.add('flex');
+};
+const closeAddAppointmentModal = () => {
+    addAppointmentModal.classList.add('hidden');
+    addAppointmentModal.classList.remove('flex');
+};
+document.getElementById('add-appointment-cancel-btn').addEventListener('click', closeAddAppointmentModal);
+document.querySelector('.add-appointment-modal-overlay').addEventListener('click', closeAddAppointmentModal);
+document.getElementById('appointment-client-name').addEventListener('input', (e) => {
+    const client = allFinishedClients.find(c => c.name === e.target.value);
+    if (client) { document.getElementById('appointment-phone').value = client.phone; }
+});
+document.getElementById('appointment-phone').addEventListener('input', (e) => {
+    const client = allFinishedClients.find(c => c.phone === e.target.value);
+    if (client) { document.getElementById('appointment-client-name').value = client.name; }
+});
+
+// This listener is in the global scope
+addAppointmentForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const datetimeString = document.getElementById('appointment-datetime').value;
+    if (!datetimeString) { return alert('Please select a date and time.'); }
+
+    const bookingDate = new Date(datetimeString);
+    const validation = isBookingTimeValid(bookingDate);
+    if (!validation.valid) {
+        alert(validation.message);
+        return;
+    }
+
+    const appointmentData = {
+        name: document.getElementById('appointment-client-name').value,
+        phone: document.getElementById('appointment-phone').value,
+        people: document.getElementById('appointment-people').value,
+        bookingType: document.getElementById('appointment-booking-type').value,
+        services: [document.getElementById('appointment-services').value], // Kept as an array for consistency
+        technician: document.getElementById('appointment-technician-select').value,
+        notes: document.getElementById('appointment-notes').value,
+        appointmentTimestamp: Timestamp.fromDate(bookingDate)
+    };
+
+    const appointmentId = document.getElementById('edit-appointment-id').value;
+
+    try {
+        if (appointmentId) {
+            // If an ID exists, UPDATE the existing document
+            await updateDoc(doc(db, "appointments", appointmentId), appointmentData);
+            alert("Appointment updated successfully!");
+        } else {
+            // If no ID, ADD a new document
+            await addDoc(collection(db, "appointments"), appointmentData);
+            await sendBookingNotificationEmail(appointmentData);
+            alert("Appointment saved successfully!");
+        }
+        closeAddAppointmentModal();
+    } catch (err) {
+        console.error("Error saving appointment:", err);
+        alert("Could not save appointment.");
+    }
+});
+const closeMembershipPurchaseModal = () => {
+    document.getElementById('membership-purchase-modal').classList.add('hidden');
+};
+// Listeners for the new modal
+document.getElementById('close-membership-purchase-modal-btn').addEventListener('click', closeMembershipPurchaseModal);
+document.getElementById('membership-purchase-modal').querySelector('.modal-overlay').addEventListener('click', closeMembershipPurchaseModal);
+
+// *** ADD THIS CORRECTED BLOCK ***
+const closePurchaseModal = () => {
+    const purchaseModal = document.getElementById('gift-card-purchase-modal');
+    const userInfoSection = document.getElementById('gc-user-info-section');
+    purchaseModal.classList.add('hidden');
+    // Reset the form fields for the next user
+    document.getElementById('gc-buyer-name').disabled = false;
+    document.getElementById('gc-buyer-phone').disabled = false;
+    document.getElementById('gc-buyer-email').disabled = false;
+    // *** SHOW the user info section again for the next user ***
+    if (userInfoSection) {
+        userInfoSection.classList.remove('hidden');
+    }
+};
+const purchaseForm = document.getElementById('landing-gift-card-form');
+// Located inside initLandingPage()
+purchaseForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const amount = parseFloat(document.getElementById('gc-amount').value);
+    const quantity = parseInt(document.getElementById('gc-quantity').value, 10);
+
+    if (isNaN(amount) || amount <= 0 || isNaN(quantity) || quantity <= 0) {
+        alert('Please fill out the gift card amount and quantity correctly.');
+        return;
+    }
+
+    const submitBtn = document.getElementById('landing-gc-submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Processing...';
+
+    try {
+        // SCENARIO 1: User is already a logged-in client
+        if (currentUserId && auth.currentUser && !auth.currentUser.isAnonymous) {
+            const batch = writeBatch(db);
+            const expiryDate = new Date();
+            expiryDate.setMonth(expiryDate.getMonth() + 6);
+
+            const buyerInfo = {
+                name: document.getElementById('gc-buyer-name').value,
+                email: document.getElementById('gc-buyer-email').value,
+                phone: document.getElementById('gc-buyer-phone').value,
+            };
+
+            for (let i = 0; i < quantity; i++) {
+                const cardData = {
+                    amount: amount,
+                    balance: amount,
+                    history: [],
+                    recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerInfo.name,
+                    senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerInfo.name,
+                    backgroundUrl: document.getElementById('landing-gc-preview-card').style.backgroundImage.slice(5, -2),
+                    code: `GC-${Date.now()}-${i}`,
+                    status: 'Pending',
+                    type: 'E-Gift',
+                    createdBy: currentUserId,
+                    buyerInfo: buyerInfo,
+                    createdAt: serverTimestamp(),
+                    expiresAt: Timestamp.fromDate(expiryDate)
+                };
+                const newCardRef = doc(collection(db, "gift_cards"));
+                batch.set(newCardRef, cardData);
+            }
+            await batch.commit();
+            alert("Success! Your gift card request has been sent. It will be activated once payment is confirmed.");
+            // **** FIX FOR LOGGED-IN USER ****
+            closePurchaseModal();
+
+        } else {
+            // SCENARIO 2: New or anonymous user (original flow)
+            const buyerName = document.getElementById('gc-buyer-name').value;
+            const buyerPhone = document.getElementById('gc-buyer-phone').value;
+            const buyerEmail = document.getElementById('gc-buyer-email').value;
+
+            if (!buyerName || !buyerPhone || !buyerEmail) {
+                alert('Please fill out all your information to create an account.');
+                throw new Error("Missing buyer information.");
+            }
+
+            await createUserWithEmailAndPassword(auth, buyerEmail, buyerPhone);
+
+            const purchaseDetails = {
+                buyerName, buyerPhone, buyerEmail, amount, quantity,
+                recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerName,
+                senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerName,
+                backgroundUrl: document.getElementById('landing-gc-preview-card').style.backgroundImage.slice(5, -2),
+            };
+            sessionStorage.setItem('pendingGiftCardPurchase', JSON.stringify(purchaseDetails));
+            // onAuthStateChanged will handle the rest
+            // **** FIX FOR NEW USER ****
+            closePurchaseModal();
+
+        }
+    } catch (error) {
+        if (error.code === 'auth/email-already-in-use') {
+            alert("An account with this email already exists. Please log in to purchase a gift card.");
+        } else {
+            console.error("Error during gift card purchase:", error);
+            alert(`Could not process your request. Error: ${error.message}`);
+        }
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Purchase Request';
+        // Re-enable form fields that might have been disabled
+        document.getElementById('gc-buyer-name').disabled = false;
+        document.getElementById('gc-buyer-phone').disabled = false;
+        document.getElementById('gc-buyer-email').disabled = false;
+    }
+
+});
+// REPLACE your old 'landing-membership-form' submit listener with this one
+
+document.getElementById('landing-membership-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const submitBtn = document.getElementById('landing-ms-submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Processing...';
+
+    const tierId = document.getElementById('ms-tier-select').value;
+    const tier = allMembershipTiers.find(t => t.id === tierId);
+
+    if (!tier) {
+        alert("Please select a valid membership tier.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Membership Request';
+        return;
+    }
+
+    try {
+        // SCENARIO 1: USER IS ALREADY LOGGED IN
+        if (currentUserId && auth.currentUser && !auth.currentUser.isAnonymous) {
+            const clientDocRef = doc(db, "clients", currentUserId);
+            const membershipData = {
+                tierId: tier.id,
+                tierName: tier.name,
+                startDate: serverTimestamp(),
+                status: 'Pending'
+            };
+
+            await updateDoc(clientDocRef, {
+                membership: membershipData
+            });
+
+            alert("Success! Your membership request has been sent. It will be activated once payment is confirmed.");
+            closeMembershipPurchaseModal();
+
+        } else {
+            // SCENARIO 2: NEW VISITOR
+            const name = document.getElementById('ms-buyer-name').value;
+            const email = document.getElementById('ms-buyer-email').value;
+            const phone = document.getElementById('ms-buyer-phone').value;
+
+            if (!name || !email || !phone) {
+                alert("Please fill out all your information to create an account.");
+                throw new Error("Missing buyer info");
+            }
+
+            sessionStorage.setItem('pendingMembershipPurchase', tierId);
+            sessionStorage.setItem('signupDetails', JSON.stringify({ name, email, phone }));
+
+            await createUserWithEmailAndPassword(auth, email, phone);
+            closeMembershipPurchaseModal();
+            // onAuthStateChanged will handle the rest
+        }
+
+    } catch (error) {
+        if (error.code === 'auth/email-already-in-use') {
+            alert("An account with this email already exists. Please log in to purchase a membership.");
+        } else {
+            console.error("Error during membership purchase:", error);
+            alert(`Could not process your request. Error: ${error.message}`);
+        }
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Membership Request';
+    }
+});
+const openMembershipCardForPrint = (client, tier) => {
+    let cardStyle = 'from-gray-700 via-gray-900 to-black';
+    if (tier.name.toLowerCase().includes('silver')) cardStyle = 'from-gray-400 via-gray-500 to-gray-600';
+    if (tier.name.toLowerCase().includes('gold')) cardStyle = 'from-yellow-400 via-yellow-500 to-yellow-600';
+    if (tier.name.toLowerCase().includes('platinum')) cardStyle = 'from-indigo-500 via-purple-600 to-pink-600';
+
+    const cardHTML = `<html><head><title>Your Membership Card</title><script src="https://cdn.tailwindcss.com"><\/script><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&family=Parisienne&display=swap" rel="stylesheet"><style>body{font-family:'Poppins',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background-color:#f0f0f0;}.font-parisienne{font-family:'Parisienne',cursive;}.card{text-shadow:1px 1px 3px rgba(0,0,0,0.4);}</style></head><body><div class="card w-[400px] h-[228px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-gradient-to-br ${cardStyle} text-white"><div class="flex justify-between items-start"><div class="font-bold text-lg"><p>${tier.name}</p><p class="text-xs font-normal opacity-80">MEMBERSHIP</p></div><p class="font-parisienne text-3xl">Nails Express</p></div><div class="text-left"><p class="text-xs opacity-80">MEMBER</p><p class="text-2xl font-semibold tracking-wider">${client.name}</p></div><div class="text-right text-xs opacity-80">Member Since: ${client.membership.startDate.toDate().toLocaleDateString()}</div></div></body></html>`;
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(cardHTML);
+    printWindow.document.close();
+    printWindow.focus();
+};
+
+const renderClientMembership = (clientData) => {
+    const container = document.getElementById('client-membership-display');
+    if (!container) return;
+
+    if (clientData.membership && allMembershipTiers.length > 0) {
+        const tier = allMembershipTiers.find(t => t.id === clientData.membership.tierId);
+        if (tier) {
+            let startDate = new Date().toLocaleDateString();
+            if (clientData.membership.startDate && typeof clientData.membership.startDate.toDate === 'function') {
+                startDate = clientData.membership.startDate.toDate().toLocaleDateString();
+            }
+            const benefitsList = tier.benefits.split('\n').map(b => `<li class="flex items-start"><span class="text-green-500 mr-2">✔</span><span>${b}</span></li>`).join('');
+            const status = clientData.membership.status || 'Active';
+            const statusColor = status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
+            let cardStyle = 'from-gray-700 via-gray-900 to-black';
+            if (tier.name.toLowerCase().includes('silver')) cardStyle = 'from-gray-400 via-gray-500 to-gray-600';
+            if (tier.name.toLowerCase().includes('gold')) cardStyle = 'from-yellow-400 via-yellow-500 to-yellow-600';
+            if (tier.name.toLowerCase().includes('platinum')) cardStyle = 'from-indigo-500 via-purple-600 to-pink-600';
+
+            container.innerHTML = `<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start"><div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-lg"><div class="flex justify-between items-start mb-4"><div><h3 class="text-2xl font-bold text-pink-700 flex items-end gap-3"><span>💎 ${tier.name} Tier</span><span class="text-xl font-bold text-gray-600">$${tier.price}/month</span></h3><p class="text-sm text-gray-500">Member since ${startDate}</p></div><span class="px-3 py-1 text-sm font-semibold rounded-full ${statusColor}">${status}</span></div><div><h4 class="font-semibold text-gray-800 mb-2">Your Benefits:</h4><ul class="space-y-2 text-gray-700">${benefitsList}</ul></div>${status === 'Pending' ? '<p class="mt-4 text-center text-sm bg-yellow-100 text-yellow-800 p-3 rounded-lg">Your membership is pending approval. Please contact the salon to complete payment and activate your benefits.</p>' : ''}</div><div class="space-y-3"><div class="w-full h-[200px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-gradient-to-br ${cardStyle} text-white" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.4);"><div class="flex justify-between items-start"><div class="font-bold text-lg"><p>${tier.name}</p><p class="text-xs font-normal opacity-80">MEMBERSHIP</p></div><p class="font-parisienne text-3xl">Nails Express</p></div><div class="text-center"><p class="font-bold text-lg">${tier.discount}% off all additional services.</p></div><div class="flex justify-between items-end"><div class="text-left"><p class="text-xs opacity-80">MEMBER</p><p class="text-xl font-semibold tracking-wider">${clientData.name}</p></div><div class="text-right text-xs opacity-80">Since: ${startDate}</div></div></div><div class="flex justify-between items-center pt-2 px-2"><span class="text-sm text-gray-500">Your digital card</span><div class="flex gap-4"><button data-client-id="${clientData.id}" class="download-membership-btn text-gray-500 hover:text-blue-600 text-xl" title="Download/Print"><i class="fas fa-download"></i></button><button data-client-id="${clientData.id}" class="share-membership-btn text-gray-500 hover:text-pink-600 text-xl" title="Share"><i class="fas fa-share-alt"></i></button></div></div></div></div>`;
+        } else { container.innerHTML = '<p class="text-gray-500 text-center col-span-full">Your membership tier could not be found. Please contact the salon.</p>'; }
+    } else {
+        container.innerHTML = `<div class="text-center p-8 bg-gray-50 rounded-lg"><h3 class="text-xl font-semibold text-gray-700">You are not a member yet.</h3><p class="text-gray-500 mt-2 mb-4">Join our VIP program to enjoy exclusive discounts and benefits!</p><button class="join-membership-btn bg-pink-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-pink-700">Join Our Membership</button></div>`;
+    }
+};
+
 
 const updateLandingGiftCardPreview = () => {
     const purchaseForm = document.getElementById('landing-gift-card-form');
@@ -124,225 +553,14 @@ const initializeLandingGiftCardDesigner = () => {
     updateLandingGiftCardPreview();
 };
 
-// --- Global Helper Functions ---
-const getLocalDateString = (date = new Date()) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-};
 
-// --- Email Notification Logic ---
-async function sendBookingNotificationEmail(appointmentData) {
-    try {
-        const adminsQuery = query(collection(db, "users"), where("role", "==", "admin"));
-        const adminSnapshot = await getDocs(adminsQuery);
-        const adminEmails = adminSnapshot.docs.map(doc => doc.data().email).filter(Boolean);
-
-        let technicianEmail = null;
-        if (appointmentData.technician && appointmentData.technician !== 'Any Technician') {
-            const techQuery = query(collection(db, "users"), where("name", "==", appointmentData.technician));
-            const techSnapshot = await getDocs(techQuery);
-            if (!techSnapshot.empty) {
-                const techData = techSnapshot.docs[0].data();
-                if (techData.email) {
-                    technicianEmail = techData.email;
-                }
-            }
-        }
-
-        const recipients = [...new Set([...adminEmails, technicianEmail].filter(Boolean))];
-
-        if (recipients.length === 0) {
-            console.log("No recipients found for booking notification email.");
-            return;
-        }
-
-        const appointmentTime = appointmentData.appointmentTimestamp.toDate().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
-        const subject = `New Booking: ${appointmentData.name} @ ${appointmentTime}`;
-        const servicesList = Array.isArray(appointmentData.services) ? appointmentData.services.join(', ') : appointmentData.services;
-        
-        const html = `<div style="font-family: Arial, sans-serif; color: #333;"><h2 style="color: #d63384;">New Appointment Booked</h2><p>A new appointment has been scheduled for <strong>${appointmentData.name}</strong>.</p><table style="width: 100%; border-collapse: collapse; margin-top: 15px;"><tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px; width: 120px;"><strong>Client:</strong></td><td style="padding: 8px;">${appointmentData.name}</td></tr><tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px;"><strong>Phone:</strong></td><td style="padding: 8px;">${appointmentData.phone || 'N/A'}</td></tr><tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px;"><strong>Time:</strong></td><td style="padding: 8px;">${appointmentTime}</td></tr><tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px;"><strong>Technician:</strong></td><td style="padding: 8px;">${appointmentData.technician}</td></tr><tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px;"><strong>Services:</strong></td><td style="padding: 8px;">${servicesList}</td></tr><tr style="border-bottom: 1px solid #ddd;"><td style="padding: 8px;"><strong>Notes:</strong></td><td style="padding: 8px;">${appointmentData.notes || 'None'}</td></tr></table></div>`;
-
-        const mailPromises = recipients.map(email => {
-            return addDoc(collection(db, "mail"), {
-                to: email,
-                message: { subject: subject, html: html },
-            });
-        });
-
-        await Promise.all(mailPromises);
-        console.log("Booking notification emails queued for:", recipients.join(', '));
-
-    } catch (error) {
-        console.error("Error queuing booking notification email:", error);
-    }
-}
-
-// --- Booking Validation Logic ---
-function isBookingTimeValid(bookingDate) {
-    const dayOfWeek = bookingDate.getDay(); 
-    const dayName = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][dayOfWeek];
-
-    const dayHours = salonHours[dayName];
-
-    if (!dayHours || !dayHours.isOpen) {
-        return { valid: false, message: `Sorry, the salon is closed on ${dayName.charAt(0).toUpperCase() + dayName.slice(1)}s.` };
-    }
-
-    const bookingTime = bookingDate.getHours() * 60 + bookingDate.getMinutes();
-    
-    const [openHour, openMinute] = dayHours.open.split(':').map(Number);
-    const openTime = openHour * 60 + openMinute;
-    
-    const [closeHour, closeMinute] = dayHours.close.split(':').map(Number);
-    const closeTime = closeHour * 60 + closeMinute;
-
-    if (bookingTime < openTime || bookingTime > closeTime) {
-         const formatTime = (timeStr) => new Date(`1970-01-01T${timeStr}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-        return { valid: false, message: `Sorry, our hours on ${dayName.charAt(0).toUpperCase() + dayName.slice(1)}s are from ${formatTime(dayHours.open)} to ${formatTime(dayHours.close)}.` };
-    }
-
-    return { valid: true };
-}
-
-
-// --- Global Modal Logic ---
-const openPolicyModal = () => { policyModal.classList.add('flex'); policyModal.classList.remove('hidden'); };
-const closePolicyModal = () => { policyModal.classList.add('hidden'); policyModal.classList.remove('flex'); };
-document.addEventListener('click', (e) => { if (e.target.closest('.view-policy-btn')) { openPolicyModal(); } });
-document.getElementById('policy-close-btn').addEventListener('click', closePolicyModal);
-document.querySelector('#policy-modal .policy-modal-overlay').addEventListener('click', closePolicyModal);
-
-// This function is in the global scope
-const openAddAppointmentModal = (date, clientData = null, appointmentData = null) => {
-    addAppointmentForm.reset();
-    // *** FIX IS HERE: Correctly selecting the elements by their ID ***
-    const titleEl = document.getElementById('add-appointment-modal-title');
-    const submitBtn = document.getElementById('add-appointment-submit-btn');
-    const appointmentIdInput = document.getElementById('edit-appointment-id');
-
-    // Populate dropdowns (this is needed for both new and edit)
-    const clientList = document.getElementById('client-names-list');
-    const appointmentPhoneList = document.getElementById('appointment-client-phones');
-    const uniqueNames = [...new Set(allFinishedClients.map(c => c.name))];
-    const uniquePhones = [...new Set(allFinishedClients.filter(c => c.phone && c.phone !== 'N/A').map(c => c.phone))];
-    clientList.innerHTML = uniqueNames.map(name => `<option value="${name}"></option>`).join('');
-    appointmentPhoneList.innerHTML = uniquePhones.map(phone => `<option value="${phone}"></option>`).join('');
-    const mainServicesList = document.getElementById('main-services-list');
-    mainServicesList.innerHTML = Object.keys(servicesData).flatMap(category => 
-        servicesData[category].map(service => `<option value="${service.p || ''}${service.name}${service.price ? ' ' + service.price : ''}"></option>`)
-    ).join('');
-
-    if (appointmentData) {
-        // --- EDIT MODE ---
-        titleEl.textContent = 'Edit Appointment';
-        submitBtn.textContent = 'Update Appointment';
-        appointmentIdInput.value = appointmentData.id;
-
-        // Convert Firestore timestamp to a string for the datetime-local input
-        const apptDate = appointmentData.appointmentTimestamp.toDate();
-        const year = apptDate.getFullYear();
-        const month = String(apptDate.getMonth() + 1).padStart(2, '0');
-        const day = String(apptDate.getDate()).padStart(2, '0');
-        const hours = String(apptDate.getHours()).padStart(2, '0');
-        const minutes = String(apptDate.getMinutes()).padStart(2, '0');
-        document.getElementById('appointment-datetime').value = `${year}-${month}-${day}T${hours}:${minutes}`;
-
-        document.getElementById('appointment-client-name').value = appointmentData.name || '';
-        document.getElementById('appointment-phone').value = appointmentData.phone || '';
-        document.getElementById('appointment-people').value = appointmentData.people || 1;
-        document.getElementById('appointment-booking-type').value = appointmentData.bookingType || 'Booked - Calendar';
-        document.getElementById('appointment-services').value = Array.isArray(appointmentData.services) ? appointmentData.services.join(', ') : (appointmentData.services || '');
-        document.getElementById('appointment-technician-select').value = appointmentData.technician || 'Any Technician';
-        document.getElementById('appointment-notes').value = appointmentData.notes || '';
-
-    } else {
-        // --- ADD NEW MODE (Original logic) ---
-        titleEl.textContent = 'Add New Appointment';
-        submitBtn.textContent = 'Save Appointment';
-        appointmentIdInput.value = '';
-
-        const now = new Date();
-        const defaultDateTime = `${date}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-        document.getElementById('appointment-datetime').value = defaultDateTime;
-
-        if (clientData) {
-            document.getElementById('appointment-client-name').value = clientData.name || '';
-            document.getElementById('appointment-phone').value = clientData.phone || '';
-        }
-    }
-
-    addAppointmentModal.classList.remove('hidden'); 
-    addAppointmentModal.classList.add('flex');
-};
-
-const closeAddAppointmentModal = () => { 
-    addAppointmentModal.classList.add('hidden'); 
-    addAppointmentModal.classList.remove('flex'); 
-};
-
-document.getElementById('add-appointment-cancel-btn').addEventListener('click', closeAddAppointmentModal);
-document.querySelector('.add-appointment-modal-overlay').addEventListener('click', closeAddAppointmentModal);
-document.getElementById('appointment-client-name').addEventListener('input', (e) => { 
-    const client = allFinishedClients.find(c => c.name === e.target.value); 
-    if (client) { document.getElementById('appointment-phone').value = client.phone; } 
-});
-document.getElementById('appointment-phone').addEventListener('input', (e) => { 
-    const client = allFinishedClients.find(c => c.phone === e.target.value); 
-    if (client) { document.getElementById('appointment-client-name').value = client.name; } 
-});
-
-// This listener is in the global scope
-addAppointmentForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const datetimeString = document.getElementById('appointment-datetime').value;
-    if (!datetimeString) { return alert('Please select a date and time.'); }
-    
-    const bookingDate = new Date(datetimeString);
-    const validation = isBookingTimeValid(bookingDate);
-    if (!validation.valid) {
-        alert(validation.message);
-        return;
-    }
-    
-    const appointmentData = {
-        name: document.getElementById('appointment-client-name').value,
-        phone: document.getElementById('appointment-phone').value,
-        people: document.getElementById('appointment-people').value,
-        bookingType: document.getElementById('appointment-booking-type').value,
-        services: [document.getElementById('appointment-services').value], // Kept as an array for consistency
-        technician: document.getElementById('appointment-technician-select').value,
-        notes: document.getElementById('appointment-notes').value,
-        appointmentTimestamp: Timestamp.fromDate(bookingDate)
-    };
-    
-    const appointmentId = document.getElementById('edit-appointment-id').value;
-
-    try {
-        if (appointmentId) {
-            // If an ID exists, UPDATE the existing document
-            await updateDoc(doc(db, "appointments", appointmentId), appointmentData);
-            alert("Appointment updated successfully!");
-        } else {
-            // If no ID, ADD a new document
-            await addDoc(collection(db, "appointments"), appointmentData);
-            await sendBookingNotificationEmail(appointmentData);
-            alert("Appointment saved successfully!");
-        }
-        closeAddAppointmentModal();
-    } catch (err) {
-        console.error("Error saving appointment:", err);
-        alert("Could not save appointment.");
-    }
-});
 
 // --- GLOBAL MEMBERSHIP FUNCTIONS ---
 const renderMembershipTiers = (tiers, containerId, isLoggedIn) => {
     const container = document.getElementById(containerId);
     if (!container) return;
     container.innerHTML = '';
-    
+
     tiers.forEach(tier => {
         const benefitsList = tier.benefits.split('\n').map(b => `<li class="flex items-start"><span class="text-green-500 mr-2">✔</span><span>${b}</span></li>`).join('');
         const buttonText = isLoggedIn ? 'Select Plan' : 'Become a Member';
@@ -414,7 +632,7 @@ const initializeMembershipPurchaseForm = (selectedTierId, clientData = null) => 
             `;
         }
     };
-    
+
     tierSelect.addEventListener('change', updatePreview);
     document.getElementById('ms-buyer-name').addEventListener('input', updatePreview);
     updatePreview();
@@ -433,13 +651,9 @@ const openMembershipPurchaseModal = (tierId, clientData = null) => {
     document.getElementById('membership-purchase-modal').classList.remove('hidden');
 };
 
-const closeMembershipPurchaseModal = () => {
-    document.getElementById('membership-purchase-modal').classList.add('hidden');
-};
-
 const renderClientMembershipsTable = (members) => {
     const tbody = document.querySelector('#client-memberships-table tbody');
-    if(!tbody) return;
+    if (!tbody) return;
     tbody.innerHTML = '';
     members.forEach(member => {
         const row = tbody.insertRow();
@@ -477,6 +691,185 @@ onSnapshot(query(collection(db, "memberships"), orderBy("price")), (snapshot) =>
     }
 });
 
+
+// **** START OF PRIMARY FIX: FUNCTION ORDERING ****
+// All functions related to the Client Dashboard are now placed BEFORE the main `initClientDashboard` function.
+// This guarantees they are defined before they are called.
+
+
+// **** PASTE THESE TWO FUNCTIONS into your script ****
+
+
+async function initClientDashboard(clientId, clientData) {
+    const featuresDoc = await getDoc(doc(db, "settings", "features"));
+    const features = featuresDoc.exists() ? featuresDoc.data() : { showGiftCards: true, showMemberships: true };
+    const giftCardTab = document.getElementById('gift-cards-tab')?.parentElement;
+    const giftCardContent = document.getElementById('gift-cards-content');
+    if (features.showGiftCards === false) {
+        if (giftCardTab) giftCardTab.classList.add('hidden');
+        if (giftCardContent) giftCardContent.classList.add('hidden');
+    } else { if (giftCardTab) giftCardTab.classList.remove('hidden'); }
+    const membershipTab = document.getElementById('membership-tab')?.parentElement;
+    const membershipContent = document.getElementById('membership-content');
+    if (features.showMemberships === false) {
+        if (membershipTab) membershipTab.classList.add('hidden');
+        if (membershipContent) membershipContent.classList.add('hidden');
+    } else { if (membershipTab) membershipTab.classList.remove('hidden'); }
+
+    document.getElementById('client-welcome-name').textContent = `Welcome back, ${clientData.name}!`;
+    document.getElementById('client-sign-out-btn').addEventListener('click', () => signOut(auth));
+    const openPurchaseModalForClient = (client) => {
+        const purchaseModal = document.getElementById('gift-card-purchase-modal');
+        const userInfoSection = document.getElementById('gc-user-info-section');
+        initializeLandingGiftCardDesigner();
+        if (userInfoSection) { userInfoSection.classList.add('hidden'); }
+        document.getElementById('gc-buyer-name').value = client.name;
+        document.getElementById('gc-buyer-name').readOnly = true;
+        document.getElementById('gc-buyer-phone').value = client.phone || '';
+        document.getElementById('gc-buyer-phone').readOnly = true;
+        document.getElementById('gc-buyer-email').value = clientData.email;
+        document.getElementById('gc-buyer-email').readOnly = true;
+        purchaseModal.classList.remove('hidden');
+    };
+    const openCardForPrint = (card) => {
+        const expiryText = card.expiresAt ? `Expires: ${card.expiresAt.toDate().toLocaleDateString()}` : '';
+        const cardHTML = `<html><head><title>Your Gift Card ${card.code}</title><script src="https://cdn.tailwindcss.com"><\/script><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&family=Parisienne&display=swap" rel="stylesheet"><style>body{font-family:'Poppins',sans-serif;display:flex;align-items:center;justify-content:center;margin:0;background-color:#f0f0f0;}.font-parisienne{font-family:'Parisienne',cursive;}.card{text-shadow:1px 1px 3px rgba(0,0,0,0.6);}</style></head><body><div class="card w-[400px] h-[228px] rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" style="background-image: url('${card.backgroundUrl}');"><div class="flex justify-between items-start"><img src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white" /><div class="text-right"><p class="font-parisienne text-3xl">Gift Card</p><p class="text-xs font-semibold tracking-wider">Nails Express</p></div></div><div class="text-center"><p class="text-5xl font-bold">$${card.balance.toFixed(2)}</p></div><div class="text-xs"><div class="flex justify-between font-semibold"><span style="display:${card.recipientName ? 'inline' : 'none'}">FOR: <span class="font-normal">${card.recipientName}</span></span><span style="display:${card.senderName ? 'inline' : 'none'}">FROM: <span class="font-normal">${card.senderName}</span></span></div><p class="mt-2 text-center font-mono tracking-widest text-sm">${card.code}</p><p class="mt-1 text-center text-[10px] opacity-80" style="display:${expiryText ? 'block' : 'none'}">${expiryText}</p></div></div></body></html>`;
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(cardHTML);
+        printWindow.document.close();
+        printWindow.focus();
+    };
+    const renderClientGiftCards = (cards) => {
+        const container = document.getElementById('client-gift-cards-container');
+        if (!container) return;
+        container.innerHTML = '';
+        if (cards.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 text-center col-span-full">You do not have any gift cards.</p>';
+            return;
+        }
+        cards.forEach(card => {
+            const cardEl = document.createElement('div');
+            cardEl.className = 'bg-white p-3 rounded-lg shadow-md space-y-3';
+            const expiryText = card.expiresAt ? `Expires: ${card.expiresAt.toDate().toLocaleDateString()}` : '';
+            cardEl.innerHTML = `<div class="w-full h-[200px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" style="background-image: url('${card.backgroundUrl}'); text-shadow: 1px 1px 3px rgba(0,0,0,0.6);"><div class="flex justify-between items-start"><img src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white" /><div class="text-right"><p class="font-parisienne text-3xl">Gift Card</p><p class="text-xs font-semibold tracking-wider">Nails Express</p></div></div><div class="text-center"><p class="text-5xl font-bold">$${card.balance.toFixed(2)}</p></div><div class="text-xs"><div class="flex justify-between font-semibold"><span>FOR: <span class="font-normal">${card.recipientName}</span></span><span>FROM: <span class="font-normal">${card.senderName}</span></span></div><p class="mt-2 text-center font-mono tracking-widest text-sm">${card.code}</p><p class="mt-1 text-center text-[10px] opacity-80" style="display:${expiryText ? 'block' : 'none'}">${expiryText}</p></div></div><div class="flex justify-between items-center pt-2"><span class="px-2 py-1 text-xs font-semibold rounded-full ${card.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${card.status}</span><div class="flex gap-2"><button data-card-id="${card.id}" class="download-card-btn text-gray-500 hover:text-blue-600" title="Download/Print"><i class="fas fa-download"></i></button><button data-card-id="${card.id}" class="share-card-btn text-gray-500 hover:text-pink-600" title="Share"><i class="fas fa-share-alt"></i></button></div></div>`;
+            container.appendChild(cardEl);
+        });
+    };
+    renderClientMembership(clientData);
+    const setupClientTabs = () => {
+        const tabs = document.getElementById('client-dashboard-tabs');
+        tabs.addEventListener('click', (e) => {
+            const button = e.target.closest('button');
+            if (!button) return;
+            document.querySelectorAll('#client-dashboard-tabs .tab-btn').forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            document.querySelectorAll('.client-tab-content').forEach(content => content.classList.add('hidden'));
+            document.getElementById(button.id.replace('-tab', '-content')).classList.remove('hidden');
+        });
+    };
+    const renderClientAppointments = (appointments) => {
+        const container = document.getElementById('client-upcoming-appointments');
+        container.innerHTML = '';
+        const upcoming = appointments.filter(a => a.appointmentTimestamp.toDate() > new Date());
+        if (upcoming.length === 0) {
+            container.innerHTML = '<p class="text-gray-500">You have no upcoming appointments.</p>';
+            return;
+        }
+        upcoming.forEach(appt => {
+            const el = document.createElement('div');
+            el.className = 'bg-white p-4 rounded-lg shadow';
+            el.innerHTML = `<p class="font-bold">${new Date(appt.appointmentTimestamp.seconds * 1000).toLocaleString()}</p><p>${appt.services.join(', ')}</p><p class="text-sm text-gray-600">With: ${appt.technician}</p>`;
+            container.appendChild(el);
+        });
+    };
+    const renderClientHistory = (history) => {
+        const container = document.getElementById('client-appointment-history');
+        container.innerHTML = '';
+        if (history.length === 0) {
+            container.innerHTML = '<p class="text-gray-500">You have no past appointments.</p>';
+            return;
+        }
+        history.forEach(visit => {
+            const el = document.createElement('div');
+            el.className = 'bg-white p-4 rounded-lg shadow';
+            el.innerHTML = `<p class="font-bold">${new Date(visit.checkOutTimestamp.seconds * 1000).toLocaleDateString()}</p><p>${visit.services}</p><p class="text-sm text-gray-600">With: ${visit.technician}</p>${visit.colorCode ? `<p class="text-sm text-gray-600">Color: ${visit.colorCode}</p>` : ''}`;
+            container.appendChild(el);
+        });
+    };
+    const calculateAndRenderFavorites = (history) => {
+        if (history.length === 0) return;
+        const techCounts = history.reduce((acc, visit) => {
+            if (visit.technician) acc[visit.technician] = (acc[visit.technician] || 0) + 1;
+            return acc;
+        }, {});
+        const colorCounts = history.reduce((acc, visit) => {
+            if (visit.colorCode) acc[visit.colorCode] = (acc[visit.colorCode] || 0) + 1;
+            return acc;
+        }, {});
+        const favTech = Object.keys(techCounts).length > 0 ? Object.keys(techCounts).reduce((a, b) => techCounts[a] > techCounts[b] ? a : b) : 'N/A';
+        const favColor = Object.keys(colorCounts).length > 0 ? Object.keys(colorCounts).reduce((a, b) => colorCounts[a] > colorCounts[b] ? a : b) : 'N/A';
+        document.getElementById('favorite-technician').textContent = favTech;
+        document.getElementById('favorite-color').textContent = favColor;
+    };
+    onSnapshot(query(collection(db, "appointments"), where("name", "==", clientData.name)), (snapshot) => {
+        const appointments = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+        renderClientAppointments(appointments);
+    });
+    onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientData.name), orderBy("checkOutTimestamp", "desc")), (snapshot) => {
+        const history = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+        allFinishedClients = history;
+        renderClientHistory(history);
+        calculateAndRenderFavorites(history);
+    });
+    let allClientGiftCards = [];
+    onSnapshot(query(collection(db, "gift_cards"), where("createdBy", "==", clientId), orderBy("createdAt", "desc")), (snapshot) => {
+        allClientGiftCards = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+        renderClientGiftCards(allClientGiftCards);
+    });
+    document.getElementById('client-gift-cards-container').addEventListener('click', (e) => {
+        const downloadBtn = e.target.closest('.download-card-btn');
+        const shareBtn = e.target.closest('.share-card-btn');
+        if (downloadBtn) {
+            const cardId = downloadBtn.dataset.cardId;
+            const card = allClientGiftCards.find(c => c.id === cardId);
+            if (card) openCardForPrint(card);
+        }
+        if (shareBtn) {
+            const cardId = shareBtn.dataset.cardId;
+            const card = allClientGiftCards.find(c => c.id === cardId);
+            if (card) {
+                if (navigator.share) {
+                    navigator.share({ title: 'Nails Express Gift Card', text: `Check out this gift card for Nails Express! Code: ${card.code}`, url: window.location.href, }).catch(console.error);
+                } else { alert('Sharing is not supported on this browser. Try the download button!'); }
+            }
+        }
+    });
+    clientDashboardContent.addEventListener('click', (e) => {
+        const joinBtn = e.target.closest('.join-membership-btn');
+        if (joinBtn) { openMembershipPurchaseModal(null, clientData); }
+    });
+    document.getElementById('client-membership-display').addEventListener('click', (e) => {
+        const downloadBtn = e.target.closest('.download-membership-btn');
+        const shareBtn = e.target.closest('.share-membership-btn');
+        if (downloadBtn) {
+            const tier = allMembershipTiers.find(t => t.id === clientData.membership.tierId);
+            if (clientData && tier) { openMembershipCardForPrint(clientData, tier); }
+        }
+        if (shareBtn) {
+            const tier = allMembershipTiers.find(t => t.id === clientData.membership.tierId);
+            if (navigator.share && clientData && tier) {
+                navigator.share({ title: 'Nails Express VIP Membership', text: `Check out my ${tier.name} VIP Membership at Nails Express!`, url: window.location.href, }).catch(console.error);
+            } else { alert('Sharing is not supported on this browser. Try the download button!'); }
+        }
+    });
+    document.getElementById('client-book-new-btn').addEventListener('click', () => {
+        openAddAppointmentModal(getLocalDateString(), clientData);
+    });
+    document.getElementById('client-buy-gift-card-btn').addEventListener('click', () => {
+        openPurchaseModalForClient(clientData);
+    });
+    setupClientTabs();
+}
 // **** REPLACE your entire onAuthStateChanged function with this one ****
 
 onAuthStateChanged(auth, async (user) => {
@@ -540,12 +933,12 @@ onAuthStateChanged(auth, async (user) => {
                             const details = JSON.parse(pendingPurchaseJSON);
                             newClientData = { name: details.buyerName, email: details.buyerEmail, phone: details.buyerPhone, role: 'client', createdAt: serverTimestamp() };
                             await setDoc(doc(db, "clients", user.uid), newClientData);
-                        
+
                             const batch = writeBatch(db);
                             const expiryDate = new Date();
                             expiryDate.setMonth(expiryDate.getMonth() + 6);
                             const buyerInfo = { name: details.buyerName, email: details.buyerEmail, phone: details.buyerPhone };
-                        
+
                             for (let i = 0; i < details.quantity; i++) {
                                 const cardData = {
                                     amount: details.amount, balance: details.amount, history: [],
@@ -589,7 +982,7 @@ onAuthStateChanged(auth, async (user) => {
                                 return;
                             }
                         }
-                        
+
                         loadingScreen.style.display = 'none';
                         landingPageContent.style.display = 'none';
                         appContent.style.display = 'none';
@@ -610,418 +1003,6 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// **** PASTE THESE TWO FUNCTIONS into your script ****
-
-const renderClientMembership = (clientData) => {
-    const container = document.getElementById('client-membership-display');
-    if (!container) return;
-
-    if (clientData.membership && allMembershipTiers.length > 0) {
-        const tier = allMembershipTiers.find(t => t.id === clientData.membership.tierId);
-        if (tier) {
-            let startDate = new Date().toLocaleDateString();
-            if (clientData.membership.startDate && typeof clientData.membership.startDate.toDate === 'function') {
-                startDate = clientData.membership.startDate.toDate().toLocaleDateString();
-            }
-            const benefitsList = tier.benefits.split('\n').map(b => `<li class="flex items-start"><span class="text-green-500 mr-2">✔</span><span>${b}</span></li>`).join('');
-            const status = clientData.membership.status || 'Active';
-            const statusColor = status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
-            let cardStyle = 'from-gray-700 via-gray-900 to-black';
-            if (tier.name.toLowerCase().includes('silver')) cardStyle = 'from-gray-400 via-gray-500 to-gray-600';
-            if (tier.name.toLowerCase().includes('gold')) cardStyle = 'from-yellow-400 via-yellow-500 to-yellow-600';
-            if (tier.name.toLowerCase().includes('platinum')) cardStyle = 'from-indigo-500 via-purple-600 to-pink-600';
-
-            container.innerHTML = `
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                    <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-lg">
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <h3 class="text-2xl font-bold text-pink-700 flex items-end gap-3">
-                                    <span>💎 ${tier.name} Tier</span>
-                                    <span class="text-xl font-bold text-gray-600">$${tier.price}/month</span>
-                                </h3>
-                                <p class="text-sm text-gray-500">Member since ${startDate}</p>
-                            </div>
-                            <span class="px-3 py-1 text-sm font-semibold rounded-full ${statusColor}">${status}</span>
-                        </div>
-                        <div>
-                            <h4 class="font-semibold text-gray-800 mb-2">Your Benefits:</h4>
-                            <ul class="space-y-2 text-gray-700">${benefitsList}</ul>
-                        </div>
-                        ${status === 'Pending' ? '<p class="mt-4 text-center text-sm bg-yellow-100 text-yellow-800 p-3 rounded-lg">Your membership is pending approval. Please contact the salon to complete payment and activate your benefits.</p>' : ''}
-                    </div>
-                    <div class="space-y-3">
-                        <div class="w-full h-[200px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-gradient-to-br ${cardStyle} text-white" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.4);">
-                            <div class="flex justify-between items-start"><div class="font-bold text-lg"><p>${tier.name}</p><p class="text-xs font-normal opacity-80">MEMBERSHIP</p></div><p class="font-parisienne text-3xl">Nails Express</p></div>
-                            <div class="text-center"><p class="font-bold text-lg">${tier.discount}% off all additional services.</p></div>
-                            <div class="flex justify-between items-end"><div class="text-left"><p class="text-xs opacity-80">MEMBER</p><p class="text-xl font-semibold tracking-wider">${clientData.name}</p></div><div class="text-right text-xs opacity-80">Since: ${startDate}</div></div>
-                        </div>
-                        <div class="flex justify-between items-center pt-2 px-2">
-                            <span class="text-sm text-gray-500">Your digital card</span>
-                            <div class="flex gap-4">
-                                <button data-client-id="${clientData.id}" class="download-membership-btn text-gray-500 hover:text-blue-600 text-xl" title="Download/Print"><i class="fas fa-download"></i></button>
-                                <button data-client-id="${clientData.id}" class="share-membership-btn text-gray-500 hover:text-pink-600 text-xl" title="Share"><i class="fas fa-share-alt"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
-        } else { container.innerHTML = '<p class="text-gray-500 text-center col-span-full">Your membership tier could not be found. Please contact the salon.</p>'; }
-    } else {
-        container.innerHTML = `<div class="text-center p-8 bg-gray-50 rounded-lg"><h3 class="text-xl font-semibold text-gray-700">You are not a member yet.</h3><p class="text-gray-500 mt-2 mb-4">Join our VIP program to enjoy exclusive discounts and benefits!</p><button class="join-membership-btn bg-pink-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-pink-700">Join Our Membership</button></div>`;
-    }
-};
-
-async function initClientDashboard(clientId, clientData) {
-    const featuresDoc = await getDoc(doc(db, "settings", "features"));
-    const features = featuresDoc.exists() ? featuresDoc.data() : { showGiftCards: true, showMemberships: true };
-    const giftCardTab = document.getElementById('gift-cards-tab')?.parentElement;
-    const giftCardContent = document.getElementById('gift-cards-content');
-    if (features.showGiftCards === false) {
-        if (giftCardTab) giftCardTab.classList.add('hidden');
-        if (giftCardContent) giftCardContent.classList.add('hidden');
-    } else { if (giftCardTab) giftCardTab.classList.remove('hidden'); }
-    const membershipTab = document.getElementById('membership-tab')?.parentElement;
-    const membershipContent = document.getElementById('membership-content');
-    if (features.showMemberships === false) {
-        if (membershipTab) membershipTab.classList.add('hidden');
-        if (membershipContent) membershipContent.classList.add('hidden');
-    } else { if (membershipTab) membershipTab.classList.remove('hidden'); }
-
-    document.getElementById('client-welcome-name').textContent = `Welcome back, ${clientData.name}!`;
-    document.getElementById('client-sign-out-btn').addEventListener('click', () => signOut(auth));
-    const openPurchaseModalForClient = (client) => {
-        const purchaseModal = document.getElementById('gift-card-purchase-modal');
-        const userInfoSection = document.getElementById('gc-user-info-section');
-        initializeLandingGiftCardDesigner();
-        if (userInfoSection) { userInfoSection.classList.add('hidden'); }
-        document.getElementById('gc-buyer-name').value = client.name;
-        document.getElementById('gc-buyer-name').readOnly = true;
-        document.getElementById('gc-buyer-phone').value = client.phone || '';
-        document.getElementById('gc-buyer-phone').readOnly = true;
-        document.getElementById('gc-buyer-email').value = clientData.email;
-        document.getElementById('gc-buyer-email').readOnly = true;
-        purchaseModal.classList.remove('hidden');
-    };
-    const openCardForPrint = (card) => {
-        const expiryText = card.expiresAt ? `Expires: ${card.expiresAt.toDate().toLocaleDateString()}` : '';
-        const cardHTML = `<html><head><title>Your Gift Card ${card.code}</title><script src="https://cdn.tailwindcss.com"><\/script><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&family=Parisienne&display=swap" rel="stylesheet"><style>body{font-family:'Poppins',sans-serif;display:flex;align-items:center;justify-content:center;margin:0;background-color:#f0f0f0;}.font-parisienne{font-family:'Parisienne',cursive;}.card{text-shadow:1px 1px 3px rgba(0,0,0,0.6);}</style></head><body><div class="card w-[400px] h-[228px] rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" style="background-image: url('${card.backgroundUrl}');"><div class="flex justify-between items-start"><img src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white" /><div class="text-right"><p class="font-parisienne text-3xl">Gift Card</p><p class="text-xs font-semibold tracking-wider">Nails Express</p></div></div><div class="text-center"><p class="text-5xl font-bold">$${card.balance.toFixed(2)}</p></div><div class="text-xs"><div class="flex justify-between font-semibold"><span style="display:${card.recipientName?'inline':'none'}">FOR: <span class="font-normal">${card.recipientName}</span></span><span style="display:${card.senderName?'inline':'none'}">FROM: <span class="font-normal">${card.senderName}</span></span></div><p class="mt-2 text-center font-mono tracking-widest text-sm">${card.code}</p><p class="mt-1 text-center text-[10px] opacity-80" style="display:${expiryText?'block':'none'}">${expiryText}</p></div></div></body></html>`;
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(cardHTML);
-        printWindow.document.close();
-        printWindow.focus();
-    };
-    const renderClientGiftCards = (cards) => {
-        const container = document.getElementById('client-gift-cards-container');
-        if (!container) return;
-        container.innerHTML = '';
-        if (cards.length === 0) {
-            container.innerHTML = '<p class="text-gray-500 text-center col-span-full">You do not have any gift cards.</p>';
-            return;
-        }
-        cards.forEach(card => {
-            const cardEl = document.createElement('div');
-            cardEl.className = 'bg-white p-3 rounded-lg shadow-md space-y-3';
-            const expiryText = card.expiresAt ? `Expires: ${card.expiresAt.toDate().toLocaleDateString()}` : '';
-            cardEl.innerHTML = `<div class="w-full h-[200px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" style="background-image: url('${card.backgroundUrl}'); text-shadow: 1px 1px 3px rgba(0,0,0,0.6);"><div class="flex justify-between items-start"><img src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white" /><div class="text-right"><p class="font-parisienne text-3xl">Gift Card</p><p class="text-xs font-semibold tracking-wider">Nails Express</p></div></div><div class="text-center"><p class="text-5xl font-bold">$${card.balance.toFixed(2)}</p></div><div class="text-xs"><div class="flex justify-between font-semibold"><span>FOR: <span class="font-normal">${card.recipientName}</span></span><span>FROM: <span class="font-normal">${card.senderName}</span></span></div><p class="mt-2 text-center font-mono tracking-widest text-sm">${card.code}</p><p class="mt-1 text-center text-[10px] opacity-80" style="display:${expiryText?'block':'none'}">${expiryText}</p></div></div><div class="flex justify-between items-center pt-2"><span class="px-2 py-1 text-xs font-semibold rounded-full ${card.status==='Active'?'bg-green-100 text-green-800':'bg-yellow-100 text-yellow-800'}">${card.status}</span><div class="flex gap-2"><button data-card-id="${card.id}" class="download-card-btn text-gray-500 hover:text-blue-600" title="Download/Print"><i class="fas fa-download"></i></button><button data-card-id="${card.id}" class="share-card-btn text-gray-500 hover:text-pink-600" title="Share"><i class="fas fa-share-alt"></i></button></div></div>`;
-            container.appendChild(cardEl);
-        });
-    };
-    renderClientMembership(clientData);
-    const setupClientTabs = () => {
-        const tabs = document.getElementById('client-dashboard-tabs');
-        tabs.addEventListener('click', (e) => {
-            const button = e.target.closest('button');
-            if (!button) return;
-            document.querySelectorAll('#client-dashboard-tabs .tab-btn').forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            document.querySelectorAll('.client-tab-content').forEach(content => content.classList.add('hidden'));
-            document.getElementById(button.id.replace('-tab', '-content')).classList.remove('hidden');
-        });
-    };
-    const renderClientAppointments = (appointments) => {
-        const container = document.getElementById('client-upcoming-appointments');
-        container.innerHTML = '';
-        const upcoming = appointments.filter(a => a.appointmentTimestamp.toDate() > new Date());
-        if (upcoming.length === 0) {
-            container.innerHTML = '<p class="text-gray-500">You have no upcoming appointments.</p>';
-            return;
-        }
-        upcoming.forEach(appt => {
-            const el = document.createElement('div');
-            el.className = 'bg-white p-4 rounded-lg shadow';
-            el.innerHTML = `<p class="font-bold">${new Date(appt.appointmentTimestamp.seconds * 1000).toLocaleString()}</p><p>${appt.services.join(', ')}</p><p class="text-sm text-gray-600">With: ${appt.technician}</p>`;
-            container.appendChild(el);
-        });
-    };
-    const renderClientHistory = (history) => {
-         const container = document.getElementById('client-appointment-history');
-        container.innerHTML = '';
-        if (history.length === 0) {
-            container.innerHTML = '<p class="text-gray-500">You have no past appointments.</p>';
-            return;
-        }
-        history.forEach(visit => {
-            const el = document.createElement('div');
-            el.className = 'bg-white p-4 rounded-lg shadow';
-            el.innerHTML = `<p class="font-bold">${new Date(visit.checkOutTimestamp.seconds * 1000).toLocaleDateString()}</p><p>${visit.services}</p><p class="text-sm text-gray-600">With: ${visit.technician}</p>${visit.colorCode ? `<p class="text-sm text-gray-600">Color: ${visit.colorCode}</p>` : ''}`;
-            container.appendChild(el);
-        });
-    };
-    const calculateAndRenderFavorites = (history) => {
-        if (history.length === 0) return;
-        const techCounts = history.reduce((acc, visit) => {
-            if (visit.technician) acc[visit.technician] = (acc[visit.technician] || 0) + 1;
-            return acc;
-        }, {});
-        const colorCounts = history.reduce((acc, visit) => {
-            if(visit.colorCode) acc[visit.colorCode] = (acc[visit.colorCode] || 0) + 1;
-            return acc;
-        }, {});
-        const favTech = Object.keys(techCounts).length > 0 ? Object.keys(techCounts).reduce((a, b) => techCounts[a] > techCounts[b] ? a : b) : 'N/A';
-        const favColor = Object.keys(colorCounts).length > 0 ? Object.keys(colorCounts).reduce((a, b) => colorCounts[a] > colorCounts[b] ? a : b) : 'N/A';
-        document.getElementById('favorite-technician').textContent = favTech;
-        document.getElementById('favorite-color').textContent = favColor;
-    };
-    onSnapshot(query(collection(db, "appointments"), where("name", "==", clientData.name)), (snapshot) => {
-        const appointments = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
-        renderClientAppointments(appointments);
-    });
-     onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientData.name), orderBy("checkOutTimestamp", "desc")), (snapshot) => {
-        const history = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
-        allFinishedClients = history;
-        renderClientHistory(history);
-        calculateAndRenderFavorites(history);
-    });
-    let allClientGiftCards = [];
-    onSnapshot(query(collection(db, "gift_cards"), where("createdBy", "==", clientId), orderBy("createdAt", "desc")), (snapshot) => {
-        allClientGiftCards = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-        renderClientGiftCards(allClientGiftCards);
-    });
-    document.getElementById('client-gift-cards-container').addEventListener('click', (e) => {
-        const downloadBtn = e.target.closest('.download-card-btn');
-        const shareBtn = e.target.closest('.share-card-btn');
-        if (downloadBtn) {
-            const cardId = downloadBtn.dataset.cardId;
-            const card = allClientGiftCards.find(c => c.id === cardId);
-            if (card) openCardForPrint(card);
-        }
-        if (shareBtn) {
-            const cardId = shareBtn.dataset.cardId;
-            const card = allClientGiftCards.find(c => c.id === cardId);
-            if (card) {
-                if (navigator.share) {
-                    navigator.share({ title: 'Nails Express Gift Card', text: `Check out this gift card for Nails Express! Code: ${card.code}`, url: window.location.href, }).catch(console.error);
-                } else { alert('Sharing is not supported on this browser. Try the download button!'); }
-            }
-        }
-    });
-    clientDashboardContent.addEventListener('click', (e) => {
-        const joinBtn = e.target.closest('.join-membership-btn');
-        if (joinBtn) { openMembershipPurchaseModal(null, clientData); }
-    });
-    document.getElementById('client-membership-display').addEventListener('click', (e) => {
-        const downloadBtn = e.target.closest('.download-membership-btn');
-        const shareBtn = e.target.closest('.share-membership-btn');
-        if (downloadBtn) {
-            const tier = allMembershipTiers.find(t => t.id === clientData.membership.tierId);
-            if (clientData && tier) { openMembershipCardForPrint(clientData, tier); }
-        }
-        if (shareBtn) {
-            const tier = allMembershipTiers.find(t => t.id === clientData.membership.tierId);
-            if (navigator.share && clientData && tier) {
-                navigator.share({ title: 'Nails Express VIP Membership', text: `Check out my ${tier.name} VIP Membership at Nails Express!`, url: window.location.href, }).catch(console.error);
-            } else { alert('Sharing is not supported on this browser. Try the download button!'); }
-        }
-    });
-    document.getElementById('client-book-new-btn').addEventListener('click', () => {
-        openAddAppointmentModal(getLocalDateString(), clientData);
-    });
-    document.getElementById('client-buy-gift-card-btn').addEventListener('click', () => {
-        openPurchaseModalForClient(clientData);
-    });
-    setupClientTabs();
-}
-
-// REPLACE your old 'landing-membership-form' submit listener with this one
-
-document.getElementById('landing-membership-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const submitBtn = document.getElementById('landing-ms-submit-btn');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Processing...';
-
-    const tierId = document.getElementById('ms-tier-select').value;
-    const tier = allMembershipTiers.find(t => t.id === tierId);
-
-    if (!tier) {
-        alert("Please select a valid membership tier.");
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Submit Membership Request';
-        return;
-    }
-
-    try {
-        // SCENARIO 1: USER IS ALREADY LOGGED IN
-        if (currentUserId && auth.currentUser && !auth.currentUser.isAnonymous) {
-            const clientDocRef = doc(db, "clients", currentUserId);
-            const membershipData = {
-                tierId: tier.id,
-                tierName: tier.name,
-                startDate: serverTimestamp(),
-                status: 'Pending'
-            };
-            
-            await updateDoc(clientDocRef, {
-                membership: membershipData
-            });
-
-            alert("Success! Your membership request has been sent. It will be activated once payment is confirmed.");
-            closeMembershipPurchaseModal();
-
-        } else {
-            // SCENARIO 2: NEW VISITOR
-            const name = document.getElementById('ms-buyer-name').value;
-            const email = document.getElementById('ms-buyer-email').value;
-            const phone = document.getElementById('ms-buyer-phone').value;
-            
-            if (!name || !email || !phone) {
-                alert("Please fill out all your information to create an account.");
-                throw new Error("Missing buyer info");
-            }
-            
-            sessionStorage.setItem('pendingMembershipPurchase', tierId);
-            sessionStorage.setItem('signupDetails', JSON.stringify({ name, email, phone }));
-
-            await createUserWithEmailAndPassword(auth, email, phone);
-            closeMembershipPurchaseModal();
-            // onAuthStateChanged will handle the rest
-        }
-        
-    } catch (error) {
-        if (error.code === 'auth/email-already-in-use') {
-            alert("An account with this email already exists. Please log in to purchase a membership.");
-        } else {
-            console.error("Error during membership purchase:", error);
-            alert(`Could not process your request. Error: ${error.message}`);
-        }
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Submit Membership Request';
-    }
-});
-
-// *** ADD THIS CORRECTED BLOCK ***
-    const closePurchaseModal = () => {
-        const purchaseModal = document.getElementById('gift-card-purchase-modal');
-        const userInfoSection = document.getElementById('gc-user-info-section');
-        purchaseModal.classList.add('hidden');
-        // Reset the form fields for the next user
-        document.getElementById('gc-buyer-name').disabled = false;
-        document.getElementById('gc-buyer-phone').disabled = false;
-        document.getElementById('gc-buyer-email').disabled = false;
-        // *** SHOW the user info section again for the next user ***
-        if (userInfoSection) {
-            userInfoSection.classList.remove('hidden');
-        }
-    };
-
-const purchaseForm = document.getElementById('landing-gift-card-form');
-
-   // Located inside initLandingPage()
-purchaseForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const amount = parseFloat(document.getElementById('gc-amount').value);
-    const quantity = parseInt(document.getElementById('gc-quantity').value, 10);
-
-    if (isNaN(amount) || amount <= 0 || isNaN(quantity) || quantity <= 0) {
-        alert('Please fill out the gift card amount and quantity correctly.');
-        return;
-    }
-
-    const submitBtn = document.getElementById('landing-gc-submit-btn');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Processing...';
-
-    try {
-        // SCENARIO 1: User is already a logged-in client
-        if (currentUserId && auth.currentUser && !auth.currentUser.isAnonymous) {
-            const batch = writeBatch(db);
-            const expiryDate = new Date();
-            expiryDate.setMonth(expiryDate.getMonth() + 6);
-            
-            const buyerInfo = {
-                name: document.getElementById('gc-buyer-name').value,
-                email: document.getElementById('gc-buyer-email').value,
-                phone: document.getElementById('gc-buyer-phone').value,
-            };
-
-            for (let i = 0; i < quantity; i++) {
-                const cardData = {
-                    amount: amount,
-                    balance: amount,
-                    history: [],
-                    recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerInfo.name,
-                    senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerInfo.name,
-                    backgroundUrl: document.getElementById('landing-gc-preview-card').style.backgroundImage.slice(5, -2),
-                    code: `GC-${Date.now()}-${i}`,
-                    status: 'Pending',
-                    type: 'E-Gift',
-                    createdBy: currentUserId,
-                    buyerInfo: buyerInfo,
-                    createdAt: serverTimestamp(),
-                    expiresAt: Timestamp.fromDate(expiryDate)
-                };
-                const newCardRef = doc(collection(db, "gift_cards"));
-                batch.set(newCardRef, cardData);
-            }
-            await batch.commit();
-            alert("Success! Your gift card request has been sent. It will be activated once payment is confirmed.");
-            // **** FIX FOR LOGGED-IN USER ****
-        closePurchaseModal();
-
-        } else {
-            // SCENARIO 2: New or anonymous user (original flow)
-            const buyerName = document.getElementById('gc-buyer-name').value;
-            const buyerPhone = document.getElementById('gc-buyer-phone').value;
-            const buyerEmail = document.getElementById('gc-buyer-email').value;
-
-            if (!buyerName || !buyerPhone || !buyerEmail) {
-                alert('Please fill out all your information to create an account.');
-                throw new Error("Missing buyer information.");
-            }
-            
-            await createUserWithEmailAndPassword(auth, buyerEmail, buyerPhone);
-            
-            const purchaseDetails = {
-                buyerName, buyerPhone, buyerEmail, amount, quantity,
-                recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerName,
-                senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerName,
-                backgroundUrl: document.getElementById('landing-gc-preview-card').style.backgroundImage.slice(5, -2),
-            };
-            sessionStorage.setItem('pendingGiftCardPurchase', JSON.stringify(purchaseDetails));
-            // onAuthStateChanged will handle the rest
-             // **** FIX FOR NEW USER ****
-        closePurchaseModal();
-
-        }
-    } catch (error) {
-        if (error.code === 'auth/email-already-in-use') {
-            alert("An account with this email already exists. Please log in to purchase a gift card.");
-        } else {
-            console.error("Error during gift card purchase:", error);
-            alert(`Could not process your request. Error: ${error.message}`);
-        }
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Submit Purchase Request';
-        // Re-enable form fields that might have been disabled
-        document.getElementById('gc-buyer-name').disabled = false;
-        document.getElementById('gc-buyer-phone').disabled = false;
-        document.getElementById('gc-buyer-email').disabled = false;
-    }
-
-});
-
 // --- LANDING PAGE SCRIPT ---
 function initLandingPage() {
     const signupLoginModal = document.getElementById('signup-login-modal');
@@ -1034,11 +1015,11 @@ function initLandingPage() {
     // **** ADD THIS LINE ****
     renderMembershipTiers(allMembershipTiers, 'landing-memberships-container', false);
     // **** END OF FIX ****
-// --- NEW E-COMMERCE GIFT CARD LOGIC ---
+    // --- NEW E-COMMERCE GIFT CARD LOGIC ---
     const purchaseModal = document.getElementById('gift-card-purchase-modal');
     const buyGiftCardBtn = document.getElementById('buy-gift-card-btn');
     const closePurchaseModalBtn = document.getElementById('close-gift-card-purchase-modal-btn');
-    
+
     const previewCard = document.getElementById('landing-gc-preview-card');
 
 
@@ -1050,12 +1031,9 @@ function initLandingPage() {
             openMembershipPurchaseModal(btn.dataset.tierId);
         }
     });
-        
 
 
-    // Listeners for the new modal
-    document.getElementById('close-membership-purchase-modal-btn').addEventListener('click', closeMembershipPurchaseModal);
-    document.getElementById('membership-purchase-modal').querySelector('.modal-overlay').addEventListener('click', closeMembershipPurchaseModal);
+
 
     const updateLandingGiftCardPreview = () => {
         const showTo = document.getElementById('gc-show-to').checked;
@@ -1093,17 +1071,17 @@ function initLandingPage() {
         const backgroundTabs = document.getElementById('landing-gc-background-tabs');
         const backgroundOptions = document.getElementById('landing-gc-background-options');
 
-        backgroundTabs.innerHTML = Object.keys(giftCardBackgrounds).map(cat => 
+        backgroundTabs.innerHTML = Object.keys(giftCardBackgrounds).map(cat =>
             `<button type="button" data-category="${cat}" class="px-3 py-1 text-sm font-medium rounded-t-lg">${cat}</button>`
         ).join('');
 
         const firstTab = backgroundTabs.querySelector('button');
-        if(firstTab) {
-             firstTab.classList.add('bg-gray-200', 'border-gray-300', 'border-b-0');
-             backgroundOptions.innerHTML = giftCardBackgrounds[firstTab.dataset.category].map(url => 
+        if (firstTab) {
+            firstTab.classList.add('bg-gray-200', 'border-gray-300', 'border-b-0');
+            backgroundOptions.innerHTML = giftCardBackgrounds[firstTab.dataset.category].map(url =>
                 `<button type="button" data-bg="${url}" class="w-full h-16 bg-cover bg-center rounded-md border-2 border-transparent hover:border-pink-400" style="background-image: url('${url}')"></button>`
-             ).join('');
-             previewCard.style.backgroundImage = `url('${giftCardBackgrounds[firstTab.dataset.category][0]}')`;
+            ).join('');
+            previewCard.style.backgroundImage = `url('${giftCardBackgrounds[firstTab.dataset.category][0]}')`;
         }
         updateLandingGiftCardPreview();
     };
@@ -1133,13 +1111,13 @@ function initLandingPage() {
     document.getElementById('landing-gc-background-tabs').addEventListener('click', e => {
         const tab = e.target.closest('button');
         if (tab) {
-             document.getElementById('landing-gc-background-tabs').querySelectorAll('button').forEach(t => t.classList.remove('bg-gray-200', 'border-gray-300', 'border-b-0'));
-             tab.classList.add('bg-gray-200', 'border-gray-300', 'border-b-0');
-             const backgroundOptions = document.getElementById('landing-gc-background-options');
-             backgroundOptions.innerHTML = giftCardBackgrounds[tab.dataset.category].map(url => 
+            document.getElementById('landing-gc-background-tabs').querySelectorAll('button').forEach(t => t.classList.remove('bg-gray-200', 'border-gray-300', 'border-b-0'));
+            tab.classList.add('bg-gray-200', 'border-gray-300', 'border-b-0');
+            const backgroundOptions = document.getElementById('landing-gc-background-options');
+            backgroundOptions.innerHTML = giftCardBackgrounds[tab.dataset.category].map(url =>
                 `<button type="button" data-bg="${url}" class="w-full h-16 bg-cover bg-center rounded-md border-2 border-transparent hover:border-pink-400" style="background-image: url('${url}')"></button>`
-             ).join('');
-             previewCard.style.backgroundImage = `url('${giftCardBackgrounds[tab.dataset.category][0]}')`;
+            ).join('');
+            previewCard.style.backgroundImage = `url('${giftCardBackgrounds[tab.dataset.category][0]}')`;
         }
     });
 
@@ -1193,7 +1171,7 @@ function initLandingPage() {
     });
 
 
-const paymentGuideDisplay = document.getElementById('landing-gc-payment-guide');
+    const paymentGuideDisplay = document.getElementById('landing-gc-payment-guide');
     // Load payment guide text into the purchase form
     getDoc(doc(db, "settings", "paymentGuide")).then(docSnap => {
         if (docSnap.exists() && docSnap.data().text) {
@@ -1202,7 +1180,7 @@ const paymentGuideDisplay = document.getElementById('landing-gc-payment-guide');
             paymentGuideDisplay.textContent = 'Please contact the salon to complete your payment.';
         }
     });
-    
+
 
     landingLoginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -1231,9 +1209,9 @@ const paymentGuideDisplay = document.getElementById('landing-gc-payment-guide');
 
         try {
             await signInWithEmailAndPassword(auth, email, password);
-            localStorage.removeItem(emailKey); 
+            localStorage.removeItem(emailKey);
             localStorage.removeItem(lockoutKey);
-            closeAuthModal(); 
+            closeAuthModal();
         } catch (error) {
             let attempts = (parseInt(localStorage.getItem(emailKey)) || 0) + 1;
             if (attempts >= loginSecuritySettings.maxAttempts) {
@@ -1253,59 +1231,59 @@ const paymentGuideDisplay = document.getElementById('landing-gc-payment-guide');
         }
     });
 
-// Located inside initLandingPage()
+    // Located inside initLandingPage()
 
-// REPLACE the landingSignupForm listener with this one
-landingSignupForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = document.getElementById('signup-name').value;
-    const email = document.getElementById('signup-email').value;
-    const password = document.getElementById('signup-password').value;
-    const signupBtn = document.getElementById('landing-signup-btn');
-    const btnText = signupBtn.querySelector('.btn-text');
-    const spinner = signupBtn.querySelector('i');
+    // REPLACE the landingSignupForm listener with this one
+    landingSignupForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('signup-name').value;
+        const email = document.getElementById('signup-email').value;
+        const password = document.getElementById('signup-password').value;
+        const signupBtn = document.getElementById('landing-signup-btn');
+        const btnText = signupBtn.querySelector('.btn-text');
+        const spinner = signupBtn.querySelector('i');
 
-    btnText.textContent = 'Signing Up...';
-    spinner.classList.remove('hidden');
-    signupBtn.disabled = true;
+        btnText.textContent = 'Signing Up...';
+        spinner.classList.remove('hidden');
+        signupBtn.disabled = true;
 
-    try {
-        // Store signup details in session storage before creating user
-        const signupDetails = { name, email, phone: password }; // Using password as phone is a placeholder from your code
-        sessionStorage.setItem('signupDetails', JSON.stringify(signupDetails));
+        try {
+            // Store signup details in session storage before creating user
+            const signupDetails = { name, email, phone: password }; // Using password as phone is a placeholder from your code
+            sessionStorage.setItem('signupDetails', JSON.stringify(signupDetails));
 
-        await createUserWithEmailAndPassword(auth, email, password);
-        // The onAuthStateChanged listener will now handle creating the client document
-        
-        // This was the missing improvement:
-        closeAuthModal(); 
-    } catch (error) {
-        alert(`Sign Up Failed: ${error.message}`);
-        sessionStorage.removeItem('signupDetails'); // Clean up on failure
-    } finally {
-        btnText.textContent = 'Sign Up';
-        spinner.classList.add('hidden');
-        signupBtn.disabled = false;
-    }
-});
+            await createUserWithEmailAndPassword(auth, email, password);
+            // The onAuthStateChanged listener will now handle creating the client document
+
+            // This was the missing improvement:
+            closeAuthModal();
+        } catch (error) {
+            alert(`Sign Up Failed: ${error.message}`);
+            sessionStorage.removeItem('signupDetails'); // Clean up on failure
+        } finally {
+            btnText.textContent = 'Sign Up';
+            spinner.classList.add('hidden');
+            signupBtn.disabled = false;
+        }
+    });
 
     const peopleSelect = document.getElementById('appointment-people-landing');
     for (let i = 1; i <= 20; i++) {
         peopleSelect.appendChild(new Option(i, i));
     }
 
-// REPLACE the onSnapshot in initLandingPage with this getDoc
-const technicianSelect = document.getElementById('appointment-technician-select-landing');
-getDoc(doc(db, "public_data", "technicians")).then(docSnap => {
-    if (docSnap.exists()) {
-        const techNames = docSnap.data().names || [];
-        technicianSelect.innerHTML = '<option>Any Technician</option>';
-        techNames.forEach(name => {
-            technicianSelect.appendChild(new Option(name, name));
-        });
-    }
-});
-    
+    // REPLACE the onSnapshot in initLandingPage with this getDoc
+    const technicianSelect = document.getElementById('appointment-technician-select-landing');
+    getDoc(doc(db, "public_data", "technicians")).then(docSnap => {
+        if (docSnap.exists()) {
+            const techNames = docSnap.data().names || [];
+            technicianSelect.innerHTML = '<option>Any Technician</option>';
+            techNames.forEach(name => {
+                technicianSelect.appendChild(new Option(name, name));
+            });
+        }
+    });
+
     const step1 = document.getElementById('booking-step-1');
     const step2 = document.getElementById('booking-step-2');
     document.getElementById('booking-next-btn').addEventListener('click', () => {
@@ -1320,15 +1298,15 @@ getDoc(doc(db, "public_data", "technicians")).then(docSnap => {
     const servicesContainerLanding = document.getElementById('services-container-landing');
     const hiddenCheckboxContainerLanding = document.getElementById('hidden-checkbox-container-landing');
     let landingServicesData = {};
-    
+
     getDocs(collection(db, "services")).then(servicesSnapshot => {
-        servicesData = {}; 
+        servicesData = {};
         landingServicesData = {};
-        servicesSnapshot.forEach(doc => { 
+        servicesSnapshot.forEach(doc => {
             servicesData[doc.id] = doc.data().items;
-            landingServicesData[doc.id] = doc.data().items; 
+            landingServicesData[doc.id] = doc.data().items;
         });
-        
+
         servicesContainerLanding.innerHTML = '';
         hiddenCheckboxContainerLanding.innerHTML = '';
         Object.keys(landingServicesData).forEach(category => {
@@ -1349,7 +1327,7 @@ getDoc(doc(db, "public_data", "technicians")).then(docSnap => {
 
     const serviceModalLanding = document.getElementById('landing-booking-service-modal');
     const serviceModalContentLanding = document.getElementById('landing-booking-service-modal-content');
-    
+
     servicesContainerLanding.addEventListener('click', (e) => {
         const btn = e.target.closest('.category-button');
         if (btn) {
@@ -1376,7 +1354,7 @@ getDoc(doc(db, "public_data", "technicians")).then(docSnap => {
         });
         serviceModalLanding.classList.add('hidden');
         serviceModalLanding.classList.remove('flex');
-        
+
         document.querySelectorAll('#services-container-landing .category-button').forEach(button => {
             const cat = button.dataset.category;
             const count = hiddenCheckboxContainerLanding.querySelectorAll(`input[data-category="${cat}"]:checked`).length;
@@ -1397,7 +1375,7 @@ getDoc(doc(db, "public_data", "technicians")).then(docSnap => {
             alert('Please select at least one service.');
             return;
         }
-        
+
         const bookingDate = new Date(document.getElementById('appointment-datetime-landing').value);
         const validation = isBookingTimeValid(bookingDate);
         if (!validation.valid) {
@@ -1434,50 +1412,50 @@ getDoc(doc(db, "public_data", "technicians")).then(docSnap => {
         }
     });
 
-// Located inside initLandingPage()
-const updateFeatureVisibility = (settings) => {
-    const showClientRegistration = settings.showClientLogin !== false;
-    const showPromos = settings.showPromotions !== false;
-    const showGiftCards = settings.showGiftCards !== false;
-    const showNailArt = settings.showNailArt !== false;
-    // **** ADD THIS LINE ****
-    const showMemberships = settings.showMemberships !== false;
+    // Located inside initLandingPage()
+    const updateFeatureVisibility = (settings) => {
+        const showClientRegistration = settings.showClientLogin !== false;
+        const showPromos = settings.showPromotions !== false;
+        const showGiftCards = settings.showGiftCards !== false;
+        const showNailArt = settings.showNailArt !== false;
+        // **** ADD THIS LINE ****
+        const showMemberships = settings.showMemberships !== false;
 
-    const signupTab = document.getElementById('signup-tab-btn').parentElement;
-    if (signupTab) {
-         signupTab.style.display = showClientRegistration ? 'block' : 'none';
-    }
-    
-    document.getElementById('promotions-landing').style.display = showPromos ? '' : 'none';
-    document.querySelector('.nav-item-promotions').style.display = showPromos ? '' : 'none';
-    
-    document.getElementById('gift-card-landing').style.display = showGiftCards ? '' : 'none';
-    document.querySelector('.nav-item-gift-card').style.display = showGiftCards ? '' : 'none';
+        const signupTab = document.getElementById('signup-tab-btn').parentElement;
+        if (signupTab) {
+            signupTab.style.display = showClientRegistration ? 'block' : 'none';
+        }
 
-    document.getElementById('nails-idea-landing').style.display = showNailArt ? '' : 'none';
-    document.querySelector('.nav-item-nails-idea').style.display = showNailArt ? '' : 'none';
+        document.getElementById('promotions-landing').style.display = showPromos ? '' : 'none';
+        document.querySelector('.nav-item-promotions').style.display = showPromos ? '' : 'none';
 
-    // **** AND ADD THESE 3 LINES ****
-    const membershipSection = document.getElementById('memberships-landing');
-    const membershipNavLink = document.querySelector('a[href="#memberships-landing"]');
-    if (membershipSection) membershipSection.style.display = showMemberships ? '' : 'none';
-    if (membershipNavLink) membershipNavLink.style.display = showMemberships ? '' : 'none';
-};
-// Located at the end of initLandingPage()
-onSnapshot(doc(db, "settings", "features"), (docSnap) => {
-    if (docSnap.exists()) {
-        updateFeatureVisibility(docSnap.data());
-    } else {
-        // FIX IS HERE: Added showMemberships to the default object
-        updateFeatureVisibility({ 
-            showClientLogin: true, 
-            showPromotions: true, 
-            showGiftCards: true, 
-            showNailArt: true,
-            showMemberships: true 
-        });
-    }
-});
+        document.getElementById('gift-card-landing').style.display = showGiftCards ? '' : 'none';
+        document.querySelector('.nav-item-gift-card').style.display = showGiftCards ? '' : 'none';
+
+        document.getElementById('nails-idea-landing').style.display = showNailArt ? '' : 'none';
+        document.querySelector('.nav-item-nails-idea').style.display = showNailArt ? '' : 'none';
+
+        // **** AND ADD THESE 3 LINES ****
+        const membershipSection = document.getElementById('memberships-landing');
+        const membershipNavLink = document.querySelector('a[href="#memberships-landing"]');
+        if (membershipSection) membershipSection.style.display = showMemberships ? '' : 'none';
+        if (membershipNavLink) membershipNavLink.style.display = showMemberships ? '' : 'none';
+    };
+    // Located at the end of initLandingPage()
+    onSnapshot(doc(db, "settings", "features"), (docSnap) => {
+        if (docSnap.exists()) {
+            updateFeatureVisibility(docSnap.data());
+        } else {
+            // FIX IS HERE: Added showMemberships to the default object
+            updateFeatureVisibility({
+                showClientLogin: true,
+                showPromotions: true,
+                showGiftCards: true,
+                showNailArt: true,
+                showMemberships: true
+            });
+        }
+    });
 }
 
 // --- MAIN CHECK-IN APP SCRIPT ---
@@ -1501,7 +1479,7 @@ function initMainApp(userRole, userName) {
         mobileSidebar.classList.add('translate-x-full');
         mobileSidebarOverlay.classList.add('hidden');
     };
-    
+
     // Build and Populate Navigation Links
     let navHTML = `
         <button class="top-nav-btn relative" data-target="check-in">
@@ -1524,11 +1502,11 @@ function initMainApp(userRole, userName) {
             <button class="top-nav-btn" data-target="setting">Setting</button>
         `;
     }
-    
+
     // Populate both the desktop and mobile navigation containers
     topNavContainer.innerHTML = navHTML;
     mobileNavLinksContainer.innerHTML = navHTML;
-   // --- ADD THIS NEW BLOCK TO ADD THE LOGOUT BUTTON ---
+    // --- ADD THIS NEW BLOCK TO ADD THE LOGOUT BUTTON ---
     const mobileLogoutButtonHTML = `
         <button id="mobile-logout-btn" class="top-nav-btn mt-4 w-full text-left bg-pink-100 text-pink-700">
             <i class="fas fa-sign-out-alt mr-2"></i>Logout
@@ -1546,7 +1524,7 @@ function initMainApp(userRole, userName) {
     if (mobileSidebarOverlay) {
         mobileSidebarOverlay.addEventListener('click', closeSidebar);
     }
-    
+
     // Add listener to close sidebar when a nav link is clicked
     if (mobileNavLinksContainer) {
         mobileNavLinksContainer.addEventListener('click', (e) => {
@@ -1561,7 +1539,7 @@ function initMainApp(userRole, userName) {
             }
         });
     }
-     // --- ADD THIS NEW BLOCK TO MAKE THE LOGOUT BUTTON WORK ---
+    // --- ADD THIS NEW BLOCK TO MAKE THE LOGOUT BUTTON WORK ---
     const mobileLogoutBtn = document.getElementById('mobile-logout-btn');
     if (mobileLogoutBtn) {
         mobileLogoutBtn.addEventListener('click', () => {
@@ -1571,7 +1549,7 @@ function initMainApp(userRole, userName) {
     }
     // --- END: MOBILE MENU LOGIC ---
     // --- END OF NEW BLOCK ---
-     // Personalize the header subtitle
+    // Personalize the header subtitle
     const appSubtitle = document.getElementById('app-subtitle');
     if (appSubtitle) {
         appSubtitle.textContent = `Welcome, ${userName}!`;
@@ -1603,39 +1581,39 @@ function initMainApp(userRole, userName) {
         }
     }
 
-// Located inside initMainApp()
-const updateNavCounts = () => {
-    const checkInCount = allActiveClients.length;
-    if (checkInNavCount) {
-        if (checkInCount > 0) {
-            checkInNavCount.textContent = checkInCount;
-            checkInNavCount.classList.remove('hidden');
-        } else {
-            checkInNavCount.classList.add('hidden');
+    // Located inside initMainApp()
+    const updateNavCounts = () => {
+        const checkInCount = allActiveClients.length;
+        if (checkInNavCount) {
+            if (checkInCount > 0) {
+                checkInNavCount.textContent = checkInCount;
+                checkInNavCount.classList.remove('hidden');
+            } else {
+                checkInNavCount.classList.add('hidden');
+            }
         }
-    }
 
-    // *** FIX IS HERE: Filter for future appointments before counting ***
-    const bookingCount = allAppointments.filter(a => a.appointmentTimestamp.toDate() > new Date()).length;
+        // *** FIX IS HERE: Filter for future appointments before counting ***
+        const bookingCount = allAppointments.filter(a => a.appointmentTimestamp.toDate() > new Date()).length;
 
-    if (bookingNavCount) {
-        if (bookingCount > 0) {
-            bookingNavCount.textContent = bookingCount;
-            bookingNavCount.classList.remove('hidden');
-        } else {
-            bookingNavCount.classList.add('hidden');
+        if (bookingNavCount) {
+            if (bookingCount > 0) {
+                bookingNavCount.textContent = bookingCount;
+                bookingNavCount.classList.remove('hidden');
+            } else {
+                bookingNavCount.classList.add('hidden');
+            }
         }
-    }
-};
+    };
     const updateNotificationDisplay = () => {
         const unreadCount = notifications.filter(n => !n.read).length;
         notificationCount.textContent = unreadCount;
         notificationCount.style.display = unreadCount > 0 ? 'block' : 'none';
 
-        notificationDropdown.innerHTML = notifications.length === 0 
-            ? '<div class="p-4 text-center text-sm text-gray-500">No new notifications</div>' 
+        notificationDropdown.innerHTML = notifications.length === 0
+            ? '<div class="p-4 text-center text-sm text-gray-500">No new notifications</div>'
             : '';
-        
+
         notifications.forEach(n => {
             const item = document.createElement('div');
             item.className = `notification-item ${!n.read ? 'font-bold bg-pink-50' : ''}`;
@@ -1654,7 +1632,7 @@ const updateNavCounts = () => {
         void bellIcon.offsetWidth;
         bellIcon.classList.add('ring-animation');
     };
-    
+
     dashboardContent.classList.remove('hidden');
     mainAppContainer.classList.add('hidden');
 
@@ -1664,60 +1642,60 @@ const updateNavCounts = () => {
         topNav.querySelectorAll('.top-nav-btn').forEach(btn => btn.classList.remove('active'));
     });
 
-// NEW Reusable Navigation Function
-const navigateToSection = (target) => {
-    // De-activate all buttons in both desktop and mobile nav
-    document.querySelectorAll('#top-nav .top-nav-btn, #mobile-nav-links .top-nav-btn').forEach(btn => {
-        btn.classList.remove('active');
+    // NEW Reusable Navigation Function
+    const navigateToSection = (target) => {
+        // De-activate all buttons in both desktop and mobile nav
+        document.querySelectorAll('#top-nav .top-nav-btn, #mobile-nav-links .top-nav-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        // Activate the correct buttons in both navs
+        const desktopBtn = topNavContainer.querySelector(`[data-target="${target}"]`);
+        if (desktopBtn) desktopBtn.classList.add('active');
+        const mobileBtn = mobileNavLinksContainer.querySelector(`[data-target="${target}"]`);
+        if (mobileBtn) mobileBtn.classList.add('active');
+
+        // Switch the main content view
+        dashboardContent.classList.add('hidden');
+        mainAppContainer.classList.remove('hidden');
+        allMainSections.forEach(section => section.classList.add('hidden'));
+
+        switch (target) {
+            case 'check-in':
+                document.getElementById('check-in-section').classList.remove('hidden');
+                document.getElementById('check-in-tab').click();
+                break;
+            case 'booking':
+                document.getElementById('calendar-content').classList.remove('hidden');
+                break;
+            case 'nails-idea':
+                document.getElementById('nails-idea-content').classList.remove('hidden');
+                break;
+            case 'color-chart': // ADD THIS CASE
+                document.getElementById('color-chart-content').classList.remove('hidden');
+                initColorChart();
+                break;
+            case 'report':
+                document.getElementById('reports-content').classList.remove('hidden');
+                document.getElementById('salon-earning-report-tab').click();
+                break;
+            case 'setting':
+                document.getElementById('admin-content').classList.remove('hidden');
+                document.getElementById('user-management-tab').click();
+                // **NEW** Add this line to pre-load memberships for the admin panel
+                if (currentUserRole === 'admin') initMembershipManagement();
+                break;
+        }
+    };
+
+    // NEW Simplified Desktop Nav Listener
+    topNav.addEventListener('click', (e) => {
+        const button = e.target.closest('.top-nav-btn');
+        if (button) {
+            navigateToSection(button.dataset.target);
+        }
     });
 
-    // Activate the correct buttons in both navs
-    const desktopBtn = topNavContainer.querySelector(`[data-target="${target}"]`);
-    if (desktopBtn) desktopBtn.classList.add('active');
-    const mobileBtn = mobileNavLinksContainer.querySelector(`[data-target="${target}"]`);
-    if (mobileBtn) mobileBtn.classList.add('active');
-
-    // Switch the main content view
-    dashboardContent.classList.add('hidden');
-    mainAppContainer.classList.remove('hidden');
-    allMainSections.forEach(section => section.classList.add('hidden'));
-
-    switch (target) {
-        case 'check-in':
-            document.getElementById('check-in-section').classList.remove('hidden');
-            document.getElementById('check-in-tab').click();
-            break;
-        case 'booking':
-            document.getElementById('calendar-content').classList.remove('hidden');
-            break;
-        case 'nails-idea':
-            document.getElementById('nails-idea-content').classList.remove('hidden');
-            break;
-        case 'color-chart': // ADD THIS CASE
-            document.getElementById('color-chart-content').classList.remove('hidden');
-            initColorChart();
-            break;
-        case 'report':
-            document.getElementById('reports-content').classList.remove('hidden');
-            document.getElementById('salon-earning-report-tab').click();
-            break;
-        case 'setting':
-            document.getElementById('admin-content').classList.remove('hidden');
-            document.getElementById('user-management-tab').click();
-            // **NEW** Add this line to pre-load memberships for the admin panel
-            if (currentUserRole === 'admin') initMembershipManagement();
-            break;
-    }
-};
-
-// NEW Simplified Desktop Nav Listener
-topNav.addEventListener('click', (e) => {
-    const button = e.target.closest('.top-nav-btn');
-    if (button) {
-        navigateToSection(button.dataset.target);
-    }
-});
-    
     notificationBell.addEventListener('click', () => {
         notificationDropdown.classList.toggle('hidden');
         if (!notificationDropdown.classList.contains('hidden')) {
@@ -1741,7 +1719,7 @@ topNav.addEventListener('click', (e) => {
     const checkoutModal = document.getElementById('checkout-modal');
     const checkoutForm = document.getElementById('checkout-form');
     const viewDetailModal = document.getElementById('view-detail-modal');
-    
+
     const editEarningModal = document.getElementById('edit-earning-modal');
     const editEarningForm = document.getElementById('edit-earning-form');
     const editSalonEarningModal = document.getElementById('edit-salon-earning-modal');
@@ -1768,7 +1746,7 @@ topNav.addEventListener('click', (e) => {
     const todayCountSpan = document.getElementById('today-count');
     const calendarCountSpan = document.getElementById('calendar-count');
     const processingCountSpan = document.getElementById('processing-count');
-    
+
     const calendarGrid = document.getElementById('calendar');
     const monthYearDisplay = document.getElementById('month-year-display');
     let currentMonth = new Date().getMonth();
@@ -1776,31 +1754,31 @@ topNav.addEventListener('click', (e) => {
 
     let currentTechFilterCalendar = 'All', currentTechFilterActive = 'All', currentTechFilterProcessing = 'All', currentTechFilterFinished = 'All', currentFinishedDateFilter = '';
     let currentEarningTechFilter = 'All', currentEarningDateFilter = '', currentEarningRangeFilter = 'daily',
-    currentDashboardDateFilter = '', currentDashboardRangeFilter = String(new Date().getMonth()),
-    currentStaffDashboardDateFilter = '', currentStaffDashboardRangeFilter = String(new Date().getMonth());
-    
+        currentDashboardDateFilter = '', currentDashboardRangeFilter = String(new Date().getMonth()),
+        currentStaffDashboardDateFilter = '', currentStaffDashboardRangeFilter = String(new Date().getMonth());
+
     let currentDashboardEarningTechFilter = 'All', currentDashboardEarningDateFilter = '', currentDashboardEarningRangeFilter = 'daily';
     let currentSalonEarningDateFilter = '', currentSalonEarningRangeFilter = String(new Date().getMonth()), currentExpenseMonthFilter = '', currentDashboardApptTechFilter = 'All';
 
-   // ... other variables
+    // ... other variables
     let aggregatedClients = [], allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [], allInventoryUsage = [], allGiftCards = [], allPromotions = [], allServicesList = [], technicianColorMap = {}, sentReminderIds = [], allMemberships = [], currentRotation = 0;
-// ... more variables
+    // ... more variables
     let techniciansAndStaff = [], technicians = [];
     let allExpenseCategories = [], allPaymentAccounts = [], allSuppliers = [];
-// ADD THIS ENTIRE NEW BLOCK for the lightbox
-const nailIdeaLightbox = document.getElementById('nail-idea-lightbox');
-const lightboxCloseBtn = document.getElementById('lightbox-close-btn');
-const lightboxPrevBtn = document.getElementById('lightbox-prev-btn');
-const lightboxNextBtn = document.getElementById('lightbox-next-btn');
-const lightboxImage = document.getElementById('lightbox-image');
-const lightboxTitle = document.getElementById('lightbox-title');
-const lightboxShape = document.getElementById('lightbox-shape');
-const lightboxColor = document.getElementById('lightbox-color');
-const lightboxCategories = document.getElementById('lightbox-categories');
-const lightboxDescription = document.getElementById('lightbox-description'); // ADD THIS LINE
-let currentLightboxIndex = 0;
-let currentGalleryData = [];
-    
+    // ADD THIS ENTIRE NEW BLOCK for the lightbox
+    const nailIdeaLightbox = document.getElementById('nail-idea-lightbox');
+    const lightboxCloseBtn = document.getElementById('lightbox-close-btn');
+    const lightboxPrevBtn = document.getElementById('lightbox-prev-btn');
+    const lightboxNextBtn = document.getElementById('lightbox-next-btn');
+    const lightboxImage = document.getElementById('lightbox-image');
+    const lightboxTitle = document.getElementById('lightbox-title');
+    const lightboxShape = document.getElementById('lightbox-shape');
+    const lightboxColor = document.getElementById('lightbox-color');
+    const lightboxCategories = document.getElementById('lightbox-categories');
+    const lightboxDescription = document.getElementById('lightbox-description'); // ADD THIS LINE
+    let currentLightboxIndex = 0;
+    let currentGalleryData = [];
+
     let confirmCallback = null;
     const showConfirmModal = (message, onConfirm, confirmText = 'Delete') => {
         confirmModalMessage.textContent = message;
@@ -1824,55 +1802,55 @@ let currentGalleryData = [];
     document.querySelector('.confirm-modal-overlay').addEventListener('click', closeConfirmModal);
 
     const initializeChart = (chartInstance, ctx, type, data, options) => {
-        if (chartInstance) { chartInstance.data = data; chartInstance.options = options; chartInstance.update(); } 
+        if (chartInstance) { chartInstance.data = data; chartInstance.options = options; chartInstance.update(); }
         else { chartInstance = new Chart(ctx, { type, data, options }); }
         return chartInstance;
     };
-    
-// REPLACE the old getDateRange function with this one
-const getDateRange = (filter, specificDate = null) => {
-    const now = new Date();
-    let startDate, endDate = new Date(now);
 
-    if (filter === 'daily' || filter === 'today') {
-        const dateToUse = specificDate ? new Date(specificDate + 'T00:00:00') : now;
-        startDate = new Date(dateToUse.getFullYear(), dateToUse.getMonth(), dateToUse.getDate());
-        endDate = new Date(dateToUse.getFullYear(), dateToUse.getMonth(), dateToUse.getDate(), 23, 59, 59, 999);
+    // REPLACE the old getDateRange function with this one
+    const getDateRange = (filter, specificDate = null) => {
+        const now = new Date();
+        let startDate, endDate = new Date(now);
+
+        if (filter === 'daily' || filter === 'today') {
+            const dateToUse = specificDate ? new Date(specificDate + 'T00:00:00') : now;
+            startDate = new Date(dateToUse.getFullYear(), dateToUse.getMonth(), dateToUse.getDate());
+            endDate = new Date(dateToUse.getFullYear(), dateToUse.getMonth(), dateToUse.getDate(), 23, 59, 59, 999);
+            return { startDate, endDate };
+        }
+
+        switch (filter) {
+            case 'this_week':
+                const firstDayOfWeek = now.getDate() - now.getDay();
+                startDate = new Date(now.setDate(firstDayOfWeek));
+                startDate.setHours(0, 0, 0, 0);
+                endDate = new Date(startDate);
+                endDate.setDate(startDate.getDate() + 6);
+                endDate.setHours(23, 59, 59, 999);
+                break;
+            case 'this_month':
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+                break;
+            case 'this_year':
+                startDate = new Date(now.getFullYear(), 0, 1);
+                endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+                break;
+            case 'last-year':
+                const lastYear = now.getFullYear() - 1;
+                startDate = new Date(lastYear, 0, 1);
+                endDate = new Date(lastYear, 11, 31, 23, 59, 59, 999);
+                break;
+            default: // Monthly filter
+                if (!isNaN(parseInt(filter))) {
+                    const month = parseInt(filter, 10);
+                    startDate = new Date(now.getFullYear(), month, 1);
+                    endDate = new Date(now.getFullYear(), month + 1, 0, 23, 59, 59, 999);
+                }
+                break;
+        }
         return { startDate, endDate };
-    }
-
-    switch (filter) {
-        case 'this_week':
-            const firstDayOfWeek = now.getDate() - now.getDay();
-            startDate = new Date(now.setDate(firstDayOfWeek));
-            startDate.setHours(0, 0, 0, 0);
-            endDate = new Date(startDate);
-            endDate.setDate(startDate.getDate() + 6);
-            endDate.setHours(23, 59, 59, 999);
-            break;
-        case 'this_month':
-            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-            endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-            break;
-        case 'this_year':
-            startDate = new Date(now.getFullYear(), 0, 1);
-            endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
-            break;
-         case 'last-year':
-            const lastYear = now.getFullYear() - 1;
-            startDate = new Date(lastYear, 0, 1);
-            endDate = new Date(lastYear, 11, 31, 23, 59, 59, 999);
-            break;
-        default: // Monthly filter
-            if (!isNaN(parseInt(filter))) {
-                const month = parseInt(filter, 10);
-                startDate = new Date(now.getFullYear(), month, 1);
-                endDate = new Date(now.getFullYear(), month + 1, 0, 23, 59, 59, 999);
-            }
-            break;
-    }
-    return { startDate, endDate };
-};
+    };
     // --- NEW DASHBOARD LOGIC ---
     const updateDashboard = () => {
         if (currentUserRole === 'admin') {
@@ -1881,56 +1859,56 @@ const getDateRange = (filter, specificDate = null) => {
             updateStaffDashboard();
         }
     };
-// DELETE the old cardColors array and REPLACE it with this new palette
-const colorPalette = [
-    { card: 'bg-pink-100', text: 'text-pink-800', bg: 'rgba(255, 99, 132, 0.5)', border: 'rgba(255, 99, 132, 1)' },
-    { card: 'bg-blue-100', text: 'text-blue-800', bg: 'rgba(54, 162, 235, 0.5)', border: 'rgba(54, 162, 235, 1)' },
-    { card: 'bg-green-100', text: 'text-green-800', bg: 'rgba(75, 192, 192, 0.5)', border: 'rgba(75, 192, 192, 1)' },
-    { card: 'bg-yellow-100', text: 'text-yellow-800', bg: 'rgba(255, 206, 86, 0.5)', border: 'rgba(255, 206, 86, 1)' },
-    { card: 'bg-purple-100', text: 'text-purple-800', bg: 'rgba(153, 102, 255, 0.5)', border: 'rgba(153, 102, 255, 1)' },
-    { card: 'bg-teal-100', text: 'text-teal-800', bg: 'rgba(32, 201, 151, 0.5)', border: 'rgba(32, 201, 151, 1)' },
-    { card: 'bg-indigo-100', text: 'text-indigo-800', bg: 'rgba(79, 70, 229, 0.5)', border: 'rgba(79, 70, 229, 1)' },
-    { card: 'bg-orange-100', text: 'text-orange-800', bg: 'rgba(255, 159, 64, 0.5)', border: 'rgba(255, 159, 64, 1)' }
-];
+    // DELETE the old cardColors array and REPLACE it with this new palette
+    const colorPalette = [
+        { card: 'bg-pink-100', text: 'text-pink-800', bg: 'rgba(255, 99, 132, 0.5)', border: 'rgba(255, 99, 132, 1)' },
+        { card: 'bg-blue-100', text: 'text-blue-800', bg: 'rgba(54, 162, 235, 0.5)', border: 'rgba(54, 162, 235, 1)' },
+        { card: 'bg-green-100', text: 'text-green-800', bg: 'rgba(75, 192, 192, 0.5)', border: 'rgba(75, 192, 192, 1)' },
+        { card: 'bg-yellow-100', text: 'text-yellow-800', bg: 'rgba(255, 206, 86, 0.5)', border: 'rgba(255, 206, 86, 1)' },
+        { card: 'bg-purple-100', text: 'text-purple-800', bg: 'rgba(153, 102, 255, 0.5)', border: 'rgba(153, 102, 255, 1)' },
+        { card: 'bg-teal-100', text: 'text-teal-800', bg: 'rgba(32, 201, 151, 0.5)', border: 'rgba(32, 201, 151, 1)' },
+        { card: 'bg-indigo-100', text: 'text-indigo-800', bg: 'rgba(79, 70, 229, 0.5)', border: 'rgba(79, 70, 229, 1)' },
+        { card: 'bg-orange-100', text: 'text-orange-800', bg: 'rgba(255, 159, 64, 0.5)', border: 'rgba(255, 159, 64, 1)' }
+    ];
 
     const updateStaffEarningsReport = (filteredData) => {
-    const staffContainer = document.getElementById('staff-earning-cards-container');
-    const ctx = document.getElementById('staff-earnings-chart')?.getContext('2d');
+        const staffContainer = document.getElementById('staff-earning-cards-container');
+        const ctx = document.getElementById('staff-earnings-chart')?.getContext('2d');
 
-    if (!staffContainer || !ctx) return;
+        if (!staffContainer || !ctx) return;
 
-    // Calculate total earnings for each staff member (excluding admin)
-    const staffTotals = {};
-    const staffExcludingAdmins = techniciansAndStaff.filter(user => user.role !== 'admin');
+        // Calculate total earnings for each staff member (excluding admin)
+        const staffTotals = {};
+        const staffExcludingAdmins = techniciansAndStaff.filter(user => user.role !== 'admin');
 
-    staffExcludingAdmins.forEach(staff => {
-        staffTotals[staff.name] = 0; // Initialize
-    });
-
-    filteredData.forEach(earning => {
         staffExcludingAdmins.forEach(staff => {
-            const staffNameLower = staff.name.toLowerCase();
-            if (earning[staffNameLower]) {
-                staffTotals[staff.name] += earning[staffNameLower];
-            }
+            staffTotals[staff.name] = 0; // Initialize
         });
-    });
 
-    // Render Staff Earning Cards using the new palette
-    staffContainer.innerHTML = '';
-    if (staffExcludingAdmins.length === 0) {
-        staffContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">No staff found.</p>';
-    } else {
-        staffExcludingAdmins.forEach((staff, index) => {
-            // --- Calculations ---
-            const totalEarning = staffTotals[staff.name] || 0;
-            const commission = totalEarning * 0.70;
-            const checkPayout = commission * 0.70;
-            const cashPayout = commission * 0.30; // This is the remaining 30% of the commission
+        filteredData.forEach(earning => {
+            staffExcludingAdmins.forEach(staff => {
+                const staffNameLower = staff.name.toLowerCase();
+                if (earning[staffNameLower]) {
+                    staffTotals[staff.name] += earning[staffNameLower];
+                }
+            });
+        });
 
-            // --- HTML Template ---
-            const colorTheme = colorPalette[index % colorPalette.length];
-            const cardHTML = `
+        // Render Staff Earning Cards using the new palette
+        staffContainer.innerHTML = '';
+        if (staffExcludingAdmins.length === 0) {
+            staffContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">No staff found.</p>';
+        } else {
+            staffExcludingAdmins.forEach((staff, index) => {
+                // --- Calculations ---
+                const totalEarning = staffTotals[staff.name] || 0;
+                const commission = totalEarning * 0.70;
+                const checkPayout = commission * 0.70;
+                const cashPayout = commission * 0.30; // This is the remaining 30% of the commission
+
+                // --- HTML Template ---
+                const colorTheme = colorPalette[index % colorPalette.length];
+                const cardHTML = `
                 <div class="dashboard-card ${colorTheme.card} p-4 flex flex-col">
                     <div>
                         <h4 class="font-bold ${colorTheme.text} truncate">${staff.name}</h4>
@@ -1952,243 +1930,243 @@ const colorPalette = [
                     </div>
                 </div>
             `;
-            staffContainer.innerHTML += cardHTML;
-        });
-    }
-    // Render Staff Earnings Chart using the new palette
-    const labels = Object.keys(staffTotals);
-    const data = Object.values(staffTotals);
-
-    // Dynamically create color arrays that match the cards
-    const backgroundColors = labels.map((_, index) => colorPalette[index % colorPalette.length].bg);
-    const borderColors = labels.map((_, index) => colorPalette[index % colorPalette.length].border);
-
-    const chartConfig = {
-        labels,
-        datasets: [{
-            label: 'Total Earnings',
-            data: data,
-            backgroundColor: backgroundColors,
-            borderColor: borderColors,
-            borderWidth: 1
-        }]
-    };
-
-    const chartOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                display: false
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true
-            }
+                staffContainer.innerHTML += cardHTML;
+            });
         }
+        // Render Staff Earnings Chart using the new palette
+        const labels = Object.keys(staffTotals);
+        const data = Object.values(staffTotals);
+
+        // Dynamically create color arrays that match the cards
+        const backgroundColors = labels.map((_, index) => colorPalette[index % colorPalette.length].bg);
+        const borderColors = labels.map((_, index) => colorPalette[index % colorPalette.length].border);
+
+        const chartConfig = {
+            labels,
+            datasets: [{
+                label: 'Total Earnings',
+                data: data,
+                backgroundColor: backgroundColors,
+                borderColor: borderColors,
+                borderWidth: 1
+            }]
+        };
+
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        };
+
+        staffEarningsChart = initializeChart(staffEarningsChart, ctx, 'bar', chartConfig, chartOptions);
     };
 
-    staffEarningsChart = initializeChart(staffEarningsChart, ctx, 'bar', chartConfig, chartOptions);
-};
-        
     // REPLACE the old updateAdminDashboard function with this one
-const updateAdminDashboard = () => {
-    const filter = document.getElementById('dashboard-date-filter').value;
-    const { startDate, endDate } = getDateRange(currentDashboardRangeFilter, currentDashboardDateFilter);
-    if (!startDate) return;
+    const updateAdminDashboard = () => {
+        const filter = document.getElementById('dashboard-date-filter').value;
+        const { startDate, endDate } = getDateRange(currentDashboardRangeFilter, currentDashboardDateFilter);
+        if (!startDate) return;
 
-    const filteredSalonEarnings = allSalonEarnings.filter(e => {
-        const earnDate = e.date.toDate();
-        return earnDate >= startDate && earnDate <= endDate;
-    });
-
-    const filteredAppointments = allAppointments.filter(a => {
-        const apptDate = a.appointmentTimestamp.toDate();
-        return apptDate >= startDate && apptDate <= endDate;
-    });
-
-    const filteredExpenses = allExpenses.filter(ex => {
-        const expDate = ex.date.toDate();
-        return expDate >= startDate && expDate <= endDate;
-    });
-
-    const filteredGiftCards = allGiftCards.filter(gc => {
-        const gcDate = gc.createdAt.toDate();
-        return gcDate >= startDate && gcDate <= endDate;
-    });
-
-    // Card Calculations
-    let totalRevenue = 0;
-    let totalCash = 0;
-    const techEarnings = {};
-
-    filteredSalonEarnings.forEach(earning => {
-        let dailyTotal = 0;
-        techniciansAndStaff.forEach(tech => {
-            const techNameLower = tech.name.toLowerCase();
-            const dailyEarning = earning[techNameLower] || 0;
-            dailyTotal += dailyEarning;
-            techEarnings[tech.name] = (techEarnings[tech.name] || 0) + dailyEarning;
-        });
-        dailyTotal += earning.sellGiftCard || 0;
-        const dailyCash = dailyTotal - ((earning.totalCredit || 0) + (earning.check || 0) + (earning.returnGiftCard || 0) + (earning.venmo || 0) + (earning.square || 0));
-        totalRevenue += dailyTotal;
-        totalCash += dailyCash;
-    });
-
-    document.getElementById('total-salon-revenue-card').textContent = `$${totalRevenue.toFixed(2)}`;
-    document.getElementById('total-salon-cash-card').textContent = `$${totalCash.toFixed(2)}`;
-
-    const topEarningTechnician = Object.keys(techEarnings).reduce((a, b) => techEarnings[a] > techEarnings[b] ? a : b, '-');
-    document.getElementById('top-earning-technician-card').textContent = topEarningTechnician;
-
-    const techBookings = filteredAppointments.reduce((acc, curr) => {
-        if (curr.technician && curr.technician !== 'Any Technician') {
-            acc[curr.technician] = (acc[curr.technician] || 0) + 1;
-        }
-        return acc;
-    }, {});
-    const topBookingTechnician = Object.keys(techBookings).reduce((a, b) => techBookings[a] > techBookings[b] ? a : b, '-');
-    document.getElementById('top-booking-technician-card').textContent = topBookingTechnician;
-
-    // New Card Calculations
-    document.getElementById('total-appointments-card').textContent = allAppointments.length;
-    document.getElementById('total-clients-card').textContent = allClients.length;
-
-    const totalGiftCardValue = filteredGiftCards.reduce((sum, gc) => sum + gc.amount, 0);
-    document.getElementById('total-gift-card-card').textContent = `$${totalGiftCardValue.toFixed(2)}`;
-
-    const totalExpense = filteredExpenses.reduce((sum, ex) => sum + ex.amount, 0);
-    document.getElementById('total-expense-card').textContent = `$${totalExpense.toFixed(2)}`;
-
-    // Render Graph and Upcoming Appointments
-   updateSalonRevenueChart(filteredSalonEarnings, currentDashboardRangeFilter);
-    updateStaffEarningsReport(filteredSalonEarnings); // <-- ADD THIS LINE
-   renderDetailedAppointmentsList('admin-upcoming-appointments-list', allAppointments, currentDashboardApptTechFilter);
-};
-
-
-// REPLACE the old updateStaffDashboard function with this one
-const updateStaffDashboard = () => {
-const filter = document.getElementById('staff-dashboard-date-filter').value;
-const { startDate, endDate } = getDateRange(currentStaffDashboardRangeFilter, currentStaffDashboardDateFilter);
-    if (!startDate) return;
-
-    // --- Calculations for Cards & Graph (This part remains the same) ---
-    const mySalonEarnings = allSalonEarnings.filter(e => {
-        const earnDate = e.date.toDate();
-        return earnDate >= startDate && earnDate <= endDate;
-    });
-
-    const staffNameLower = currentUserName.toLowerCase();
-    let myTotalEarning = 0;
-    mySalonEarnings.forEach(earning => {
-        myTotalEarning += earning[staffNameLower] || 0;
-    });
-
-    const myTotalPayout = myTotalEarning * 0.70;
-    const myCheckPayout = myTotalPayout * 0.70;
-    const myCashPayout = myTotalPayout - myCheckPayout;
-
-   document.getElementById('my-earning-card').textContent = `$${myTotalEarning.toFixed(2)}`;
-    document.getElementById('my-total-payout-card').textContent = `$${myTotalPayout.toFixed(2)}`;
-    document.getElementById('my-cash-payout-card').textContent = `$${myCashPayout.toFixed(2)}`;
-    document.getElementById('my-check-payout-card').textContent = `$${myCheckPayout.toFixed(2)}`;
-
-    // --- ADD THIS NEW BLOCK FOR THE TIPS CARD ---
-    // Filter all earnings data for the current user and date range
-    const myFilteredEarnings = allEarnings.filter(e => {
-        const earnDate = e.date.toDate();
-        return e.staffName === currentUserName && earnDate >= startDate && earnDate <= endDate;
-    });
-
-    // Sum up the tips from the filtered earnings
-    const myTotalTips = myFilteredEarnings.reduce((sum, e) => sum + (e.tip || 0), 0);
-    
-    // Update the new "My Tips" card
-    const myTipsCard = document.getElementById('my-tips-card');
-    if (myTipsCard) {
-        myTipsCard.textContent = `$${myTotalTips.toFixed(2)}`;
-    }
-    // --- END OF NEW BLOCK ---
-// --- ADD THIS NEW BLOCK FOR APPOINTMENT & CLIENT COUNTS ---
-// Filter for upcoming appointments assigned to the current staff member
-const myUpcomingAppointments = allAppointments.filter(appt => 
-    appt.technician === currentUserName && appt.appointmentTimestamp.toDate() > new Date()
-);
-
-// Count unique clients served by the current staff member from their history
-const myClientNames = new Set(
-    allFinishedClients
-        .filter(client => client.technician === currentUserName)
-        .map(client => client.name)
-);
-
-// Update the dashboard cards with the new counts
-const myAppointmentsCard = document.getElementById('my-appointments-card');
-if (myAppointmentsCard) {
-    myAppointmentsCard.textContent = myUpcomingAppointments.length;
-}
-
-const myClientsCard = document.getElementById('my-clients-card');
-if (myClientsCard) {
-    myClientsCard.textContent = myClientNames.size;
-}
-// --- END OF NEW BLOCK ---
-    updateMyEarningsChart(mySalonEarnings, currentStaffDashboardRangeFilter, currentUserName);
-
-    // --- NEW: Logic for the Earning Details Table ---
-    const detailsDateFilter = document.getElementById('staff-details-date-filter').value;
-    let myPayoutDetails = allEarnings.filter(e => e.staffName === currentUserName);
-
-    // If a specific date is chosen in the new filter, use it
-    if (detailsDateFilter) {
-        const specificDate = new Date(detailsDateFilter + 'T00:00:00');
-        const startOfDay = new Date(specificDate.getFullYear(), specificDate.getMonth(), specificDate.getDate());
-        const endOfDay = new Date(specificDate.getFullYear(), specificDate.getMonth(), specificDate.getDate(), 23, 59, 59, 999);
-        myPayoutDetails = myPayoutDetails.filter(e => {
+        const filteredSalonEarnings = allSalonEarnings.filter(e => {
             const earnDate = e.date.toDate();
-            return earnDate >= startOfDay && earnDate <= endOfDay;
+            return earnDate >= startDate && earnDate <= endDate;
         });
-    }
 
-   
-    // Update the title with the client count
-    const clientCount = myPayoutDetails.length;
-    const detailsTitle = document.getElementById('staff-details-title');
-    if (detailsTitle) {
-        detailsTitle.textContent = `My Earning Details (${clientCount} Client${clientCount === 1 ? '' : 's'})`;
-    }
+        const filteredAppointments = allAppointments.filter(a => {
+            const apptDate = a.appointmentTimestamp.toDate();
+            return apptDate >= startDate && apptDate <= endDate;
+        });
 
-    // Render the table and update its live totals
-    const { totalEarning, totalTip } = renderStaffEarningsTable(myPayoutDetails, 'staff-dashboard-earning-table', 'staff-dashboard-total-earning', 'staff-dashboard-total-tip');
-    const totalMainSpan = document.getElementById('staff-dashboard-filtered-earning-total-main');
-    const totalTipSpan = document.getElementById('staff-dashboard-filtered-earning-total-tip');
-    if(totalMainSpan) totalMainSpan.textContent = `Total ($${totalEarning.toFixed(2)})`;
-    if(totalTipSpan) totalTipSpan.textContent = `Tip ($${totalTip.toFixed(2)})`;
-    // --- THIS IS THE NEW LINE THAT FIXES THE PROBLEM ---
-    renderDetailedAppointmentsList('staff-upcoming-appointments-list', allAppointments, currentUserName);
-};
+        const filteredExpenses = allExpenses.filter(ex => {
+            const expDate = ex.date.toDate();
+            return expDate >= startDate && expDate <= endDate;
+        });
+
+        const filteredGiftCards = allGiftCards.filter(gc => {
+            const gcDate = gc.createdAt.toDate();
+            return gcDate >= startDate && gcDate <= endDate;
+        });
+
+        // Card Calculations
+        let totalRevenue = 0;
+        let totalCash = 0;
+        const techEarnings = {};
+
+        filteredSalonEarnings.forEach(earning => {
+            let dailyTotal = 0;
+            techniciansAndStaff.forEach(tech => {
+                const techNameLower = tech.name.toLowerCase();
+                const dailyEarning = earning[techNameLower] || 0;
+                dailyTotal += dailyEarning;
+                techEarnings[tech.name] = (techEarnings[tech.name] || 0) + dailyEarning;
+            });
+            dailyTotal += earning.sellGiftCard || 0;
+            const dailyCash = dailyTotal - ((earning.totalCredit || 0) + (earning.check || 0) + (earning.returnGiftCard || 0) + (earning.venmo || 0) + (earning.square || 0));
+            totalRevenue += dailyTotal;
+            totalCash += dailyCash;
+        });
+
+        document.getElementById('total-salon-revenue-card').textContent = `$${totalRevenue.toFixed(2)}`;
+        document.getElementById('total-salon-cash-card').textContent = `$${totalCash.toFixed(2)}`;
+
+        const topEarningTechnician = Object.keys(techEarnings).reduce((a, b) => techEarnings[a] > techEarnings[b] ? a : b, '-');
+        document.getElementById('top-earning-technician-card').textContent = topEarningTechnician;
+
+        const techBookings = filteredAppointments.reduce((acc, curr) => {
+            if (curr.technician && curr.technician !== 'Any Technician') {
+                acc[curr.technician] = (acc[curr.technician] || 0) + 1;
+            }
+            return acc;
+        }, {});
+        const topBookingTechnician = Object.keys(techBookings).reduce((a, b) => techBookings[a] > techBookings[b] ? a : b, '-');
+        document.getElementById('top-booking-technician-card').textContent = topBookingTechnician;
+
+        // New Card Calculations
+        document.getElementById('total-appointments-card').textContent = allAppointments.length;
+        document.getElementById('total-clients-card').textContent = allClients.length;
+
+        const totalGiftCardValue = filteredGiftCards.reduce((sum, gc) => sum + gc.amount, 0);
+        document.getElementById('total-gift-card-card').textContent = `$${totalGiftCardValue.toFixed(2)}`;
+
+        const totalExpense = filteredExpenses.reduce((sum, ex) => sum + ex.amount, 0);
+        document.getElementById('total-expense-card').textContent = `$${totalExpense.toFixed(2)}`;
+
+        // Render Graph and Upcoming Appointments
+        updateSalonRevenueChart(filteredSalonEarnings, currentDashboardRangeFilter);
+        updateStaffEarningsReport(filteredSalonEarnings); // <-- ADD THIS LINE
+        renderDetailedAppointmentsList('admin-upcoming-appointments-list', allAppointments, currentDashboardApptTechFilter);
+    };
+
+
+    // REPLACE the old updateStaffDashboard function with this one
+    const updateStaffDashboard = () => {
+        const filter = document.getElementById('staff-dashboard-date-filter').value;
+        const { startDate, endDate } = getDateRange(currentStaffDashboardRangeFilter, currentStaffDashboardDateFilter);
+        if (!startDate) return;
+
+        // --- Calculations for Cards & Graph (This part remains the same) ---
+        const mySalonEarnings = allSalonEarnings.filter(e => {
+            const earnDate = e.date.toDate();
+            return earnDate >= startDate && earnDate <= endDate;
+        });
+
+        const staffNameLower = currentUserName.toLowerCase();
+        let myTotalEarning = 0;
+        mySalonEarnings.forEach(earning => {
+            myTotalEarning += earning[staffNameLower] || 0;
+        });
+
+        const myTotalPayout = myTotalEarning * 0.70;
+        const myCheckPayout = myTotalPayout * 0.70;
+        const myCashPayout = myTotalPayout - myCheckPayout;
+
+        document.getElementById('my-earning-card').textContent = `$${myTotalEarning.toFixed(2)}`;
+        document.getElementById('my-total-payout-card').textContent = `$${myTotalPayout.toFixed(2)}`;
+        document.getElementById('my-cash-payout-card').textContent = `$${myCashPayout.toFixed(2)}`;
+        document.getElementById('my-check-payout-card').textContent = `$${myCheckPayout.toFixed(2)}`;
+
+        // --- ADD THIS NEW BLOCK FOR THE TIPS CARD ---
+        // Filter all earnings data for the current user and date range
+        const myFilteredEarnings = allEarnings.filter(e => {
+            const earnDate = e.date.toDate();
+            return e.staffName === currentUserName && earnDate >= startDate && earnDate <= endDate;
+        });
+
+        // Sum up the tips from the filtered earnings
+        const myTotalTips = myFilteredEarnings.reduce((sum, e) => sum + (e.tip || 0), 0);
+
+        // Update the new "My Tips" card
+        const myTipsCard = document.getElementById('my-tips-card');
+        if (myTipsCard) {
+            myTipsCard.textContent = `$${myTotalTips.toFixed(2)}`;
+        }
+        // --- END OF NEW BLOCK ---
+        // --- ADD THIS NEW BLOCK FOR APPOINTMENT & CLIENT COUNTS ---
+        // Filter for upcoming appointments assigned to the current staff member
+        const myUpcomingAppointments = allAppointments.filter(appt =>
+            appt.technician === currentUserName && appt.appointmentTimestamp.toDate() > new Date()
+        );
+
+        // Count unique clients served by the current staff member from their history
+        const myClientNames = new Set(
+            allFinishedClients
+                .filter(client => client.technician === currentUserName)
+                .map(client => client.name)
+        );
+
+        // Update the dashboard cards with the new counts
+        const myAppointmentsCard = document.getElementById('my-appointments-card');
+        if (myAppointmentsCard) {
+            myAppointmentsCard.textContent = myUpcomingAppointments.length;
+        }
+
+        const myClientsCard = document.getElementById('my-clients-card');
+        if (myClientsCard) {
+            myClientsCard.textContent = myClientNames.size;
+        }
+        // --- END OF NEW BLOCK ---
+        updateMyEarningsChart(mySalonEarnings, currentStaffDashboardRangeFilter, currentUserName);
+
+        // --- NEW: Logic for the Earning Details Table ---
+        const detailsDateFilter = document.getElementById('staff-details-date-filter').value;
+        let myPayoutDetails = allEarnings.filter(e => e.staffName === currentUserName);
+
+        // If a specific date is chosen in the new filter, use it
+        if (detailsDateFilter) {
+            const specificDate = new Date(detailsDateFilter + 'T00:00:00');
+            const startOfDay = new Date(specificDate.getFullYear(), specificDate.getMonth(), specificDate.getDate());
+            const endOfDay = new Date(specificDate.getFullYear(), specificDate.getMonth(), specificDate.getDate(), 23, 59, 59, 999);
+            myPayoutDetails = myPayoutDetails.filter(e => {
+                const earnDate = e.date.toDate();
+                return earnDate >= startOfDay && earnDate <= endOfDay;
+            });
+        }
+
+
+        // Update the title with the client count
+        const clientCount = myPayoutDetails.length;
+        const detailsTitle = document.getElementById('staff-details-title');
+        if (detailsTitle) {
+            detailsTitle.textContent = `My Earning Details (${clientCount} Client${clientCount === 1 ? '' : 's'})`;
+        }
+
+        // Render the table and update its live totals
+        const { totalEarning, totalTip } = renderStaffEarningsTable(myPayoutDetails, 'staff-dashboard-earning-table', 'staff-dashboard-total-earning', 'staff-dashboard-total-tip');
+        const totalMainSpan = document.getElementById('staff-dashboard-filtered-earning-total-main');
+        const totalTipSpan = document.getElementById('staff-dashboard-filtered-earning-total-tip');
+        if (totalMainSpan) totalMainSpan.textContent = `Total ($${totalEarning.toFixed(2)})`;
+        if (totalTipSpan) totalTipSpan.textContent = `Tip ($${totalTip.toFixed(2)})`;
+        // --- THIS IS THE NEW LINE THAT FIXES THE PROBLEM ---
+        renderDetailedAppointmentsList('staff-upcoming-appointments-list', allAppointments, currentUserName);
+    };
     // ADD THIS ENTIRE NEW FUNCTION
-const renderDetailedAppointmentsList = (containerId, appointments, techFilter = 'All') => {
-    const container = document.getElementById(containerId);
-    if (!container) return;
+    const renderDetailedAppointmentsList = (containerId, appointments, techFilter = 'All') => {
+        const container = document.getElementById(containerId);
+        if (!container) return;
 
-    let filteredAppointments = appointments.filter(a => a.appointmentTimestamp.toDate() > new Date());
+        let filteredAppointments = appointments.filter(a => a.appointmentTimestamp.toDate() > new Date());
 
-    if (techFilter !== 'All' && techFilter !== 'Any Technician') {
-        filteredAppointments = filteredAppointments.filter(appt => appt.technician === techFilter);
-    } else if (techFilter === 'Any Technician') {
-        filteredAppointments = filteredAppointments.filter(appt => appt.technician === 'Any Technician');
-    }
+        if (techFilter !== 'All' && techFilter !== 'Any Technician') {
+            filteredAppointments = filteredAppointments.filter(appt => appt.technician === techFilter);
+        } else if (techFilter === 'Any Technician') {
+            filteredAppointments = filteredAppointments.filter(appt => appt.technician === 'Any Technician');
+        }
 
-    if (filteredAppointments.length === 0) {
-        container.innerHTML = '<p class="text-center text-gray-500 py-4">No upcoming appointments found.</p>';
-        return;
-    }
+        if (filteredAppointments.length === 0) {
+            container.innerHTML = '<p class="text-center text-gray-500 py-4">No upcoming appointments found.</p>';
+            return;
+        }
 
-    let tableHTML = `
+        let tableHTML = `
         <table class="w-full text-sm text-left text-gray-600">
             <thead class="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
                 <tr>
@@ -2202,172 +2180,172 @@ const renderDetailedAppointmentsList = (containerId, appointments, techFilter = 
             </thead>
             <tbody>`;
 
-    filteredAppointments.sort((a, b) => a.appointmentTimestamp.seconds - b.appointmentTimestamp.seconds);
+        filteredAppointments.sort((a, b) => a.appointmentTimestamp.seconds - b.appointmentTimestamp.seconds);
 
-    filteredAppointments.forEach(appt => {
-        tableHTML += `
+        filteredAppointments.forEach(appt => {
+            tableHTML += `
             <tr class="border-b">
                 <td class="px-6 py-3 font-medium">${appt.name}</td>
                 <td class="px-6 py-3">${Array.isArray(appt.services) ? appt.services.join(', ') : appt.services}</td>
                 <td class="px-6 py-3">${appt.technician}</td>
                 <td class="px-6 py-3 text-center">${appt.people || 1}</td>
-                <td class="px-6 py-3">${new Date(appt.appointmentTimestamp.seconds * 1000).toLocaleString([], {dateStyle: 'short', timeStyle: 'short'})}</td>
+                <td class="px-6 py-3">${new Date(appt.appointmentTimestamp.seconds * 1000).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</td>
                 <td class="px-6 py-3 text-center"><button data-id="${appt.id}" class="checkin-today-btn text-blue-500 hover:underline">Check In</button></td>
             </tr>
         `;
-    });
+        });
 
-    tableHTML += '</tbody></table>';
-    container.innerHTML = tableHTML;
-};
-    
-const updateSalonRevenueChart = (data, filter) => {
-    const ctx = document.getElementById('salon-revenue-chart')?.getContext('2d');
-    if (!ctx) return;
-
-    let labels = [];
-    let revenueData = [];
-    let cashData = [];
-    let revenueCounts = {};
-    let cashCounts = {};
-
-    data.forEach(item => {
-        const date = item.date.toDate();
-        let key;
-
-        // NEW: Updated logic to handle the new filter values
-        if (filter === 'daily') {
-            key = date.getHours();
-        } else if (filter === 'this-year' || filter === 'last-year') {
-            key = date.getMonth();
-        } else if (!isNaN(parseInt(filter))) { // Handles month filters (e.g., '0' for Jan, '1' for Feb)
-            key = date.getDate();
-        }
-
-        let dailyTotal = 0;
-        techniciansAndStaff.forEach(tech => { dailyTotal += item[tech.name.toLowerCase()] || 0; });
-        dailyTotal += item.sellGiftCard || 0;
-
-        const dailyCash = dailyTotal - ((item.totalCredit || 0) + (item.check || 0) + (item.returnGiftCard || 0) + (item.venmo || 0) + (item.square || 0));
-
-        if (key !== undefined) {
-             revenueCounts[key] = (revenueCounts[key] || 0) + dailyTotal;
-             cashCounts[key] = (cashCounts[key] || 0) + dailyCash;
-        }
-    });
-
-    // NEW: Updated logic to build the chart labels and data correctly
-    if (filter === 'daily') {
-        labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
-        revenueData = labels.map((_, i) => revenueCounts[i] || 0);
-        cashData = labels.map((_, i) => cashCounts[i] || 0);
-    } else if (filter === 'this-year' || filter === 'last-year') {
-        labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        revenueData = labels.map((_, i) => revenueCounts[i] || 0);
-        cashData = labels.map((_, i) => cashCounts[i] || 0);
-    } else if (!isNaN(parseInt(filter))) {
-        const year = new Date().getFullYear();
-        const month = parseInt(filter);
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        labels = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-        revenueData = labels.map(day => revenueCounts[day] || 0);
-        cashData = labels.map(day => cashCounts[day] || 0);
-    }
-
-    const chartConfig = {
-        labels,
-        datasets: [{
-            label: 'Total Revenue',
-            data: revenueData,
-            backgroundColor: 'rgba(219, 39, 119, 0.5)',
-            borderColor: 'rgba(219, 39, 119, 1)',
-            borderWidth: 1,
-            tension: 0.1
-        }, {
-            label: 'Cash Revenue',
-            data: cashData,
-            backgroundColor: 'rgba(16, 185, 129, 0.5)',
-            borderColor: 'rgba(16, 185, 129, 1)',
-            borderWidth: 1,
-            tension: 0.1
-        }]
-    };
-    salonRevenueChart = initializeChart(salonRevenueChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
-};
-const updateMyEarningsChart = (data, filter, staffName) => {
-    const ctx = document.getElementById('my-earnings-chart')?.getContext('2d');
-    if (!ctx) return;
-
-    const staffNameLower = staffName.toLowerCase();
-    const labels = [];
-    const datasets = {
-        earning: { label: 'Total Earning', data: [], backgroundColor: 'rgba(219, 39, 119, 0.5)', borderColor: 'rgba(219, 39, 119, 1)' },
-        payout: { label: 'Total Payout', data: [], backgroundColor: 'rgba(16, 185, 129, 0.5)', borderColor: 'rgba(16, 185, 129, 1)' },
-        cash: { label: 'Cash Payout', data: [], backgroundColor: 'rgba(245, 158, 11, 0.5)', borderColor: 'rgba(245, 158, 11, 1)' },
-        check: { label: 'Check Payout', data: [], backgroundColor: 'rgba(59, 130, 246, 0.5)', borderColor: 'rgba(59, 130, 246, 1)' }
+        tableHTML += '</tbody></table>';
+        container.innerHTML = tableHTML;
     };
 
-    const timeData = {};
+    const updateSalonRevenueChart = (data, filter) => {
+        const ctx = document.getElementById('salon-revenue-chart')?.getContext('2d');
+        if (!ctx) return;
 
-    data.forEach(item => {
-        const date = item.date.toDate();
-        let key;
+        let labels = [];
+        let revenueData = [];
+        let cashData = [];
+        let revenueCounts = {};
+        let cashCounts = {};
 
-        // CORRECTED: Logic now handles the new filter values
-        if (filter === 'daily') {
-            key = date.getHours();
-        } else if (filter === 'this-year' || filter === 'last-year') {
-            key = date.getMonth();
-        } else if (!isNaN(parseInt(filter))) { // Handles month numbers
-            key = date.getDate();
-        }
-        
-        if (key !== undefined) {
-            if (!timeData[key]) {
-                timeData[key] = { earning: 0 };
+        data.forEach(item => {
+            const date = item.date.toDate();
+            let key;
+
+            // NEW: Updated logic to handle the new filter values
+            if (filter === 'daily') {
+                key = date.getHours();
+            } else if (filter === 'this-year' || filter === 'last-year') {
+                key = date.getMonth();
+            } else if (!isNaN(parseInt(filter))) { // Handles month filters (e.g., '0' for Jan, '1' for Feb)
+                key = date.getDate();
             }
-            timeData[key].earning += item[staffNameLower] || 0;
+
+            let dailyTotal = 0;
+            techniciansAndStaff.forEach(tech => { dailyTotal += item[tech.name.toLowerCase()] || 0; });
+            dailyTotal += item.sellGiftCard || 0;
+
+            const dailyCash = dailyTotal - ((item.totalCredit || 0) + (item.check || 0) + (item.returnGiftCard || 0) + (item.venmo || 0) + (item.square || 0));
+
+            if (key !== undefined) {
+                revenueCounts[key] = (revenueCounts[key] || 0) + dailyTotal;
+                cashCounts[key] = (cashCounts[key] || 0) + dailyCash;
+            }
+        });
+
+        // NEW: Updated logic to build the chart labels and data correctly
+        if (filter === 'daily') {
+            labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+            revenueData = labels.map((_, i) => revenueCounts[i] || 0);
+            cashData = labels.map((_, i) => cashCounts[i] || 0);
+        } else if (filter === 'this-year' || filter === 'last-year') {
+            labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            revenueData = labels.map((_, i) => revenueCounts[i] || 0);
+            cashData = labels.map((_, i) => cashCounts[i] || 0);
+        } else if (!isNaN(parseInt(filter))) {
+            const year = new Date().getFullYear();
+            const month = parseInt(filter);
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            labels = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+            revenueData = labels.map(day => revenueCounts[day] || 0);
+            cashData = labels.map(day => cashCounts[day] || 0);
         }
-    });
 
-    const populateDatasets = (key) => {
-        const earning = timeData[key]?.earning || 0;
-        const payout = earning * 0.70;
-        const checkPayout = payout * 0.70;
-        const cashPayout = payout - checkPayout;
-
-        datasets.earning.data.push(earning);
-        datasets.payout.data.push(payout);
-        datasets.cash.data.push(cashPayout);
-        datasets.check.data.push(checkPayout);
+        const chartConfig = {
+            labels,
+            datasets: [{
+                label: 'Total Revenue',
+                data: revenueData,
+                backgroundColor: 'rgba(219, 39, 119, 0.5)',
+                borderColor: 'rgba(219, 39, 119, 1)',
+                borderWidth: 1,
+                tension: 0.1
+            }, {
+                label: 'Cash Revenue',
+                data: cashData,
+                backgroundColor: 'rgba(16, 185, 129, 0.5)',
+                borderColor: 'rgba(16, 185, 129, 1)',
+                borderWidth: 1,
+                tension: 0.1
+            }]
+        };
+        salonRevenueChart = initializeChart(salonRevenueChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
     };
+    const updateMyEarningsChart = (data, filter, staffName) => {
+        const ctx = document.getElementById('my-earnings-chart')?.getContext('2d');
+        if (!ctx) return;
 
-    // CORRECTED: Logic to build labels based on new filter values
-    if (filter === 'daily') {
-        for (let i = 0; i < 24; i++) { labels.push(`${i}:00`); populateDatasets(i); }
-    } else if (filter === 'this-year' || filter === 'last-year') {
-        labels.push('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
-        for (let i = 0; i < 12; i++) { populateDatasets(i); }
-    } else if (!isNaN(parseInt(filter))) {
-        const year = new Date().getFullYear();
-        const month = parseInt(filter);
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        for (let i = 1; i <= daysInMonth; i++) { labels.push(i); populateDatasets(i); }
-    }
+        const staffNameLower = staffName.toLowerCase();
+        const labels = [];
+        const datasets = {
+            earning: { label: 'Total Earning', data: [], backgroundColor: 'rgba(219, 39, 119, 0.5)', borderColor: 'rgba(219, 39, 119, 1)' },
+            payout: { label: 'Total Payout', data: [], backgroundColor: 'rgba(16, 185, 129, 0.5)', borderColor: 'rgba(16, 185, 129, 1)' },
+            cash: { label: 'Cash Payout', data: [], backgroundColor: 'rgba(245, 158, 11, 0.5)', borderColor: 'rgba(245, 158, 11, 1)' },
+            check: { label: 'Check Payout', data: [], backgroundColor: 'rgba(59, 130, 246, 0.5)', borderColor: 'rgba(59, 130, 246, 1)' }
+        };
+
+        const timeData = {};
+
+        data.forEach(item => {
+            const date = item.date.toDate();
+            let key;
+
+            // CORRECTED: Logic now handles the new filter values
+            if (filter === 'daily') {
+                key = date.getHours();
+            } else if (filter === 'this-year' || filter === 'last-year') {
+                key = date.getMonth();
+            } else if (!isNaN(parseInt(filter))) { // Handles month numbers
+                key = date.getDate();
+            }
+
+            if (key !== undefined) {
+                if (!timeData[key]) {
+                    timeData[key] = { earning: 0 };
+                }
+                timeData[key].earning += item[staffNameLower] || 0;
+            }
+        });
+
+        const populateDatasets = (key) => {
+            const earning = timeData[key]?.earning || 0;
+            const payout = earning * 0.70;
+            const checkPayout = payout * 0.70;
+            const cashPayout = payout - checkPayout;
+
+            datasets.earning.data.push(earning);
+            datasets.payout.data.push(payout);
+            datasets.cash.data.push(cashPayout);
+            datasets.check.data.push(checkPayout);
+        };
+
+        // CORRECTED: Logic to build labels based on new filter values
+        if (filter === 'daily') {
+            for (let i = 0; i < 24; i++) { labels.push(`${i}:00`); populateDatasets(i); }
+        } else if (filter === 'this-year' || filter === 'last-year') {
+            labels.push('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
+            for (let i = 0; i < 12; i++) { populateDatasets(i); }
+        } else if (!isNaN(parseInt(filter))) {
+            const year = new Date().getFullYear();
+            const month = parseInt(filter);
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            for (let i = 1; i <= daysInMonth; i++) { labels.push(i); populateDatasets(i); }
+        }
 
 
-    const chartConfig = {
-        labels,
-        datasets: Object.values(datasets).map(ds => ({ ...ds, borderWidth: 1, tension: 0.1 }))
+        const chartConfig = {
+            labels,
+            datasets: Object.values(datasets).map(ds => ({ ...ds, borderWidth: 1, tension: 0.1 }))
+        };
+        myEarningsChart = initializeChart(myEarningsChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
     };
-    myEarningsChart = initializeChart(myEarningsChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
-};
     document.getElementById('dashboard-date-filter').addEventListener('change', updateAdminDashboard);
     document.getElementById('staff-dashboard-date-filter').addEventListener('change', updateStaffDashboard);
-    
+
     // END NEW DASHBOARD LOGIC
 
-const loadAndRenderServices = async () => {
+    const loadAndRenderServices = async () => {
         const servicesSnapshot = await getDocs(collection(db, "services"));
         servicesData = {};
         servicesSnapshot.forEach(doc => { servicesData[doc.id] = doc.data().items; });
@@ -2415,7 +2393,7 @@ const loadAndRenderServices = async () => {
     const applyClientFilters = (clients, searchTerm, techFilter, dateFilter) => {
         let filtered = clients;
         if (searchTerm) { filtered = filtered.filter(c => c.name.toLowerCase().includes(searchTerm)); }
-        if (techFilter !== 'All' && techFilter !== 'Any Technician') { filtered = filtered.filter(c => c.technician === techFilter); } 
+        if (techFilter !== 'All' && techFilter !== 'Any Technician') { filtered = filtered.filter(c => c.technician === techFilter); }
         else if (techFilter === 'Any Technician') { filtered = filtered.filter(c => c.technician === 'Any Technician'); }
         if (dateFilter) {
             filtered = filtered.filter(c => {
@@ -2459,69 +2437,69 @@ const loadAndRenderServices = async () => {
         });
     };
 
-   // Located inside initMainApp()
-const renderClientsList = () => {
-    if (!allFinishedClients || !allClients) {
+    // Located inside initMainApp()
+    const renderClientsList = () => {
+        if (!allFinishedClients || !allClients) {
+            const tbody = document.querySelector('#clients-list-table tbody');
+            if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-gray-400">Loading client data...</td></tr>`;
+            return;
+        }
+
+        const clientsMap = new Map();
+        allFinishedClients.forEach(visit => {
+            if (!visit.name) return;
+            const clientKey = visit.name.toLowerCase();
+            if (!clientsMap.has(clientKey)) {
+                clientsMap.set(clientKey, { name: visit.name, phone: visit.phone || '', email: visit.email || '', lastVisit: visit.checkOutTimestamp.toMillis(), techCounts: {}, colorCounts: {} });
+            }
+            const clientData = clientsMap.get(clientKey);
+            if (visit.checkOutTimestamp.toMillis() > clientData.lastVisit) {
+                clientData.lastVisit = visit.checkOutTimestamp.toMillis();
+                clientData.phone = visit.phone || clientData.phone;
+                clientData.email = visit.email || clientData.email; // Capture email from last visit
+            }
+            if (visit.technician) { clientData.techCounts[visit.technician] = (clientData.techCounts[visit.technician] || 0) + 1; }
+            if (visit.colorCode) { clientData.colorCounts[visit.colorCode] = (clientData.colorCounts[visit.colorCode] || 0) + 1; }
+        });
+
+        let processedClients = Array.from(clientsMap.values()).map(client => {
+            const findFavorite = (counts) => Object.keys(counts).length > 0 ? Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b) : 'N/A';
+            return { ...client, favoriteTech: findFavorite(client.techCounts), favoriteColor: findFavorite(client.colorCounts) };
+        });
+
+        const clientInfoMap = new Map(allClients.map(c => [c.name.toLowerCase(), { dob: c.dob, id: c.id, phone: c.phone, email: c.email }]));
+        let finalClientList = processedClients.map(aggClient => {
+            const key = aggClient.name.toLowerCase();
+            const masterInfo = clientInfoMap.get(key);
+            return { ...aggClient, id: masterInfo ? masterInfo.id : null, dob: masterInfo ? masterInfo.dob : '', phone: masterInfo && masterInfo.phone ? masterInfo.phone : aggClient.phone, email: masterInfo && masterInfo.email ? masterInfo.email : aggClient.email };
+        });
+
+        allClients.forEach(masterClient => {
+            if (!clientsMap.has(masterClient.name.toLowerCase())) {
+                finalClientList.push({ ...masterClient, lastVisit: null, favoriteTech: 'N/A', favoriteColor: 'N/A' });
+            }
+        });
+
+        aggregatedClients = finalClientList;
+
+        const searchTerm = document.getElementById('search-clients-list').value.toLowerCase();
+        const filteredClients = aggregatedClients.filter(c => c.name.toLowerCase().includes(searchTerm));
+
         const tbody = document.querySelector('#clients-list-table tbody');
-        if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-gray-400">Loading client data...</td></tr>`;
-        return;
-    }
-
-    const clientsMap = new Map();
-    allFinishedClients.forEach(visit => {
-        if (!visit.name) return;
-        const clientKey = visit.name.toLowerCase();
-        if (!clientsMap.has(clientKey)) {
-            clientsMap.set(clientKey, { name: visit.name, phone: visit.phone || '', email: visit.email || '', lastVisit: visit.checkOutTimestamp.toMillis(), techCounts: {}, colorCounts: {} });
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        if (filteredClients.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-gray-400">No clients found.</td></tr>`;
+            return;
         }
-        const clientData = clientsMap.get(clientKey);
-        if (visit.checkOutTimestamp.toMillis() > clientData.lastVisit) {
-            clientData.lastVisit = visit.checkOutTimestamp.toMillis();
-            clientData.phone = visit.phone || clientData.phone;
-            clientData.email = visit.email || clientData.email; // Capture email from last visit
-        }
-        if (visit.technician) { clientData.techCounts[visit.technician] = (clientData.techCounts[visit.technician] || 0) + 1; }
-        if (visit.colorCode) { clientData.colorCounts[visit.colorCode] = (clientData.colorCounts[visit.colorCode] || 0) + 1; }
-    });
 
-    let processedClients = Array.from(clientsMap.values()).map(client => {
-        const findFavorite = (counts) => Object.keys(counts).length > 0 ? Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b) : 'N/A';
-        return { ...client, favoriteTech: findFavorite(client.techCounts), favoriteColor: findFavorite(client.colorCounts) };
-    });
-
-    const clientInfoMap = new Map(allClients.map(c => [c.name.toLowerCase(), { dob: c.dob, id: c.id, phone: c.phone, email: c.email }]));
-    let finalClientList = processedClients.map(aggClient => {
-        const key = aggClient.name.toLowerCase();
-        const masterInfo = clientInfoMap.get(key);
-        return { ...aggClient, id: masterInfo ? masterInfo.id : null, dob: masterInfo ? masterInfo.dob : '', phone: masterInfo && masterInfo.phone ? masterInfo.phone : aggClient.phone, email: masterInfo && masterInfo.email ? masterInfo.email : aggClient.email };
-    });
-
-    allClients.forEach(masterClient => {
-        if (!clientsMap.has(masterClient.name.toLowerCase())) {
-            finalClientList.push({ ...masterClient, lastVisit: null, favoriteTech: 'N/A', favoriteColor: 'N/A' });
-        }
-    });
-    
-    aggregatedClients = finalClientList;
-
-    const searchTerm = document.getElementById('search-clients-list').value.toLowerCase();
-    const filteredClients = aggregatedClients.filter(c => c.name.toLowerCase().includes(searchTerm));
-
-    const tbody = document.querySelector('#clients-list-table tbody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-    if (filteredClients.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-gray-400">No clients found.</td></tr>`;
-        return;
-    }
-
-    filteredClients.forEach(client => {
-        const row = tbody.insertRow();
-        row.className = 'bg-white border-b';
-        // *** UPDATED THIS LINE TO INCLUDE EMAIL ***
-        row.innerHTML = `<td class="px-6 py-4 font-medium text-gray-900">${client.name}</td><td class="px-6 py-4">${client.phone || 'N/A'}</td><td class="px-6 py-4">${client.email || 'N/A'}</td><td class="px-6 py-4">${client.lastVisit ? new Date(client.lastVisit).toLocaleDateString() : 'N/A'}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${client.id}" class="text-indigo-500 hover:text-indigo-700 view-client-profile-btn" title="View Profile"><i class="fas fa-user-circle text-lg"></i></button><button data-id="${client.id}" class="text-blue-500 hover:text-blue-700 edit-client-btn" title="Edit Client"><i class="fas fa-edit text-lg"></i></button><button data-id="${client.id}" class="text-red-500 hover:text-red-700 delete-client-btn" title="Delete Client"><i class="fas fa-trash-alt text-lg"></i></button></td>`;
-    });
-};
+        filteredClients.forEach(client => {
+            const row = tbody.insertRow();
+            row.className = 'bg-white border-b';
+            // *** UPDATED THIS LINE TO INCLUDE EMAIL ***
+            row.innerHTML = `<td class="px-6 py-4 font-medium text-gray-900">${client.name}</td><td class="px-6 py-4">${client.phone || 'N/A'}</td><td class="px-6 py-4">${client.email || 'N/A'}</td><td class="px-6 py-4">${client.lastVisit ? new Date(client.lastVisit).toLocaleDateString() : 'N/A'}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${client.id}" class="text-indigo-500 hover:text-indigo-700 view-client-profile-btn" title="View Profile"><i class="fas fa-user-circle text-lg"></i></button><button data-id="${client.id}" class="text-blue-500 hover:text-blue-700 edit-client-btn" title="Edit Client"><i class="fas fa-edit text-lg"></i></button><button data-id="${client.id}" class="text-red-500 hover:text-red-700 delete-client-btn" title="Delete Client"><i class="fas fa-trash-alt text-lg"></i></button></td>`;
+        });
+    };
 
     const applyEarningFilters = (earnings, techFilter, dateFilter, rangeFilter, role, name) => {
         let filtered = earnings;
@@ -2533,84 +2511,84 @@ const renderClientsList = () => {
                 filtered = filtered.filter(e => e.staffName === techFilter);
             }
         }
-        
+
         const { startDate, endDate } = getDateRange(rangeFilter, dateFilter);
-        
-        if (startDate && endDate) { 
-            filtered = filtered.filter(e => { 
-                const earningDate = e.date.toDate(); 
-                return earningDate >= startDate && earningDate <= endDate; 
-            }); 
+
+        if (startDate && endDate) {
+            filtered = filtered.filter(e => {
+                const earningDate = e.date.toDate();
+                return earningDate >= startDate && earningDate <= endDate;
+            });
         }
         return filtered;
     };
 
-// Located inside initMainApp()
-const renderStaffEarningsTable = (earnings, tableId, totalEarningId, totalTipId) => {
-    const tbody = document.querySelector(`#${tableId} tbody`);
-    if (!tbody) return;
+    // Located inside initMainApp()
+    const renderStaffEarningsTable = (earnings, tableId, totalEarningId, totalTipId) => {
+        const tbody = document.querySelector(`#${tableId} tbody`);
+        if (!tbody) return;
 
-    const colspan = userRole === 'admin' ? 6 : 5;
-    tbody.innerHTML = earnings.length === 0 ? `<tr><td colspan="${colspan}" class="py-6 text-center text-gray-400">No earnings found.</td></tr>` : '';
+        const colspan = userRole === 'admin' ? 6 : 5;
+        tbody.innerHTML = earnings.length === 0 ? `<tr><td colspan="${colspan}" class="py-6 text-center text-gray-400">No earnings found.</td></tr>` : '';
 
-    // *** FIX IS HERE: Re-instating the correct descending sort logic. ***
-    // This explicitly sorts the array by the newest date first every time the table is drawn.
-    earnings.sort((a, b) => b.date.seconds - a.date.seconds).forEach(earning => {
-        const row = tbody.insertRow();
-        row.className = 'bg-white border-b';
-        let rowHTML = `
+        // *** FIX IS HERE: Re-instating the correct descending sort logic. ***
+        // This explicitly sorts the array by the newest date first every time the table is drawn.
+        earnings.sort((a, b) => b.date.seconds - a.date.seconds).forEach(earning => {
+            const row = tbody.insertRow();
+            row.className = 'bg-white border-b';
+            let rowHTML = `
             <td class="px-6 py-4">${new Date(earning.date.seconds * 1000).toLocaleDateString()}</td>
             <td class="px-6 py-4 font-medium text-gray-900">${earning.staffName}</td>
             <td class="px-6 py-4">${earning.service || ''}</td>
             <td class="px-6 py-4">$${earning.earning.toFixed(2)}</td>
             <td class="px-6 py-4">$${earning.tip.toFixed(2)}</td>
         `;
-        if (userRole === 'admin') {
-            rowHTML += `<td class="px-6 py-4 text-center space-x-2"><button data-id="${earning.id}" class="edit-earning-btn text-blue-500 hover:text-blue-700" title="Edit Earning"><i class="fas fa-edit text-lg"></i></button><button data-id="${earning.id}" class="delete-earning-btn text-red-500 hover:text-red-700" title="Delete Earning"><i class="fas fa-trash-alt text-lg"></i></button></td>`;
+            if (userRole === 'admin') {
+                rowHTML += `<td class="px-6 py-4 text-center space-x-2"><button data-id="${earning.id}" class="edit-earning-btn text-blue-500 hover:text-blue-700" title="Edit Earning"><i class="fas fa-edit text-lg"></i></button><button data-id="${earning.id}" class="delete-earning-btn text-red-500 hover:text-red-700" title="Delete Earning"><i class="fas fa-trash-alt text-lg"></i></button></td>`;
+            }
+            row.innerHTML = rowHTML;
+        });
+
+        const totalEarning = earnings.reduce((sum, e) => sum + e.earning, 0);
+        const totalTip = earnings.reduce((sum, e) => sum + e.tip, 0);
+
+        const totalEarningEl = document.getElementById(totalEarningId);
+        const totalTipEl = document.getElementById(totalTipId);
+        if (totalEarningEl) totalEarningEl.textContent = `$${totalEarning.toFixed(2)}`;
+        if (totalTipEl) totalTipEl.textContent = `$${totalTip.toFixed(2)}`;
+
+        return { totalEarning, totalTip };
+    };
+
+    // Located inside initMainApp()
+    const renderAllStaffEarnings = () => {
+        // Render for Report Page
+        const reportFiltered = applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter, currentEarningRangeFilter, userRole, userName);
+        const { totalEarning: reportTotalEarning, totalTip: reportTotalTip } = renderStaffEarningsTable(reportFiltered, 'staff-earning-table', 'total-earning', 'total-tip');
+
+        const reportTotalMainSpan = document.getElementById('filtered-earning-total-main');
+        const reportTotalTipSpan = document.getElementById('filtered-earning-total-tip');
+        if (reportTotalMainSpan) reportTotalMainSpan.textContent = `Total ($${reportTotalEarning.toFixed(2)})`;
+        if (reportTotalTipSpan) reportTotalTipSpan.textContent = `Tip ($${reportTotalTip.toFixed(2)})`;
+
+
+        // Render for Dashboard Page
+        const dashboardFiltered = applyEarningFilters(allEarnings, currentDashboardEarningTechFilter, currentDashboardEarningDateFilter, currentDashboardEarningRangeFilter, userRole, userName);
+        const { totalEarning: dashTotalEarning, totalTip: dashTotalTip } = renderStaffEarningsTable(dashboardFiltered, 'dashboard-staff-earning-table-full', 'dashboard-total-earning', 'dashboard-total-tip');
+
+        const dashTotalMainSpan = document.getElementById('dashboard-filtered-earning-total-main');
+        const dashTotalTipSpan = document.getElementById('dashboard-filtered-earning-total-tip');
+        if (dashTotalMainSpan) dashTotalMainSpan.textContent = `Total ($${dashTotalEarning.toFixed(2)})`;
+        if (dashTotalTipSpan) dashTotalTipSpan.textContent = `Tip ($${dashTotalTip.toFixed(2)})`;
+
+        // *** NEW: Add live client count to the dashboard report title ***
+        const clientCount = dashboardFiltered.length;
+        const detailsTitle = document.getElementById('dashboard-staff-earning-title');
+        if (detailsTitle) {
+            detailsTitle.textContent = `Staff Earning Report (${clientCount} Client${clientCount === 1 ? '' : 's'})`;
         }
-        row.innerHTML = rowHTML;
-    });
+    };
 
-    const totalEarning = earnings.reduce((sum, e) => sum + e.earning, 0);
-    const totalTip = earnings.reduce((sum, e) => sum + e.tip, 0);
-
-    const totalEarningEl = document.getElementById(totalEarningId);
-    const totalTipEl = document.getElementById(totalTipId);
-    if(totalEarningEl) totalEarningEl.textContent = `$${totalEarning.toFixed(2)}`;
-    if(totalTipEl) totalTipEl.textContent = `$${totalTip.toFixed(2)}`;
-
-    return { totalEarning, totalTip };
-};
-
-// Located inside initMainApp()
-const renderAllStaffEarnings = () => {
-    // Render for Report Page
-    const reportFiltered = applyEarningFilters(allEarnings, currentEarningTechFilter, currentEarningDateFilter, currentEarningRangeFilter, userRole, userName);
-    const { totalEarning: reportTotalEarning, totalTip: reportTotalTip } = renderStaffEarningsTable(reportFiltered, 'staff-earning-table', 'total-earning', 'total-tip');
-    
-    const reportTotalMainSpan = document.getElementById('filtered-earning-total-main');
-    const reportTotalTipSpan = document.getElementById('filtered-earning-total-tip');
-    if(reportTotalMainSpan) reportTotalMainSpan.textContent = `Total ($${reportTotalEarning.toFixed(2)})`;
-    if(reportTotalTipSpan) reportTotalTipSpan.textContent = `Tip ($${reportTotalTip.toFixed(2)})`;
-
-
-    // Render for Dashboard Page
-    const dashboardFiltered = applyEarningFilters(allEarnings, currentDashboardEarningTechFilter, currentDashboardEarningDateFilter, currentDashboardEarningRangeFilter, userRole, userName);
-    const { totalEarning: dashTotalEarning, totalTip: dashTotalTip } = renderStaffEarningsTable(dashboardFiltered, 'dashboard-staff-earning-table-full', 'dashboard-total-earning', 'dashboard-total-tip');
-
-    const dashTotalMainSpan = document.getElementById('dashboard-filtered-earning-total-main');
-    const dashTotalTipSpan = document.getElementById('dashboard-filtered-earning-total-tip');
-    if(dashTotalMainSpan) dashTotalMainSpan.textContent = `Total ($${dashTotalEarning.toFixed(2)})`;
-    if(dashTotalTipSpan) dashTotalTipSpan.textContent = `Tip ($${dashTotalTip.toFixed(2)})`;
-
-    // *** NEW: Add live client count to the dashboard report title ***
-    const clientCount = dashboardFiltered.length;
-    const detailsTitle = document.getElementById('dashboard-staff-earning-title');
-    if (detailsTitle) {
-        detailsTitle.textContent = `Staff Earning Report (${clientCount} Client${clientCount === 1 ? '' : 's'})`;
-    }
-};
-    
     const applySalonEarningFilters = (earnings, dateFilter, rangeFilter) => {
         let filtered = [...earnings];
         const { startDate, endDate } = getDateRange(rangeFilter, dateFilter);
@@ -2633,7 +2611,7 @@ const renderAllStaffEarnings = () => {
                 const commissionEl = document.getElementById(`commission-${name}`);
                 const check70El = document.getElementById(`check70-${name}`);
                 const cash30El = document.getElementById(`cash30-${name}`);
-                if(commissionEl) commissionEl.textContent = '$0.00'; if(check70El) check70El.textContent = '$0.00'; if(cash30El) cash30El.textContent = '$0.00';
+                if (commissionEl) commissionEl.textContent = '$0.00'; if (check70El) check70El.textContent = '$0.00'; if (cash30El) cash30El.textContent = '$0.00';
             });
             return;
         }
@@ -2676,9 +2654,9 @@ const renderAllStaffEarnings = () => {
             const commissionEl = document.getElementById(`commission-${name}`);
             const check70El = document.getElementById(`check70-${name}`);
             const cash30El = document.getElementById(`cash30-${name}`);
-            if(commissionEl) commissionEl.textContent = `$${commission70.toFixed(2)}`;
-            if(check70El) check70El.textContent = `$${check70.toFixed(2)}`;
-            if(cash30El) cash30El.textContent = `$${cash30.toFixed(2)}`;
+            if (commissionEl) commissionEl.textContent = `$${commission70.toFixed(2)}`;
+            if (check70El) check70El.textContent = `$${check70.toFixed(2)}`;
+            if (cash30El) cash30El.textContent = `$${cash30.toFixed(2)}`;
         });
     };
 
@@ -2739,142 +2717,142 @@ const renderAllStaffEarnings = () => {
     document.getElementById('queue-content').addEventListener('click', async (e) => {
         const moveBtn = e.target.closest('.move-to-processing-btn');
         const detailBtn = e.target.closest('.detail-btn-active');
-        if (moveBtn) { await updateDoc(doc(db, "active_queue", moveBtn.dataset.id), { status: 'processing' }); } 
+        if (moveBtn) { await updateDoc(doc(db, "active_queue", moveBtn.dataset.id), { status: 'processing' }); }
         else if (detailBtn) { const client = allActiveClients.find(c => c.id === detailBtn.dataset.id); openViewDetailModal(client, `Booking Detail`); }
     });
 
-     document.getElementById('processing-content').addEventListener('click', async (e) => {
+    document.getElementById('processing-content').addEventListener('click', async (e) => {
         const checkOutBtn = e.target.closest('.check-out-btn-processing');
         if (checkOutBtn) {
             const clientId = checkOutBtn.dataset.id;
             const client = allActiveClients.find(c => c.id === clientId);
-            if(client) { document.getElementById('technician-name-select').value = client.technician; }
+            if (client) { document.getElementById('technician-name-select').value = client.technician; }
             document.getElementById('checkout-client-id').value = clientId;
             checkoutModal.classList.remove('hidden'); checkoutModal.classList.add('flex');
         }
     });
 
- // Located inside initMainApp()
-const openViewDetailModal = (client, title = "Client Details") => {
-    if (!client) return;
-    document.getElementById('view-detail-title').textContent = title;
-    const content = document.getElementById('view-detail-content');
-    const actions = document.getElementById('view-detail-actions');
-    let appointmentDetailsHTML = '<div class="space-y-2"><h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Appointment Details</h4>';
-    let appointmentTime = 'N/A';
-    if (client.appointmentTimestamp) { appointmentTime = new Date(client.appointmentTimestamp.seconds * 1000).toLocaleString(); } 
-    else if (client.checkInTimestamp) { appointmentTime = new Date(client.checkInTimestamp.seconds * 1000).toLocaleString(); }
-    appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Date:</strong> ${appointmentTime}</div>`;
-    appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Services:</strong> ${Array.isArray(client.services) ? client.services.join(', ') : client.services || 'N/A'}</div>`;
-    appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Technician:</strong> ${client.technician || 'N/A'}</div>`;
-    appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Booking Type:</strong> ${client.bookingType || 'N/A'}</div>`;
-    if (client.colorCode) { appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Color Code:</strong> ${client.colorCode}</div>`; }
-    if (client.notes) { appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Notes:</strong> ${client.notes}</div>`; }
-    appointmentDetailsHTML += '</div>';
-    const lastFinished = allFinishedClients.filter(c => c.name === client.name && c.id !== client.id).sort((a,b) => b.checkOutTimestamp.toMillis() - a.checkOutTimestamp.toMillis())[0];
-    let lastVisitHTML = '';
-    if (lastFinished) { lastVisitHTML = `<div class="space-y-2"><h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Previous Visit</h4><div><strong class="font-semibold text-gray-700">Date:</strong> ${new Date(lastFinished.checkOutTimestamp.seconds * 1000).toLocaleString()}</div><div><strong class="font-semibold text-gray-700">Services:</strong> ${lastFinished.services || 'N/A'}</div><div><strong class="font-semibold text-gray-700">Color Code:</strong> ${lastFinished.colorCode || 'N/A'}</div><div><strong class="font-semibold text-gray-700">Technician:</strong> ${lastFinished.technician || 'N/A'}</div>${lastFinished.notes ? `<div><strong class="font-semibold text-gray-700">Notes:</strong> ${lastFinished.notes}</div>` : ''}</div>`; }
-    const nextAppointment = allAppointments.filter(appt => appt.name === client.name && appt.appointmentTimestamp.toMillis() > Date.now()).sort((a, b) => a.appointmentTimestamp.toMillis() - b.appointmentTimestamp.toMillis())[0];
-    let nextAppointmentHTML = `<div class="space-y-2"><h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Next Appointment</h4><div class="font-bold text-pink-600">${nextAppointment ? new Date(nextAppointment.appointmentTimestamp.seconds * 1000).toLocaleString() : 'Not scheduled'}</div></div>`;
-    content.innerHTML = `<div class="space-y-2"><h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Client Details</h4><div><strong class="font-semibold text-gray-700">Name:</strong> ${client.name || 'N/A'}</div><div><strong class="font-semibold text-gray-700">Phone:</strong> ${client.phone || 'N/A'}</div><div><strong class="font-semibold text-gray-700">Group Size:</strong> ${client.people || '1'}</div></div>${appointmentDetailsHTML}${lastVisitHTML}${nextAppointmentHTML}`;
-    
-    // *** UPDATED ACTIONS HTML ***
-    actions.innerHTML = '<button type="button" id="view-detail-close-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Close</button>';
-    if(client.appointmentTimestamp && client.status !== 'waiting' && client.status !== 'processing') { 
-        actions.insertAdjacentHTML('afterbegin', 
-            `<button type="button" data-id="${client.id}" class="bg-yellow-500 text-white font-semibold py-2 px-4 rounded-lg booking-action-btn" data-action="edit">Edit</button>
+    // Located inside initMainApp()
+    const openViewDetailModal = (client, title = "Client Details") => {
+        if (!client) return;
+        document.getElementById('view-detail-title').textContent = title;
+        const content = document.getElementById('view-detail-content');
+        const actions = document.getElementById('view-detail-actions');
+        let appointmentDetailsHTML = '<div class="space-y-2"><h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Appointment Details</h4>';
+        let appointmentTime = 'N/A';
+        if (client.appointmentTimestamp) { appointmentTime = new Date(client.appointmentTimestamp.seconds * 1000).toLocaleString(); }
+        else if (client.checkInTimestamp) { appointmentTime = new Date(client.checkInTimestamp.seconds * 1000).toLocaleString(); }
+        appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Date:</strong> ${appointmentTime}</div>`;
+        appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Services:</strong> ${Array.isArray(client.services) ? client.services.join(', ') : client.services || 'N/A'}</div>`;
+        appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Technician:</strong> ${client.technician || 'N/A'}</div>`;
+        appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Booking Type:</strong> ${client.bookingType || 'N/A'}</div>`;
+        if (client.colorCode) { appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Color Code:</strong> ${client.colorCode}</div>`; }
+        if (client.notes) { appointmentDetailsHTML += `<div><strong class="font-semibold text-gray-700">Notes:</strong> ${client.notes}</div>`; }
+        appointmentDetailsHTML += '</div>';
+        const lastFinished = allFinishedClients.filter(c => c.name === client.name && c.id !== client.id).sort((a, b) => b.checkOutTimestamp.toMillis() - a.checkOutTimestamp.toMillis())[0];
+        let lastVisitHTML = '';
+        if (lastFinished) { lastVisitHTML = `<div class="space-y-2"><h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Previous Visit</h4><div><strong class="font-semibold text-gray-700">Date:</strong> ${new Date(lastFinished.checkOutTimestamp.seconds * 1000).toLocaleString()}</div><div><strong class="font-semibold text-gray-700">Services:</strong> ${lastFinished.services || 'N/A'}</div><div><strong class="font-semibold text-gray-700">Color Code:</strong> ${lastFinished.colorCode || 'N/A'}</div><div><strong class="font-semibold text-gray-700">Technician:</strong> ${lastFinished.technician || 'N/A'}</div>${lastFinished.notes ? `<div><strong class="font-semibold text-gray-700">Notes:</strong> ${lastFinished.notes}</div>` : ''}</div>`; }
+        const nextAppointment = allAppointments.filter(appt => appt.name === client.name && appt.appointmentTimestamp.toMillis() > Date.now()).sort((a, b) => a.appointmentTimestamp.toMillis() - b.appointmentTimestamp.toMillis())[0];
+        let nextAppointmentHTML = `<div class="space-y-2"><h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Next Appointment</h4><div class="font-bold text-pink-600">${nextAppointment ? new Date(nextAppointment.appointmentTimestamp.seconds * 1000).toLocaleString() : 'Not scheduled'}</div></div>`;
+        content.innerHTML = `<div class="space-y-2"><h4 class="text-lg font-semibold text-gray-800 border-b pb-1">Client Details</h4><div><strong class="font-semibold text-gray-700">Name:</strong> ${client.name || 'N/A'}</div><div><strong class="font-semibold text-gray-700">Phone:</strong> ${client.phone || 'N/A'}</div><div><strong class="font-semibold text-gray-700">Group Size:</strong> ${client.people || '1'}</div></div>${appointmentDetailsHTML}${lastVisitHTML}${nextAppointmentHTML}`;
+
+        // *** UPDATED ACTIONS HTML ***
+        actions.innerHTML = '<button type="button" id="view-detail-close-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Close</button>';
+        if (client.appointmentTimestamp && client.status !== 'waiting' && client.status !== 'processing') {
+            actions.insertAdjacentHTML('afterbegin',
+                `<button type="button" data-id="${client.id}" class="bg-yellow-500 text-white font-semibold py-2 px-4 rounded-lg booking-action-btn" data-action="edit">Edit</button>
              <button type="button" data-id="${client.id}" class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg booking-action-btn" data-action="checkin">Check In</button>
              <button type="button" data-id="${client.id}" class="bg-red-500 text-white font-semibold py-2 px-4 rounded-lg booking-action-btn" data-action="cancel">Cancel</button>`
-        ); 
-    }
+            );
+        }
 
-    document.getElementById('view-detail-close-btn').addEventListener('click', closeViewDetailModal);
-    viewDetailModal.classList.remove('hidden'); viewDetailModal.classList.add('flex');
-};
+        document.getElementById('view-detail-close-btn').addEventListener('click', closeViewDetailModal);
+        viewDetailModal.classList.remove('hidden'); viewDetailModal.classList.add('flex');
+    };
     const closeViewDetailModal = () => { viewDetailModal.classList.add('hidden'); viewDetailModal.classList.remove('flex'); };
     document.getElementById('view-detail-close-btn').addEventListener('click', closeViewDetailModal);
     document.querySelector('.view-detail-modal-overlay').addEventListener('click', closeViewDetailModal);
 
-// Located inside initMainApp()
-document.getElementById('view-detail-actions').addEventListener('click', async (e) => {
-    if (e.target.classList.contains('booking-action-btn')) {
-        const action = e.target.dataset.action;
-        const bookingId = e.target.dataset.id;
-        const appointment = allAppointments.find(a => a.id === bookingId);
-        if (!appointment) return;
+    // Located inside initMainApp()
+    document.getElementById('view-detail-actions').addEventListener('click', async (e) => {
+        if (e.target.classList.contains('booking-action-btn')) {
+            const action = e.target.dataset.action;
+            const bookingId = e.target.dataset.id;
+            const appointment = allAppointments.find(a => a.id === bookingId);
+            if (!appointment) return;
 
-        if (action === 'cancel') {
-            showConfirmModal("Are you sure you want to cancel this booking?", async () => { await deleteDoc(doc(db, "appointments", bookingId)); });
-        } else if (action === 'checkin') {
-            await addDoc(collection(db, "active_queue"), { name: appointment.name, phone: appointment.phone, people: appointment.people || 1, bookingType: 'Booked - Calendar', services: Array.isArray(appointment.services) ? appointment.services : [appointment.services], technician: appointment.technician, notes: appointment.notes || '', checkInTimestamp: serverTimestamp(), status: 'waiting' });
-            await deleteDoc(doc(db, "appointments", bookingId));
-        } else if (action === 'edit') { // *** ADD THIS EDIT LOGIC ***
-            openAddAppointmentModal(null, null, appointment);
+            if (action === 'cancel') {
+                showConfirmModal("Are you sure you want to cancel this booking?", async () => { await deleteDoc(doc(db, "appointments", bookingId)); });
+            } else if (action === 'checkin') {
+                await addDoc(collection(db, "active_queue"), { name: appointment.name, phone: appointment.phone, people: appointment.people || 1, bookingType: 'Booked - Calendar', services: Array.isArray(appointment.services) ? appointment.services : [appointment.services], technician: appointment.technician, notes: appointment.notes || '', checkInTimestamp: serverTimestamp(), status: 'waiting' });
+                await deleteDoc(doc(db, "appointments", bookingId));
+            } else if (action === 'edit') { // *** ADD THIS EDIT LOGIC ***
+                openAddAppointmentModal(null, null, appointment);
+            }
+
+            closeViewDetailModal();
         }
-        
-        closeViewDetailModal();
-    }
-});
+    });
 
-// Located inside initMainApp()
-const openClientProfileModal = async (client) => {
-    // Find all relevant data for the selected client
-    const clientData = aggregatedClients.find(c => c.id === client.id);
-    if (!clientData) {
-        console.error("Could not find aggregated data for client:", client);
-        alert("Could not load client profile.");
-        return;
-    }
-    const clientHistory = allFinishedClients.filter(c => c.name === clientData.name);
-    const clientAppointments = allAppointments.filter(c => c.name === clientData.name && c.appointmentTimestamp.toDate() > new Date());
+    // Located inside initMainApp()
+    const openClientProfileModal = async (client) => {
+        // Find all relevant data for the selected client
+        const clientData = aggregatedClients.find(c => c.id === client.id);
+        if (!clientData) {
+            console.error("Could not find aggregated data for client:", client);
+            alert("Could not load client profile.");
+            return;
+        }
+        const clientHistory = allFinishedClients.filter(c => c.name === clientData.name);
+        const clientAppointments = allAppointments.filter(c => c.name === clientData.name && c.appointmentTimestamp.toDate() > new Date());
 
-    // Populate the modal with basic info
-    document.getElementById('profile-client-name').textContent = clientData.name;
-    document.getElementById('profile-client-phone').textContent = clientData.phone || 'No phone number';
+        // Populate the modal with basic info
+        document.getElementById('profile-client-name').textContent = clientData.name;
+        document.getElementById('profile-client-phone').textContent = clientData.phone || 'No phone number';
 
-    // Populate stats cards
-    document.getElementById('profile-total-visits').textContent = clientHistory.length;
-    const totalSpent = clientHistory.reduce((sum, visit) => {
-        const servicesString = Array.isArray(visit.services) ? visit.services.join(', ') : visit.services;
-        const prices = (servicesString.match(/\$\d+/g) || []).map(p => Number(p.slice(1)));
-        return sum + prices.reduce((a, b) => a + b, 0);
-    }, 0);
-    document.getElementById('profile-total-spent').textContent = `$${totalSpent.toFixed(2)}`;
-    document.getElementById('profile-fav-tech').textContent = clientData.favoriteTech;
-    document.getElementById('profile-fav-color').textContent = clientData.favoriteColor;
+        // Populate stats cards
+        document.getElementById('profile-total-visits').textContent = clientHistory.length;
+        const totalSpent = clientHistory.reduce((sum, visit) => {
+            const servicesString = Array.isArray(visit.services) ? visit.services.join(', ') : visit.services;
+            const prices = (servicesString.match(/\$\d+/g) || []).map(p => Number(p.slice(1)));
+            return sum + prices.reduce((a, b) => a + b, 0);
+        }, 0);
+        document.getElementById('profile-total-spent').textContent = `$${totalSpent.toFixed(2)}`;
+        document.getElementById('profile-fav-tech').textContent = clientData.favoriteTech;
+        document.getElementById('profile-fav-color').textContent = clientData.favoriteColor;
 
-    // Populate the visit history table
-    const historyBody = document.getElementById('profile-history-table-body');
-    historyBody.innerHTML = clientHistory.length > 0 ? clientHistory.map(v => 
-        `<tr>
+        // Populate the visit history table
+        const historyBody = document.getElementById('profile-history-table-body');
+        historyBody.innerHTML = clientHistory.length > 0 ? clientHistory.map(v =>
+            `<tr>
             <td class="px-4 py-2">${v.checkOutTimestamp.toDate().toLocaleDateString()}</td>
             <td class="px-4 py-2">${Array.isArray(v.services) ? v.services.join(', ') : v.services}</td>
             <td class="px-4 py-2">${v.technician}</td>
         </tr>`
-    ).join('') : '<tr><td colspan="3" class="text-center p-4 text-gray-500">No visit history found.</td></tr>';
+        ).join('') : '<tr><td colspan="3" class="text-center p-4 text-gray-500">No visit history found.</td></tr>';
 
-    // Populate upcoming appointments
-    const apptsContainer = document.getElementById('profile-upcoming-appts');
-    apptsContainer.innerHTML = clientAppointments.length > 0 
-        ? clientAppointments.map(a => `<div class="bg-blue-50 p-2 rounded-md"><p class="font-semibold">${a.appointmentTimestamp.toDate().toLocaleString()}</p><p class="text-sm">${a.services.join(', ')}</p></div>`).join('')
-        : '<p class="text-sm text-gray-500">No upcoming appointments.</p>';
+        // Populate upcoming appointments
+        const apptsContainer = document.getElementById('profile-upcoming-appts');
+        apptsContainer.innerHTML = clientAppointments.length > 0
+            ? clientAppointments.map(a => `<div class="bg-blue-50 p-2 rounded-md"><p class="font-semibold">${a.appointmentTimestamp.toDate().toLocaleString()}</p><p class="text-sm">${a.services.join(', ')}</p></div>`).join('')
+            : '<p class="text-sm text-gray-500">No upcoming appointments.</p>';
 
-    // The photo gallery logic has been removed from this function.
+        // The photo gallery logic has been removed from this function.
 
-    // Show the modal
-    clientProfileModal.classList.remove('hidden');
-};
-     document.getElementById('finished-content').addEventListener('click', async (e) => {
+        // Show the modal
+        clientProfileModal.classList.remove('hidden');
+    };
+    document.getElementById('finished-content').addEventListener('click', async (e) => {
         const deleteBtn = e.target.closest('.delete-btn-finished');
         const feedbackBtn = e.target.closest('.view-feedback-btn');
         const draftSmsBtn = e.target.closest('.draft-sms-btn');
-        if(deleteBtn) { showConfirmModal("Are you sure you want to delete this client record?", async () => { try { await deleteDoc(doc(db, "finished_clients", deleteBtn.dataset.id)); } catch (err) { console.error("Error deleting finished client: ", err); alert("Could not delete finished client."); } }); } 
-        else if (feedbackBtn) { const client = allFinishedClients.find(c => c.id === feedbackBtn.dataset.id); if (client) openViewDetailModal(client, `Booking Detail`); } 
+        if (deleteBtn) { showConfirmModal("Are you sure you want to delete this client record?", async () => { try { await deleteDoc(doc(db, "finished_clients", deleteBtn.dataset.id)); } catch (err) { console.error("Error deleting finished client: ", err); alert("Could not delete finished client."); } }); }
+        else if (feedbackBtn) { const client = allFinishedClients.find(c => c.id === feedbackBtn.dataset.id); if (client) openViewDetailModal(client, `Booking Detail`); }
         else if (draftSmsBtn) { const client = allFinishedClients.find(c => c.id === draftSmsBtn.dataset.id); if (client) generateSmsMessage(client); }
     });
 
     const closeCheckoutModal = () => { checkoutForm.reset(); rebookOtherInput.classList.add('hidden'); checkoutModal.classList.add('hidden'); checkoutModal.classList.remove('flex'); };
-    rebookSelect.addEventListener('change', (e) => { if(e.target.value === 'other') { rebookOtherInput.classList.remove('hidden'); } else { rebookOtherInput.classList.add('hidden'); } });
+    rebookSelect.addEventListener('change', (e) => { if (e.target.value === 'other') { rebookOtherInput.classList.remove('hidden'); } else { rebookOtherInput.classList.add('hidden'); } });
     const technicianNameSelect = document.getElementById('technician-name-select');
     const technicianNameOther = document.getElementById('technician-name-other');
     technicianNameSelect.addEventListener('change', (e) => { if (e.target.value === 'other') { technicianNameOther.classList.remove('hidden'); } else { technicianNameOther.classList.add('hidden'); } });
@@ -2884,7 +2862,7 @@ const openClientProfileModal = async (client) => {
         const clientId = document.getElementById('checkout-client-id').value;
         const client = allActiveClients.find(c => c.id === clientId);
         if (client) {
-             try {
+            try {
                 const clientNameLower = client.name.toLowerCase();
                 const existingClient = allClients.find(c => c.name.toLowerCase() === clientNameLower);
                 if (!existingClient) {
@@ -2895,63 +2873,63 @@ const openClientProfileModal = async (client) => {
                 finishedClientData.checkOutTimestamp = serverTimestamp();
                 finishedClientData.colorCode = document.getElementById('color-code').value || '';
                 let technicianValue = technicianNameSelect.value;
-                if(technicianValue === 'other') { technicianValue = technicianNameOther.value; }
+                if (technicianValue === 'other') { technicianValue = technicianNameOther.value; }
                 finishedClientData.technician = technicianValue;
                 let rebookInfo = rebookSelect.value;
                 if (rebookInfo === '2w' || rebookInfo === '3w') {
                     const interval = (rebookInfo === '2w' ? 14 : 21);
-                     let nextAppointmentDate = new Date();
-                     nextAppointmentDate.setDate(nextAppointmentDate.getDate() + interval);
-                     finishedClientData.rebook = nextAppointmentDate.toLocaleString();
-                     await addDoc(collection(db, "appointments"), { name: client.name, phone: client.phone, people: client.people, bookingType: client.bookingType, services: client.services, technician: finishedClientData.technician, appointmentTimestamp: Timestamp.fromDate(nextAppointmentDate) });
+                    let nextAppointmentDate = new Date();
+                    nextAppointmentDate.setDate(nextAppointmentDate.getDate() + interval);
+                    finishedClientData.rebook = nextAppointmentDate.toLocaleString();
+                    await addDoc(collection(db, "appointments"), { name: client.name, phone: client.phone, people: client.people, bookingType: client.bookingType, services: client.services, technician: finishedClientData.technician, appointmentTimestamp: Timestamp.fromDate(nextAppointmentDate) });
                 } else if (rebookInfo === 'other') {
-                   const otherDateValue = document.getElementById('rebook-other-input').value;
-                   finishedClientData.rebook = otherDateValue ? new Date(otherDateValue).toLocaleString() : 'Other';
-                   if(otherDateValue){ await addDoc(collection(db, "appointments"), { name: client.name, phone: client.phone, people: client.people, bookingType: client.bookingType, services: client.services, technician: finishedClientData.technician, appointmentTimestamp: Timestamp.fromDate(new Date(otherDateValue)) }); }
+                    const otherDateValue = document.getElementById('rebook-other-input').value;
+                    finishedClientData.rebook = otherDateValue ? new Date(otherDateValue).toLocaleString() : 'Other';
+                    if (otherDateValue) { await addDoc(collection(db, "appointments"), { name: client.name, phone: client.phone, people: client.people, bookingType: client.bookingType, services: client.services, technician: finishedClientData.technician, appointmentTimestamp: Timestamp.fromDate(new Date(otherDateValue)) }); }
                 } else { finishedClientData.rebook = 'No'; }
                 await addDoc(collection(db, "finished_clients"), finishedClientData);
                 await deleteDoc(doc(db, "active_queue", clientId));
                 closeCheckoutModal();
-            } catch(err) { console.error("Error checking out client: ", err); alert("Could not check out client."); }
+            } catch (err) { console.error("Error checking out client: ", err); alert("Could not check out client."); }
         }
     });
     document.getElementById('checkout-cancel-btn').addEventListener('click', closeCheckoutModal);
     document.querySelector('.checkout-modal-overlay').addEventListener('click', closeCheckoutModal);
 
     // ADD THIS ENTIRE NEW FUNCTION
-const updateSalonEarningsForDate = async (dateStr) => {
-    const date = new Date(dateStr + 'T00:00:00');
-    const startOfDay = Timestamp.fromDate(date);
-    const endOfDay = Timestamp.fromDate(new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999));
+    const updateSalonEarningsForDate = async (dateStr) => {
+        const date = new Date(dateStr + 'T00:00:00');
+        const startOfDay = Timestamp.fromDate(date);
+        const endOfDay = Timestamp.fromDate(new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999));
 
-    const q = query(collection(db, "earnings"), where("date", ">=", startOfDay), where("date", "<=", endOfDay));
-    const querySnapshot = await getDocs(q);
+        const q = query(collection(db, "earnings"), where("date", ">=", startOfDay), where("date", "<=", endOfDay));
+        const querySnapshot = await getDocs(q);
 
-    const dailyStaffTotals = {};
-    // Initialize all known staff with 0 to handle deletions correctly
-    techniciansAndStaff.forEach(tech => {
-        dailyStaffTotals[tech.name] = 0;
-    });
+        const dailyStaffTotals = {};
+        // Initialize all known staff with 0 to handle deletions correctly
+        techniciansAndStaff.forEach(tech => {
+            dailyStaffTotals[tech.name] = 0;
+        });
 
-    // Sum up the earnings for the day
-    querySnapshot.forEach(doc => {
-        const earningData = doc.data();
-        dailyStaffTotals[earningData.staffName] = (dailyStaffTotals[earningData.staffName] || 0) + earningData.earning;
-    });
+        // Sum up the earnings for the day
+        querySnapshot.forEach(doc => {
+            const earningData = doc.data();
+            dailyStaffTotals[earningData.staffName] = (dailyStaffTotals[earningData.staffName] || 0) + earningData.earning;
+        });
 
-    const salonEarningUpdate = {};
-    Object.keys(dailyStaffTotals).forEach(staffName => {
-        salonEarningUpdate[staffName.toLowerCase()] = dailyStaffTotals[staffName];
-    });
+        const salonEarningUpdate = {};
+        Object.keys(dailyStaffTotals).forEach(staffName => {
+            salonEarningUpdate[staffName.toLowerCase()] = dailyStaffTotals[staffName];
+        });
 
-    // Add the date back in for filtering purposes
-    salonEarningUpdate.date = Timestamp.fromDate(date);
+        // Add the date back in for filtering purposes
+        salonEarningUpdate.date = Timestamp.fromDate(date);
 
-    const salonEarningDocRef = doc(db, "salon_earnings", dateStr);
-    await setDoc(salonEarningDocRef, salonEarningUpdate, { merge: true });
-};
+        const salonEarningDocRef = doc(db, "salon_earnings", dateStr);
+        await setDoc(salonEarningDocRef, salonEarningUpdate, { merge: true });
+    };
     onSnapshot(query(collection(db, "active_queue"), orderBy("checkInTimestamp", "asc")), (snapshot) => {
-         allActiveClients = snapshot.docs.map(doc => ({ id: doc.id, checkInTime: doc.data().checkInTimestamp ? new Date(doc.data().checkInTimestamp.seconds * 1000).toLocaleString() : 'Pending...', services: (doc.data().services || []).join(', '), ...doc.data() }));
+        allActiveClients = snapshot.docs.map(doc => ({ id: doc.id, checkInTime: doc.data().checkInTimestamp ? new Date(doc.data().checkInTimestamp.seconds * 1000).toLocaleString() : 'Pending...', services: (doc.data().services || []).join(', '), ...doc.data() }));
         const waitingClients = allActiveClients.filter(c => c.status === 'waiting');
         const processingClients = allActiveClients.filter(c => c.status === 'processing');
         activeCountSpan.textContent = waitingClients.length;
@@ -2972,27 +2950,27 @@ const updateSalonEarningsForDate = async (dateStr) => {
         const uniquePhones = [...new Set(allFinishedClients.filter(c => c.phone && c.phone !== 'N/A').map(c => c.phone))];
         const nameOptionsHtml = uniqueNames.map(name => `<option value="${name}"></option>`).join('');
         const phoneOptionsHtml = uniquePhones.map(phone => `<option value="${phone}"></option>`).join('');
-        if(clientList) clientList.innerHTML = nameOptionsHtml;
-        if(checkinClientList) checkinClientList.innerHTML = nameOptionsHtml;
-        if(appointmentPhoneList) appointmentPhoneList.innerHTML = phoneOptionsHtml;
-        if(checkinPhoneList) checkinPhoneList.innerHTML = phoneOptionsHtml;
+        if (clientList) clientList.innerHTML = nameOptionsHtml;
+        if (checkinClientList) checkinClientList.innerHTML = nameOptionsHtml;
+        if (appointmentPhoneList) appointmentPhoneList.innerHTML = phoneOptionsHtml;
+        if (checkinPhoneList) checkinPhoneList.innerHTML = phoneOptionsHtml;
         updateDashboard();
     });
 
-     onSnapshot(query(collection(db, "appointments"), orderBy("appointmentTimestamp", "asc")), (snapshot) => {
+    onSnapshot(query(collection(db, "appointments"), orderBy("appointmentTimestamp", "asc")), (snapshot) => {
         snapshot.docChanges().forEach((change) => {
-if (change.type === "added" && initialAppointmentsLoaded) {
-    const data = change.doc.data();
-    if (data.appointmentTimestamp.seconds > appLoadTimestamp.seconds) {
-        const apptTime = new Date(data.appointmentTimestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        // Create a clean service string
-        const serviceString = Array.isArray(data.services) ? data.services[0] : data.services;
-        // Update the notification message format
-        addNotification('booking', `New booking from ${data.name} for ${serviceString} at ${apptTime}`);
-    }
-}
+            if (change.type === "added" && initialAppointmentsLoaded) {
+                const data = change.doc.data();
+                if (data.appointmentTimestamp.seconds > appLoadTimestamp.seconds) {
+                    const apptTime = new Date(data.appointmentTimestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    // Create a clean service string
+                    const serviceString = Array.isArray(data.services) ? data.services[0] : data.services;
+                    // Update the notification message format
+                    addNotification('booking', `New booking from ${data.name} for ${serviceString} at ${apptTime}`);
+                }
+            }
         });
-        
+
         allAppointments = snapshot.docs.map(doc => ({ id: doc.id, appointmentTime: doc.data().appointmentTimestamp ? new Date(doc.data().appointmentTimestamp.seconds * 1000).toLocaleString() : 'N/A', ...doc.data() }));
         renderCalendar(currentYear, currentMonth, currentTechFilterCalendar);
         renderAllBookingsList();
@@ -3004,22 +2982,22 @@ if (change.type === "added" && initialAppointmentsLoaded) {
         }
     });
 
-// REPLACE the onSnapshot listener for "earnings" with this one
-onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot) => {
-    allEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // REPLACE the onSnapshot listener for "earnings" with this one
+    onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot) => {
+        allEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    if (currentUserRole === 'admin') {
-        const datesToUpdate = new Set();
-        snapshot.docChanges().forEach((change) => {
-            const dateStr = getLocalDateString(change.doc.data().date.toDate());
-            datesToUpdate.add(dateStr);
-        });
-        datesToUpdate.forEach(dateStr => updateSalonEarningsForDate(dateStr));
-    }
+        if (currentUserRole === 'admin') {
+            const datesToUpdate = new Set();
+            snapshot.docChanges().forEach((change) => {
+                const dateStr = getLocalDateString(change.doc.data().date.toDate());
+                datesToUpdate.add(dateStr);
+            });
+            datesToUpdate.forEach(dateStr => updateSalonEarningsForDate(dateStr));
+        }
 
-    renderAllStaffEarnings();
-    updateDashboard();
-});
+        renderAllStaffEarnings();
+        updateDashboard();
+    });
 
     onSnapshot(query(collection(db, "salon_earnings"), orderBy("date", "desc")), (snapshot) => {
         allSalonEarnings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -3044,36 +3022,36 @@ onSnapshot(query(collection(db, "earnings"), orderBy("date", "desc")), (snapshot
     document.getElementById('finished-date-filter').addEventListener('input', (e) => { currentFinishedDateFilter = e.target.value; renderFinishedClients(applyClientFilters(allFinishedClients, document.getElementById('search-finished').value.toLowerCase(), currentTechFilterFinished, currentFinishedDateFilter)); });
     document.getElementById('search-clients-list').addEventListener('input', () => renderClientsList());
     document.getElementById('search-gift-cards').addEventListener('input', (e) => {
-    const searchTerm = e.target.value.toLowerCase();
-    const filtered = allGiftCards.filter(card => 
-        card.code.toLowerCase().includes(searchTerm) || 
-        card.recipientName.toLowerCase().includes(searchTerm)
-    );
-    renderGiftCardsAdminTable(filtered);
-});
+        const searchTerm = e.target.value.toLowerCase();
+        const filtered = allGiftCards.filter(card =>
+            card.code.toLowerCase().includes(searchTerm) ||
+            card.recipientName.toLowerCase().includes(searchTerm)
+        );
+        renderGiftCardsAdminTable(filtered);
+    });
     document.getElementById('search-gift-cards').addEventListener('input', (e) => {
         const searchTerm = e.target.value.toLowerCase();
         const filtered = allGiftCards.filter(card => card.code.toLowerCase().includes(searchTerm) || card.recipientName.toLowerCase().includes(searchTerm));
         renderGiftCardsAdminTable(filtered);
     });
-    
-// Located inside initMainApp()
-document.getElementById('export-clients-btn').addEventListener('click', () => {
-    // *** UPDATED THIS LINE TO INCLUDE EMAIL ***
-    const dataToExport = aggregatedClients.map(c => ({ 
-        Name: c.name, 
-        Phone: c.phone || '', 
-        Email: c.email || '', 
-        DOB: c.dob || '', 
-        'Favorite Tech': c.favoriteTech || '', 
-        'Favorite Color': c.favoriteColor || '', 
-        'Last Visit': c.lastVisit ? new Date(c.lastVisit).toLocaleDateString() : '' 
-    }));
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Clients");
-    XLSX.writeFile(workbook, "clients_list.xlsx");
-});
+
+    // Located inside initMainApp()
+    document.getElementById('export-clients-btn').addEventListener('click', () => {
+        // *** UPDATED THIS LINE TO INCLUDE EMAIL ***
+        const dataToExport = aggregatedClients.map(c => ({
+            Name: c.name,
+            Phone: c.phone || '',
+            Email: c.email || '',
+            DOB: c.dob || '',
+            'Favorite Tech': c.favoriteTech || '',
+            'Favorite Color': c.favoriteColor || '',
+            'Last Visit': c.lastVisit ? new Date(c.lastVisit).toLocaleDateString() : ''
+        }));
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Clients");
+        XLSX.writeFile(workbook, "clients_list.xlsx");
+    });
 
     document.getElementById('full-name').addEventListener('input', (e) => { const client = allFinishedClients.find(c => c.name === e.target.value); if (client) { document.getElementById('phone-number').value = client.phone; } });
     document.getElementById('phone-number').addEventListener('input', (e) => { const client = allFinishedClients.find(c => c.phone === e.target.value); if (client) { document.getElementById('full-name').value = client.name; } });
@@ -3087,7 +3065,7 @@ document.getElementById('export-clients-btn').addEventListener('click', () => {
         document.getElementById(button.id.replace('-tab', '-content')).classList.remove('hidden');
     });
 
-   const setupSubTabs = (tabsId, contentClass) => {
+    const setupSubTabs = (tabsId, contentClass) => {
         document.getElementById(tabsId).addEventListener('click', (e) => {
             const button = e.target.closest('button');
             if (!button) return;
@@ -3131,7 +3109,7 @@ document.getElementById('export-clients-btn').addEventListener('click', () => {
             dayCell.innerHTML = `<div class="font-bold">${day}</div><div id="day-${day}" class="appointments"></div>`;
             calendarGrid.appendChild(dayCell);
         }
-let filteredAppointments = allAppointments;
+        let filteredAppointments = allAppointments;
         if (technicianFilter !== 'All' && technicianFilter !== 'Any Technician') {
             filteredAppointments = allAppointments.filter(appt => appt.technician === technicianFilter);
         } else if (technicianFilter === 'Any Technician') {
@@ -3148,7 +3126,7 @@ let filteredAppointments = allAppointments;
                 if (dayCell) {
                     const timeString = apptDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
                     const serviceString = Array.isArray(appt.services) ? appt.services[0] : appt.services;
-                    
+
                     // --- Get the color for the assigned technician ---
                     const technicianName = appt.technician;
                     let colorTheme = { card: 'bg-gray-100', text: 'text-gray-800' }; // Default for "Any Technician"
@@ -3162,18 +3140,18 @@ let filteredAppointments = allAppointments;
                             <p class="font-semibold text-xs ${colorTheme.text} truncate">${timeString} - ${appt.name}</p>
                             <p class="text-xs text-gray-600 truncate">${serviceString || 'Service not specified'}</p>
                         </div>`;
-                    
+
                     dayCell.insertAdjacentHTML('beforeend', entryHTML);
                 }
             }
         });
-        if(calendarCountSpan) {
+        if (calendarCountSpan) {
             calendarCountSpan.textContent = calendarGrid.querySelectorAll('.appointment-entry').length;
         }
     }
     document.getElementById('prev-month-btn').addEventListener('click', () => { currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(currentYear, currentMonth, currentTechFilterCalendar); });
     document.getElementById('next-month-btn').addEventListener('click', () => { currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; } renderCalendar(currentYear, currentMonth, currentTechFilterCalendar); });
-calendarGrid.addEventListener('click', (e) => {
+    calendarGrid.addEventListener('click', (e) => {
         const appointmentEntry = e.target.closest('.appointment-entry');
         const dayCell = e.target.closest('.calendar-day');
 
@@ -3183,7 +3161,7 @@ calendarGrid.addEventListener('click', (e) => {
             if (client) {
                 openViewDetailModal(client, "Booking Detail");
             }
-        } 
+        }
         // If not, then check if the click was on an empty part of a day cell
         else if (dayCell) {
             openAddAppointmentModal(dayCell.dataset.date);
@@ -3191,7 +3169,7 @@ calendarGrid.addEventListener('click', (e) => {
     });
 
     const setupTechFilter = (containerId, callback) => {
-         document.getElementById(containerId).addEventListener('click', (e) => {
+        document.getElementById(containerId).addEventListener('click', (e) => {
             if (e.target.classList.contains('tech-filter-btn')) {
                 document.querySelectorAll(`#${containerId} .tech-filter-btn`).forEach(btn => btn.classList.remove('active'));
                 e.target.classList.add('active');
@@ -3204,44 +3182,44 @@ calendarGrid.addEventListener('click', (e) => {
     setupTechFilter('tech-filter-container-processing', (tech) => { currentTechFilterProcessing = tech; renderProcessingClients(applyClientFilters(allActiveClients.filter(c => c.status === 'processing'), document.getElementById('search-processing').value.toLowerCase(), currentTechFilterProcessing, null)); });
     setupTechFilter('tech-filter-container-finished', (tech) => { currentTechFilterFinished = tech; renderFinishedClients(applyClientFilters(allFinishedClients, document.getElementById('search-finished').value.toLowerCase(), currentTechFilterFinished, currentFinishedDateFilter)); });
     setupTechFilter('tech-filter-container-calendar', (tech) => { currentTechFilterCalendar = tech; if (!document.getElementById('list-view').classList.contains('hidden')) { renderAllBookingsList(); } else { renderCalendar(currentYear, currentMonth, currentTechFilterCalendar); } });
-    
+
     setupTechFilter('tech-filter-container-earning', (tech) => { currentEarningTechFilter = tech; renderAllStaffEarnings(); });
     setupTechFilter('dashboard-tech-filter-container-earning', (tech) => { currentDashboardEarningTechFilter = tech; renderAllStaffEarnings(); });
     // Located inside initMainApp()
-setupTechFilter('tech-filter-container-earning', (tech) => { currentEarningTechFilter = tech; renderAllStaffEarnings(); });
-setupTechFilter('dashboard-tech-filter-container-earning', (tech) => { currentDashboardEarningTechFilter = tech; renderAllStaffEarnings(); });
+    setupTechFilter('tech-filter-container-earning', (tech) => { currentEarningTechFilter = tech; renderAllStaffEarnings(); });
+    setupTechFilter('dashboard-tech-filter-container-earning', (tech) => { currentDashboardEarningTechFilter = tech; renderAllStaffEarnings(); });
 
-// *** ADD THIS NEW LINE ***
-setupTechFilter('tech-filter-container-dashboard-appointments', (tech) => { currentDashboardApptTechFilter = tech; updateAdminDashboard(); });
+    // *** ADD THIS NEW LINE ***
+    setupTechFilter('tech-filter-container-dashboard-appointments', (tech) => { currentDashboardApptTechFilter = tech; updateAdminDashboard(); });
 
-    
-const setupReportDateFilters = (selectId, dateInputId, callback) => {
-    const select = document.getElementById(selectId);
-    const dateInput = document.getElementById(dateInputId);
-    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-    select.innerHTML = `<option value="daily">Daily</option>`;
-    months.forEach((month, index) => { select.innerHTML += `<option value="${index}">${month}</option>`; });
-    select.innerHTML += `<option value="this-year">This Year</option><option value="last-year">Last Year</option>`;
-    
-    select.addEventListener('change', (e) => { 
-        const range = e.target.value; 
-        dateInput.style.display = range === 'daily' ? 'block' : 'none'; 
-        callback(dateInput.value, range); 
-    });
-    dateInput.addEventListener('input', (e) => { 
-        callback(e.target.value, select.value); 
-    });
-};
+
+    const setupReportDateFilters = (selectId, dateInputId, callback) => {
+        const select = document.getElementById(selectId);
+        const dateInput = document.getElementById(dateInputId);
+        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        select.innerHTML = `<option value="daily">Daily</option>`;
+        months.forEach((month, index) => { select.innerHTML += `<option value="${index}">${month}</option>`; });
+        select.innerHTML += `<option value="this-year">This Year</option><option value="last-year">Last Year</option>`;
+
+        select.addEventListener('change', (e) => {
+            const range = e.target.value;
+            dateInput.style.display = range === 'daily' ? 'block' : 'none';
+            callback(dateInput.value, range);
+        });
+        dateInput.addEventListener('input', (e) => {
+            callback(e.target.value, select.value);
+        });
+    };
 
     setupReportDateFilters('earning-range-filter', 'earning-date-filter', (date, range) => { currentEarningDateFilter = date; currentEarningRangeFilter = range; renderAllStaffEarnings(); });
     setupReportDateFilters('dashboard-earning-range-filter', 'dashboard-earning-date-filter', (date, range) => { currentDashboardEarningDateFilter = date; currentDashboardEarningRangeFilter = range; renderAllStaffEarnings(); });
-// ... existing filter setups
-setupReportDateFilters('salon-earning-range-filter', 'salon-earning-date-filter', (date, range) => { currentSalonEarningDateFilter = date; currentSalonEarningRangeFilter = range; renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, date, range)); });
+    // ... existing filter setups
+    setupReportDateFilters('salon-earning-range-filter', 'salon-earning-date-filter', (date, range) => { currentSalonEarningDateFilter = date; currentSalonEarningRangeFilter = range; renderSalonEarnings(applySalonEarningFilters(allSalonEarnings, date, range)); });
 
-// ADD THESE TWO NEW LINES
-setupReportDateFilters('dashboard-range-filter', 'dashboard-date-filter', (date, range) => { currentDashboardRangeFilter = range; currentDashboardDateFilter = date; updateAdminDashboard(); });
-setupReportDateFilters('staff-dashboard-range-filter', 'staff-dashboard-date-filter', (date, range) => { currentStaffDashboardRangeFilter = range; currentStaffDashboardDateFilter = date; updateStaffDashboard(); });
- // --- Set Default Dashboard Filters to Current Month ---
+    // ADD THESE TWO NEW LINES
+    setupReportDateFilters('dashboard-range-filter', 'dashboard-date-filter', (date, range) => { currentDashboardRangeFilter = range; currentDashboardDateFilter = date; updateAdminDashboard(); });
+    setupReportDateFilters('staff-dashboard-range-filter', 'staff-dashboard-date-filter', (date, range) => { currentStaffDashboardRangeFilter = range; currentStaffDashboardDateFilter = date; updateStaffDashboard(); });
+    // --- Set Default Dashboard Filters to Current Month ---
     const currentMonthValue = String(new Date().getMonth());
     const adminDashboardFilter = document.getElementById('dashboard-range-filter');
     if (adminDashboardFilter) {
@@ -3250,105 +3228,105 @@ setupReportDateFilters('staff-dashboard-range-filter', 'staff-dashboard-date-fil
     const staffDashboardFilter = document.getElementById('staff-dashboard-range-filter');
     if (staffDashboardFilter) {
         staffDashboardFilter.value = currentMonthValue;
-    }   
+    }
     // --- Autocomplete for Dashboard Earning Form ---
-const dashboardServiceInput = document.getElementById('dashboard-staff-earning-service');
-const dashboardEarningInput = document.getElementById('dashboard-staff-earning-full');
+    const dashboardServiceInput = document.getElementById('dashboard-staff-earning-service');
+    const dashboardEarningInput = document.getElementById('dashboard-staff-earning-full');
 
-if (dashboardServiceInput && dashboardEarningInput) {
-    // Use 'change' event to fire when an option is selected or input loses focus
-    dashboardServiceInput.addEventListener('change', (e) => {
-        const selectedServiceName = e.target.value;
-        const service = allServicesList.find(s => s.name === selectedServiceName);
+    if (dashboardServiceInput && dashboardEarningInput) {
+        // Use 'change' event to fire when an option is selected or input loses focus
+        dashboardServiceInput.addEventListener('change', (e) => {
+            const selectedServiceName = e.target.value;
+            const service = allServicesList.find(s => s.name === selectedServiceName);
 
-        if (service) {
-            dashboardEarningInput.value = service.price.toFixed(2);
+            if (service) {
+                dashboardEarningInput.value = service.price.toFixed(2);
+            }
+        });
+    }
+    // --- PASTE THE NEW REMINDER LOGIC HERE ---
+    const checkAppointmentReminders = () => {
+        const now = new Date();
+        allAppointments.forEach(appt => {
+            if (sentReminderIds.includes(appt.id)) {
+                return; // Reminder already sent for this appointment
+            }
+
+            const apptTime = appt.appointmentTimestamp.toDate();
+            const timeDifferenceMinutes = (apptTime.getTime() - now.getTime()) / 60000;
+
+            // If the appointment is between 0 and 60 minutes from now
+            if (timeDifferenceMinutes > 0 && timeDifferenceMinutes <= 60) {
+                const timeString = apptTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const serviceString = Array.isArray(appt.services) ? appt.services[0] : appt.services;
+
+                addNotification('reminder', `Reminder: ${appt.name}'s appointment for ${serviceString} is at ${timeString}.`);
+
+                sentReminderIds.push(appt.id); // Mark reminder as sent
+            }
+        });
+    };
+
+    // Check for reminders every minute
+    setInterval(checkAppointmentReminders, 60000);
+    // --- END OF NEW BLOCK ---
+    // REPLACE the old staff-earning-form listener with this one
+    document.getElementById('staff-earning-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const staffName = document.getElementById('staff-name').value;
+        const service = document.getElementById('staff-earning-service').value;
+        const earning = parseFloat(document.getElementById('staff-earning').value);
+        const tip = parseFloat(document.getElementById('staff-tip').value) || 0;
+        const date = document.getElementById('staff-earning-date').value;
+        if (isNaN(earning) || !date) { return alert('Please ensure Date, and Earning fields are filled out correctly.'); }
+        try {
+            await addDoc(collection(db, "earnings"), { staffName, service, earning, tip, date: Timestamp.fromDate(new Date(date + 'T12:00:00')) });
+
+            // Manually clear only the fields that need it, leaving the date intact
+            document.getElementById('staff-earning-service').value = '';
+            document.getElementById('staff-earning').value = '';
+            document.getElementById('staff-tip').value = '';
+
+        } catch (err) { console.error("Error adding earning: ", err); alert("Could not add earning."); }
+    });
+
+    // Located inside initMainApp()
+    document.getElementById('dashboard-staff-earning-form-full').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const staffName = document.getElementById('dashboard-staff-name-full').value;
+        const service = document.getElementById('dashboard-staff-earning-service').value;
+        const earning = parseFloat(document.getElementById('dashboard-staff-earning-full').value);
+        const tip = parseFloat(document.getElementById('dashboard-staff-tip-full').value) || 0;
+        const dateStr = document.getElementById('dashboard-staff-earning-date-full').value;
+
+        if (isNaN(earning) || !dateStr) { return alert('Please make sure the Date and Earning fields are filled out correctly.'); }
+
+        const date = new Date(dateStr + 'T12:00:00');
+
+        try {
+            await addDoc(collection(db, "earnings"), { staffName, service, earning, tip, date: Timestamp.fromDate(date) });
+
+            // Manually clear only the fields that need it, leaving the date intact
+            document.getElementById('dashboard-staff-earning-service').value = '';
+            document.getElementById('dashboard-staff-earning-full').value = '';
+            document.getElementById('dashboard-staff-tip-full').value = '';
+
+        } catch (err) {
+            console.error("Error saving earning entry: ", err);
+            alert("Could not save the earning entry.");
         }
     });
-}
-    // --- PASTE THE NEW REMINDER LOGIC HERE ---
-        const checkAppointmentReminders = () => {
-            const now = new Date();
-            allAppointments.forEach(appt => {
-                if (sentReminderIds.includes(appt.id)) {
-                    return; // Reminder already sent for this appointment
-                }
 
-                const apptTime = appt.appointmentTimestamp.toDate();
-                const timeDifferenceMinutes = (apptTime.getTime() - now.getTime()) / 60000;
-
-                // If the appointment is between 0 and 60 minutes from now
-                if (timeDifferenceMinutes > 0 && timeDifferenceMinutes <= 60) {
-                    const timeString = apptTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    const serviceString = Array.isArray(appt.services) ? appt.services[0] : appt.services;
-                    
-                    addNotification('reminder', `Reminder: ${appt.name}'s appointment for ${serviceString} is at ${timeString}.`);
-                    
-                    sentReminderIds.push(appt.id); // Mark reminder as sent
-                }
-            });
-        };
-
-        // Check for reminders every minute
-        setInterval(checkAppointmentReminders, 60000);
-        // --- END OF NEW BLOCK ---
-   // REPLACE the old staff-earning-form listener with this one
-document.getElementById('staff-earning-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const staffName = document.getElementById('staff-name').value;
-    const service = document.getElementById('staff-earning-service').value;
-    const earning = parseFloat(document.getElementById('staff-earning').value);
-    const tip = parseFloat(document.getElementById('staff-tip').value) || 0;
-    const date = document.getElementById('staff-earning-date').value;
-    if (isNaN(earning) || !date ) { return alert('Please ensure Date, and Earning fields are filled out correctly.'); }
-    try {
-        await addDoc(collection(db, "earnings"), { staffName, service, earning, tip, date: Timestamp.fromDate(new Date(date + 'T12:00:00')) });
-       
-       // Manually clear only the fields that need it, leaving the date intact
-       document.getElementById('staff-earning-service').value = '';
-       document.getElementById('staff-earning').value = '';
-       document.getElementById('staff-tip').value = '';
-
-    } catch (err) { console.error("Error adding earning: ", err); alert("Could not add earning."); }
-});
-
-// Located inside initMainApp()
-document.getElementById('dashboard-staff-earning-form-full').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const staffName = document.getElementById('dashboard-staff-name-full').value;
-    const service = document.getElementById('dashboard-staff-earning-service').value;
-    const earning = parseFloat(document.getElementById('dashboard-staff-earning-full').value);
-    const tip = parseFloat(document.getElementById('dashboard-staff-tip-full').value) || 0;
-    const dateStr = document.getElementById('dashboard-staff-earning-date-full').value;
-
-   if (isNaN(earning) || !dateStr) { return alert('Please make sure the Date and Earning fields are filled out correctly.'); }
-
-    const date = new Date(dateStr + 'T12:00:00');
-
-    try {
-        await addDoc(collection(db, "earnings"), { staffName, service, earning, tip, date: Timestamp.fromDate(date) });
-       
-       // Manually clear only the fields that need it, leaving the date intact
-       document.getElementById('dashboard-staff-earning-service').value = '';
-       document.getElementById('dashboard-staff-earning-full').value = '';
-       document.getElementById('dashboard-staff-tip-full').value = '';
-       
-    } catch (err) {
-        console.error("Error saving earning entry: ", err);
-        alert("Could not save the earning entry.");
-    }
-});
-    
     document.getElementById('staff-earning-table').addEventListener('click', async (e) => {
         const deleteBtn = e.target.closest('.delete-earning-btn');
         const editBtn = e.target.closest('.edit-earning-btn');
-        if(deleteBtn) { showConfirmModal("Delete this earning entry?", async () => { await deleteDoc(doc(db, "earnings", deleteBtn.dataset.id)); }); } 
+        if (deleteBtn) { showConfirmModal("Delete this earning entry?", async () => { await deleteDoc(doc(db, "earnings", deleteBtn.dataset.id)); }); }
         else if (editBtn) { const earning = allEarnings.find(e => e.id === editBtn.dataset.id); if (earning) { openEditEarningModal(earning); } }
     });
-     document.getElementById('dashboard-staff-earning-table-full').addEventListener('click', async (e) => {
+    document.getElementById('dashboard-staff-earning-table-full').addEventListener('click', async (e) => {
         const deleteBtn = e.target.closest('.delete-earning-btn');
         const editBtn = e.target.closest('.edit-earning-btn');
-        if(deleteBtn) { showConfirmModal("Delete this earning entry?", async () => { await deleteDoc(doc(db, "earnings", deleteBtn.dataset.id)); }); } 
+        if (deleteBtn) { showConfirmModal("Delete this earning entry?", async () => { await deleteDoc(doc(db, "earnings", deleteBtn.dataset.id)); }); }
         else if (editBtn) { const earning = allEarnings.find(e => e.id === editBtn.dataset.id); if (earning) { openEditEarningModal(earning); } }
     });
 
@@ -3357,7 +3335,7 @@ document.getElementById('dashboard-staff-earning-form-full').addEventListener('s
         const date = document.getElementById('salon-earning-date').value;
         if (!date) { return alert('Please select a date.'); }
         const salonEarningData = { date: Timestamp.fromDate(new Date(date + 'T12:00:00')), sellGiftCard: parseFloat(document.getElementById('sell-gift-card').value) || 0, returnGiftCard: parseFloat(document.getElementById('return-gift-card').value) || 0, check: parseFloat(document.getElementById('check-payment').value) || 0, noOfCredit: parseInt(document.getElementById('no-of-credit').value) || 0, totalCredit: parseFloat(document.getElementById('total-credit').value) || 0, venmo: parseFloat(document.getElementById('venmo-payment').value) || 0, square: parseFloat(document.getElementById('square-payment').value) || 0 };
-        techniciansAndStaff.forEach(tech => { const input = document.getElementById(`salon-earning-${tech.name.toLowerCase()}`); if(input) { salonEarningData[tech.name.toLowerCase()] = parseFloat(input.value) || 0; } });
+        techniciansAndStaff.forEach(tech => { const input = document.getElementById(`salon-earning-${tech.name.toLowerCase()}`); if (input) { salonEarningData[tech.name.toLowerCase()] = parseFloat(input.value) || 0; } });
         try {
             // Using set with merge to update if exists, create if not
             await setDoc(doc(db, "salon_earnings", date), salonEarningData, { merge: true });
@@ -3369,10 +3347,10 @@ document.getElementById('dashboard-staff-earning-form-full').addEventListener('s
     document.getElementById('salon-earning-table').addEventListener('click', async (e) => {
         const deleteBtn = e.target.closest('.delete-salon-earning-btn');
         const editBtn = e.target.closest('.edit-salon-earning-btn');
-        if(deleteBtn) { showConfirmModal("Delete this salon earning entry?", async () => { await deleteDoc(doc(db, "salon_earnings", deleteBtn.dataset.id)); }); } 
+        if (deleteBtn) { showConfirmModal("Delete this salon earning entry?", async () => { await deleteDoc(doc(db, "salon_earnings", deleteBtn.dataset.id)); }); }
         else if (editBtn) { const earning = allSalonEarnings.find(e => e.id === editBtn.dataset.id); if (earning) { openEditSalonEarningModal(earning); } }
     });
-    
+
     document.getElementById('export-salon-earnings-btn').addEventListener('click', () => {
         const filteredData = applySalonEarningFilters(allSalonEarnings, currentSalonEarningDateFilter, currentSalonEarningRangeFilter);
         const dataForExport = filteredData.map(earning => {
@@ -3448,7 +3426,7 @@ document.getElementById('dashboard-staff-earning-form-full').addEventListener('s
                     const date = row.Date;
                     // Format the date as YYYY-MM-DD for the document ID
                     const docId = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-                    
+
                     const salonEarningData = {
                         date: Timestamp.fromDate(date),
                         sellGiftCard: parseFloat(row['Sell GC']) || 0,
@@ -3492,51 +3470,51 @@ document.getElementById('dashboard-staff-earning-form-full').addEventListener('s
         printWindow.document.write(document.getElementById('salon-earning-table').outerHTML);
         printWindow.document.write('</body></html>');
         printWindow.document.close();
-        printWindow.focus(); 
+        printWindow.focus();
         setTimeout(() => { printWindow.print(); printWindow.close(); }, 250);
     });
 
-// REPLACE the old openEditEarningModal function with this one
-const openEditEarningModal = (earning) => {
-    editEarningForm.reset();
-    document.getElementById('edit-earning-id').value = earning.id;
-    document.getElementById('edit-staff-earning-date').value = new Date(earning.date.seconds * 1000).toISOString().split('T')[0];
-    document.getElementById('edit-staff-name').value = earning.staffName;
-    document.getElementById('edit-staff-earning-service').value = earning.service || ''; // Populate service
-    document.getElementById('edit-staff-earning').value = earning.earning;
-    document.getElementById('edit-staff-tip').value = earning.tip;
+    // REPLACE the old openEditEarningModal function with this one
+    const openEditEarningModal = (earning) => {
+        editEarningForm.reset();
+        document.getElementById('edit-earning-id').value = earning.id;
+        document.getElementById('edit-staff-earning-date').value = new Date(earning.date.seconds * 1000).toISOString().split('T')[0];
+        document.getElementById('edit-staff-name').value = earning.staffName;
+        document.getElementById('edit-staff-earning-service').value = earning.service || ''; // Populate service
+        document.getElementById('edit-staff-earning').value = earning.earning;
+        document.getElementById('edit-staff-tip').value = earning.tip;
 
-    // Populate the service datalist for autocomplete
-    const serviceList = document.getElementById('edit-staff-earning-services-list');
-    if (serviceList) {
-        serviceList.innerHTML = Object.keys(servicesData).flatMap(category => 
-            servicesData[category].map(service => `<option value="${service.name}"></option>`)
-        ).join('');
-    }
+        // Populate the service datalist for autocomplete
+        const serviceList = document.getElementById('edit-staff-earning-services-list');
+        if (serviceList) {
+            serviceList.innerHTML = Object.keys(servicesData).flatMap(category =>
+                servicesData[category].map(service => `<option value="${service.name}"></option>`)
+            ).join('');
+        }
 
-    editEarningModal.classList.remove('hidden'); 
-    editEarningModal.classList.add('flex');
-};
+        editEarningModal.classList.remove('hidden');
+        editEarningModal.classList.add('flex');
+    };
     const closeEditEarningModal = () => { editEarningModal.classList.add('hidden'); editEarningModal.classList.remove('flex'); };
     document.getElementById('edit-earning-cancel-btn').addEventListener('click', closeEditEarningModal);
     document.querySelector('.edit-earning-modal-overlay').addEventListener('click', closeEditEarningModal);
 
-// REPLACE the old editEarningForm submit listener with this one
-editEarningForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const earningId = document.getElementById('edit-earning-id').value;
-    if (!earningId) return;
-    try {
-        await updateDoc(doc(db, "earnings", earningId), {
-            staffName: document.getElementById('edit-staff-name').value,
-            service: document.getElementById('edit-staff-earning-service').value, // Save the service
-            earning: parseFloat(document.getElementById('edit-staff-earning').value),
-            tip: parseFloat(document.getElementById('edit-staff-tip').value), 
-            date: Timestamp.fromDate(new Date(document.getElementById('edit-staff-earning-date').value + 'T12:00:00'))
-        });
-        closeEditEarningModal();
-    } catch(err) { console.error("Error updating earning:", err); alert("Could not update earning."); }
-});
+    // REPLACE the old editEarningForm submit listener with this one
+    editEarningForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const earningId = document.getElementById('edit-earning-id').value;
+        if (!earningId) return;
+        try {
+            await updateDoc(doc(db, "earnings", earningId), {
+                staffName: document.getElementById('edit-staff-name').value,
+                service: document.getElementById('edit-staff-earning-service').value, // Save the service
+                earning: parseFloat(document.getElementById('edit-staff-earning').value),
+                tip: parseFloat(document.getElementById('edit-staff-tip').value),
+                date: Timestamp.fromDate(new Date(document.getElementById('edit-staff-earning-date').value + 'T12:00:00'))
+            });
+            closeEditEarningModal();
+        } catch (err) { console.error("Error updating earning:", err); alert("Could not update earning."); }
+    });
 
     const openEditSalonEarningModal = (earning) => {
         editSalonEarningForm.reset();
@@ -3566,18 +3544,18 @@ editEarningForm.addEventListener('submit', async (e) => {
         const earningId = document.getElementById('edit-salon-earning-id').value;
         if (!earningId) return;
         const updatedData = { date: Timestamp.fromDate(new Date(document.getElementById('edit-salon-earning-date').value + 'T12:00:00')), sellGiftCard: parseFloat(document.getElementById('edit-sell-gift-card').value) || 0, returnGiftCard: parseFloat(document.getElementById('edit-return-gift-card').value) || 0, check: parseFloat(document.getElementById('check-payment').value) || 0, noOfCredit: parseInt(document.getElementById('edit-no-of-credit').value) || 0, totalCredit: parseFloat(document.getElementById('edit-total-credit').value) || 0, venmo: parseFloat(document.getElementById('edit-venmo-payment').value) || 0, square: parseFloat(document.getElementById('edit-square-payment').value) || 0 };
-        techniciansAndStaff.forEach(tech => { const input = document.getElementById(`edit-${tech.name.toLowerCase()}-earning`); if(input) { updatedData[tech.name.toLowerCase()] = parseFloat(input.value) || 0; } });
+        techniciansAndStaff.forEach(tech => { const input = document.getElementById(`edit-${tech.name.toLowerCase()}-earning`); if (input) { updatedData[tech.name.toLowerCase()] = parseFloat(input.value) || 0; } });
         try {
             await updateDoc(doc(db, "salon_earnings", earningId), updatedData);
             closeEditSalonEarningModal();
-        } catch(err) { console.error("Error updating salon earning:", err); alert("Could not update salon earning."); }
+        } catch (err) { console.error("Error updating salon earning:", err); alert("Could not update salon earning."); }
     });
 
-// REPLACE the old renderAllBookingsList function with this one
-const renderAllBookingsList = () => {
-    todayCountSpan.textContent = allAppointments.filter(a => a.appointmentTimestamp.toDate() > new Date()).length;
-    renderDetailedAppointmentsList('today-bookings-table-container', allAppointments, currentTechFilterCalendar);
-};
+    // REPLACE the old renderAllBookingsList function with this one
+    const renderAllBookingsList = () => {
+        todayCountSpan.textContent = allAppointments.filter(a => a.appointmentTimestamp.toDate() > new Date()).length;
+        renderDetailedAppointmentsList('today-bookings-table-container', allAppointments, currentTechFilterCalendar);
+    };
 
     document.getElementById('today-btn').addEventListener('click', () => { document.getElementById('month-view').classList.add('hidden'); document.getElementById('month-nav').classList.add('hidden'); document.getElementById('list-view').classList.remove('hidden'); document.getElementById('today-btn').classList.add('hidden'); document.getElementById('month-view-btn').classList.remove('hidden'); renderAllBookingsList(); });
     document.getElementById('month-view-btn').addEventListener('click', () => { document.getElementById('list-view').classList.add('hidden'); document.getElementById('month-view-btn').classList.add('hidden'); document.getElementById('month-view').classList.remove('hidden'); document.getElementById('month-nav').classList.remove('hidden'); document.getElementById('today-btn').classList.remove('hidden'); });
@@ -3611,57 +3589,57 @@ const renderAllBookingsList = () => {
             let text = "Sorry, could not generate a message.";
             if (result.candidates?.[0]?.content?.parts?.[0]) { text = result.candidates[0].content.parts[0].text; }
             smsTextarea.value = text;
-            if (client.phone && client.phone !== 'N/A') { sendLink.href = `sms:${client.phone}?body=${encodeURIComponent(text)}`; sendLink.classList.remove('pointer-events-none', 'opacity-50'); } 
+            if (client.phone && client.phone !== 'N/A') { sendLink.href = `sms:${client.phone}?body=${encodeURIComponent(text)}`; sendLink.classList.remove('pointer-events-none', 'opacity-50'); }
             else { sendLink.href = '#'; sendLink.onclick = () => alert('Client phone number is not available.'); sendLink.classList.remove('pointer-events-none', 'opacity-50'); }
         } catch (error) { console.error("Error generating SMS:", error); smsTextarea.value = "Error connecting to the AI service."; sendLink.classList.remove('pointer-events-none', 'opacity-50'); }
     }
 
     document.getElementById('clients-list-report-content').addEventListener('click', (e) => {
-    const viewProfileBtn = e.target.closest('.view-client-profile-btn');
-    const editBtn = e.target.closest('.edit-client-btn');
-    const deleteBtn = e.target.closest('.delete-client-btn');
+        const viewProfileBtn = e.target.closest('.view-client-profile-btn');
+        const editBtn = e.target.closest('.edit-client-btn');
+        const deleteBtn = e.target.closest('.delete-client-btn');
 
-    if (viewProfileBtn) { 
-        const client = aggregatedClients.find(c => c.id === viewProfileBtn.dataset.id); 
-        if(client) { 
-            openClientProfileModal(client); 
-        } else {
-            console.warn("Could not find client data for ID:", viewProfileBtn.dataset.id);
+        if (viewProfileBtn) {
+            const client = aggregatedClients.find(c => c.id === viewProfileBtn.dataset.id);
+            if (client) {
+                openClientProfileModal(client);
+            } else {
+                console.warn("Could not find client data for ID:", viewProfileBtn.dataset.id);
+            }
         }
-    } 
-    else if (editBtn) { 
-        const client = aggregatedClients.find(c => c.id === editBtn.dataset.id); 
-        if(client) { 
-            openClientModal(client); 
-        } else {
-            console.warn("Could not find client data for ID:", editBtn.dataset.id);
+        else if (editBtn) {
+            const client = aggregatedClients.find(c => c.id === editBtn.dataset.id);
+            if (client) {
+                openClientModal(client);
+            } else {
+                console.warn("Could not find client data for ID:", editBtn.dataset.id);
+            }
         }
-    } 
-    else if (deleteBtn) { 
-        const clientId = deleteBtn.dataset.id; 
-        const client = aggregatedClients.find(c => c.id === clientId); 
-        if (client) { 
-            showConfirmModal(`Delete all records for ${client.name}? This cannot be undone.`, async () => { 
-                try {
-                    await deleteDoc(doc(db, "clients", clientId)); 
-                    alert(`${client.name} has been deleted.`);
-                } catch (error) {
-                    console.error("Error deleting client:", error);
-                    alert("Could not delete the client.");
-                }
-            }); 
-        } else {
-             console.warn("Could not find client data for ID:", clientId);
+        else if (deleteBtn) {
+            const clientId = deleteBtn.dataset.id;
+            const client = aggregatedClients.find(c => c.id === clientId);
+            if (client) {
+                showConfirmModal(`Delete all records for ${client.name}? This cannot be undone.`, async () => {
+                    try {
+                        await deleteDoc(doc(db, "clients", clientId));
+                        alert(`${client.name} has been deleted.`);
+                    } catch (error) {
+                        console.error("Error deleting client:", error);
+                        alert("Could not delete the client.");
+                    }
+                });
+            } else {
+                console.warn("Could not find client data for ID:", clientId);
+            }
         }
-    }
-});
+    });
     document.getElementById('gemini-sms-close-btn').addEventListener('click', () => { geminiSmsModal.classList.add('hidden'); geminiSmsModal.classList.remove('flex'); });
     document.querySelector('.gemini-sms-modal-overlay').addEventListener('click', () => { geminiSmsModal.classList.add('hidden'); geminiSmsModal.classList.remove('flex'); });
-    
+
     document.getElementById('floating-booking-btn').addEventListener('click', () => { openAddAppointmentModal(getLocalDateString()); });
-// ADD THIS NEW LINE
-document.getElementById('staff-details-date-filter').addEventListener('change', updateStaffDashboard);
-    
+    // ADD THIS NEW LINE
+    document.getElementById('staff-details-date-filter').addEventListener('change', updateStaffDashboard);
+
     const addUserForm = document.getElementById('add-user-form');
     const usersTableBody = document.querySelector('#users-table tbody');
     const renderUsers = (users) => {
@@ -3671,111 +3649,111 @@ document.getElementById('staff-details-date-filter').addEventListener('change', 
             row.innerHTML = `<td class="px-6 py-4">${user.name}</td><td class="px-6 py-4">${user.email}</td><td class="px-6 py-4">${user.phone}</td><td class="px-6 py-4">${user.role}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${user.id}" class="edit-user-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${user.id}" class="delete-user-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
         });
     };
-  // REPLACE the old populateTechnicianFilters function with this one
-const populateTechnicianFilters = () => {
-    const techSelects = document.querySelectorAll('#appointment-technician-select, #technician-name-select, #staff-name, #edit-staff-name, #checkin-technician-select, #dashboard-staff-name-full');
-    const techContainers = document.querySelectorAll('.tech-filter-container');
+    // REPLACE the old populateTechnicianFilters function with this one
+    const populateTechnicianFilters = () => {
+        const techSelects = document.querySelectorAll('#appointment-technician-select, #technician-name-select, #staff-name, #edit-staff-name, #checkin-technician-select, #dashboard-staff-name-full');
+        const techContainers = document.querySelectorAll('.tech-filter-container');
 
-    const serviceOptionsHTML = Object.keys(servicesData).flatMap(category => 
-        servicesData[category].map(service => `<option value="${service.name}"></option>`)
-    ).join('');
+        const serviceOptionsHTML = Object.keys(servicesData).flatMap(category =>
+            servicesData[category].map(service => `<option value="${service.name}"></option>`)
+        ).join('');
 
-    const staffEarningServiceList = document.getElementById('staff-earning-services-list');
-    if (staffEarningServiceList) {
-        staffEarningServiceList.innerHTML = serviceOptionsHTML;
-    }
-    const dashboardServiceList = document.getElementById('dashboard-staff-earning-services-list');
-    if (dashboardServiceList) {
-        dashboardServiceList.innerHTML = serviceOptionsHTML;
-    }
+        const staffEarningServiceList = document.getElementById('staff-earning-services-list');
+        if (staffEarningServiceList) {
+            staffEarningServiceList.innerHTML = serviceOptionsHTML;
+        }
+        const dashboardServiceList = document.getElementById('dashboard-staff-earning-services-list');
+        if (dashboardServiceList) {
+            dashboardServiceList.innerHTML = serviceOptionsHTML;
+        }
 
-    techContainers.forEach(container => {
-        const userList = container.id.includes('earning') ? techniciansAndStaff : technicians;
-        container.querySelectorAll('.dynamic-tech-btn').forEach(btn => btn.remove());
-        userList.forEach(tech => { const btn = document.createElement('button'); btn.className = 'tech-filter-btn dynamic-tech-btn px-3 py-1 rounded-full text-sm'; btn.dataset.tech = tech.name; btn.textContent = tech.name; container.appendChild(btn); });
-    });
+        techContainers.forEach(container => {
+            const userList = container.id.includes('earning') ? techniciansAndStaff : technicians;
+            container.querySelectorAll('.dynamic-tech-btn').forEach(btn => btn.remove());
+            userList.forEach(tech => { const btn = document.createElement('button'); btn.className = 'tech-filter-btn dynamic-tech-btn px-3 py-1 rounded-full text-sm'; btn.dataset.tech = tech.name; btn.textContent = tech.name; container.appendChild(btn); });
+        });
 
-    techSelects.forEach(select => {
-        if (!select) return; 
-        const userList = (select.id.includes('staff-name')) ? techniciansAndStaff : technicians;
-        const firstOption = select.options[0];
-        select.innerHTML = '';
-        if(firstOption && (firstOption.value === 'Any Technician' || firstOption.value === '')) { select.appendChild(firstOption); }
-        userList.forEach(tech => { select.appendChild(new Option(tech.name, tech.name)); });
-         if(select.id === 'technician-name-select') { select.appendChild(new Option("Other", "other")); }
+        techSelects.forEach(select => {
+            if (!select) return;
+            const userList = (select.id.includes('staff-name')) ? techniciansAndStaff : technicians;
+            const firstOption = select.options[0];
+            select.innerHTML = '';
+            if (firstOption && (firstOption.value === 'Any Technician' || firstOption.value === '')) { select.appendChild(firstOption); }
+            userList.forEach(tech => { select.appendChild(new Option(tech.name, tech.name)); });
+            if (select.id === 'technician-name-select') { select.appendChild(new Option("Other", "other")); }
 
-         if (select.id === 'staff-name' || select.id === 'dashboard-staff-name-full') {
-            select.value = 'TJ';
-         }
-    });
-    const salonEarningInputs = document.getElementById('salon-earning-inputs');
-    const salonEarningTableHead = document.getElementById('salon-earning-table-head');
-    const salonEarningTableFoot = document.getElementById('salon-earning-table-foot');
-    salonEarningInputs.innerHTML = '';
-    let headHTML = '<tr><th scope="col" class="px-6 py-3">Date</th>';
-    let footHTML = `<tr><td class="px-6 py-3 text-right font-bold">Total:</td>`;
-    techniciansAndStaff.forEach(tech => {
-        const techNameLower = tech.name.toLowerCase();
-        salonEarningInputs.innerHTML += `<div><label for="salon-earning-${techNameLower}" class="block text-sm font-medium text-gray-600">${tech.name}</label><input type="number" step="0.01" id="salon-earning-${techNameLower}" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount"></div>`;
-        headHTML += `<th scope="col" class="px-6 py-3">${tech.name}</th>`;
-        footHTML += `<td id="total-${techNameLower}" class="px-6 py-3"></td>`;
-    });
-    headHTML += `<th scope="col" class="px-6 py-3">Sell GC</th><th scope="col" class="px-6 py-3">Return GC</th><th scope="col" class="px-6 py-3">Check</th><th scope="col" class="px-6 py-3">No of Credit</th><th scope="col" class="px-6 py-3">Total Credit</th><th scope="col" class="px-6 py-3">Venmo</th><th scope="col" class="px-6 py-3">Square</th><th scope="col" class="px-6 py-3 font-bold">Total</th><th scope="col" class="px-6 py-3 font-bold">Cash</th><th scope="col" class="px-6 py-3 text-center">Action</th></tr>`;
-    footHTML += `<td id="total-sell-gc" class="px-6 py-3"></td><td id="total-return-gc" class="px-6 py-3"></td><td id="total-check" class="px-6 py-3"></td><td id="total-no-credit" class="px-6 py-3"></td><td id="total-total-credit" class="px-6 py-3"></td><td id="total-venmo" class="px-6 py-3"></td><td id="total-square" class="px-6 py-3"></td><td id="total-total" class="px-6 py-3 font-bold"></td><td id="total-cash" class="px-6 py-3 font-bold"></td><td class="px-6 py-3"></td></tr>`;
-    let commissionHTML = `<tr class="text-center"><td class="px-6 py-3 text-right font-bold border-t-2 border-gray-300">Commission 70%:</td>`, check70HTML = `<tr class="text-center"><td class="px-6 py-3 text-right font-bold">70% of Check:</td>`, cash30HTML = `<tr class="text-center"><td class="px-6 py-3 text-right font-bold">30% of Cash:</td>`;
-    techniciansAndStaff.forEach(tech => {
-        const techNameLower = tech.name.toLowerCase();
-        commissionHTML += `<td id="commission-${techNameLower}" class="px-6 py-3 border-t-2 border-gray-300"></td>`;
-        check70HTML += `<td id="check70-${techNameLower}" class="px-6 py-3"></td>`;
-        cash30HTML += `<td id="cash30-${techNameLower}" class="px-6 py-3"></td>`;
-    });
-    commissionHTML += `<td class="border-t-2 border-gray-300" colspan="10"></td></tr>`;
-    check70HTML += `<td colspan="10"></td></tr>`;
-    cash30HTML += `<td colspan="10"></td></tr>`;
-    salonEarningTableHead.innerHTML = headHTML;
-    salonEarningTableFoot.innerHTML = footHTML + commissionHTML + check70HTML + cash30HTML;
-};
+            if (select.id === 'staff-name' || select.id === 'dashboard-staff-name-full') {
+                select.value = 'TJ';
+            }
+        });
+        const salonEarningInputs = document.getElementById('salon-earning-inputs');
+        const salonEarningTableHead = document.getElementById('salon-earning-table-head');
+        const salonEarningTableFoot = document.getElementById('salon-earning-table-foot');
+        salonEarningInputs.innerHTML = '';
+        let headHTML = '<tr><th scope="col" class="px-6 py-3">Date</th>';
+        let footHTML = `<tr><td class="px-6 py-3 text-right font-bold">Total:</td>`;
+        techniciansAndStaff.forEach(tech => {
+            const techNameLower = tech.name.toLowerCase();
+            salonEarningInputs.innerHTML += `<div><label for="salon-earning-${techNameLower}" class="block text-sm font-medium text-gray-600">${tech.name}</label><input type="number" step="0.01" id="salon-earning-${techNameLower}" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="Amount"></div>`;
+            headHTML += `<th scope="col" class="px-6 py-3">${tech.name}</th>`;
+            footHTML += `<td id="total-${techNameLower}" class="px-6 py-3"></td>`;
+        });
+        headHTML += `<th scope="col" class="px-6 py-3">Sell GC</th><th scope="col" class="px-6 py-3">Return GC</th><th scope="col" class="px-6 py-3">Check</th><th scope="col" class="px-6 py-3">No of Credit</th><th scope="col" class="px-6 py-3">Total Credit</th><th scope="col" class="px-6 py-3">Venmo</th><th scope="col" class="px-6 py-3">Square</th><th scope="col" class="px-6 py-3 font-bold">Total</th><th scope="col" class="px-6 py-3 font-bold">Cash</th><th scope="col" class="px-6 py-3 text-center">Action</th></tr>`;
+        footHTML += `<td id="total-sell-gc" class="px-6 py-3"></td><td id="total-return-gc" class="px-6 py-3"></td><td id="total-check" class="px-6 py-3"></td><td id="total-no-credit" class="px-6 py-3"></td><td id="total-total-credit" class="px-6 py-3"></td><td id="total-venmo" class="px-6 py-3"></td><td id="total-square" class="px-6 py-3"></td><td id="total-total" class="px-6 py-3 font-bold"></td><td id="total-cash" class="px-6 py-3 font-bold"></td><td class="px-6 py-3"></td></tr>`;
+        let commissionHTML = `<tr class="text-center"><td class="px-6 py-3 text-right font-bold border-t-2 border-gray-300">Commission 70%:</td>`, check70HTML = `<tr class="text-center"><td class="px-6 py-3 text-right font-bold">70% of Check:</td>`, cash30HTML = `<tr class="text-center"><td class="px-6 py-3 text-right font-bold">30% of Cash:</td>`;
+        techniciansAndStaff.forEach(tech => {
+            const techNameLower = tech.name.toLowerCase();
+            commissionHTML += `<td id="commission-${techNameLower}" class="px-6 py-3 border-t-2 border-gray-300"></td>`;
+            check70HTML += `<td id="check70-${techNameLower}" class="px-6 py-3"></td>`;
+            cash30HTML += `<td id="cash30-${techNameLower}" class="px-6 py-3"></td>`;
+        });
+        commissionHTML += `<td class="border-t-2 border-gray-300" colspan="10"></td></tr>`;
+        check70HTML += `<td colspan="10"></td></tr>`;
+        cash30HTML += `<td colspan="10"></td></tr>`;
+        salonEarningTableHead.innerHTML = headHTML;
+        salonEarningTableFoot.innerHTML = footHTML + commissionHTML + check70HTML + cash30HTML;
+    };
     // ADD THIS ENTIRE NEW FUNCTION FOR LOAD TECHNICIAN IN LANDING PAGE 
-const updatePublicTechnicianList = async (users) => {
-    try {
-        const technicians = users
-            .filter(user => user.role === 'technician')
-            .map(user => user.name);
+    const updatePublicTechnicianList = async (users) => {
+        try {
+            const technicians = users
+                .filter(user => user.role === 'technician')
+                .map(user => user.name);
 
-        const publicDataRef = doc(db, "public_data", "technicians");
-        await setDoc(publicDataRef, { names: technicians });
-        //console.log("Public technician list updated.");
-    } catch (error) {
-        console.error("Error updating public technician list:", error);
-    }
-};
-    
+            const publicDataRef = doc(db, "public_data", "technicians");
+            await setDoc(publicDataRef, { names: technicians });
+            //console.log("Public technician list updated.");
+        } catch (error) {
+            console.error("Error updating public technician list:", error);
+        }
+    };
 
-// REPLACE the old "users" onSnapshot listener with this one
-onSnapshot(collection(db, "users"), (snapshot) => {
-    const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    techniciansAndStaff = users.filter(user => user.role === 'technician' || user.role === 'staff');
-    technicians = users.filter(user => user.role === 'technician');
-    // --- ADD THIS NEW BLOCK TO CREATE THE COLOR MAP ---
-    technicianColorMap = {};
-    technicians.forEach((tech, index) => {
-        // Assign a color from the palette to each technician
-        technicianColorMap[tech.name] = colorPalette[index % colorPalette.length];
+
+    // REPLACE the old "users" onSnapshot listener with this one
+    onSnapshot(collection(db, "users"), (snapshot) => {
+        const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        techniciansAndStaff = users.filter(user => user.role === 'technician' || user.role === 'staff');
+        technicians = users.filter(user => user.role === 'technician');
+        // --- ADD THIS NEW BLOCK TO CREATE THE COLOR MAP ---
+        technicianColorMap = {};
+        technicians.forEach((tech, index) => {
+            // Assign a color from the palette to each technician
+            technicianColorMap[tech.name] = colorPalette[index % colorPalette.length];
+        });
+        // --- END OF NEW BLOCK ---
+        renderUsers(users);
+        populateTechnicianFilters();
+
+        // If the current user is an admin, update the public list
+        if (currentUserRole === 'admin') {
+            updatePublicTechnicianList(users);
+        }
     });
-    // --- END OF NEW BLOCK ---
-    renderUsers(users);
-    populateTechnicianFilters();
-
-    // If the current user is an admin, update the public list
-    if (currentUserRole === 'admin') {
-        updatePublicTechnicianList(users);
-    }
-});
     addUserForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const userId = document.getElementById('edit-user-id').value;
         const name = document.getElementById('new-user-name').value, phone = document.getElementById('new-user-phone').value, email = document.getElementById('new-user-email').value, password = document.getElementById('new-user-password').value, role = document.getElementById('user-role').value;
-        if (userId) { await setDoc(doc(db, "users", userId), { name, phone, email, role }); alert("User updated."); } 
+        if (userId) { await setDoc(doc(db, "users", userId), { name, phone, email, role }); alert("User updated."); }
         else {
             if (!password || password.length < 6) { return alert("Password must be at least 6 characters."); }
             try {
@@ -3824,7 +3802,7 @@ onSnapshot(collection(db, "users"), (snapshot) => {
         const lowStockItems = allInventory.filter(item => item.quantity <= item.lowStockAlert);
         inventoryReportTableBody.innerHTML = '';
 
-        if(lowStockItems.length === 0) {
+        if (lowStockItems.length === 0) {
             inventoryReportTableBody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-gray-400">No items are currently low on stock.</td></tr>`;
             return;
         }
@@ -3839,7 +3817,7 @@ onSnapshot(collection(db, "users"), (snapshot) => {
             const usageLast30d = recentUsage
                 .filter(usage => usage.productId === item.id)
                 .reduce((sum, usage) => sum + usage.quantityUsed, 0);
-            
+
             const suggestedReorder = Math.max(0, usageLast30d - item.quantity);
 
             const row = inventoryReportTableBody.insertRow();
@@ -3859,7 +3837,7 @@ onSnapshot(collection(db, "users"), (snapshot) => {
             productSupplierSelect.appendChild(new Option(supplier.name, supplier.name));
         });
     };
-    
+
     const renderInventory = () => {
         inventoryTableBody.innerHTML = '';
         allInventory.forEach(product => {
@@ -3877,7 +3855,7 @@ onSnapshot(collection(db, "users"), (snapshot) => {
             if ((change.type === "added" || change.type === "modified") && initialInventoryLoaded) {
                 const product = { id: change.doc.id, ...change.doc.data() };
                 if (currentUserRole === 'admin' && product.quantity <= product.lowStockAlert) {
-                     if (!notifications.some(n => n.itemId === product.id)) {
+                    if (!notifications.some(n => n.itemId === product.id)) {
                         addNotification('stock', `${product.name} is low in stock (${product.quantity} left).`, product.id);
                     }
                 } else {
@@ -3900,7 +3878,7 @@ onSnapshot(collection(db, "users"), (snapshot) => {
         const productId = document.getElementById('edit-product-id').value;
         const productData = { name: document.getElementById('product-name').value, category: document.getElementById('product-category').value, supplier: document.getElementById('product-supplier').value, quantity: parseInt(document.getElementById('product-quantity').value, 10), price: parseFloat(document.getElementById('product-price').value), lowStockAlert: parseInt(document.getElementById('low-stock-alert').value, 10) };
         try {
-            if (productId) { await updateDoc(doc(db, "inventory", productId), productData); } 
+            if (productId) { await updateDoc(doc(db, "inventory", productId), productData); }
             else { await addDoc(collection(db, "inventory"), productData); }
             resetProductForm();
         } catch (error) { console.error("Error saving product:", error); alert("Could not save product."); }
@@ -3978,7 +3956,7 @@ onSnapshot(collection(db, "users"), (snapshot) => {
         const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
         let hoursData = {};
         const docSnap = await getDoc(doc(db, "settings", "salonHours"));
-        if (docSnap.exists()) { hoursData = docSnap.data(); } 
+        if (docSnap.exists()) { hoursData = docSnap.data(); }
         else { days.forEach(day => { hoursData[day.toLowerCase()] = { isOpen: day !== 'Sunday', open: '09:00', close: '20:00' }; }); }
         salonHours = hoursData;
         hoursContainer.innerHTML = days.map(day => {
@@ -4003,54 +3981,54 @@ onSnapshot(collection(db, "users"), (snapshot) => {
             const timeInputs = container.querySelectorAll('input[type="time"]');
             newHours[day] = { isOpen: container.querySelector('input[type="checkbox"]').checked, open: timeInputs[0].value, close: timeInputs[1].value };
         });
-        try { await setDoc(doc(db, "settings", "salonHours"), newHours); salonHours = newHours; alert("Salon hours saved!"); } 
+        try { await setDoc(doc(db, "settings", "salonHours"), newHours); salonHours = newHours; alert("Salon hours saved!"); }
         catch (error) { console.error("Error saving salon hours:", error); alert("Could not save salon hours."); }
     });
 
-// Located inside initMainApp()
-const loadFeatureToggles = async () => {
-    const settingsDoc = await getDoc(doc(db, "settings", "features"));
-    if (settingsDoc.exists()) {
-        const settings = settingsDoc.data();
-        document.getElementById('toggle-client-login').checked = settings.showClientLogin !== false;
-        document.getElementById('toggle-promotions').checked = settings.showPromotions !== false;
-        document.getElementById('toggle-gift-card').checked = settings.showGiftCards !== false;
-        document.getElementById('toggle-nails-idea').checked = settings.showNailArt !== false;
-        // Safely check for the memberships property
-        document.getElementById('toggle-memberships').checked = settings.showMemberships !== false;
-    } else {
-        // Default all to true if no settings exist yet
-        document.getElementById('toggle-client-login').checked = true;
-        document.getElementById('toggle-promotions').checked = true;
-        document.getElementById('toggle-gift-card').checked = true;
-        document.getElementById('toggle-nails-idea').checked = true;
-        document.getElementById('toggle-memberships').checked = true; // Add this line
-    }
-};
+    // Located inside initMainApp()
+    const loadFeatureToggles = async () => {
+        const settingsDoc = await getDoc(doc(db, "settings", "features"));
+        if (settingsDoc.exists()) {
+            const settings = settingsDoc.data();
+            document.getElementById('toggle-client-login').checked = settings.showClientLogin !== false;
+            document.getElementById('toggle-promotions').checked = settings.showPromotions !== false;
+            document.getElementById('toggle-gift-card').checked = settings.showGiftCards !== false;
+            document.getElementById('toggle-nails-idea').checked = settings.showNailArt !== false;
+            // Safely check for the memberships property
+            document.getElementById('toggle-memberships').checked = settings.showMemberships !== false;
+        } else {
+            // Default all to true if no settings exist yet
+            document.getElementById('toggle-client-login').checked = true;
+            document.getElementById('toggle-promotions').checked = true;
+            document.getElementById('toggle-gift-card').checked = true;
+            document.getElementById('toggle-nails-idea').checked = true;
+            document.getElementById('toggle-memberships').checked = true; // Add this line
+        }
+    };
 
-featureTogglesForm.addEventListener('change', async (e) => {
-    if (e.target.type === 'checkbox') {
-        const settings = {
-            showClientLogin: document.getElementById('toggle-client-login').checked,
-            showPromotions: document.getElementById('toggle-promotions').checked,
-            showGiftCards: document.getElementById('toggle-gift-card').checked,
-            showNailArt: document.getElementById('toggle-nails-idea').checked,
-            showMemberships: document.getElementById('toggle-memberships').checked // Add this line
-        };
-        await setDoc(doc(db, "settings", "features"), settings, { merge: true });
-    }
-});
+    featureTogglesForm.addEventListener('change', async (e) => {
+        if (e.target.type === 'checkbox') {
+            const settings = {
+                showClientLogin: document.getElementById('toggle-client-login').checked,
+                showPromotions: document.getElementById('toggle-promotions').checked,
+                showGiftCards: document.getElementById('toggle-gift-card').checked,
+                showNailArt: document.getElementById('toggle-nails-idea').checked,
+                showMemberships: document.getElementById('toggle-memberships').checked // Add this line
+            };
+            await setDoc(doc(db, "settings", "features"), settings, { merge: true });
+        }
+    });
 
-    const loadSettings = async () => { 
-        const bookingSnap = await getDoc(doc(db, "settings", "booking")); 
-        if (bookingSnap.exists()) { const data = bookingSnap.data(); minBookingHoursInput.value = data.minBookingHours || 2; } 
+    const loadSettings = async () => {
+        const bookingSnap = await getDoc(doc(db, "settings", "booking"));
+        if (bookingSnap.exists()) { const data = bookingSnap.data(); minBookingHoursInput.value = data.minBookingHours || 2; }
         const securitySnap = await getDoc(doc(db, "settings", "security"));
         if (securitySnap.exists()) { const data = securitySnap.data(); loginSecuritySettings = data; maxLoginAttemptsInput.value = data.maxAttempts || 5; loginLockoutMinutesInput.value = data.lockoutMinutes || 15; }
     };
     loadSettings();
     loadFeatureToggles();
     loadAndRenderSalonHours();
-// --- Setup for Payment Guide ---
+    // --- Setup for Payment Guide ---
     const paymentGuideForm = document.getElementById('payment-guide-form');
     const paymentGuideTextarea = document.getElementById('gift-card-payment-guide-textarea');
 
@@ -4078,7 +4056,7 @@ featureTogglesForm.addEventListener('change', async (e) => {
         const maxAttempts = parseInt(maxLoginAttemptsInput.value, 10);
         const lockoutMinutes = parseInt(loginLockoutMinutesInput.value, 10);
         if (isNaN(hours) || hours < 0 || isNaN(maxAttempts) || maxAttempts < 1 || isNaN(lockoutMinutes) || lockoutMinutes < 1) { return alert("Please enter valid, positive numbers for all settings."); }
-        try { await setDoc(doc(db, "settings", "booking"), { minBookingHours: hours }); await setDoc(doc(db, "settings", "security"), { maxAttempts: maxAttempts, lockoutMinutes: lockoutMinutes }); loginSecuritySettings = { maxAttempts, lockoutMinutes }; alert("Settings saved!"); } 
+        try { await setDoc(doc(db, "settings", "booking"), { minBookingHours: hours }); await setDoc(doc(db, "settings", "security"), { maxAttempts: maxAttempts, lockoutMinutes: lockoutMinutes }); loginSecuritySettings = { maxAttempts, lockoutMinutes }; alert("Settings saved!"); }
         catch (error) { console.error("Error saving settings: ", error); alert("Could not save settings."); }
     });
 
@@ -4115,7 +4093,7 @@ featureTogglesForm.addEventListener('change', async (e) => {
         e.preventDefault();
         const supplierId = document.getElementById('edit-supplier-id').value;
         const data = { name: document.getElementById('supplier-name').value, phone: document.getElementById('supplier-phone').value, email: document.getElementById('supplier-email').value, website: document.getElementById('supplier-website').value };
-        if (supplierId) { await updateDoc(doc(db, "suppliers", supplierId), data); } 
+        if (supplierId) { await updateDoc(doc(db, "suppliers", supplierId), data); }
         else { await addDoc(collection(db, "suppliers"), data); }
         resetSupplierForm();
     });
@@ -4186,7 +4164,7 @@ featureTogglesForm.addEventListener('change', async (e) => {
             category: document.getElementById('expense-category').value, supplier: document.getElementById('expense-supplier').value, paymentAccount: document.getElementById('expense-payment-account').value, attachmentURL
         };
         try {
-            if (expenseId) { await updateDoc(doc(db, "expenses", expenseId), expenseData); } 
+            if (expenseId) { await updateDoc(doc(db, "expenses", expenseId), expenseData); }
             else { await addDoc(collection(db, "expenses"), expenseData); }
             resetExpenseForm();
         } catch (error) { console.error("Error saving expense:", error); alert("Could not save expense."); }
@@ -4198,7 +4176,7 @@ featureTogglesForm.addEventListener('change', async (e) => {
     expenseTableBody.addEventListener('click', (e) => {
         const deleteBtn = e.target.closest('.delete-expense-btn');
         const editBtn = e.target.closest('.edit-expense-btn');
-        if (deleteBtn) { showConfirmModal("Delete this expense?", async () => { await deleteDoc(doc(db, "expenses", deleteBtn.dataset.id)); }); } 
+        if (deleteBtn) { showConfirmModal("Delete this expense?", async () => { await deleteDoc(doc(db, "expenses", deleteBtn.dataset.id)); }); }
         else if (editBtn) {
             const expense = allExpenses.find(exp => exp.id === editBtn.dataset.id);
             if (expense) {
@@ -4254,26 +4232,26 @@ featureTogglesForm.addEventListener('change', async (e) => {
     const nailsIdeaGallery = document.getElementById('nails-idea-gallery');
     const addNailIdeaForm = document.getElementById('add-nail-idea-form');
     const nailIdeasTableBody = document.querySelector('#nail-ideas-table tbody');
-// ADD THIS ENTIRE NEW BLOCK for the radio button logic
-const imageSourceRadios = document.querySelectorAll('input[name="imageSource"]');
-const fileUploadContainer = document.getElementById('nail-idea-file-upload-container');
-const urlContainer = document.getElementById('nail-idea-url-container');
-const fileInput = document.getElementById('nail-idea-image');
-const urlInput = document.getElementById('nail-idea-image-url');
+    // ADD THIS ENTIRE NEW BLOCK for the radio button logic
+    const imageSourceRadios = document.querySelectorAll('input[name="imageSource"]');
+    const fileUploadContainer = document.getElementById('nail-idea-file-upload-container');
+    const urlContainer = document.getElementById('nail-idea-url-container');
+    const fileInput = document.getElementById('nail-idea-image');
+    const urlInput = document.getElementById('nail-idea-image-url');
 
-imageSourceRadios.forEach(radio => {
-    radio.addEventListener('change', () => {
-        if (radio.value === 'upload') {
-            fileUploadContainer.classList.remove('hidden');
-            urlContainer.classList.add('hidden');
-            urlInput.value = ''; // Clear the URL input
-        } else {
-            fileUploadContainer.classList.add('hidden');
-            urlContainer.classList.remove('hidden');
-            fileInput.value = ''; // Clear the file input
-        }
+    imageSourceRadios.forEach(radio => {
+        radio.addEventListener('change', () => {
+            if (radio.value === 'upload') {
+                fileUploadContainer.classList.remove('hidden');
+                urlContainer.classList.add('hidden');
+                urlInput.value = ''; // Clear the URL input
+            } else {
+                fileUploadContainer.classList.add('hidden');
+                urlContainer.classList.remove('hidden');
+                fileInput.value = ''; // Clear the file input
+            }
+        });
     });
-});
     const openShareModal = (idea) => {
         const salonUrl = "http://www.nailsxpressky.com";
         const shareText = `Check out this amazing nail design: ${idea.name}!`;
@@ -4288,140 +4266,140 @@ imageSourceRadios.forEach(radio => {
     const closeShareModal = () => { shareModal.classList.add('hidden'); shareModal.classList.remove('flex'); };
     document.getElementById('share-close-btn').addEventListener('click', closeShareModal);
     document.querySelector('.share-modal-overlay').addEventListener('click', closeShareModal);
-    
+
 
     // ADD THIS ENTIRE NEW BLOCK for the lightbox functions
-const openLightbox = (index) => {
-    if (index < 0 || index >= currentGalleryData.length) return;
+    const openLightbox = (index) => {
+        if (index < 0 || index >= currentGalleryData.length) return;
 
-    currentLightboxIndex = index;
-    const idea = currentGalleryData[index];
+        currentLightboxIndex = index;
+        const idea = currentGalleryData[index];
 
-    lightboxImage.src = idea.imageURL;
-    currentRotation = 0; // ADD THIS LINE TO RESET ROTATION
-    lightboxImage.style.transform = `rotate(0deg)`; // AND THIS LINE TO RESET THE STYLE
-    lightboxTitle.textContent = idea.name;
-    lightboxShape.textContent = idea.shape || 'N/A';
-    lightboxColor.textContent = idea.color || 'N/A';
-    lightboxDescription.textContent = idea.description || ''; // ADD THIS LINE
-    lightboxCategories.innerHTML = idea.categories.map(cat => 
-        `<span class="bg-pink-100 text-pink-700 text-xs font-semibold px-2 py-1 rounded-full">${cat}</span>`
-    ).join('');
+        lightboxImage.src = idea.imageURL;
+        currentRotation = 0; // ADD THIS LINE TO RESET ROTATION
+        lightboxImage.style.transform = `rotate(0deg)`; // AND THIS LINE TO RESET THE STYLE
+        lightboxTitle.textContent = idea.name;
+        lightboxShape.textContent = idea.shape || 'N/A';
+        lightboxColor.textContent = idea.color || 'N/A';
+        lightboxDescription.textContent = idea.description || ''; // ADD THIS LINE
+        lightboxCategories.innerHTML = idea.categories.map(cat =>
+            `<span class="bg-pink-100 text-pink-700 text-xs font-semibold px-2 py-1 rounded-full">${cat}</span>`
+        ).join('');
 
-    lightboxPrevBtn.classList.toggle('hidden', index === 0);
-    lightboxNextBtn.classList.toggle('hidden', index === currentGalleryData.length - 1);
+        lightboxPrevBtn.classList.toggle('hidden', index === 0);
+        lightboxNextBtn.classList.toggle('hidden', index === currentGalleryData.length - 1);
 
-    nailIdeaLightbox.classList.remove('hidden');
-    nailIdeaLightbox.classList.add('flex');
-};
-// --- ADD THESE TWO NEW FUNCTIONS ---
-const toggleFullScreen = () => {
-    const lightbox = document.getElementById('nail-idea-lightbox');
-    const icon = document.getElementById('lightbox-fullscreen-btn').querySelector('i');
-    if (!document.fullscreenElement) {
-        lightbox.requestFullscreen().catch(err => {
-            alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
-        });
-        icon.classList.replace('fa-expand', 'fa-compress');
-    } else {
-        document.exitFullscreen();
-        icon.classList.replace('fa-compress', 'fa-expand');
-    }
-};
+        nailIdeaLightbox.classList.remove('hidden');
+        nailIdeaLightbox.classList.add('flex');
+    };
+    // --- ADD THESE TWO NEW FUNCTIONS ---
+    const toggleFullScreen = () => {
+        const lightbox = document.getElementById('nail-idea-lightbox');
+        const icon = document.getElementById('lightbox-fullscreen-btn').querySelector('i');
+        if (!document.fullscreenElement) {
+            lightbox.requestFullscreen().catch(err => {
+                alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+            });
+            icon.classList.replace('fa-expand', 'fa-compress');
+        } else {
+            document.exitFullscreen();
+            icon.classList.replace('fa-compress', 'fa-expand');
+        }
+    };
 
-const rotateImage = () => {
-    currentRotation += 90;
-    if (currentRotation >= 360) {
-        currentRotation = 0;
-    }
-    document.getElementById('lightbox-image').style.transform = `rotate(${currentRotation}deg)`;
-};
-// --- END OF NEW FUNCTIONS ---
+    const rotateImage = () => {
+        currentRotation += 90;
+        if (currentRotation >= 360) {
+            currentRotation = 0;
+        }
+        document.getElementById('lightbox-image').style.transform = `rotate(${currentRotation}deg)`;
+    };
+    // --- END OF NEW FUNCTIONS ---
 
-const closeLightbox = () => {
-    nailIdeaLightbox.classList.add('hidden');
-    nailIdeaLightbox.classList.remove('flex');
-};
+    const closeLightbox = () => {
+        nailIdeaLightbox.classList.add('hidden');
+        nailIdeaLightbox.classList.remove('flex');
+    };
 
-const showNextImage = () => {
-    openLightbox(currentLightboxIndex + 1);
-};
+    const showNextImage = () => {
+        openLightbox(currentLightboxIndex + 1);
+    };
 
-const showPrevImage = () => {
-    openLightbox(currentLightboxIndex - 1);
-};
-// REPLACE the old galleryClickHandler listeners with this new block ok
-const galleryClickHandler = (e) => {
-    const shareBtn = e.target.closest('.share-nail-idea-btn');
-    const img = e.target.closest('img[data-index]');
+    const showPrevImage = () => {
+        openLightbox(currentLightboxIndex - 1);
+    };
+    // REPLACE the old galleryClickHandler listeners with this new block ok
+    const galleryClickHandler = (e) => {
+        const shareBtn = e.target.closest('.share-nail-idea-btn');
+        const img = e.target.closest('img[data-index]');
 
-    if (shareBtn) { 
-        const ideaId = shareBtn.dataset.id; 
-        const idea = allNailIdeas.find(i => i.id === ideaId); 
-        if (idea) { openShareModal(idea); }
-    } else if (img) {
-        const index = parseInt(img.dataset.index, 10);
-        openLightbox(index);
-    }
-};
+        if (shareBtn) {
+            const ideaId = shareBtn.dataset.id;
+            const idea = allNailIdeas.find(i => i.id === ideaId);
+            if (idea) { openShareModal(idea); }
+        } else if (img) {
+            const index = parseInt(img.dataset.index, 10);
+            openLightbox(index);
+        }
+    };
 
-document.getElementById('nails-idea-gallery').addEventListener('click', galleryClickHandler);
-document.getElementById('nails-idea-landing').addEventListener('click', galleryClickHandler);
+    document.getElementById('nails-idea-gallery').addEventListener('click', galleryClickHandler);
+    document.getElementById('nails-idea-landing').addEventListener('click', galleryClickHandler);
 
     // ADD THIS NEW BLOCK for the lightbox buttons
-lightboxCloseBtn.addEventListener('click', closeLightbox);
-lightboxNextBtn.addEventListener('click', showNextImage);
-lightboxPrevBtn.addEventListener('click', showPrevImage);
-// ADD THESE TWO NEW LISTENERS
-document.getElementById('lightbox-fullscreen-btn').addEventListener('click', toggleFullScreen);
-document.getElementById('lightbox-rotate-btn').addEventListener('click', rotateImage);
-// END OF NEW LISTENERS
+    lightboxCloseBtn.addEventListener('click', closeLightbox);
+    lightboxNextBtn.addEventListener('click', showNextImage);
+    lightboxPrevBtn.addEventListener('click', showPrevImage);
+    // ADD THESE TWO NEW LISTENERS
+    document.getElementById('lightbox-fullscreen-btn').addEventListener('click', toggleFullScreen);
+    document.getElementById('lightbox-rotate-btn').addEventListener('click', rotateImage);
+    // END OF NEW LISTENERS
 
-// Add keyboard navigation
-document.addEventListener('keydown', (e) => {
-    if (!nailIdeaLightbox.classList.contains('hidden')) {
-        if (e.key === 'ArrowRight') showNextImage();
-        if (e.key === 'ArrowLeft') showPrevImage();
-        if (e.key === 'Escape') closeLightbox();
-    }
-});
+    // Add keyboard navigation
+    document.addEventListener('keydown', (e) => {
+        if (!nailIdeaLightbox.classList.contains('hidden')) {
+            if (e.key === 'ArrowRight') showNextImage();
+            if (e.key === 'ArrowLeft') showPrevImage();
+            if (e.key === 'Escape') closeLightbox();
+        }
+    });
 
     // ADD THIS NEW BLOCK to close the lightbox on overlay click
-nailIdeaLightbox.addEventListener('click', (e) => {
-    // If the click is on the dark background itself (the overlay)
-    // and not on the content inside it, close the modal.
-    if (e.target === nailIdeaLightbox) {
-        closeLightbox();
-    }
-});
+    nailIdeaLightbox.addEventListener('click', (e) => {
+        // If the click is on the dark background itself (the overlay)
+        // and not on the content inside it, close the modal.
+        if (e.target === nailIdeaLightbox) {
+            closeLightbox();
+        }
+    });
     // REPLACE the old renderNailIdeasGallery function with this one
-const renderNailIdeasGallery = (ideas) => {
-    const landingGallery = document.querySelector('#nails-idea-landing .columns-2');
-    const appGallery = document.getElementById('nails-idea-gallery');
-    currentGalleryData = ideas; // Store the current set of ideas for the lightbox
+    const renderNailIdeasGallery = (ideas) => {
+        const landingGallery = document.querySelector('#nails-idea-landing .columns-2');
+        const appGallery = document.getElementById('nails-idea-gallery');
+        currentGalleryData = ideas; // Store the current set of ideas for the lightbox
 
-    const renderTo = (container, isLanding) => {
-        if (!container) return;
-        container.innerHTML = '';
-        if (ideas.length === 0) { container.innerHTML = '<p class="text-gray-500 col-span-full text-center">No nail ideas found. Check back later!</p>'; return; }
-        const ideasToRender = isLanding ? ideas.slice(0, 8) : ideas;
-        ideasToRender.forEach((idea, index) => {
-            const ideaEl = document.createElement('div');
-            ideaEl.className = 'break-inside-avoid mb-4 relative gallery-item group';
-            // Note: The share button is now separate from the clickable image
-            ideaEl.innerHTML = `
+        const renderTo = (container, isLanding) => {
+            if (!container) return;
+            container.innerHTML = '';
+            if (ideas.length === 0) { container.innerHTML = '<p class="text-gray-500 col-span-full text-center">No nail ideas found. Check back later!</p>'; return; }
+            const ideasToRender = isLanding ? ideas.slice(0, 8) : ideas;
+            ideasToRender.forEach((idea, index) => {
+                const ideaEl = document.createElement('div');
+                ideaEl.className = 'break-inside-avoid mb-4 relative gallery-item group';
+                // Note: The share button is now separate from the clickable image
+                ideaEl.innerHTML = `
                 <img class="w-full rounded-lg shadow-md cursor-pointer" src="${idea.imageURL}" alt="${idea.name}" data-index="${index}">
                 <div class="absolute top-2 right-2 bg-black/40 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                    <button data-id="${idea.id}" class="share-nail-idea-btn text-white text-lg"><i class="fas fa-share-alt"></i></button>
                 </div>
                 ${!isLanding ? `<div class="p-2"><h5 class="font-bold text-sm">${idea.name}</h5><p class="text-xs text-gray-600">${idea.categories.join(', ')}</p></div>` : ''}`;
-            container.appendChild(ideaEl);
-        });
-    };
+                container.appendChild(ideaEl);
+            });
+        };
 
-    renderTo(landingGallery, true);
-    renderTo(appGallery, false);
-};
+        renderTo(landingGallery, true);
+        renderTo(appGallery, false);
+    };
 
     const renderNailIdeasAdminTable = (ideas) => {
         nailIdeasTableBody.innerHTML = '';
@@ -4442,11 +4420,11 @@ const renderNailIdeasGallery = (ideas) => {
     onSnapshot(query(collection(db, "nail_ideas"), orderBy("createdAt", "desc")), (snapshot) => {
         allNailIdeas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         // ADD THIS NEW BLOCK to populate the Nail Shape datalist
-const shapesDatalist = document.getElementById('nail-shapes-list');
-if (shapesDatalist) {
-    const uniqueShapes = [...new Set(allNailIdeas.map(idea => idea.shape).filter(Boolean))];
-    shapesDatalist.innerHTML = uniqueShapes.map(shape => `<option value="${shape}"></option>`).join('');
-}
+        const shapesDatalist = document.getElementById('nail-shapes-list');
+        if (shapesDatalist) {
+            const uniqueShapes = [...new Set(allNailIdeas.map(idea => idea.shape).filter(Boolean))];
+            shapesDatalist.innerHTML = uniqueShapes.map(shape => `<option value="${shape}"></option>`).join('');
+        }
         const shapes = [...new Set(allNailIdeas.map(i => i.shape).filter(Boolean))];
         const categories = [...new Set(allNailIdeas.flatMap(i => i.categories).filter(Boolean))];
         const shapeFilter = document.getElementById('nail-idea-shape-filter');
@@ -4461,81 +4439,81 @@ if (shapesDatalist) {
     document.getElementById('nail-idea-shape-filter').addEventListener('change', applyNailIdeaFilters);
     document.getElementById('nail-idea-category-filter').addEventListener('change', applyNailIdeaFilters);
 
-   // REPLACE the old addNailIdeaForm listener with this one
-addNailIdeaForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const ideaId = document.getElementById('edit-nail-idea-id').value;
-    const imageSource = document.querySelector('input[name="imageSource"]:checked').value;
-    const file = document.getElementById('nail-idea-image').files[0];
-    const imageUrl = document.getElementById('nail-idea-image-url').value;
-    let finalImageURL = null;
+    // REPLACE the old addNailIdeaForm listener with this one
+    addNailIdeaForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const ideaId = document.getElementById('edit-nail-idea-id').value;
+        const imageSource = document.querySelector('input[name="imageSource"]:checked').value;
+        const file = document.getElementById('nail-idea-image').files[0];
+        const imageUrl = document.getElementById('nail-idea-image-url').value;
+        let finalImageURL = null;
 
-    const btn = document.getElementById('add-nail-idea-btn');
-    btn.disabled = true;
-    btn.textContent = 'Saving...';
+        const btn = document.getElementById('add-nail-idea-btn');
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
 
-    try {
-        if (imageSource === 'upload') {
-            if (!ideaId && !file) {
-                alert('Please select an image to upload.');
-                btn.disabled = false; btn.textContent = 'Add Idea';
-                return;
+        try {
+            if (imageSource === 'upload') {
+                if (!ideaId && !file) {
+                    alert('Please select an image to upload.');
+                    btn.disabled = false; btn.textContent = 'Add Idea';
+                    return;
+                }
+                if (file) {
+                    const storageRef = ref(storage, `nail_ideas/${Date.now()}_${file.name}`);
+                    await uploadBytes(storageRef, file);
+                    finalImageURL = await getDownloadURL(storageRef);
+                }
+            } else { // imageSource === 'url'
+                if (!imageUrl) {
+                    alert('Please enter an image URL.');
+                    btn.disabled = false; btn.textContent = 'Add Idea';
+                    return;
+                }
+                finalImageURL = imageUrl;
             }
-            if (file) {
-                const storageRef = ref(storage, `nail_ideas/${Date.now()}_${file.name}`);
-                await uploadBytes(storageRef, file);
-                finalImageURL = await getDownloadURL(storageRef);
-            }
-        } else { // imageSource === 'url'
-            if (!imageUrl) {
-                alert('Please enter an image URL.');
-                btn.disabled = false; btn.textContent = 'Add Idea';
-                return;
-            }
-            finalImageURL = imageUrl;
-        }
 
-       const ideaData = {
-    name: document.getElementById('nail-idea-name').value,
-    description: document.getElementById('nail-idea-description').value, // ADD THIS LINE
-    color: document.getElementById('nail-idea-color').value,
-    shape: document.getElementById('nail-idea-shape').value,
-    categories: document.getElementById('nail-idea-categories').value.split(',').map(s => s.trim()).filter(Boolean),
-};
+            const ideaData = {
+                name: document.getElementById('nail-idea-name').value,
+                description: document.getElementById('nail-idea-description').value, // ADD THIS LINE
+                color: document.getElementById('nail-idea-color').value,
+                shape: document.getElementById('nail-idea-shape').value,
+                categories: document.getElementById('nail-idea-categories').value.split(',').map(s => s.trim()).filter(Boolean),
+            };
 
-        if (ideaId) { // Editing an existing idea
-            const existingIdea = allNailIdeas.find(i => i.id === ideaId);
-            if (finalImageURL) { // If a new image (URL or upload) was provided
-                ideaData.imageURL = finalImageURL;
-                // If the old image was an upload, delete it from storage
-                if (existingIdea.imageURL && existingIdea.imageURL.includes('firebasestorage')) {
-                    try {
-                        const oldImageRef = ref(storage, existingIdea.imageURL);
-                        await deleteObject(oldImageRef);
-                    } catch (storageError) {
-                        console.warn("Could not delete old image, it might not exist:", storageError);
+            if (ideaId) { // Editing an existing idea
+                const existingIdea = allNailIdeas.find(i => i.id === ideaId);
+                if (finalImageURL) { // If a new image (URL or upload) was provided
+                    ideaData.imageURL = finalImageURL;
+                    // If the old image was an upload, delete it from storage
+                    if (existingIdea.imageURL && existingIdea.imageURL.includes('firebasestorage')) {
+                        try {
+                            const oldImageRef = ref(storage, existingIdea.imageURL);
+                            await deleteObject(oldImageRef);
+                        } catch (storageError) {
+                            console.warn("Could not delete old image, it might not exist:", storageError);
+                        }
                     }
                 }
+                await updateDoc(doc(db, "nail_ideas", ideaId), ideaData);
+            } else { // Adding a new idea
+                ideaData.imageURL = finalImageURL;
+                ideaData.createdAt = serverTimestamp();
+                await addDoc(collection(db, "nail_ideas"), ideaData);
             }
-            await updateDoc(doc(db, "nail_ideas", ideaId), ideaData);
-        } else { // Adding a new idea
-            ideaData.imageURL = finalImageURL;
-            ideaData.createdAt = serverTimestamp();
-            await addDoc(collection(db, "nail_ideas"), ideaData);
+
+            resetNailIdeaForm();
+
+        } catch (error) {
+            console.error("Error saving nail idea:", error);
+            alert("Could not save nail idea.");
+        } finally {
+            btn.disabled = false;
+            // Ensure the text is correct for adding vs. editing
+            const buttonText = document.getElementById('edit-nail-idea-id').value ? 'Update Idea' : 'Add Idea';
+            btn.textContent = buttonText;
         }
-
-        resetNailIdeaForm();
-
-    } catch (error) {
-        console.error("Error saving nail idea:", error);
-        alert("Could not save nail idea.");
-    } finally {
-        btn.disabled = false;
-        // Ensure the text is correct for adding vs. editing
-        const buttonText = document.getElementById('edit-nail-idea-id').value ? 'Update Idea' : 'Add Idea';
-        btn.textContent = buttonText;
-    }
-});
+    });
 
     const resetNailIdeaForm = () => {
         addNailIdeaForm.reset();
@@ -4558,24 +4536,24 @@ addNailIdeaForm.addEventListener('submit', async (e) => {
                 document.getElementById('nail-idea-shape').value = idea.shape;
                 document.getElementById('nail-idea-description').value = idea.description || ''; // ADD THIS LINE
                 document.getElementById('nail-idea-categories').value = idea.categories.join(', ');
-                
+
                 document.getElementById('add-nail-idea-btn').textContent = 'Update Idea';
                 document.getElementById('cancel-edit-nail-idea-btn').classList.remove('hidden');
             }
         } else if (deleteBtn) {
             const ideaId = deleteBtn.dataset.id;
             showConfirmModal("Delete this nail idea? This will also delete the image.", async () => {
-               // REPLACE the old delete logic with this new version
-const ideaToDelete = allNailIdeas.find(i => i.id === ideaId);
-if (ideaToDelete) {
-    // NEW LINE: Only try to delete from storage if it's a Firebase URL
-    if (ideaToDelete.imageURL && ideaToDelete.imageURL.includes('firebasestorage')) {
-        const imageRef = ref(storage, ideaToDelete.imageURL);
-        await deleteObject(imageRef).catch(err => console.error("Error deleting image from storage", err));
-    }
-    // This line will now run for all items, whether they had an uploaded image or a URL
-    await deleteDoc(doc(db, "nail_ideas", ideaId));
-}
+                // REPLACE the old delete logic with this new version
+                const ideaToDelete = allNailIdeas.find(i => i.id === ideaId);
+                if (ideaToDelete) {
+                    // NEW LINE: Only try to delete from storage if it's a Firebase URL
+                    if (ideaToDelete.imageURL && ideaToDelete.imageURL.includes('firebasestorage')) {
+                        const imageRef = ref(storage, ideaToDelete.imageURL);
+                        await deleteObject(imageRef).catch(err => console.error("Error deleting image from storage", err));
+                    }
+                    // This line will now run for all items, whether they had an uploaded image or a URL
+                    await deleteDoc(doc(db, "nail_ideas", ideaId));
+                }
             });
         }
     });
@@ -4588,539 +4566,539 @@ if (ideaToDelete) {
     let colorChartInitialized = false;
     let handSVGContent = null;
 
-// Function to pre-fill the database with initial brands and colors
-const prefillColorData = async () => {
-    const batch = writeBatch(db);
+    // Function to pre-fill the database with initial brands and colors
+    const prefillColorData = async () => {
+        const batch = writeBatch(db);
 
-    const brands = {
-        "DND": [
-            { name: "401 Angel Lace", hex: "#fce5cd", group: "Pinks & Nudes" },
-            { name: "429 Pinky Star", hex: "#f4abc4", group: "Pinks & Nudes" },
-            { name: "441 Funky Fuchsia", hex: "#d93696", group: "Pinks & Nudes" },
-            { name: "473 French Tip", hex: "#fde9f0", group: "Pinks & Nudes" },
-            { name: "499 Be My Valentine", hex: "#f7a7c8", group: "Pinks & Nudes" },
-            { name: "501 Ballet Pink", hex: "#f9ddec", group: "Pinks & Nudes" },
-            { name: "542 Tea Time", hex: "#f3d9d5", group: "Pinks & Nudes" },
-            { name: "577 Nude", hex: "#e7d4c5", group: "Pinks & Nudes" },
-            { name: "601 Ballet Pink", hex: "#f4c2c2", group: "Pinks & Nudes" },
-            { name: "610 Pinky Promise", hex: "#f5b7b1", group: "Pinks & Nudes" },
-            { name: "640 Barbie Pink", hex: "#ff82c3", group: "Pinks & Nudes" },
-            { name: "650 Rose", hex: "#e4a7b5", group: "Pinks & Nudes" },
-            { name: "661 Bubble Gum", hex: "#f7b2d5", group: "Pinks & Nudes" },
-            { name: "719 Tutti Frutti", hex: "#ff6392", group: "Pinks & Nudes" },
-            { name: "807 Cotton Candy", hex: "#ffbcd9", group: "Pinks & Nudes" },
-            { name: "857 Sheer Pink", hex: "#ffe4e1", group: "Pinks & Nudes" },
-            { name: "860 Perfect Nude", hex: "#eec9b8", group: "Pinks & Nudes" },
-            { name: "862 Milky Pink", hex: "#fceef5", group: "Pinks & Nudes" },
-            { name: "DC023 Blushing", hex: "#ffb6c1", group: "Pinks & Nudes" },
-            { name: "DC149 Antique Pink", hex: "#e0b4b4", group: "Pinks & Nudes" },
-            { name: "DC151 Rose Petal", hex: "#f9a8d4", group: "Pinks & Nudes" },
-            { name: "430 Ferrari Red", hex: "#c1121f", group: "Reds & Berries" },
-            { name: "429 Boston University Red", hex: "#cc0000", group: "Reds & Berries" },
-            { name: "498 Fiery Red", hex: "#d90429", group: "Reds & Berries" },
-            { name: "510 Red Stone", hex: "#a4161a", group: "Reds & Berries" },
-            { name: "545 Fiery Red", hex: "#ff0000", group: "Reds & Berries" },
-            { name: "633 Garnet Red", hex: "#8c0000", group: "Reds & Berries" },
-            { name: "751 Cherry Mocha", hex: "#6a0000", group: "Reds & Berries" },
-            { name: "753 Scarlett Dreams", hex: "#b20000", group: "Reds & Berries" },
-            { name: "754 Winter Berry", hex: "#a4133c", group: "Reds & Berries" },
-            { name: "757 Chili Pepper", hex: "#9b2226", group: "Reds & Berries" },
-            { name: "DC010 Red Cherry", hex: "#c9184a", group: "Reds & Berries" },
-            { name: "DC085 Cranberry", hex: "#8d0801", group: "Reds & Berries" },
-            { name: "434 Violet", hex: "#a393eb", group: "Purples" },
-            { name: "500 Lavender", hex: "#e6e6fa", group: "Purples" },
-            { name: "543 Purple Passion", hex: "#8338ec", group: "Purples" },
-            { name: "620 Grape", hex: "#6a0dad", group: "Purples" },
-            { name: "621 Purple Rain", hex: "#7b2cbf", group: "Purples" },
-            { name: "670 Lilac", hex: "#c8a2c8", group: "Purples" },
-            { name: "785 Voodoo", hex: "#5a189a", group: "Purples" },
-            { name: "DC091 Lavender Haze", hex: "#b39ddb", group: "Purples" },
-            { name: "DC105 Iris", hex: "#9d4edd", group: "Purples" },
-            { name: "DC172 Lilac Season", hex: "#c7b7e3", group: "Purples" },
-            { name: "436 Baby Blue", hex: "#89cff0", group: "Blues" },
-            { name: "502 Ocean Blue", hex: "#0081a7", group: "Blues" },
-            { name: "529 Blue River", hex: "#0077b6", group: "Blues" },
-            { name: "572 Great Smoky Mountain", hex: "#4895ef", group: "Blues" },
-            { name: "574 Blue Bell", hex: "#a2a2d0", group: "Blues" },
-            { name: "575 Blue Earth", hex: "#3f88c5", group: "Blues" },
-            { name: "622 Midnight Blue", hex: "#03045e", group: "Blues" },
-            { name: "671 Blue Hawaiian", hex: "#00b4d8", group: "Blues" },
-            { name: "734 Berry Blue", hex: "#4a4e69", group: "Blues" },
-            { name: "DC028 Navy Blue", hex: "#000080", group: "Blues" },
-            { name: "DC107 Periwinkle", hex: "#ccccff", group: "Blues" },
-            { name: "DC165 North Sea", hex: "#2b2d42", group: "Blues" },
-            { name: "431 Minty Green", hex: "#98ff98", group: "Greens" },
-            { name: "503 Lime Green", hex: "#32cd32", group: "Greens" },
-            { name: "530 Emerald Green", hex: "#50c878", group: "Greens" },
-            { name: "605 Olive Green", hex: "#808000", group: "Greens" },
-            { name: "617 Sage", hex: "#b2ac88", group: "Greens" },
-            { name: "680 Teal", hex: "#008080", group: "Greens" },
-            { name: "747 Aurora Green", hex: "#4f7942", group: "Greens" },
-            { name: "DC055 Mermaid Green", hex: "#006d77", group: "Greens" },
-            { name: "DC118 Pale Kiwi", hex: "#d0f4de", group: "Greens" },
-            { name: "DC205 Racing Green", hex: "#004b23", group: "Greens" },
-            { name: "418 Butternut Squash", hex: "#f8961e", group: "Oranges & Corals" },
-            { name: "420 Neon Orange", hex: "#ff9e00", group: "Oranges & Corals" },
-            { name: "506 Sunset Orange", hex: "#fb5607", group: "Oranges & Corals" },
-            { name: "532 Coral", hex: "#ff7f50", group: "Oranges & Corals" },
-            { name: "660 Papaya", hex: "#ffc971", group: "Oranges & Corals" },
-            { name: "729 Ambrosia", hex: "#ffbf69", group: "Oranges & Corals" },
-            { name: "756 Bonfire", hex: "#f48c06", group: "Oranges & Corals" },
-            { name: "DC011 Coral Kiss", hex: "#f77f00", group: "Oranges & Corals" },
-            { name: "DC163 Coral Castle", hex: "#ff8fab", group: "Oranges & Corals" },
-            { name: "DC205 Papaya Pop", hex: "#ff97b3", group: "Oranges & Corals" },
-            { name: "425 Sunshine Yellow", hex: "#ffca3a", group: "Yellows" },
-            { name: "525 Lemon Juice", hex: "#fdfcdc", group: "Yellows" },
-            { name: "531 Canary Yellow", hex: "#fef278", group: "Yellows" },
-            { name: "616 Lemon", hex: "#fff44f", group: "Yellows" },
-            { name: "745 Honey", hex: "#fca311", group: "Yellows" },
-            { name: "DC190 Gold Glam", hex: "#f0c808", group: "Yellows" },
-            { name: "DC2509 Gimmie' Butter", hex: "#fae152", group: "Yellows" },
-            { name: "405 Taupe", hex: "#bcae9e", group: "Browns & Neutrals" },
-            { name: "422 Brown", hex: "#6f4e37", group: "Browns & Neutrals" },
-            { name: "550 Chocolate", hex: "#492611", group: "Browns & Neutrals" },
-            { name: "607 Espresso", hex: "#362222", group: "Browns & Neutrals" },
-            { name: "750 Fudgsicle", hex: "#45322e", group: "Browns & Neutrals" },
-            { name: "971 Tele-Talking", hex: "#eaddcf", group: "Browns & Neutrals" },
-            { name: "DC075 Spiced Brown", hex: "#7f5539", group: "Browns & Neutrals" },
-            { name: "447 Black Licorice", hex: "#000000", group: "Grays, Blacks & Whites" },
-            { name: "448 Snow Flake", hex: "#ffffff", group: "Grays, Blacks & Whites" },
-            { name: "460 Gray", hex: "#8e8d8d", group: "Grays, Blacks & Whites" },
-            { name: "555 Charcoal", hex: "#3d3d3d", group: "Grays, Blacks & Whites" },
-            { name: "602 Silver", hex: "#c0c0c0", group: "Grays, Blacks & Whites" },
-            { name: "DC001 French White", hex: "#ffffff", group: "Grays, Blacks & Whites" },
-            { name: "DC002 Sugar Swizzle", hex: "#f7ede2", group: "Grays, Blacks & Whites" },
-            { name: "DC030 Charcoal Gray", hex: "#5e5e5e", group: "Grays, Blacks & Whites" },
-            { name: "443 Twinkle Little Star", hex: "#d4af37", group: "Glitters & Metallics" },
-            { name: "558 Gold", hex: "#ffd700", group: "Glitters & Metallics" },
-            { name: "645 Rose Gold", hex: "#b76e79", group: "Glitters & Metallics" },
-            { name: "740 Dazzle", hex: "#e0b0ff", group: "Glitters & Metallics" },
-            { name: "741 Diamond Eyes", hex: "#b9f2ff", group: "Glitters & Metallics" },
-            { name: "792 Bubbles", hex: "#e7feff", group: "Glitters & Metallics" },
-            { name: "795 Super-Nova", hex: "#c9bcf3", group: "Glitters & Metallics" },
-            { name: "726 Whirly Pop", hex: "#fec8d8", group: "Glitters & Metallics" },
-        ],
-        "DC": [
-            { name: "002 Sugar Swizzle", hex: "#f7ede2", group: "Pinks & Nudes" },
-            { name: "003 Dusty Pink", hex: "#e4c7c2", group: "Pinks & Nudes" },
-            { name: "005 Pinky Swear", hex: "#f5cac3", group: "Pinks & Nudes" },
-            { name: "023 Blushing", hex: "#ffb6c1", group: "Pinks & Nudes" },
-            { name: "032 Tea Rose", hex: "#f4c2c2", group: "Pinks & Nudes" },
-            { name: "045 Soft Peach", hex: "#fdebd1", group: "Pinks & Nudes" },
-            { name: "051 Ballet Slipper", hex: "#fde8e9", group: "Pinks & Nudes" },
-            { name: "062 Mauvelous", hex: "#e0b0ff", group: "Pinks & Nudes" },
-            { name: "078 Rosewood", hex: "#a87c7c", group: "Pinks & Nudes" },
-            { name: "088 Shocking Pink", hex: "#fc0fc0", group: "Pinks & Nudes" },
-            { name: "101 Peachy Keen", hex: "#f8c8a0", group: "Pinks & Nudes" },
-            { name: "115 Barefoot", hex: "#e7d2cc", group: "Pinks & Nudes" },
-            { name: "125 Cashmere", hex: "#d1b399", group: "Pinks & Nudes" },
-            { name: "149 Antique Pink", hex: "#e0b4b4", group: "Pinks & Nudes" },
-            { name: "151 Rose Petal", hex: "#f9a8d4", group: "Pinks & Nudes" },
-            { name: "166 Flamingo", hex: "#fca3b7", group: "Pinks & Nudes" },
-            { name: "175 Fuchsia", hex: "#ff00ff", group: "Pinks & Nudes" },
-            { name: "180 Pink Tutu", hex: "#f3d6e4", group: "Pinks & Nudes" },
-            { name: "007 Fire Red", hex: "#be0000", group: "Reds & Berries" },
-            { name: "008 Cherry Pop", hex: "#990000", group: "Reds & Berries" },
-            { name: "010 Red Cherry", hex: "#c9184a", group: "Reds & Berries" },
-            { name: "020 Red Stone", hex: "#a4161a", group: "Reds & Berries" },
-            { name: "035 Scarlet Letter", hex: "#ff2400", group: "Reds & Berries" },
-            { name: "048 Crimson", hex: "#dc143c", group: "Reds & Berries" },
-            { name: "058 Pomegranate", hex: "#c1121f", group: "Reds & Berries" },
-            { name: "070 Wine & Dine", hex: "#6a0000", group: "Reds & Berries" },
-            { name: "085 Cranberry", hex: "#8d0801", group: "Reds & Berries" },
-            { name: "100 Hollywood Red", hex: "#c10000", group: "Reds & Berries" },
-            { name: "123 Sangria", hex: "#7e0021", group: "Reds & Berries" },
-            { name: "135 Raspberry", hex: "#d7263d", group: "Reds & Berries" },
-            { name: "155 Ruby Red", hex: "#e0115f", group: "Reds & Berries" },
-            { name: "178 Strawberry", hex: "#fc5a8d", group: "Reds & Berries" },
-            { name: "018 Lilac Mist", hex: "#dcd0ff", group: "Purples" },
-            { name: "025 Grapevine", hex: "#5a189a", group: "Purples" },
-            { name: "038 Purple Haze", hex: "#a393eb", group: "Purples" },
-            { name: "052 Electric Purple", hex: "#bf00ff", group: "Purples" },
-            { name: "065 Violet Vixen", hex: "#8338ec", group: "Purples" },
-            { name: "075 Orchid", hex: "#af69ee", group: "Purples" },
-            { name: "091 Lavender Haze", hex: "#b39ddb", group: "Purples" },
-            { name: "105 Iris", hex: "#9d4edd", group: "Purples" },
-            { name: "118 Amethyst", hex: "#9b5de5", group: "Purples" },
-            { name: "132 Periwinkle", hex: "#b2b2e0", group: "Purples" },
-            { name: "150 Plum", hex: "#5d3a9b", group: "Purples" },
-            { name: "172 Lilac Season", hex: "#c7b7e3", group: "Purples" },
-            { name: "177 Wisteria", hex: "#cba0e1", group: "Purples" },
-            { name: "015 Ice Blue", hex: "#add8e6", group: "Blues" },
-            { name: "028 Navy Blue", hex: "#000080", group: "Blues" },
-            { name: "037 Sky Blue", hex: "#87cefa", group: "Blues" },
-            { name: "042 Royal Blue", hex: "#002366", group: "Blues" },
-            { name: "056 Ocean Deep", hex: "#0077b6", group: "Blues" },
-            { name: "072 Blue Lagoon", hex: "#0096c7", group: "Blues" },
-            { name: "083 Denim", hex: "#22577a", group: "Blues" },
-            { name: "107 Periwinkle", hex: "#ccccff", group: "Blues" },
-            { name: "120 Teal", hex: "#008080", group: "Blues" },
-            { name: "138 Sapphire", hex: "#0f52ba", group: "Blues" },
-            { name: "145 Baby Boy Blue", hex: "#a2d2ff", group: "Blues" },
-            { name: "165 North Sea", hex: "#2b2d42", group: "Blues" },
-            { name: "178 Cornflower", hex: "#6495ed", group: "Blues" },
-            { name: "026 Minty Fresh", hex: "#cce3de", group: "Greens" },
-            { name: "036 Forest Green", hex: "#014421", group: "Greens" },
-            { name: "047 Olive You", hex: "#6b705c", group: "Greens" },
-            { name: "055 Mermaid Green", hex: "#006d77", group: "Greens" },
-            { name: "068 Sage", hex: "#a3b18a", group: "Greens" },
-            { name: "080 Emerald", hex: "#009b7d", group: "Greens" },
-            { name: "108 Lime Light", hex: "#bfff00", group: "Greens" },
-            { name: "118 Pale Kiwi", hex: "#d0f4de", group: "Greens" },
-            { name: "130 Jade", hex: "#00a36c", group: "Greens" },
-            { name: "153 Hunter", hex: "#386641", group: "Greens" },
-            { name: "168 Pistachio", hex: "#a1c084", group: "Greens" },
-            { name: "179 Seafoam", hex: "#80b9a9", group: "Greens" },
-            { name: "011 Coral Kiss", hex: "#f77f00", group: "Oranges & Corals" },
-            { name: "012 Sunny Day", hex: "#fca311", group: "Oranges & Corals" },
-            { name: "027 Peach Sorbet", hex: "#ffdba1", group: "Oranges & Corals" },
-            { name: "040 Goldenrod", hex: "#daa520", group: "Oranges & Corals" },
-            { name: "053 Tangerine", hex: "#ff9505", group: "Oranges & Corals" },
-            { name: "066 Marigold", hex: "#fcc421", group: "Oranges & Corals" },
-            { name: "081 Neon Orange", hex: "#ffad00", group: "Oranges & Corals" },
-            { name: "095 Buttercup", hex: "#fae152", group: "Oranges & Corals" },
-            { name: "111 Papaya", hex: "#f8961e", group: "Oranges & Corals" },
-            { name: "133 Mango Tango", hex: "#fb8500", group: "Oranges & Corals" },
-            { name: "152 Lemonade", hex: "#fcf4a3", group: "Oranges & Corals" },
-            { name: "170 Burnt Sienna", hex: "#e85d04", group: "Oranges & Corals" },
-            { name: "190 Gold Glam", hex: "#f0c808", group: "Oranges & Corals" },
-            { name: "017 Almond", hex: "#eaddcf", group: "Browns & Neutrals" },
-            { name: "022 Toasted Brown", hex: "#8a5a44", group: "Browns & Neutrals" },
-            { name: "033 Espresso", hex: "#4a2c2a", group: "Browns & Neutrals" },
-            { name: "046 Taupe", hex: "#a99985", group: "Browns & Neutrals" },
-            { name: "060 Mocha", hex: "#6d4c41", group: "Browns & Neutrals" },
-            { name: "075 Spiced Brown", hex: "#7f5539", group: "Browns & Neutrals" },
-            { name: "089 Latte", hex: "#c4a389", group: "Browns & Neutrals" },
-            { name: "106 Caramel", hex: "#bc6c25", group: "Browns & Neutrals" },
-            { name: "117 Khaki", hex: "#b5a68d", group: "Browns & Neutrals" },
-            { name: "131 Clay", hex: "#a18276", group: "Browns & Neutrals" },
-            { name: "158 Chestnut", hex: "#744838", group: "Browns & Neutrals" },
-            { name: "173 Sandstone", hex: "#cbbba0", group: "Browns & Neutrals" },
-            { name: "001 French White", hex: "#ffffff", group: "Grays, Blacks & Whites" },
-            { name: "030 Charcoal Gray", hex: "#5e5e5e", group: "Grays, Blacks & Whites" },
-            { name: "041 Silver Lining", hex: "#d1d1d1", group: "Grays, Blacks & Whites" },
-            { name: "050 Black Out", hex: "#000000", group: "Grays, Blacks & Whites" },
-            { name: "063 Stormy", hex: "#797d7f", group: "Grays, Blacks & Whites" },
-            { name: "076 Ash", hex: "#abb2b9", group: "Grays, Blacks & Whites" },
-            { name: "099 Dove", hex: "#d8d8d8", group: "Grays, Blacks & Whites" },
-            { name: "121 Milky Way", hex: "#f8f9fa", group: "Grays, Blacks & Whites" },
-            { name: "140 Slate", hex: "#5d737e", group: "Grays, Blacks & Whites" },
-            { name: "160 Steel", hex: "#858585", group: "Grays, Blacks & Whites" },
-        ],
-        "DD": [
-            { name: "001 Bare Pink", hex: "#f4e3e0", group: "Pinks & Nudes" },
-            { name: "003 Nude Pink", hex: "#e8d1c5", group: "Pinks & Nudes" },
-            { name: "005 Pinky Nude", hex: "#e7c2b5", group: "Pinks & Nudes" },
-            { name: "025 English Rose", hex: "#d9a9a3", group: "Pinks & Nudes" },
-            { name: "032 Dusty Rose", hex: "#c99a98", group: "Pinks & Nudes" },
-            { name: "041 Soft Pink", hex: "#f6d4d3", group: "Pinks & Nudes" },
-            { name: "050 Baby Pink", hex: "#f5b7b1", group: "Pinks & Nudes" },
-            { name: "077 Flamingo Pink", hex: "#f4a2a3", group: "Pinks & Nudes" },
-            { name: "081 Barbie Pink", hex: "#e75480", group: "Pinks & Nudes" },
-            { name: "088 Hot Pink", hex: "#ff69b4", group: "Pinks & Nudes" },
-            { name: "102 Peach Puff", hex: "#f2d3b3", group: "Pinks & Nudes" },
-            { name: "111 Sandy Beach", hex: "#e4c6a8", group: "Pinks & Nudes" },
-            { name: "125 Taupe", hex: "#bcae9e", group: "Pinks & Nudes" },
-            { name: "151 Rose Gold", hex: "#e0b4b4", group: "Pinks & Nudes" },
-            { name: "203 Cotton Candy", hex: "#ffbcd9", group: "Pinks & Nudes" },
-            { name: "220 Bubblegum", hex: "#ffc1cc", group: "Pinks & Nudes" },
-            { name: "250 Mauve", hex: "#d1a3a4", group: "Pinks & Nudes" },
-            { name: "288 Peony", hex: "#eeafaf", group: "Pinks & Nudes" },
-            { name: "007 Cherry Red", hex: "#c21807", group: "Reds & Berries" },
-            { name: "008 Fire Engine Red", hex: "#ce2029", group: "Reds & Berries" },
-            { name: "036 Classic Red", hex: "#a11d21", group: "Reds & Berries" },
-            { name: "045 Deep Red", hex: "#9b1c1c", group: "Reds & Berries" },
-            { name: "058 Wine Red", hex: "#8b0000", group: "Reds & Berries" },
-            { name: "060 Burgundy", hex: "#800020", group: "Reds & Berries" },
-            { name: "075 Raspberry", hex: "#e30b5d", group: "Reds & Berries" },
-            { name: "090 Cranberry", hex: "#951a32", group: "Reds & Berries" },
-            { name: "100 Apple Red", hex: "#d71f28", group: "Reds & Berries" },
-            { name: "133 Scarlet", hex: "#ff2400", group: "Reds & Berries" },
-            { name: "144 Brick Red", hex: "#cb4154", group: "Reds & Berries" },
-            { name: "168 Sangria", hex: "#5e0b15", group: "Reds & Berries" },
-            { name: "189 Poppy", hex: "#e35335", group: "Reds & Berries" },
-            { name: "211 Merlot", hex: "#731c22", group: "Reds & Berries" },
-            { name: "245 Lipstick Red", hex: "#c00000", group: "Reds & Berries" },
-            { name: "277 Ruby", hex: "#e0115f", group: "Reds & Berries" },
-            { name: "011 Lavender", hex: "#e6e6fa", group: "Purples" },
-            { name: "012 Lilac", hex: "#c8a2c8", group: "Purples" },
-            { name: "028 Orchid", hex: "#da70d6", group: "Purples" },
-            { name: "040 Violet", hex: "#8f00ff", group: "Purples" },
-            { name: "065 Amethyst", hex: "#9966cc", group: "Purples" },
-            { name: "078 Grape", hex: "#6f2da8", group: "Purples" },
-            { name: "092 Plum", hex: "#8e4585", group: "Purples" },
-            { name: "110 Periwinkle", hex: "#ccccff", group: "Purples" },
-            { name: "123 Iris", hex: "#5a4fcf", group: "Purples" },
-            { name: "155 Royal Purple", hex: "#7851a9", group: "Purples" },
-            { name: "176 Magenta", hex: "#ff00ff", group: "Purples" },
-            { name: "210 Eggplant", hex: "#483248", group: "Purples" },
-            { name: "233 Wisteria", hex: "#c9a0dc", group: "Purples" },
-            { name: "266 Thistle", hex: "#d8bfd8", group: "Purples" },
-            { name: "299 Boysenberry", hex: "#873260", group: "Purples" },
-            { name: "013 Baby Blue", hex: "#89cff0", group: "Blues" },
-            { name: "014 Sky Blue", hex: "#87ceeb", group: "Blues" },
-            { name: "021 Tiffany Blue", hex: "#0abab5", group: "Blues" },
-            { name: "043 Royal Blue", hex: "#4169e1", group: "Blues" },
-            { name: "055 Navy Blue", hex: "#000080", group: "Blues" },
-            { name: "068 Teal", hex: "#008080", group: "Blues" },
-            { name: "084 Denim Blue", hex: "#1560bd", group: "Blues" },
-            { name: "105 Ocean Blue", hex: "#0077be", group: "Blues" },
-            { name: "115 Slate Blue", hex: "#6a5acd", group: "Blues" },
-            { name: "130 Cobalt Blue", hex: "#0047ab", group: "Blues" },
-            { name: "160 Midnight Blue", hex: "#003366", group: "Blues" },
-            { name: "181 Powder Blue", hex: "#b0e0e6", group: "Blues" },
-            { name: "200 Turquoise", hex: "#40e0d0", group: "Blues" },
-            { name: "240 Aqua", hex: "#00ffff", group: "Blues" },
-            { name: "270 Cerulean", hex: "#2a52be", group: "Blues" },
-            { name: "015 Mint Green", hex: "#98ff98", group: "Greens" },
-            { name: "016 Sage Green", hex: "#b2ac88", group: "Greens" },
-            { name: "022 Pistachio", hex: "#93c572", group: "Greens" },
-            { name: "048 Lime Green", hex: "#32cd32", group: "Greens" },
-            { name: "057 Olive Green", hex: "#808000", group: "Greens" },
-            { name: "070 Forest Green", hex: "#228b22", group: "Greens" },
-            { name: "085 Emerald Green", hex: "#50c878", group: "Greens" },
-            { name: "118 Hunter Green", hex: "#355e3b", group: "Greens" },
-            { name: "135 Kelly Green", hex: "#4cbb17", group: "Greens" },
-            { name: "150 Seafoam Green", hex: "#9fe2bf", group: "Greens" },
-            { name: "177 Jade", hex: "#00a86b", group: "Greens" },
-            { name: "195 Chartreuse", hex: "#dfff00", group: "Greens" },
-            { name: "215 Army Green", hex: "#4b5320", group: "Greens" },
-            { name: "255 Celadon", hex: "#ace1af", group: "Greens" },
-            { name: "290 Pear", hex: "#d1e231", group: "Greens" },
-            { name: "018 Peach", hex: "#ffcba4", group: "Oranges & Yellows" },
-            { name: "019 Coral", hex: "#ff7f50", group: "Oranges & Yellows" },
-            { name: "030 Pastel Yellow", hex: "#fdfd96", group: "Oranges & Yellows" },
-            { name: "031 Lemon Yellow", hex: "#fff44f", group: "Oranges & Yellows" },
-            { name: "063 Tangerine", hex: "#f28500", group: "Oranges & Yellows" },
-            { name: "072 Marigold", hex: "#ffbf00", group: "Oranges & Yellows" },
-            { name: "095 Mustard Yellow", hex: "#ffdb58", group: "Oranges & Yellows" },
-            { name: "112 Gold", hex: "#ffd700", group: "Oranges & Yellows" },
-            { name: "140 Burnt Orange", hex: "#cc5500", group: "Oranges & Yellows" },
-            { name: "165 Apricot", hex: "#fbceb1", group: "Oranges & Yellows" },
-            { name: "188 Mango", hex: "#fdb84e", group: "Oranges & Yellows" },
-            { name: "208 Buttercup", hex: "#fae052", group: "Oranges & Yellows" },
-            { name: "225 Papaya", hex: "#ffc971", group: "Oranges & Yellows" },
-            { name: "260 Cantaloupe", hex: "#fa9a50", group: "Oranges & Yellows" },
-            { name: "295 Neon Orange", hex: "#ff9933", group: "Oranges & Yellows" },
-            { name: "023 Beige", hex: "#f5f5dc", group: "Browns & Neutrals" },
-            { name: "024 Tan", hex: "#d2b48c", group: "Browns & Neutrals" },
-            { name: "035 Cream", hex: "#fffdd0", group: "Browns & Neutrals" },
-            { name: "052 Chocolate", hex: "#7b3f00", group: "Browns & Neutrals" },
-            { name: "061 Coffee", hex: "#6f4e37", group: "Browns & Neutrals" },
-            { name: "076 Caramel", hex: "#af6f09", group: "Browns & Neutrals" },
-            { name: "098 Cinnamon", hex: "#d2691e", group: "Browns & Neutrals" },
-            { name: "120 Mocha", hex: "#9d7c61", group: "Browns & Neutrals" },
-            { name: "138 Walnut", hex: "#593a28", group: "Browns & Neutrals" },
-            { name: "158 Chestnut", hex: "#954535", group: "Browns & Neutrals" },
-            { name: "180 Khaki", hex: "#c3b091", group: "Browns & Neutrals" },
-            { name: "223 Ivory", hex: "#fffff0", group: "Browns & Neutrals" },
-            { name: "252 Clay", hex: "#bca28e", group: "Browns & Neutrals" },
-            { name: "280 Toffee", hex: "#8c5a2b", group: "Browns & Neutrals" },
-            { name: "033 White", hex: "#ffffff", group: "Grays, Blacks & Whites" },
-            { name: "034 Black", hex: "#000000", group: "Grays, Blacks & Whites" },
-            { name: "049 Light Gray", hex: "#d3d3d3", group: "Grays, Blacks & Whites" },
-            { name: "059 Silver", hex: "#c0c0c0", group: "Grays, Blacks & Whites" },
-            { name: "069 Charcoal", hex: "#36454f", group: "Grays, Blacks & Whites" },
-            { name: "086 Slate Gray", hex: "#708090", group: "Grays, Blacks & Whites" },
-            { name: "101 Platinum", hex: "#e5e4e2", group: "Grays, Blacks & Whites" },
-            { name: "121 Ash Gray", hex: "#b2beb5", group: "Grays, Blacks & Whites" },
-            { name: "148 Stone", hex: "#8a795d", group: "Grays, Blacks & Whites" },
-            { name: "170 Gunmetal", hex: "#53565a", group: "Grays, Blacks & Whites" },
-            { name: "199 Onyx", hex: "#353839", group: "Grays, Blacks & Whites" },
-            { name: "230 Off White", hex: "#f8f8f8", group: "Grays, Blacks & Whites" },
-            { name: "262 Iron Gray", hex: "#615f5f", group: "Grays, Blacks & Whites" },
-            { name: "298 Jet Black", hex: "#0a0a0a", group: "Grays, Blacks & Whites" },
-        ],
-        "Royal Cat Eye": [
-            { name: "01 Ruby Slipper", hex: "#c00000", group: "Reds & Pinks" },
-            { name: "02 Garnet", hex: "#9d0208", group: "Reds & Pinks" },
-            { name: "03 Crimson", hex: "#8b0000", group: "Reds & Pinks" },
-            { name: "04 Rose Quartz", hex: "#f7cac9", group: "Reds & Pinks" },
-            { name: "05 Flamingo", hex: "#f896d8", group: "Reds & Pinks" },
-            { name: "06 Fuchsia", hex: "#e75480", group: "Reds & Pinks" },
-            { name: "07 Amethyst", hex: "#a45ee5", group: "Purples" },
-            { name: "08 Lavender", hex: "#b57edc", group: "Purples" },
-            { name: "09 Plum", hex: "#8e4585", group: "Purples" },
-            { name: "10 Grape", hex: "#6f2da8", group: "Purples" },
-            { name: "11 Violet", hex: "#7f00ff", group: "Purples" },
-            { name: "12 Indigo", hex: "#4b0082", group: "Purples" },
-            { name: "13 Sapphire", hex: "#0f52ba", group: "Blues" },
-            { name: "14 Royal Blue", hex: "#0038a8", group: "Blues" },
-            { name: "15 Cobalt", hex: "#0047ab", group: "Blues" },
-            { name: "16 Ocean", hex: "#0077b6", group: "Blues" },
-            { name: "17 Sky", hex: "#87ceeb", group: "Blues" },
-            { name: "18 Baby Blue", hex: "#a2d2ff", group: "Blues" },
-            { name: "19 Emerald", hex: "#009b7d", group: "Greens" },
-            { name: "20 Forest", hex: "#014421", group: "Greens" },
-            { name: "21 Jade", hex: "#00a86b", group: "Greens" },
-            { name: "22 Olive", hex: "#708238", group: "Greens" },
-            { name: "23 Mint", hex: "#bdfcc9", group: "Greens" },
-            { name: "24 Teal", hex: "#008080", group: "Greens" },
-            { name: "25 Gold", hex: "#ffd700", group: "Golds & Yellows" },
-            { name: "26 Champagne", hex: "#f7e7ce", group: "Golds & Yellows" },
-            { name: "27 Lemon", hex: "#fff44f", group: "Golds & Yellows" },
-            { name: "28 Copper", hex: "#b87333", group: "Golds & Yellows" },
-            { name: "29 Bronze", hex: "#cd7f32", group: "Golds & Yellows" },
-            { name: "30 Amber", hex: "#ffbf00", group: "Golds & Yellows" },
-            { name: "31 Silver", hex: "#c0c0c0", group: "Neutrals & Metallics" },
-            { name: "32 Platinum", hex: "#e5e4e2", group: "Neutrals & Metallics" },
-            { name: "33 Steel", hex: "#858585", group: "Neutrals & Metallics" },
-            { name: "34 Onyx", hex: "#353839", group: "Neutrals & Metallics" },
-            { name: "35 Diamond", hex: "#ffffff", group: "Neutrals & Metallics" },
-            { name: "36 Pearl", hex: "#f0f0e0", group: "Neutrals & Metallics" },
-            { name: "37 Chocolate", hex: "#5a3a22", group: "Browns" },
-            { name: "38 Coffee", hex: "#4b372c", group: "Browns" },
-            { name: "39 Mocha", hex: "#87624f", group: "Browns" },
-            { name: "40 Caramel", hex: "#af6f09", group: "Browns" },
-            { name: "41 Topaz", hex: "#ffc87c", group: "Browns" },
-            { name: "42 Peach", hex: "#ffc99a", group: "Browns" },
-            { name: "43 Sunset", hex: "#f28500", group: "Oranges" },
-            { name: "44 Marigold", hex: "#fca311", group: "Oranges" },
-            { name: "45 Coral", hex: "#ff7f50", group: "Oranges" },
-            { name: "46 Fire", hex: "#e25822", group: "Oranges" },
-            { name: "47 Papaya", hex: "#ff97b3", group: "Oranges" },
-            { name: "48 Tiger Eye", hex: "#b0793d", group: "Oranges" }
-        ]
+        const brands = {
+            "DND": [
+                { name: "401 Angel Lace", hex: "#fce5cd", group: "Pinks & Nudes" },
+                { name: "429 Pinky Star", hex: "#f4abc4", group: "Pinks & Nudes" },
+                { name: "441 Funky Fuchsia", hex: "#d93696", group: "Pinks & Nudes" },
+                { name: "473 French Tip", hex: "#fde9f0", group: "Pinks & Nudes" },
+                { name: "499 Be My Valentine", hex: "#f7a7c8", group: "Pinks & Nudes" },
+                { name: "501 Ballet Pink", hex: "#f9ddec", group: "Pinks & Nudes" },
+                { name: "542 Tea Time", hex: "#f3d9d5", group: "Pinks & Nudes" },
+                { name: "577 Nude", hex: "#e7d4c5", group: "Pinks & Nudes" },
+                { name: "601 Ballet Pink", hex: "#f4c2c2", group: "Pinks & Nudes" },
+                { name: "610 Pinky Promise", hex: "#f5b7b1", group: "Pinks & Nudes" },
+                { name: "640 Barbie Pink", hex: "#ff82c3", group: "Pinks & Nudes" },
+                { name: "650 Rose", hex: "#e4a7b5", group: "Pinks & Nudes" },
+                { name: "661 Bubble Gum", hex: "#f7b2d5", group: "Pinks & Nudes" },
+                { name: "719 Tutti Frutti", hex: "#ff6392", group: "Pinks & Nudes" },
+                { name: "807 Cotton Candy", hex: "#ffbcd9", group: "Pinks & Nudes" },
+                { name: "857 Sheer Pink", hex: "#ffe4e1", group: "Pinks & Nudes" },
+                { name: "860 Perfect Nude", hex: "#eec9b8", group: "Pinks & Nudes" },
+                { name: "862 Milky Pink", hex: "#fceef5", group: "Pinks & Nudes" },
+                { name: "DC023 Blushing", hex: "#ffb6c1", group: "Pinks & Nudes" },
+                { name: "DC149 Antique Pink", hex: "#e0b4b4", group: "Pinks & Nudes" },
+                { name: "DC151 Rose Petal", hex: "#f9a8d4", group: "Pinks & Nudes" },
+                { name: "430 Ferrari Red", hex: "#c1121f", group: "Reds & Berries" },
+                { name: "429 Boston University Red", hex: "#cc0000", group: "Reds & Berries" },
+                { name: "498 Fiery Red", hex: "#d90429", group: "Reds & Berries" },
+                { name: "510 Red Stone", hex: "#a4161a", group: "Reds & Berries" },
+                { name: "545 Fiery Red", hex: "#ff0000", group: "Reds & Berries" },
+                { name: "633 Garnet Red", hex: "#8c0000", group: "Reds & Berries" },
+                { name: "751 Cherry Mocha", hex: "#6a0000", group: "Reds & Berries" },
+                { name: "753 Scarlett Dreams", hex: "#b20000", group: "Reds & Berries" },
+                { name: "754 Winter Berry", hex: "#a4133c", group: "Reds & Berries" },
+                { name: "757 Chili Pepper", hex: "#9b2226", group: "Reds & Berries" },
+                { name: "DC010 Red Cherry", hex: "#c9184a", group: "Reds & Berries" },
+                { name: "DC085 Cranberry", hex: "#8d0801", group: "Reds & Berries" },
+                { name: "434 Violet", hex: "#a393eb", group: "Purples" },
+                { name: "500 Lavender", hex: "#e6e6fa", group: "Purples" },
+                { name: "543 Purple Passion", hex: "#8338ec", group: "Purples" },
+                { name: "620 Grape", hex: "#6a0dad", group: "Purples" },
+                { name: "621 Purple Rain", hex: "#7b2cbf", group: "Purples" },
+                { name: "670 Lilac", hex: "#c8a2c8", group: "Purples" },
+                { name: "785 Voodoo", hex: "#5a189a", group: "Purples" },
+                { name: "DC091 Lavender Haze", hex: "#b39ddb", group: "Purples" },
+                { name: "DC105 Iris", hex: "#9d4edd", group: "Purples" },
+                { name: "DC172 Lilac Season", hex: "#c7b7e3", group: "Purples" },
+                { name: "436 Baby Blue", hex: "#89cff0", group: "Blues" },
+                { name: "502 Ocean Blue", hex: "#0081a7", group: "Blues" },
+                { name: "529 Blue River", hex: "#0077b6", group: "Blues" },
+                { name: "572 Great Smoky Mountain", hex: "#4895ef", group: "Blues" },
+                { name: "574 Blue Bell", hex: "#a2a2d0", group: "Blues" },
+                { name: "575 Blue Earth", hex: "#3f88c5", group: "Blues" },
+                { name: "622 Midnight Blue", hex: "#03045e", group: "Blues" },
+                { name: "671 Blue Hawaiian", hex: "#00b4d8", group: "Blues" },
+                { name: "734 Berry Blue", hex: "#4a4e69", group: "Blues" },
+                { name: "DC028 Navy Blue", hex: "#000080", group: "Blues" },
+                { name: "DC107 Periwinkle", hex: "#ccccff", group: "Blues" },
+                { name: "DC165 North Sea", hex: "#2b2d42", group: "Blues" },
+                { name: "431 Minty Green", hex: "#98ff98", group: "Greens" },
+                { name: "503 Lime Green", hex: "#32cd32", group: "Greens" },
+                { name: "530 Emerald Green", hex: "#50c878", group: "Greens" },
+                { name: "605 Olive Green", hex: "#808000", group: "Greens" },
+                { name: "617 Sage", hex: "#b2ac88", group: "Greens" },
+                { name: "680 Teal", hex: "#008080", group: "Greens" },
+                { name: "747 Aurora Green", hex: "#4f7942", group: "Greens" },
+                { name: "DC055 Mermaid Green", hex: "#006d77", group: "Greens" },
+                { name: "DC118 Pale Kiwi", hex: "#d0f4de", group: "Greens" },
+                { name: "DC205 Racing Green", hex: "#004b23", group: "Greens" },
+                { name: "418 Butternut Squash", hex: "#f8961e", group: "Oranges & Corals" },
+                { name: "420 Neon Orange", hex: "#ff9e00", group: "Oranges & Corals" },
+                { name: "506 Sunset Orange", hex: "#fb5607", group: "Oranges & Corals" },
+                { name: "532 Coral", hex: "#ff7f50", group: "Oranges & Corals" },
+                { name: "660 Papaya", hex: "#ffc971", group: "Oranges & Corals" },
+                { name: "729 Ambrosia", hex: "#ffbf69", group: "Oranges & Corals" },
+                { name: "756 Bonfire", hex: "#f48c06", group: "Oranges & Corals" },
+                { name: "DC011 Coral Kiss", hex: "#f77f00", group: "Oranges & Corals" },
+                { name: "DC163 Coral Castle", hex: "#ff8fab", group: "Oranges & Corals" },
+                { name: "DC205 Papaya Pop", hex: "#ff97b3", group: "Oranges & Corals" },
+                { name: "425 Sunshine Yellow", hex: "#ffca3a", group: "Yellows" },
+                { name: "525 Lemon Juice", hex: "#fdfcdc", group: "Yellows" },
+                { name: "531 Canary Yellow", hex: "#fef278", group: "Yellows" },
+                { name: "616 Lemon", hex: "#fff44f", group: "Yellows" },
+                { name: "745 Honey", hex: "#fca311", group: "Yellows" },
+                { name: "DC190 Gold Glam", hex: "#f0c808", group: "Yellows" },
+                { name: "DC2509 Gimmie' Butter", hex: "#fae152", group: "Yellows" },
+                { name: "405 Taupe", hex: "#bcae9e", group: "Browns & Neutrals" },
+                { name: "422 Brown", hex: "#6f4e37", group: "Browns & Neutrals" },
+                { name: "550 Chocolate", hex: "#492611", group: "Browns & Neutrals" },
+                { name: "607 Espresso", hex: "#362222", group: "Browns & Neutrals" },
+                { name: "750 Fudgsicle", hex: "#45322e", group: "Browns & Neutrals" },
+                { name: "971 Tele-Talking", hex: "#eaddcf", group: "Browns & Neutrals" },
+                { name: "DC075 Spiced Brown", hex: "#7f5539", group: "Browns & Neutrals" },
+                { name: "447 Black Licorice", hex: "#000000", group: "Grays, Blacks & Whites" },
+                { name: "448 Snow Flake", hex: "#ffffff", group: "Grays, Blacks & Whites" },
+                { name: "460 Gray", hex: "#8e8d8d", group: "Grays, Blacks & Whites" },
+                { name: "555 Charcoal", hex: "#3d3d3d", group: "Grays, Blacks & Whites" },
+                { name: "602 Silver", hex: "#c0c0c0", group: "Grays, Blacks & Whites" },
+                { name: "DC001 French White", hex: "#ffffff", group: "Grays, Blacks & Whites" },
+                { name: "DC002 Sugar Swizzle", hex: "#f7ede2", group: "Grays, Blacks & Whites" },
+                { name: "DC030 Charcoal Gray", hex: "#5e5e5e", group: "Grays, Blacks & Whites" },
+                { name: "443 Twinkle Little Star", hex: "#d4af37", group: "Glitters & Metallics" },
+                { name: "558 Gold", hex: "#ffd700", group: "Glitters & Metallics" },
+                { name: "645 Rose Gold", hex: "#b76e79", group: "Glitters & Metallics" },
+                { name: "740 Dazzle", hex: "#e0b0ff", group: "Glitters & Metallics" },
+                { name: "741 Diamond Eyes", hex: "#b9f2ff", group: "Glitters & Metallics" },
+                { name: "792 Bubbles", hex: "#e7feff", group: "Glitters & Metallics" },
+                { name: "795 Super-Nova", hex: "#c9bcf3", group: "Glitters & Metallics" },
+                { name: "726 Whirly Pop", hex: "#fec8d8", group: "Glitters & Metallics" },
+            ],
+            "DC": [
+                { name: "002 Sugar Swizzle", hex: "#f7ede2", group: "Pinks & Nudes" },
+                { name: "003 Dusty Pink", hex: "#e4c7c2", group: "Pinks & Nudes" },
+                { name: "005 Pinky Swear", hex: "#f5cac3", group: "Pinks & Nudes" },
+                { name: "023 Blushing", hex: "#ffb6c1", group: "Pinks & Nudes" },
+                { name: "032 Tea Rose", hex: "#f4c2c2", group: "Pinks & Nudes" },
+                { name: "045 Soft Peach", hex: "#fdebd1", group: "Pinks & Nudes" },
+                { name: "051 Ballet Slipper", hex: "#fde8e9", group: "Pinks & Nudes" },
+                { name: "062 Mauvelous", hex: "#e0b0ff", group: "Pinks & Nudes" },
+                { name: "078 Rosewood", hex: "#a87c7c", group: "Pinks & Nudes" },
+                { name: "088 Shocking Pink", hex: "#fc0fc0", group: "Pinks & Nudes" },
+                { name: "101 Peachy Keen", hex: "#f8c8a0", group: "Pinks & Nudes" },
+                { name: "115 Barefoot", hex: "#e7d2cc", group: "Pinks & Nudes" },
+                { name: "125 Cashmere", hex: "#d1b399", group: "Pinks & Nudes" },
+                { name: "149 Antique Pink", hex: "#e0b4b4", group: "Pinks & Nudes" },
+                { name: "151 Rose Petal", hex: "#f9a8d4", group: "Pinks & Nudes" },
+                { name: "166 Flamingo", hex: "#fca3b7", group: "Pinks & Nudes" },
+                { name: "175 Fuchsia", hex: "#ff00ff", group: "Pinks & Nudes" },
+                { name: "180 Pink Tutu", hex: "#f3d6e4", group: "Pinks & Nudes" },
+                { name: "007 Fire Red", hex: "#be0000", group: "Reds & Berries" },
+                { name: "008 Cherry Pop", hex: "#990000", group: "Reds & Berries" },
+                { name: "010 Red Cherry", hex: "#c9184a", group: "Reds & Berries" },
+                { name: "020 Red Stone", hex: "#a4161a", group: "Reds & Berries" },
+                { name: "035 Scarlet Letter", hex: "#ff2400", group: "Reds & Berries" },
+                { name: "048 Crimson", hex: "#dc143c", group: "Reds & Berries" },
+                { name: "058 Pomegranate", hex: "#c1121f", group: "Reds & Berries" },
+                { name: "070 Wine & Dine", hex: "#6a0000", group: "Reds & Berries" },
+                { name: "085 Cranberry", hex: "#8d0801", group: "Reds & Berries" },
+                { name: "100 Hollywood Red", hex: "#c10000", group: "Reds & Berries" },
+                { name: "123 Sangria", hex: "#7e0021", group: "Reds & Berries" },
+                { name: "135 Raspberry", hex: "#d7263d", group: "Reds & Berries" },
+                { name: "155 Ruby Red", hex: "#e0115f", group: "Reds & Berries" },
+                { name: "178 Strawberry", hex: "#fc5a8d", group: "Reds & Berries" },
+                { name: "018 Lilac Mist", hex: "#dcd0ff", group: "Purples" },
+                { name: "025 Grapevine", hex: "#5a189a", group: "Purples" },
+                { name: "038 Purple Haze", hex: "#a393eb", group: "Purples" },
+                { name: "052 Electric Purple", hex: "#bf00ff", group: "Purples" },
+                { name: "065 Violet Vixen", hex: "#8338ec", group: "Purples" },
+                { name: "075 Orchid", hex: "#af69ee", group: "Purples" },
+                { name: "091 Lavender Haze", hex: "#b39ddb", group: "Purples" },
+                { name: "105 Iris", hex: "#9d4edd", group: "Purples" },
+                { name: "118 Amethyst", hex: "#9b5de5", group: "Purples" },
+                { name: "132 Periwinkle", hex: "#b2b2e0", group: "Purples" },
+                { name: "150 Plum", hex: "#5d3a9b", group: "Purples" },
+                { name: "172 Lilac Season", hex: "#c7b7e3", group: "Purples" },
+                { name: "177 Wisteria", hex: "#cba0e1", group: "Purples" },
+                { name: "015 Ice Blue", hex: "#add8e6", group: "Blues" },
+                { name: "028 Navy Blue", hex: "#000080", group: "Blues" },
+                { name: "037 Sky Blue", hex: "#87cefa", group: "Blues" },
+                { name: "042 Royal Blue", hex: "#002366", group: "Blues" },
+                { name: "056 Ocean Deep", hex: "#0077b6", group: "Blues" },
+                { name: "072 Blue Lagoon", hex: "#0096c7", group: "Blues" },
+                { name: "083 Denim", hex: "#22577a", group: "Blues" },
+                { name: "107 Periwinkle", hex: "#ccccff", group: "Blues" },
+                { name: "120 Teal", hex: "#008080", group: "Blues" },
+                { name: "138 Sapphire", hex: "#0f52ba", group: "Blues" },
+                { name: "145 Baby Boy Blue", hex: "#a2d2ff", group: "Blues" },
+                { name: "165 North Sea", hex: "#2b2d42", group: "Blues" },
+                { name: "178 Cornflower", hex: "#6495ed", group: "Blues" },
+                { name: "026 Minty Fresh", hex: "#cce3de", group: "Greens" },
+                { name: "036 Forest Green", hex: "#014421", group: "Greens" },
+                { name: "047 Olive You", hex: "#6b705c", group: "Greens" },
+                { name: "055 Mermaid Green", hex: "#006d77", group: "Greens" },
+                { name: "068 Sage", hex: "#a3b18a", group: "Greens" },
+                { name: "080 Emerald", hex: "#009b7d", group: "Greens" },
+                { name: "108 Lime Light", hex: "#bfff00", group: "Greens" },
+                { name: "118 Pale Kiwi", hex: "#d0f4de", group: "Greens" },
+                { name: "130 Jade", hex: "#00a36c", group: "Greens" },
+                { name: "153 Hunter", hex: "#386641", group: "Greens" },
+                { name: "168 Pistachio", hex: "#a1c084", group: "Greens" },
+                { name: "179 Seafoam", hex: "#80b9a9", group: "Greens" },
+                { name: "011 Coral Kiss", hex: "#f77f00", group: "Oranges & Corals" },
+                { name: "012 Sunny Day", hex: "#fca311", group: "Oranges & Corals" },
+                { name: "027 Peach Sorbet", hex: "#ffdba1", group: "Oranges & Corals" },
+                { name: "040 Goldenrod", hex: "#daa520", group: "Oranges & Corals" },
+                { name: "053 Tangerine", hex: "#ff9505", group: "Oranges & Corals" },
+                { name: "066 Marigold", hex: "#fcc421", group: "Oranges & Corals" },
+                { name: "081 Neon Orange", hex: "#ffad00", group: "Oranges & Corals" },
+                { name: "095 Buttercup", hex: "#fae152", group: "Oranges & Corals" },
+                { name: "111 Papaya", hex: "#f8961e", group: "Oranges & Corals" },
+                { name: "133 Mango Tango", hex: "#fb8500", group: "Oranges & Corals" },
+                { name: "152 Lemonade", hex: "#fcf4a3", group: "Oranges & Corals" },
+                { name: "170 Burnt Sienna", hex: "#e85d04", group: "Oranges & Corals" },
+                { name: "190 Gold Glam", hex: "#f0c808", group: "Oranges & Corals" },
+                { name: "017 Almond", hex: "#eaddcf", group: "Browns & Neutrals" },
+                { name: "022 Toasted Brown", hex: "#8a5a44", group: "Browns & Neutrals" },
+                { name: "033 Espresso", hex: "#4a2c2a", group: "Browns & Neutrals" },
+                { name: "046 Taupe", hex: "#a99985", group: "Browns & Neutrals" },
+                { name: "060 Mocha", hex: "#6d4c41", group: "Browns & Neutrals" },
+                { name: "075 Spiced Brown", hex: "#7f5539", group: "Browns & Neutrals" },
+                { name: "089 Latte", hex: "#c4a389", group: "Browns & Neutrals" },
+                { name: "106 Caramel", hex: "#bc6c25", group: "Browns & Neutrals" },
+                { name: "117 Khaki", hex: "#b5a68d", group: "Browns & Neutrals" },
+                { name: "131 Clay", hex: "#a18276", group: "Browns & Neutrals" },
+                { name: "158 Chestnut", hex: "#744838", group: "Browns & Neutrals" },
+                { name: "173 Sandstone", hex: "#cbbba0", group: "Browns & Neutrals" },
+                { name: "001 French White", hex: "#ffffff", group: "Grays, Blacks & Whites" },
+                { name: "030 Charcoal Gray", hex: "#5e5e5e", group: "Grays, Blacks & Whites" },
+                { name: "041 Silver Lining", hex: "#d1d1d1", group: "Grays, Blacks & Whites" },
+                { name: "050 Black Out", hex: "#000000", group: "Grays, Blacks & Whites" },
+                { name: "063 Stormy", hex: "#797d7f", group: "Grays, Blacks & Whites" },
+                { name: "076 Ash", hex: "#abb2b9", group: "Grays, Blacks & Whites" },
+                { name: "099 Dove", hex: "#d8d8d8", group: "Grays, Blacks & Whites" },
+                { name: "121 Milky Way", hex: "#f8f9fa", group: "Grays, Blacks & Whites" },
+                { name: "140 Slate", hex: "#5d737e", group: "Grays, Blacks & Whites" },
+                { name: "160 Steel", hex: "#858585", group: "Grays, Blacks & Whites" },
+            ],
+            "DD": [
+                { name: "001 Bare Pink", hex: "#f4e3e0", group: "Pinks & Nudes" },
+                { name: "003 Nude Pink", hex: "#e8d1c5", group: "Pinks & Nudes" },
+                { name: "005 Pinky Nude", hex: "#e7c2b5", group: "Pinks & Nudes" },
+                { name: "025 English Rose", hex: "#d9a9a3", group: "Pinks & Nudes" },
+                { name: "032 Dusty Rose", hex: "#c99a98", group: "Pinks & Nudes" },
+                { name: "041 Soft Pink", hex: "#f6d4d3", group: "Pinks & Nudes" },
+                { name: "050 Baby Pink", hex: "#f5b7b1", group: "Pinks & Nudes" },
+                { name: "077 Flamingo Pink", hex: "#f4a2a3", group: "Pinks & Nudes" },
+                { name: "081 Barbie Pink", hex: "#e75480", group: "Pinks & Nudes" },
+                { name: "088 Hot Pink", hex: "#ff69b4", group: "Pinks & Nudes" },
+                { name: "102 Peach Puff", hex: "#f2d3b3", group: "Pinks & Nudes" },
+                { name: "111 Sandy Beach", hex: "#e4c6a8", group: "Pinks & Nudes" },
+                { name: "125 Taupe", hex: "#bcae9e", group: "Pinks & Nudes" },
+                { name: "151 Rose Gold", hex: "#e0b4b4", group: "Pinks & Nudes" },
+                { name: "203 Cotton Candy", hex: "#ffbcd9", group: "Pinks & Nudes" },
+                { name: "220 Bubblegum", hex: "#ffc1cc", group: "Pinks & Nudes" },
+                { name: "250 Mauve", hex: "#d1a3a4", group: "Pinks & Nudes" },
+                { name: "288 Peony", hex: "#eeafaf", group: "Pinks & Nudes" },
+                { name: "007 Cherry Red", hex: "#c21807", group: "Reds & Berries" },
+                { name: "008 Fire Engine Red", hex: "#ce2029", group: "Reds & Berries" },
+                { name: "036 Classic Red", hex: "#a11d21", group: "Reds & Berries" },
+                { name: "045 Deep Red", hex: "#9b1c1c", group: "Reds & Berries" },
+                { name: "058 Wine Red", hex: "#8b0000", group: "Reds & Berries" },
+                { name: "060 Burgundy", hex: "#800020", group: "Reds & Berries" },
+                { name: "075 Raspberry", hex: "#e30b5d", group: "Reds & Berries" },
+                { name: "090 Cranberry", hex: "#951a32", group: "Reds & Berries" },
+                { name: "100 Apple Red", hex: "#d71f28", group: "Reds & Berries" },
+                { name: "133 Scarlet", hex: "#ff2400", group: "Reds & Berries" },
+                { name: "144 Brick Red", hex: "#cb4154", group: "Reds & Berries" },
+                { name: "168 Sangria", hex: "#5e0b15", group: "Reds & Berries" },
+                { name: "189 Poppy", hex: "#e35335", group: "Reds & Berries" },
+                { name: "211 Merlot", hex: "#731c22", group: "Reds & Berries" },
+                { name: "245 Lipstick Red", hex: "#c00000", group: "Reds & Berries" },
+                { name: "277 Ruby", hex: "#e0115f", group: "Reds & Berries" },
+                { name: "011 Lavender", hex: "#e6e6fa", group: "Purples" },
+                { name: "012 Lilac", hex: "#c8a2c8", group: "Purples" },
+                { name: "028 Orchid", hex: "#da70d6", group: "Purples" },
+                { name: "040 Violet", hex: "#8f00ff", group: "Purples" },
+                { name: "065 Amethyst", hex: "#9966cc", group: "Purples" },
+                { name: "078 Grape", hex: "#6f2da8", group: "Purples" },
+                { name: "092 Plum", hex: "#8e4585", group: "Purples" },
+                { name: "110 Periwinkle", hex: "#ccccff", group: "Purples" },
+                { name: "123 Iris", hex: "#5a4fcf", group: "Purples" },
+                { name: "155 Royal Purple", hex: "#7851a9", group: "Purples" },
+                { name: "176 Magenta", hex: "#ff00ff", group: "Purples" },
+                { name: "210 Eggplant", hex: "#483248", group: "Purples" },
+                { name: "233 Wisteria", hex: "#c9a0dc", group: "Purples" },
+                { name: "266 Thistle", hex: "#d8bfd8", group: "Purples" },
+                { name: "299 Boysenberry", hex: "#873260", group: "Purples" },
+                { name: "013 Baby Blue", hex: "#89cff0", group: "Blues" },
+                { name: "014 Sky Blue", hex: "#87ceeb", group: "Blues" },
+                { name: "021 Tiffany Blue", hex: "#0abab5", group: "Blues" },
+                { name: "043 Royal Blue", hex: "#4169e1", group: "Blues" },
+                { name: "055 Navy Blue", hex: "#000080", group: "Blues" },
+                { name: "068 Teal", hex: "#008080", group: "Blues" },
+                { name: "084 Denim Blue", hex: "#1560bd", group: "Blues" },
+                { name: "105 Ocean Blue", hex: "#0077be", group: "Blues" },
+                { name: "115 Slate Blue", hex: "#6a5acd", group: "Blues" },
+                { name: "130 Cobalt Blue", hex: "#0047ab", group: "Blues" },
+                { name: "160 Midnight Blue", hex: "#003366", group: "Blues" },
+                { name: "181 Powder Blue", hex: "#b0e0e6", group: "Blues" },
+                { name: "200 Turquoise", hex: "#40e0d0", group: "Blues" },
+                { name: "240 Aqua", hex: "#00ffff", group: "Blues" },
+                { name: "270 Cerulean", hex: "#2a52be", group: "Blues" },
+                { name: "015 Mint Green", hex: "#98ff98", group: "Greens" },
+                { name: "016 Sage Green", hex: "#b2ac88", group: "Greens" },
+                { name: "022 Pistachio", hex: "#93c572", group: "Greens" },
+                { name: "048 Lime Green", hex: "#32cd32", group: "Greens" },
+                { name: "057 Olive Green", hex: "#808000", group: "Greens" },
+                { name: "070 Forest Green", hex: "#228b22", group: "Greens" },
+                { name: "085 Emerald Green", hex: "#50c878", group: "Greens" },
+                { name: "118 Hunter Green", hex: "#355e3b", group: "Greens" },
+                { name: "135 Kelly Green", hex: "#4cbb17", group: "Greens" },
+                { name: "150 Seafoam Green", hex: "#9fe2bf", group: "Greens" },
+                { name: "177 Jade", hex: "#00a86b", group: "Greens" },
+                { name: "195 Chartreuse", hex: "#dfff00", group: "Greens" },
+                { name: "215 Army Green", hex: "#4b5320", group: "Greens" },
+                { name: "255 Celadon", hex: "#ace1af", group: "Greens" },
+                { name: "290 Pear", hex: "#d1e231", group: "Greens" },
+                { name: "018 Peach", hex: "#ffcba4", group: "Oranges & Yellows" },
+                { name: "019 Coral", hex: "#ff7f50", group: "Oranges & Yellows" },
+                { name: "030 Pastel Yellow", hex: "#fdfd96", group: "Oranges & Yellows" },
+                { name: "031 Lemon Yellow", hex: "#fff44f", group: "Oranges & Yellows" },
+                { name: "063 Tangerine", hex: "#f28500", group: "Oranges & Yellows" },
+                { name: "072 Marigold", hex: "#ffbf00", group: "Oranges & Yellows" },
+                { name: "095 Mustard Yellow", hex: "#ffdb58", group: "Oranges & Yellows" },
+                { name: "112 Gold", hex: "#ffd700", group: "Oranges & Yellows" },
+                { name: "140 Burnt Orange", hex: "#cc5500", group: "Oranges & Yellows" },
+                { name: "165 Apricot", hex: "#fbceb1", group: "Oranges & Yellows" },
+                { name: "188 Mango", hex: "#fdb84e", group: "Oranges & Yellows" },
+                { name: "208 Buttercup", hex: "#fae052", group: "Oranges & Yellows" },
+                { name: "225 Papaya", hex: "#ffc971", group: "Oranges & Yellows" },
+                { name: "260 Cantaloupe", hex: "#fa9a50", group: "Oranges & Yellows" },
+                { name: "295 Neon Orange", hex: "#ff9933", group: "Oranges & Yellows" },
+                { name: "023 Beige", hex: "#f5f5dc", group: "Browns & Neutrals" },
+                { name: "024 Tan", hex: "#d2b48c", group: "Browns & Neutrals" },
+                { name: "035 Cream", hex: "#fffdd0", group: "Browns & Neutrals" },
+                { name: "052 Chocolate", hex: "#7b3f00", group: "Browns & Neutrals" },
+                { name: "061 Coffee", hex: "#6f4e37", group: "Browns & Neutrals" },
+                { name: "076 Caramel", hex: "#af6f09", group: "Browns & Neutrals" },
+                { name: "098 Cinnamon", hex: "#d2691e", group: "Browns & Neutrals" },
+                { name: "120 Mocha", hex: "#9d7c61", group: "Browns & Neutrals" },
+                { name: "138 Walnut", hex: "#593a28", group: "Browns & Neutrals" },
+                { name: "158 Chestnut", hex: "#954535", group: "Browns & Neutrals" },
+                { name: "180 Khaki", hex: "#c3b091", group: "Browns & Neutrals" },
+                { name: "223 Ivory", hex: "#fffff0", group: "Browns & Neutrals" },
+                { name: "252 Clay", hex: "#bca28e", group: "Browns & Neutrals" },
+                { name: "280 Toffee", hex: "#8c5a2b", group: "Browns & Neutrals" },
+                { name: "033 White", hex: "#ffffff", group: "Grays, Blacks & Whites" },
+                { name: "034 Black", hex: "#000000", group: "Grays, Blacks & Whites" },
+                { name: "049 Light Gray", hex: "#d3d3d3", group: "Grays, Blacks & Whites" },
+                { name: "059 Silver", hex: "#c0c0c0", group: "Grays, Blacks & Whites" },
+                { name: "069 Charcoal", hex: "#36454f", group: "Grays, Blacks & Whites" },
+                { name: "086 Slate Gray", hex: "#708090", group: "Grays, Blacks & Whites" },
+                { name: "101 Platinum", hex: "#e5e4e2", group: "Grays, Blacks & Whites" },
+                { name: "121 Ash Gray", hex: "#b2beb5", group: "Grays, Blacks & Whites" },
+                { name: "148 Stone", hex: "#8a795d", group: "Grays, Blacks & Whites" },
+                { name: "170 Gunmetal", hex: "#53565a", group: "Grays, Blacks & Whites" },
+                { name: "199 Onyx", hex: "#353839", group: "Grays, Blacks & Whites" },
+                { name: "230 Off White", hex: "#f8f8f8", group: "Grays, Blacks & Whites" },
+                { name: "262 Iron Gray", hex: "#615f5f", group: "Grays, Blacks & Whites" },
+                { name: "298 Jet Black", hex: "#0a0a0a", group: "Grays, Blacks & Whites" },
+            ],
+            "Royal Cat Eye": [
+                { name: "01 Ruby Slipper", hex: "#c00000", group: "Reds & Pinks" },
+                { name: "02 Garnet", hex: "#9d0208", group: "Reds & Pinks" },
+                { name: "03 Crimson", hex: "#8b0000", group: "Reds & Pinks" },
+                { name: "04 Rose Quartz", hex: "#f7cac9", group: "Reds & Pinks" },
+                { name: "05 Flamingo", hex: "#f896d8", group: "Reds & Pinks" },
+                { name: "06 Fuchsia", hex: "#e75480", group: "Reds & Pinks" },
+                { name: "07 Amethyst", hex: "#a45ee5", group: "Purples" },
+                { name: "08 Lavender", hex: "#b57edc", group: "Purples" },
+                { name: "09 Plum", hex: "#8e4585", group: "Purples" },
+                { name: "10 Grape", hex: "#6f2da8", group: "Purples" },
+                { name: "11 Violet", hex: "#7f00ff", group: "Purples" },
+                { name: "12 Indigo", hex: "#4b0082", group: "Purples" },
+                { name: "13 Sapphire", hex: "#0f52ba", group: "Blues" },
+                { name: "14 Royal Blue", hex: "#0038a8", group: "Blues" },
+                { name: "15 Cobalt", hex: "#0047ab", group: "Blues" },
+                { name: "16 Ocean", hex: "#0077b6", group: "Blues" },
+                { name: "17 Sky", hex: "#87ceeb", group: "Blues" },
+                { name: "18 Baby Blue", hex: "#a2d2ff", group: "Blues" },
+                { name: "19 Emerald", hex: "#009b7d", group: "Greens" },
+                { name: "20 Forest", hex: "#014421", group: "Greens" },
+                { name: "21 Jade", hex: "#00a86b", group: "Greens" },
+                { name: "22 Olive", hex: "#708238", group: "Greens" },
+                { name: "23 Mint", hex: "#bdfcc9", group: "Greens" },
+                { name: "24 Teal", hex: "#008080", group: "Greens" },
+                { name: "25 Gold", hex: "#ffd700", group: "Golds & Yellows" },
+                { name: "26 Champagne", hex: "#f7e7ce", group: "Golds & Yellows" },
+                { name: "27 Lemon", hex: "#fff44f", group: "Golds & Yellows" },
+                { name: "28 Copper", hex: "#b87333", group: "Golds & Yellows" },
+                { name: "29 Bronze", hex: "#cd7f32", group: "Golds & Yellows" },
+                { name: "30 Amber", hex: "#ffbf00", group: "Golds & Yellows" },
+                { name: "31 Silver", hex: "#c0c0c0", group: "Neutrals & Metallics" },
+                { name: "32 Platinum", hex: "#e5e4e2", group: "Neutrals & Metallics" },
+                { name: "33 Steel", hex: "#858585", group: "Neutrals & Metallics" },
+                { name: "34 Onyx", hex: "#353839", group: "Neutrals & Metallics" },
+                { name: "35 Diamond", hex: "#ffffff", group: "Neutrals & Metallics" },
+                { name: "36 Pearl", hex: "#f0f0e0", group: "Neutrals & Metallics" },
+                { name: "37 Chocolate", hex: "#5a3a22", group: "Browns" },
+                { name: "38 Coffee", hex: "#4b372c", group: "Browns" },
+                { name: "39 Mocha", hex: "#87624f", group: "Browns" },
+                { name: "40 Caramel", hex: "#af6f09", group: "Browns" },
+                { name: "41 Topaz", hex: "#ffc87c", group: "Browns" },
+                { name: "42 Peach", hex: "#ffc99a", group: "Browns" },
+                { name: "43 Sunset", hex: "#f28500", group: "Oranges" },
+                { name: "44 Marigold", hex: "#fca311", group: "Oranges" },
+                { name: "45 Coral", hex: "#ff7f50", group: "Oranges" },
+                { name: "46 Fire", hex: "#e25822", group: "Oranges" },
+                { name: "47 Papaya", hex: "#ff97b3", group: "Oranges" },
+                { name: "48 Tiger Eye", hex: "#b0793d", group: "Oranges" }
+            ]
+        };
+
+        for (const brandName in brands) {
+            const docRef = doc(db, "color_brands", brandName);
+            await setDoc(docRef, { name: brandName, colors: brands[brandName] }, { merge: true });
+        }
+
+        try {
+            console.log("Successfully pre-filled and merged color chart data.");
+        } catch (error) {
+            console.error("Error pre-filling color data: ", error);
+        }
     };
 
-    for (const brandName in brands) {
-        const docRef = doc(db, "color_brands", brandName);
-        await setDoc(docRef, { name: brandName, colors: brands[brandName] }, { merge: true });
-    }
+    // REPLACE this function inside initMainApp()
+    const updateColorChartDisplay = (brand) => {
+        const groupFilter = document.getElementById('color-group-filter');
+        const searchInput = document.getElementById('color-search-input');
+        const allGroups = [...new Set(brand.colors.map(c => c.group || 'Uncategorized'))];
 
-    try {
-        console.log("Successfully pre-filled and merged color chart data.");
-    } catch (error) {
-        console.error("Error pre-filling color data: ", error);
-    }
-};
+        // Populate group filter dropdown, preserving the current selection
+        const currentGroupSelection = groupFilter.value;
+        groupFilter.innerHTML = '<option value="all">All Groups</option>';
+        allGroups.sort().forEach(group => {
+            const isSelected = group === currentGroupSelection ? 'selected' : '';
+            groupFilter.innerHTML += `<option value="${group}" ${isSelected}>${group}</option>`;
+        });
 
-// REPLACE this function inside initMainApp()
-const updateColorChartDisplay = (brand) => {
-    const groupFilter = document.getElementById('color-group-filter');
-    const searchInput = document.getElementById('color-search-input');
-    const allGroups = [...new Set(brand.colors.map(c => c.group || 'Uncategorized'))];
+        const selectedGroup = groupFilter.value;
+        const searchTerm = searchInput.value.toLowerCase();
+        let colorsToDisplay = brand.colors;
 
-    // Populate group filter dropdown, preserving the current selection
-    const currentGroupSelection = groupFilter.value;
-    groupFilter.innerHTML = '<option value="all">All Groups</option>';
-    allGroups.sort().forEach(group => {
-        const isSelected = group === currentGroupSelection ? 'selected' : '';
-        groupFilter.innerHTML += `<option value="${group}" ${isSelected}>${group}</option>`;
-    });
+        // Filter by group first
+        if (selectedGroup && selectedGroup !== 'all') {
+            colorsToDisplay = colorsToDisplay.filter(c => (c.group || 'Uncategorized') === selectedGroup);
+        }
 
-    const selectedGroup = groupFilter.value;
-    const searchTerm = searchInput.value.toLowerCase();
-    let colorsToDisplay = brand.colors;
+        // Then filter by search term
+        if (searchTerm) {
+            colorsToDisplay = colorsToDisplay.filter(c => c.name.toLowerCase().includes(searchTerm));
+        }
 
-    // Filter by group first
-    if (selectedGroup && selectedGroup !== 'all') {
-        colorsToDisplay = colorsToDisplay.filter(c => (c.group || 'Uncategorized') === selectedGroup);
-    }
-    
-    // Then filter by search term
-    if (searchTerm) {
-        colorsToDisplay = colorsToDisplay.filter(c => c.name.toLowerCase().includes(searchTerm));
-    }
-    
-    renderColorSwatches(colorsToDisplay);
-};
+        renderColorSwatches(colorsToDisplay);
+    };
 
-// REPLACE this function inside initMainApp()
-const renderColorSwatches = (colors) => {
-    const container = document.getElementById('color-swatches-container');
-    container.innerHTML = '';
-    if (colors.length === 0) {
-        container.innerHTML = '<p class="col-span-full text-sm text-gray-500">No colors match your filter.</p>';
-    } else {
-        colors.forEach(color => {
-            container.innerHTML += `
+    // REPLACE this function inside initMainApp()
+    const renderColorSwatches = (colors) => {
+        const container = document.getElementById('color-swatches-container');
+        container.innerHTML = '';
+        if (colors.length === 0) {
+            container.innerHTML = '<p class="col-span-full text-sm text-gray-500">No colors match your filter.</p>';
+        } else {
+            colors.forEach(color => {
+                container.innerHTML += `
                 <div class="text-center">
                     <div class="color-swatch mx-auto" data-color="${color.hex}" style="background-color: ${color.hex};"></div>
                     <p class="text-xs mt-1">${color.name}</p>
                 </div>
             `;
-        });
-    }
-};
-
-// REPLACE this function inside initMainApp()
-const initColorChart = async () => {
-    if (colorChartInitialized) return;
-
-    if (!handSVGContent) {
-        try {
-            const response = await fetch('hand.svg');
-            handSVGContent = await response.text();
-        } catch (e) { console.error("Could not load hand.svg", e); return; }
-    }
-    const handContainer = document.getElementById('hand-preview-container');
-    handContainer.innerHTML = handSVGContent;
-
-    const tabsContainer = document.getElementById('color-brands-tabs');
-    tabsContainer.innerHTML = '';
-    allColorBrands.forEach((brand, index) => {
-        const btn = document.createElement('button');
-        btn.className = 'color-brand-btn px-3 py-1 rounded-full text-sm';
-        btn.textContent = brand.name;
-        btn.dataset.brandId = brand.id;
-        if (index === 0) {
-            btn.classList.add('active');
-            updateColorChartDisplay(brand); // Initial display
-        }
-        tabsContainer.appendChild(btn);
-    });
-
-    const reapplyFilters = () => {
-        const activeBrandBtn = tabsContainer.querySelector('.color-brand-btn.active');
-        if (activeBrandBtn) {
-            const brand = allColorBrands.find(b => b.id === activeBrandBtn.dataset.brandId);
-            updateColorChartDisplay(brand);
+            });
         }
     };
 
-    tabsContainer.addEventListener('click', (e) => {
-        const btn = e.target.closest('.color-brand-btn');
-        if (btn) {
-            tabsContainer.querySelectorAll('.color-brand-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            
-            // Reset filters for a new brand
-            document.getElementById('color-group-filter').value = 'all';
-            document.getElementById('color-search-input').value = '';
-            
-            reapplyFilters();
-        }
-    });
+    // REPLACE this function inside initMainApp()
+    const initColorChart = async () => {
+        if (colorChartInitialized) return;
 
-    // Correctly wire up the event listeners
-    document.getElementById('color-group-filter').addEventListener('change', reapplyFilters);
-    document.getElementById('color-search-input').addEventListener('input', reapplyFilters);
-
-    document.getElementById('color-swatches-container').addEventListener('click', (e) => {
-        const swatch = e.target.closest('.color-swatch');
-        if (swatch) {
-            const color = swatch.dataset.color;
-            handContainer.querySelectorAll('.nail').forEach(nailPath => {
-                nailPath.style.fill = color;
-            });
+        if (!handSVGContent) {
+            try {
+                const response = await fetch('hand.svg');
+                handSVGContent = await response.text();
+            } catch (e) { console.error("Could not load hand.svg", e); return; }
         }
-    });
-    
-    colorChartInitialized = true;
-};
+        const handContainer = document.getElementById('hand-preview-container');
+        handContainer.innerHTML = handSVGContent;
+
+        const tabsContainer = document.getElementById('color-brands-tabs');
+        tabsContainer.innerHTML = '';
+        allColorBrands.forEach((brand, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'color-brand-btn px-3 py-1 rounded-full text-sm';
+            btn.textContent = brand.name;
+            btn.dataset.brandId = brand.id;
+            if (index === 0) {
+                btn.classList.add('active');
+                updateColorChartDisplay(brand); // Initial display
+            }
+            tabsContainer.appendChild(btn);
+        });
+
+        const reapplyFilters = () => {
+            const activeBrandBtn = tabsContainer.querySelector('.color-brand-btn.active');
+            if (activeBrandBtn) {
+                const brand = allColorBrands.find(b => b.id === activeBrandBtn.dataset.brandId);
+                updateColorChartDisplay(brand);
+            }
+        };
+
+        tabsContainer.addEventListener('click', (e) => {
+            const btn = e.target.closest('.color-brand-btn');
+            if (btn) {
+                tabsContainer.querySelectorAll('.color-brand-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                // Reset filters for a new brand
+                document.getElementById('color-group-filter').value = 'all';
+                document.getElementById('color-search-input').value = '';
+
+                reapplyFilters();
+            }
+        });
+
+        // Correctly wire up the event listeners
+        document.getElementById('color-group-filter').addEventListener('change', reapplyFilters);
+        document.getElementById('color-search-input').addEventListener('input', reapplyFilters);
+
+        document.getElementById('color-swatches-container').addEventListener('click', (e) => {
+            const swatch = e.target.closest('.color-swatch');
+            if (swatch) {
+                const color = swatch.dataset.color;
+                handContainer.querySelectorAll('.nail').forEach(nailPath => {
+                    nailPath.style.fill = color;
+                });
+            }
+        });
+
+        colorChartInitialized = true;
+    };
 
     // --- COLOR CHART ADMIN LOGIC ---
-// Located inside initMainApp()
-const renderColorBrandsAdmin = () => {
-    const container = document.getElementById('color-brands-admin-list');
-    if(!container) return;
+    // Located inside initMainApp()
+    const renderColorBrandsAdmin = () => {
+        const container = document.getElementById('color-brands-admin-list');
+        if (!container) return;
 
-    container.innerHTML = '';
-    allColorBrands.forEach(brand => {
-        const div = document.createElement('div');
-        div.className = 'p-3 border rounded-lg bg-white flex justify-between items-center';
-        div.innerHTML = `
+        container.innerHTML = '';
+        allColorBrands.forEach(brand => {
+            const div = document.createElement('div');
+            div.className = 'p-3 border rounded-lg bg-white flex justify-between items-center';
+            div.innerHTML = `
             <span class="font-bold">${brand.name}</span>
             <div>
                 <span class="text-sm text-gray-500 mr-4">${brand.colors.length} colors</span>
@@ -5130,9 +5108,9 @@ const renderColorBrandsAdmin = () => {
                 <button data-id="${brand.id}" class="delete-color-brand-btn text-red-500 hover:text-red-700" title="Delete Brand"><i class="fas fa-trash"></i></button>
             </div>
         `;
-        container.appendChild(div);
-    });
-};
+            container.appendChild(div);
+        });
+    };
 
     document.getElementById('add-color-brand-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -5159,7 +5137,7 @@ const renderColorBrandsAdmin = () => {
             });
         }
     });
-    
+
     // Fetch all color brands and prefill if needed
     onSnapshot(query(collection(db, "color_brands"), orderBy("name")), (snapshot) => {
         if (snapshot.empty) {
@@ -5168,14 +5146,14 @@ const renderColorBrandsAdmin = () => {
             allColorBrands = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             renderColorBrandsAdmin();
             // If the color chart has been initialized, we might want to refresh it
-            if(colorChartInitialized) {
+            if (colorChartInitialized) {
                 colorChartInitialized = false; // Reset to allow re-initialization
                 initColorChart();
             }
         }
     });
 
-// ADD THIS ENTIRE BLOCK AT THE END OF initMainApp()
+    // ADD THIS ENTIRE BLOCK AT THE END OF initMainApp()
 
     // --- LOGIC FOR THE EDIT COLORS MODAL ---
     const editColorsModal = document.getElementById('edit-colors-modal');
@@ -5183,17 +5161,17 @@ const renderColorBrandsAdmin = () => {
     const addColorForm = document.getElementById('add-new-color-form');
     const existingColorsList = document.getElementById('existing-colors-list');
 
-// Located inside the "LOGIC FOR THE EDIT COLORS MODAL" section
-const renderExistingColors = (brand) => {
-    existingColorsList.innerHTML = '';
-    if (brand.colors.length === 0) {
-        existingColorsList.innerHTML = '<p class="text-sm text-gray-500 text-center p-4">No colors added yet.</p>';
-        return;
-    }
-    brand.colors.forEach((color, index) => {
-        const colorEl = document.createElement('div');
-        colorEl.className = 'flex items-center justify-between p-2 bg-gray-50 rounded';
-        colorEl.innerHTML = `
+    // Located inside the "LOGIC FOR THE EDIT COLORS MODAL" section
+    const renderExistingColors = (brand) => {
+        existingColorsList.innerHTML = '';
+        if (brand.colors.length === 0) {
+            existingColorsList.innerHTML = '<p class="text-sm text-gray-500 text-center p-4">No colors added yet.</p>';
+            return;
+        }
+        brand.colors.forEach((color, index) => {
+            const colorEl = document.createElement('div');
+            colorEl.className = 'flex items-center justify-between p-2 bg-gray-50 rounded';
+            colorEl.innerHTML = `
             <div class="flex items-center gap-3">
                 <div class="w-6 h-6 rounded-full border" style="background-color: ${color.hex};"></div>
                 <div>
@@ -5203,9 +5181,9 @@ const renderExistingColors = (brand) => {
             </div>
             <button data-index="${index}" class="delete-color-btn text-red-400 hover:text-red-700"><i class="fas fa-times-circle"></i></button>
         `;
-        existingColorsList.appendChild(colorEl);
-    });
-};
+            existingColorsList.appendChild(colorEl);
+        });
+    };
     const openEditColorsModal = (brand) => {
         document.getElementById('edit-colors-modal-title').textContent = `Edit Colors for ${brand.name}`;
         document.getElementById('edit-color-brand-id').value = brand.id;
@@ -5230,28 +5208,28 @@ const renderExistingColors = (brand) => {
         }
     });
 
-// Located inside the "LOGIC FOR THE EDIT COLORS MODAL" section
-addColorForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const brandId = document.getElementById('edit-color-brand-id').value;
-    const brand = allColorBrands.find(b => b.id === brandId);
-    if (!brand) return;
+    // Located inside the "LOGIC FOR THE EDIT COLORS MODAL" section
+    addColorForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const brandId = document.getElementById('edit-color-brand-id').value;
+        const brand = allColorBrands.find(b => b.id === brandId);
+        if (!brand) return;
 
-    const newColor = {
-        name: document.getElementById('new-color-name').value,
-        hex: document.getElementById('new-color-hex').value,
-        group: document.getElementById('new-color-group').value.trim() || 'Uncategorized'
-    };
+        const newColor = {
+            name: document.getElementById('new-color-name').value,
+            hex: document.getElementById('new-color-hex').value,
+            group: document.getElementById('new-color-group').value.trim() || 'Uncategorized'
+        };
 
-    const updatedColors = [...brand.colors, newColor];
-    try {
-        await updateDoc(doc(db, "color_brands", brandId), { colors: updatedColors });
-        addColorForm.reset();
-    } catch (error) {
-        console.error("Error adding new color:", error);
-        alert("Could not add the color.");
-    }
-});
+        const updatedColors = [...brand.colors, newColor];
+        try {
+            await updateDoc(doc(db, "color_brands", brandId), { colors: updatedColors });
+            addColorForm.reset();
+        } catch (error) {
+            console.error("Error adding new color:", error);
+            alert("Could not add the color.");
+        }
+    });
 
     // Event listener for deleting a color
     existingColorsList.addEventListener('click', async (e) => {
@@ -5279,53 +5257,53 @@ addColorForm.addEventListener('submit', async (e) => {
     const giftCardsTableBody = document.querySelector('#gift-cards-table tbody');
     const giftCardsTableAdminBody = document.querySelector('#gift-cards-table-admin tbody');
 
-// Located inside initMainApp()
-const renderGiftCardsAdminTable = (cards) => {
-    const tables = [giftCardsTableBody, giftCardsTableAdminBody];
-    tables.forEach(tbody => {
-        if (!tbody) return;
-        tbody.innerHTML = '';
-        if (cards.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-gray-400">No gift cards have been sold.</td></tr>`;
-            return;
-        }
-        cards.forEach(card => {
-            const row = tbody.insertRow();
-            const balance = card.balance !== undefined ? card.balance : card.amount;
-            
-            let statusText = card.status || 'Active';
-            let statusColor = 'bg-gray-200 text-gray-800';
-            switch (statusText) {
-                case 'Active': statusColor = 'bg-green-100 text-green-800'; break;
-                case 'Pending': statusColor = 'bg-yellow-100 text-yellow-800'; break;
-                case 'Depleted': statusColor = 'bg-red-100 text-red-800'; break;
+    // Located inside initMainApp()
+    const renderGiftCardsAdminTable = (cards) => {
+        const tables = [giftCardsTableBody, giftCardsTableAdminBody];
+        tables.forEach(tbody => {
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            if (cards.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-gray-400">No gift cards have been sold.</td></tr>`;
+                return;
             }
+            cards.forEach(card => {
+                const row = tbody.insertRow();
+                const balance = card.balance !== undefined ? card.balance : card.amount;
 
-            let actionButtons = `<button data-id="${card.id}" class="edit-gift-card-btn text-blue-500 hover:text-blue-700" title="Manage Card"><i class="fas fa-edit text-lg"></i></button>
+                let statusText = card.status || 'Active';
+                let statusColor = 'bg-gray-200 text-gray-800';
+                switch (statusText) {
+                    case 'Active': statusColor = 'bg-green-100 text-green-800'; break;
+                    case 'Pending': statusColor = 'bg-yellow-100 text-yellow-800'; break;
+                    case 'Depleted': statusColor = 'bg-red-100 text-red-800'; break;
+                }
+
+                let actionButtons = `<button data-id="${card.id}" class="edit-gift-card-btn text-blue-500 hover:text-blue-700" title="Manage Card"><i class="fas fa-edit text-lg"></i></button>
                                  <button data-id="${card.id}" class="delete-gift-card-btn text-red-500 hover:text-red-700" title="Delete Card"><i class="fas fa-trash-alt text-lg"></i></button>`;
 
-            if (statusText === 'Pending') {
-                actionButtons = `<button data-id="${card.id}" class="activate-gift-card-btn text-green-500 hover:text-green-700" title="Activate Card"><i class="fas fa-check-circle text-lg"></i></button>` + actionButtons;
-            }
+                if (statusText === 'Pending') {
+                    actionButtons = `<button data-id="${card.id}" class="activate-gift-card-btn text-green-500 hover:text-green-700" title="Activate Card"><i class="fas fa-check-circle text-lg"></i></button>` + actionButtons;
+                }
 
-            // *** NEW: Create detailed HTML for the Buyer/Recipient column ***
-            let buyerRecipientHTML = 'N/A';
-            if (card.buyerInfo) {
-                buyerRecipientHTML = `
+                // *** NEW: Create detailed HTML for the Buyer/Recipient column ***
+                let buyerRecipientHTML = 'N/A';
+                if (card.buyerInfo) {
+                    buyerRecipientHTML = `
                     <div>
                         <p class="font-semibold">${card.buyerInfo.name || 'N/A'}</p>
                         <p class="text-xs text-gray-600">${card.buyerInfo.phone || 'No Phone'}</p>
                         <p class="text-xs text-gray-600">${card.buyerInfo.email || 'No Email'}</p>
                     </div>
                 `;
-                // Also show the recipient if their name is different from the buyer's
-                if (card.recipientName && card.recipientName !== card.buyerInfo.name) {
-                    buyerRecipientHTML += `<div class="mt-1 border-t border-gray-200 pt-1 text-sm"><span class="font-semibold text-gray-500">To:</span> ${card.recipientName}</div>`;
+                    // Also show the recipient if their name is different from the buyer's
+                    if (card.recipientName && card.recipientName !== card.buyerInfo.name) {
+                        buyerRecipientHTML += `<div class="mt-1 border-t border-gray-200 pt-1 text-sm"><span class="font-semibold text-gray-500">To:</span> ${card.recipientName}</div>`;
+                    }
                 }
-            }
 
-            // *** UPDATED: The entire row.innerHTML is replaced to use the new HTML ***
-            row.innerHTML = `<td class="px-6 py-4">${new Date(card.createdAt.seconds * 1000).toLocaleDateString()}</td>
+                // *** UPDATED: The entire row.innerHTML is replaced to use the new HTML ***
+                row.innerHTML = `<td class="px-6 py-4">${new Date(card.createdAt.seconds * 1000).toLocaleDateString()}</td>
                              <td class="px-6 py-4 font-mono text-xs">${card.code}</td>
                              <td class="px-6 py-4">$${card.amount.toFixed(2)}</td>
                              <td class="px-6 py-4 font-bold">$${balance.toFixed(2)}</td>
@@ -5333,9 +5311,9 @@ const renderGiftCardsAdminTable = (cards) => {
                              <td class="px-6 py-4">${card.senderName}</td>
                              <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-semibold rounded-full ${statusColor}">${statusText}</span></td>
                              <td class="px-6 py-4 text-center space-x-4">${actionButtons}</td>`;
+            });
         });
-    });
-};
+    };
 
     onSnapshot(query(collection(db, "gift_cards"), orderBy("createdAt", "desc")), (snapshot) => {
         allGiftCards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -5345,7 +5323,7 @@ const renderGiftCardsAdminTable = (cards) => {
     const addPromotionForm = document.getElementById('add-promotion-form');
     const promotionsTableBody = document.querySelector('#promotions-table tbody');
     const promotionsContainerLanding = document.getElementById('promotions-container-landing');
-    
+
     const renderPromotionsAdminTable = (promotions) => {
         promotionsTableBody.innerHTML = '';
         const now = new Date();
@@ -5353,8 +5331,8 @@ const renderGiftCardsAdminTable = (cards) => {
             const startDate = promo.startDate.toDate();
             const endDate = promo.endDate.toDate();
             let status, statusColor;
-            if (now < startDate) { status = 'Scheduled'; statusColor = 'text-blue-600'; } 
-            else if (now > endDate) { status = 'Expired'; statusColor = 'text-gray-500'; } 
+            if (now < startDate) { status = 'Scheduled'; statusColor = 'text-blue-600'; }
+            else if (now > endDate) { status = 'Expired'; statusColor = 'text-gray-500'; }
             else { status = 'Active'; statusColor = 'text-green-600'; }
             const row = promotionsTableBody.insertRow();
             row.innerHTML = `<td class="px-6 py-4">${promo.title}</td><td class="px-6 py-4">${promo.description}</td><td class="px-6 py-4">${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}</td><td class="px-6 py-4 font-bold ${statusColor}">${status}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${promo.id}" class="send-promo-notification-btn text-purple-500" title="Send Notification"><i class="fas fa-paper-plane"></i></button><button data-id="${promo.id}" class="edit-promotion-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${promo.id}" class="delete-promotion-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
@@ -5384,7 +5362,7 @@ const renderGiftCardsAdminTable = (cards) => {
         const promoId = document.getElementById('edit-promotion-id').value;
         const promoData = { title: document.getElementById('promotion-title').value, description: document.getElementById('promotion-description').value, startDate: Timestamp.fromDate(new Date(document.getElementById('promotion-start-date').value + 'T00:00:00')), endDate: Timestamp.fromDate(new Date(document.getElementById('promotion-end-date').value + 'T23:59:59')), };
         try {
-            if (promoId) { await updateDoc(doc(db, "promotions", promoId), promoData); } 
+            if (promoId) { await updateDoc(doc(db, "promotions", promoId), promoData); }
             else { promoData.createdAt = serverTimestamp(); await addDoc(collection(db, "promotions"), promoData); }
             addPromotionForm.reset(); document.getElementById('edit-promotion-id').value = '';
         } catch (error) { console.error("Error saving promotion:", error); alert("Could not save promotion."); }
@@ -5397,7 +5375,8 @@ const renderGiftCardsAdminTable = (cards) => {
         if (editBtn) {
             const promo = allPromotions.find(p => p.id === editBtn.dataset.id);
             if (promo) { document.getElementById('edit-promotion-id').value = promo.id; document.getElementById('promotion-title').value = promo.title; document.getElementById('promotion-description').value = promo.description; document.getElementById('promotion-start-date').value = promo.startDate.toDate().toISOString().split('T')[0]; document.getElementById('promotion-end-date').value = promo.endDate.toDate().toISOString().split('T')[0]; document.getElementById('add-promotion-btn').textContent = 'Update Promotion'; document.getElementById('cancel-edit-promotion-btn').classList.remove('hidden'); }
-        } else if (deleteBtn) { showConfirmModal("Are you sure you want to delete this promotion?", async () => { await deleteDoc(doc(db, "promotions", deleteBtn.dataset.id)); });
+        } else if (deleteBtn) {
+            showConfirmModal("Are you sure you want to delete this promotion?", async () => { await deleteDoc(doc(db, "promotions", deleteBtn.dataset.id)); });
         } else if (sendBtn) {
             const promo = allPromotions.find(p => p.id === sendBtn.dataset.id);
             if (promo) { showConfirmModal(`Send a notification for "${promo.title}" to all clients?`, () => { addNotification('promo', `New Promotion: ${promo.title}! ${promo.description}`); alert('Promotion notification sent!'); }); }
@@ -5439,7 +5418,7 @@ const renderGiftCardsAdminTable = (cards) => {
         const clientData = { name: document.getElementById('client-form-name').value, phone: document.getElementById('client-form-phone').value, dob: document.getElementById('client-form-dob').value, };
         if (!clientData.name) { alert('Client name is required.'); return; }
         try {
-            if (clientId) { await updateDoc(doc(db, "clients", clientId), clientData); } 
+            if (clientId) { await updateDoc(doc(db, "clients", clientId), clientData); }
             else { await addDoc(collection(db, "clients"), clientData); }
             closeClientModal();
         } catch (error) { console.error("Error saving client:", error); alert("Could not save client data."); }
@@ -5460,13 +5439,13 @@ const renderGiftCardsAdminTable = (cards) => {
             if (clientsToImport.length === 0) { alert('No clients found in the file.'); return; }
             const batch = writeBatch(db);
             clientsToImport.forEach(client => { const newClientRef = doc(collection(db, "clients")); batch.set(newClientRef, { name: client.Name || 'N/A', phone: client.Phone || '', dob: client.DOB || '' }); });
-            try { await batch.commit(); alert(`${clientsToImport.length} clients imported successfully!`); } 
+            try { await batch.commit(); alert(`${clientsToImport.length} clients imported successfully!`); }
             catch (error) { console.error("Error importing clients: ", error); alert("An error occurred during import."); }
         };
         reader.readAsArrayBuffer(file);
         e.target.value = '';
     });
-    
+
     // --- Gift Card Designer & Management Logic ---
     const designerForm = document.getElementById('physical-gift-card-form');
     const designerBackgroundTabs = document.getElementById('designer-background-tabs');
@@ -5481,7 +5460,7 @@ const renderGiftCardsAdminTable = (cards) => {
         const showTo = document.getElementById('designer-show-to').checked;
         const showFrom = document.getElementById('designer-show-from').checked;
         const setExpiry = document.getElementById('designer-set-expiry').checked;
-        
+
         document.getElementById('preview-to').parentElement.style.display = showTo ? '' : 'none';
         document.getElementById('preview-from').parentElement.style.display = showFrom ? '' : 'none';
         document.getElementById('designer-to-wrapper').style.display = showTo ? '' : 'none';
@@ -5489,10 +5468,10 @@ const renderGiftCardsAdminTable = (cards) => {
 
         document.getElementById('preview-to').textContent = document.getElementById('designer-to').value || 'Recipient';
         document.getElementById('preview-from').textContent = document.getElementById('designer-from').value || 'Sender';
-        
+
         const amount = parseFloat(document.getElementById('designer-amount').value) || 0;
         document.getElementById('preview-amount').textContent = `$${amount.toFixed(2)}`;
-        
+
         const expiryPreview = document.getElementById('preview-expiry');
         if (setExpiry) {
             const value = parseInt(document.getElementById('designer-expiry-value').value, 10);
@@ -5507,15 +5486,15 @@ const renderGiftCardsAdminTable = (cards) => {
                 expiryPreview.textContent = `Expires: ${expiryDate.toLocaleDateString()}`;
                 expiryPreview.style.display = 'block';
             } else {
-                 expiryPreview.style.display = 'none';
+                expiryPreview.style.display = 'none';
             }
         } else {
             expiryPreview.style.display = 'none';
         }
     };
-    
+
     const populateBackgrounds = (category) => {
-        designerBackgroundOptions.innerHTML = giftCardBackgrounds[category].map(url => 
+        designerBackgroundOptions.innerHTML = giftCardBackgrounds[category].map(url =>
             `<button type="button" data-bg="${url}" class="w-full h-16 bg-cover bg-center rounded-md border-2 border-transparent hover:border-pink-400" style="background-image: url('${url}')"></button>`
         ).join('');
         const firstBgBtn = designerBackgroundOptions.querySelector('button');
@@ -5524,25 +5503,25 @@ const renderGiftCardsAdminTable = (cards) => {
             printableCard.style.backgroundImage = `url('${firstBgBtn.dataset.bg}')`;
         }
     };
-    
+
     const initializeGiftCardDesigner = () => {
         designerForm.reset();
         document.getElementById('designer-quantity').value = 1;
         document.getElementById('preview-code').textContent = `GC-${Date.now()}${[...Array(4)].map(() => Math.floor(Math.random() * 10)).join('')}`;
-        
-        designerBackgroundTabs.innerHTML = Object.keys(giftCardBackgrounds).map(cat => 
+
+        designerBackgroundTabs.innerHTML = Object.keys(giftCardBackgrounds).map(cat =>
             `<button type="button" data-category="${cat}" class="px-3 py-1 text-sm font-medium rounded-t-lg">${cat}</button>`
         ).join('');
-        
+
         const firstTab = designerBackgroundTabs.querySelector('button');
-        if(firstTab) {
-             firstTab.classList.add('bg-gray-200', 'border-gray-300', 'border-b-0');
-             populateBackgrounds(firstTab.dataset.category);
+        if (firstTab) {
+            firstTab.classList.add('bg-gray-200', 'border-gray-300', 'border-b-0');
+            populateBackgrounds(firstTab.dataset.category);
         }
 
         updateDesignerPreview();
     };
-    
+
     designerBackgroundTabs.addEventListener('click', e => {
         const tab = e.target.closest('button');
         if (tab) {
@@ -5606,13 +5585,13 @@ const renderGiftCardsAdminTable = (cards) => {
 
         try {
             await batch.commit();
-            
+
             const originalPreviewHTML = printableCardArea.innerHTML;
 
             printableCardArea.innerHTML = cardsToPrint.map(card => {
-                 const expiryText = card.expiresAt ? `Expires: ${card.expiresAt.toDate().toLocaleDateString()}` : '';
-                 const bgImage = printableCard.style.backgroundImage;
-                 return `
+                const expiryText = card.expiresAt ? `Expires: ${card.expiresAt.toDate().toLocaleDateString()}` : '';
+                const bgImage = printableCard.style.backgroundImage;
+                return `
                     <div class="printable-gift-card w-[400px] h-[228px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" style="background-image: ${bgImage};">
                         <div class="flex justify-between items-start" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
                             <img src="${document.getElementById('preview-logo').src}" class="w-12 h-12 rounded-full border-2 border-white"/>
@@ -5632,7 +5611,7 @@ const renderGiftCardsAdminTable = (cards) => {
                         </div>
                     </div>`;
             }).join('');
-            
+
             window.print();
 
             setTimeout(() => {
@@ -5644,7 +5623,7 @@ const renderGiftCardsAdminTable = (cards) => {
             alert("Could not save the gift cards. Please try again.");
         }
     };
-    
+
     document.getElementById('designer-show-to').addEventListener('change', updateDesignerPreview);
     document.getElementById('designer-show-from').addEventListener('change', updateDesignerPreview);
     document.getElementById('designer-set-expiry').addEventListener('change', (e) => {
@@ -5654,7 +5633,7 @@ const renderGiftCardsAdminTable = (cards) => {
 
     designerForm.addEventListener('input', updateDesignerPreview);
     saveAndPrintBtn.addEventListener('click', handleSaveAndPrint);
-    
+
     const openEditGiftCardModal = (card) => {
         editGiftCardForm.reset();
         document.getElementById('edit-gift-card-id').value = card.id;
@@ -5688,70 +5667,70 @@ const renderGiftCardsAdminTable = (cards) => {
         editGiftCardModal.classList.add('flex');
     };
 
-    
+
     document.getElementById('close-edit-gift-card-modal-btn').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));
     editGiftCardModal.querySelector('.modal-overlay').addEventListener('click', () => editGiftCardModal.classList.add('hidden'));
-// REPLACE the entire setupGiftCardTableListener function
-const setupGiftCardTableListener = (tableId) => {
-    const table = document.getElementById(tableId);
-    if (table) {
-        table.addEventListener('click', (e) => {
-            const activateBtn = e.target.closest('.activate-gift-card-btn');
-            const editBtn = e.target.closest('.edit-gift-card-btn');
-            const deleteBtn = e.target.closest('.delete-gift-card-btn');
+    // REPLACE the entire setupGiftCardTableListener function
+    const setupGiftCardTableListener = (tableId) => {
+        const table = document.getElementById(tableId);
+        if (table) {
+            table.addEventListener('click', (e) => {
+                const activateBtn = e.target.closest('.activate-gift-card-btn');
+                const editBtn = e.target.closest('.edit-gift-card-btn');
+                const deleteBtn = e.target.closest('.delete-gift-card-btn');
 
-            if (activateBtn) {
-                const cardId = activateBtn.dataset.id;
-                const card = allGiftCards.find(c => c.id === cardId);
-                if (card) {
-                    showConfirmModal(`Activate gift card ${card.code} for $${card.amount.toFixed(2)}?`, async () => {
-                        try {
-                            await updateDoc(doc(db, "gift_cards", cardId), { status: 'Active' });
-                            alert('Gift card has been activated!');
-                        } catch (error) {
-                            console.error("Error activating gift card:", error);
-                            alert("Could not activate the gift card.");
-                        }
-                    }, 'Activate');
+                if (activateBtn) {
+                    const cardId = activateBtn.dataset.id;
+                    const card = allGiftCards.find(c => c.id === cardId);
+                    if (card) {
+                        showConfirmModal(`Activate gift card ${card.code} for $${card.amount.toFixed(2)}?`, async () => {
+                            try {
+                                await updateDoc(doc(db, "gift_cards", cardId), { status: 'Active' });
+                                alert('Gift card has been activated!');
+                            } catch (error) {
+                                console.error("Error activating gift card:", error);
+                                alert("Could not activate the gift card.");
+                            }
+                        }, 'Activate');
+                    }
+                } else if (editBtn) {
+                    const card = allGiftCards.find(c => c.id === editBtn.dataset.id);
+                    if (card) openEditGiftCardModal(card);
+                } else if (deleteBtn) {
+                    const cardId = deleteBtn.dataset.id;
+                    const card = allGiftCards.find(c => c.id === cardId);
+                    if (card) {
+                        showConfirmModal(`Are you sure you want to delete gift card ${card.code}? This action cannot be undone.`, async () => {
+                            try {
+                                await deleteDoc(doc(db, "gift_cards", cardId));
+                                alert(`Gift card ${card.code} has been deleted.`);
+                            } catch (error) {
+                                console.error("Error deleting gift card:", error);
+                                alert("Could not delete the gift card.");
+                            }
+                        });
+                    }
                 }
-            } else if (editBtn) {
-                const card = allGiftCards.find(c => c.id === editBtn.dataset.id);
-                if (card) openEditGiftCardModal(card);
-            } else if (deleteBtn) {
-                const cardId = deleteBtn.dataset.id;
-                const card = allGiftCards.find(c => c.id === cardId);
-                if (card) {
-                    showConfirmModal(`Are you sure you want to delete gift card ${card.code}? This action cannot be undone.`, async () => {
-                        try {
-                            await deleteDoc(doc(db, "gift_cards", cardId));
-                            alert(`Gift card ${card.code} has been deleted.`);
-                        } catch (error) {
-                            console.error("Error deleting gift card:", error);
-                            alert("Could not delete the gift card.");
-                        }
-                    });
-                }
-            }
-        });
-    }
-};
+            });
+        }
+    };
 
 
-setupGiftCardTableListener('gift-cards-table');
-setupGiftCardTableListener('gift-cards-table-admin');
-document.getElementById('close-client-profile-modal-btn').addEventListener('click', () => clientProfileModal.classList.add('hidden'));
-clientProfileModal.querySelector('.modal-overlay').addEventListener('click', () => clientProfileModal.classList.add('hidden'));
+    setupGiftCardTableListener('gift-cards-table');
+    setupGiftCardTableListener('gift-cards-table-admin');
+    document.getElementById('close-client-profile-modal-btn').addEventListener('click', () => clientProfileModal.classList.add('hidden'));
+    clientProfileModal.querySelector('.modal-overlay').addEventListener('click', () => clientProfileModal.classList.add('hidden'));
 
 
-// ADD ALL THIS CODE AT THE END OF THE initMainApp FUNCTION
+    // ADD ALL THIS CODE AT THE END OF THE initMainApp FUNCTION
 
 
     let allClientMemberships = [];
     onSnapshot(query(collection(db, "clients"), where("membership", "!=", null)), (snapshot) => {
         allClientMemberships = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         const searchTerm = document.getElementById('search-memberships').value.toLowerCase();
-        const filtered = allClientMemberships.filter(m => 
-            m.name.toLowerCase().includes(searchTerm) || 
+        const filtered = allClientMemberships.filter(m =>
+            m.name.toLowerCase().includes(searchTerm) ||
             m.membership.tierName.toLowerCase().includes(searchTerm)
         );
         renderClientMembershipsTable(filtered);
@@ -5759,8 +5738,8 @@ clientProfileModal.querySelector('.modal-overlay').addEventListener('click', () 
 
     document.getElementById('search-memberships').addEventListener('input', () => {
         const searchTerm = document.getElementById('search-memberships').value.toLowerCase();
-        const filtered = allClientMemberships.filter(m => 
-            m.name.toLowerCase().includes(searchTerm) || 
+        const filtered = allClientMemberships.filter(m =>
+            m.name.toLowerCase().includes(searchTerm) ||
             m.membership.tierName.toLowerCase().includes(searchTerm)
         );
         renderClientMembershipsTable(filtered);
@@ -5779,24 +5758,24 @@ clientProfileModal.querySelector('.modal-overlay').addEventListener('click', () 
         const deleteBtn = e.target.closest('.delete-membership-record-btn');
         if (deleteBtn) {
             const clientId = deleteBtn.dataset.id;
-             showConfirmModal("Remove this membership from the client?", async () => {
+            showConfirmModal("Remove this membership from the client?", async () => {
                 await updateDoc(doc(db, "clients", clientId), { membership: null });
                 alert("Membership removed.");
             });
         }
     });
 
-// --- MEMBERSHIP MANAGEMENT (ADMIN) ---
-const membershipModal = document.getElementById('membership-tier-modal');
-const membershipForm = document.getElementById('membership-tier-form');
+    // --- MEMBERSHIP MANAGEMENT (ADMIN) ---
+    const membershipModal = document.getElementById('membership-tier-modal');
+    const membershipForm = document.getElementById('membership-tier-form');
 
-const renderMembershipsAdmin = (tiers) => {
-    const tbody = document.querySelector('#memberships-table tbody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-    tiers.forEach(tier => {
-        const row = tbody.insertRow();
-        row.innerHTML = `
+    const renderMembershipsAdmin = (tiers) => {
+        const tbody = document.querySelector('#memberships-table tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        tiers.forEach(tier => {
+            const row = tbody.insertRow();
+            row.innerHTML = `
             <td class="px-6 py-4 font-bold">${tier.name}</td>
             <td class="px-6 py-4">$${tier.price}/month</td>
             <td class="px-6 py-4">${tier.discount}%</td>
@@ -5806,73 +5785,73 @@ const renderMembershipsAdmin = (tiers) => {
                 <button data-id="${tier.id}" class="delete-membership-btn text-red-500"><i class="fas fa-trash"></i></button>
             </td>
         `;
-    });
-};
+        });
+    };
 
-const openMembershipTierModal = (tier = null) => {
-    membershipForm.reset();
-    if (tier) {
-        document.getElementById('membership-tier-modal-title').textContent = 'Edit Tier';
-        document.getElementById('edit-membership-tier-id').value = tier.id;
-        document.getElementById('tier-name').value = tier.name;
-        document.getElementById('tier-price').value = tier.price;
-        document.getElementById('tier-discount').value = tier.discount;
-        document.getElementById('tier-benefits').value = tier.benefits;
-    } else {
-        document.getElementById('membership-tier-modal-title').textContent = 'Add New Tier';
-        document.getElementById('edit-membership-tier-id').value = '';
-    }
-    membershipModal.classList.remove('hidden');
-};
+    const openMembershipTierModal = (tier = null) => {
+        membershipForm.reset();
+        if (tier) {
+            document.getElementById('membership-tier-modal-title').textContent = 'Edit Tier';
+            document.getElementById('edit-membership-tier-id').value = tier.id;
+            document.getElementById('tier-name').value = tier.name;
+            document.getElementById('tier-price').value = tier.price;
+            document.getElementById('tier-discount').value = tier.discount;
+            document.getElementById('tier-benefits').value = tier.benefits;
+        } else {
+            document.getElementById('membership-tier-modal-title').textContent = 'Add New Tier';
+            document.getElementById('edit-membership-tier-id').value = '';
+        }
+        membershipModal.classList.remove('hidden');
+    };
 
-const initMembershipManagement = () => {
-    onSnapshot(query(collection(db, "memberships"), orderBy("price")), (snapshot) => {
-        allMembershipTiers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        renderMembershipsAdmin(allMembershipTiers);
-    });
+    const initMembershipManagement = () => {
+        onSnapshot(query(collection(db, "memberships"), orderBy("price")), (snapshot) => {
+            allMembershipTiers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderMembershipsAdmin(allMembershipTiers);
+        });
 
-    document.getElementById('add-new-membership-tier-btn').addEventListener('click', () => openMembershipTierModal());
-    document.getElementById('cancel-membership-tier-btn').addEventListener('click', () => membershipModal.classList.add('hidden'));
+        document.getElementById('add-new-membership-tier-btn').addEventListener('click', () => openMembershipTierModal());
+        document.getElementById('cancel-membership-tier-btn').addEventListener('click', () => membershipModal.classList.add('hidden'));
 
-    membershipForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const tierId = document.getElementById('edit-membership-tier-id').value;
-        const data = {
-            name: document.getElementById('tier-name').value,
-            price: parseFloat(document.getElementById('tier-price').value),
-            discount: parseInt(document.getElementById('tier-discount').value, 10),
-            benefits: document.getElementById('tier-benefits').value,
-        };
-        try {
-            if (tierId) {
-                await updateDoc(doc(db, "memberships", tierId), data);
-            } else {
-                await addDoc(collection(db, "memberships"), data);
+        membershipForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const tierId = document.getElementById('edit-membership-tier-id').value;
+            const data = {
+                name: document.getElementById('tier-name').value,
+                price: parseFloat(document.getElementById('tier-price').value),
+                discount: parseInt(document.getElementById('tier-discount').value, 10),
+                benefits: document.getElementById('tier-benefits').value,
+            };
+            try {
+                if (tierId) {
+                    await updateDoc(doc(db, "memberships", tierId), data);
+                } else {
+                    await addDoc(collection(db, "memberships"), data);
+                }
+                membershipModal.classList.add('hidden');
+            } catch (error) {
+                alert("Could not save tier.");
+                console.error(error);
             }
-            membershipModal.classList.add('hidden');
-        } catch (error) {
-            alert("Could not save tier.");
-            console.error(error);
-        }
-    });
-    
-    document.querySelector('#memberships-table tbody').addEventListener('click', (e) => {
-        const editBtn = e.target.closest('.edit-membership-btn');
-        if(editBtn) openMembershipTierModal(allMembershipTiers.find(t => t.id === editBtn.dataset.id));
+        });
 
-        const deleteBtn = e.target.closest('.delete-membership-btn');
-        if(deleteBtn) {
-            showConfirmModal("Delete this tier?", async () => {
-                await deleteDoc(doc(db, "memberships", deleteBtn.dataset.id));
-            });
-        }
-    });
+        document.querySelector('#memberships-table tbody').addEventListener('click', (e) => {
+            const editBtn = e.target.closest('.edit-membership-btn');
+            if (editBtn) openMembershipTierModal(allMembershipTiers.find(t => t.id === editBtn.dataset.id));
+
+            const deleteBtn = e.target.closest('.delete-membership-btn');
+            if (deleteBtn) {
+                showConfirmModal("Delete this tier?", async () => {
+                    await deleteDoc(doc(db, "memberships", deleteBtn.dataset.id));
+                });
+            }
+        });
 
 
-    
-};
 
-    
+    };
+
+
     loadAndRenderServices();
     initializeGiftCardDesigner();
     const todayString = getLocalDateString();
@@ -5886,12 +5865,12 @@ const initMembershipManagement = () => {
     renderAllStaffEarnings();
     const dashboardEarningDateFilter = document.getElementById('dashboard-earning-date-filter');
     // ADD THESE TWO LINES
-const dashboardEarningSubmitDateInput = document.getElementById('dashboard-staff-earning-date-full');
-if (dashboardEarningSubmitDateInput) dashboardEarningSubmitDateInput.value = todayString;
-    
+    const dashboardEarningSubmitDateInput = document.getElementById('dashboard-staff-earning-date-full');
+    if (dashboardEarningSubmitDateInput) dashboardEarningSubmitDateInput.value = todayString;
+
     dashboardEarningDateFilter.value = todayString;
     currentDashboardEarningDateFilter = todayString;
-    
+
     document.getElementById('salon-earning-date').value = todayString;
     const salonEarningRangeFilter = document.getElementById('salon-earning-range-filter');
     const salonEarningDateFilter = document.getElementById('salon-earning-date-filter');

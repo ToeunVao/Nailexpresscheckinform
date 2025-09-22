@@ -755,6 +755,7 @@ const openMembershipCardForPrint = (client, tier) => {
             container.appendChild(cardEl);
         });
     };
+
 // **** REPLACE your old renderClientMembership function with this one ****
 
 const renderClientMembership = (clientData) => {
@@ -764,8 +765,13 @@ const renderClientMembership = (clientData) => {
     if (clientData.membership && allMembershipTiers.length > 0) {
         const tier = allMembershipTiers.find(t => t.id === clientData.membership.tierId);
         if (tier) {
+            // THIS BLOCK IS NOW CORRECTED TO HANDLE BOTH CASES
+            let startDate = new Date().toLocaleDateString(); // Default to today for new signups
+            if (clientData.membership.startDate && typeof clientData.membership.startDate.toDate === 'function') {
+                startDate = clientData.membership.startDate.toDate().toLocaleDateString();
+            }
+
             const benefitsList = tier.benefits.split('\n').map(b => `<li class="flex items-start"><span class="text-green-500 mr-2">✔</span><span>${b}</span></li>`).join('');
-            const startDate = clientData.membership.startDate.toDate().toLocaleDateString();
             const status = clientData.membership.status || 'Active';
             const statusColor = status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
 
@@ -820,7 +826,7 @@ const renderClientMembership = (clientData) => {
                 </div>
             `;
         } else {
-            container.innerHTML = '<p class="text-gray-500 text-center col-span-full">Your membership tier could not be found. Please contact the salon.</p>';
+             container.innerHTML = '<p class="text-gray-500 text-center col-span-full">Your membership tier could not be found. Please contact the salon.</p>';
         }
     } else {
         container.innerHTML = `
@@ -1068,7 +1074,7 @@ document.getElementById('landing-membership-form').addEventListener('submit', as
             userInfoSection.classList.remove('hidden');
         }
     };
-    
+
 const purchaseForm = document.getElementById('landing-gift-card-form');
 
    // Located inside initLandingPage()

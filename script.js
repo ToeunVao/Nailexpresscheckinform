@@ -615,23 +615,30 @@ function initClientDashboard(clientId, clientData) {
     document.getElementById('client-welcome-name').textContent = `Welcome back, ${clientData.name}!`;
     document.getElementById('client-sign-out-btn').addEventListener('click', () => signOut(auth));
 
-    const openPurchaseModalForClient = (client) => {
-        const purchaseModal = document.getElementById('gift-card-purchase-modal');
-        const userInfoSection = document.getElementById('gc-user-info-section');
+// **** REPLACE the old openPurchaseModalForClient function with this new one ****
+// Located inside the initClientDashboard function
 
-        if (userInfoSection) {
-            userInfoSection.classList.add('hidden');
-        }
-        document.getElementById('gc-buyer-name').value = client.name;
-        document.getElementById('gc-buyer-name').readOnly = true;
-        document.getElementById('gc-buyer-phone').value = client.phone || '';
-        document.getElementById('gc-buyer-phone').readOnly = true;
-        document.getElementById('gc-buyer-email').value = clientData.email;
-        document.getElementById('gc-buyer-email').readOnly = true;
+const openPurchaseModalForClient = (client) => {
+    const purchaseModal = document.getElementById('gift-card-purchase-modal');
+    const userInfoSection = document.getElementById('gc-user-info-section');
 
-        initializeLandingGiftCardDesigner();
-        purchaseModal.classList.remove('hidden');
-    };
+    // First, initialize the designer, which also resets the form
+    initializeLandingGiftCardDesigner();
+
+    // NOW, pre-fill the form with the client's data
+    if (userInfoSection) {
+        userInfoSection.classList.add('hidden');
+    }
+    document.getElementById('gc-buyer-name').value = client.name;
+    document.getElementById('gc-buyer-name').readOnly = true;
+    document.getElementById('gc-buyer-phone').value = client.phone || '';
+    document.getElementById('gc-buyer-phone').readOnly = true;
+    document.getElementById('gc-buyer-email').value = clientData.email;
+    document.getElementById('gc-buyer-email').readOnly = true;
+    
+    // Finally, show the modal
+    purchaseModal.classList.remove('hidden');
+};
     
     const openCardForPrint = (card) => {
         const expiryText = card.expiresAt ? `Expires: ${card.expiresAt.toDate().toLocaleDateString()}` : '';

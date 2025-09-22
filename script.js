@@ -837,6 +837,9 @@ function initLandingPage() {
             sessionStorage.setItem('signupDetails', JSON.stringify({ name, email, phone }));
 
             await createUserWithEmailAndPassword(auth, email, phone);
+            // **** ADD THIS LINE TO FIX THE BUG ****
+        closeMembershipPurchaseModal(); 
+        // *************************************
             // onAuthStateChanged will handle the rest
             
         } catch (error) {

@@ -368,14 +368,18 @@ const initializeMembershipPurchaseForm = (selectedTierId) => {
 
     form.reset();
     // **** ADD THIS BLOCK ****
-    if (clientData) {
-        document.getElementById('ms-buyer-name').value = clientData.name;
-        document.getElementById('ms-buyer-phone').value = clientData.phone || '';
-        document.getElementById('ms-buyer-email').value = clientData.email;
-        document.getElementById('membership-user-info-section').classList.add('hidden');
-    } else {
-        document.getElementById('membership-user-info-section').classList.remove('hidden');
+if (clientData) {
+    document.getElementById('ms-buyer-name').value = clientData.name;
+    document.getElementById('ms-buyer-phone').value = clientData.phone || '';
+    document.getElementById('ms-buyer-email').value = clientData.email;
+    document.getElementById('membership-user-info-section').classList.add('hidden');
+} else {
+    // Show the user info fields for anonymous users
+    const userInfoSection = document.getElementById('membership-user-info-section');
+    if (userInfoSection) {
+        userInfoSection.classList.remove('hidden');
     }
+}
     // **** END OF BLOCK ****
     
     tierSelect.innerHTML = '';

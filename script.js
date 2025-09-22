@@ -903,14 +903,44 @@ if (joinBtn) {
     setupClientTabs();
 }
 
-    // NEW submit listener for the membership form
-    document.getElementById('landing-membership-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const submitBtn = document.getElementById('landing-ms-submit-btn');
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Processing...';
+// REPLACE your old 'landing-membership-form' submit listener with this one
 
-        try {
+document.getElementById('landing-membership-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const submitBtn = document.getElementById('landing-ms-submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Processing...';
+
+    const tierId = document.getElementById('ms-tier-select').value;
+    const tier = allMembershipTiers.find(t => t.id === tierId);
+
+    if (!tier) {
+        alert("Please select a valid membership tier.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Membership Request';
+        return;
+    }
+
+    try {
+        // SCENARIO 1: USER IS ALREADY LOGGED IN
+        if (currentUserId && auth.currentUser && !auth.currentUser.isAnonymous) {
+            const clientDocRef = doc(db, "clients", currentUserId);
+            const membershipData = {
+                tierId: tier.id,
+                tierName: tier.name,
+                startDate: serverTimestamp(),
+                status: 'Pending'
+            };
+            
+            await updateDoc(clientDocRef, {
+                membership: membershipData
+            });
+
+            alert("Success! Your membership request has been sent. It will be activated once payment is confirmed.");
+            closeMembershipPurchaseModal();
+
+        } else {
+            // SCENARIO 2: NEW VISITOR
             const name = document.getElementById('ms-buyer-name').value;
             const email = document.getElementById('ms-buyer-email').value;
             const phone = document.getElementById('ms-buyer-phone').value;
@@ -920,29 +950,26 @@ if (joinBtn) {
                 throw new Error("Missing buyer info");
             }
             
-            const tierId = document.getElementById('ms-tier-select').value;
             sessionStorage.setItem('pendingMembershipPurchase', tierId);
             sessionStorage.setItem('signupDetails', JSON.stringify({ name, email, phone }));
 
             await createUserWithEmailAndPassword(auth, email, phone);
-            // **** ADD THIS LINE TO FIX THE BUG ****
-        closeMembershipPurchaseModal(); 
-        // *************************************
+            closeMembershipPurchaseModal();
             // onAuthStateChanged will handle the rest
-            
-        } catch (error) {
-            if (error.code === 'auth/email-already-in-use') {
-                alert("An account with this email already exists. Please log in to purchase a membership.");
-            } else {
-                console.error("Error during membership purchase:", error);
-                alert(`Could not process your request. Error: ${error.message}`);
-            }
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Submit Membership Request';
         }
-    });
-    
+        
+    } catch (error) {
+        if (error.code === 'auth/email-already-in-use') {
+            alert("An account with this email already exists. Please log in to purchase a membership.");
+        } else {
+            console.error("Error during membership purchase:", error);
+            alert(`Could not process your request. Error: ${error.message}`);
+        }
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Membership Request';
+    }
+});
 // --- LANDING PAGE SCRIPT ---
 function initLandingPage() {
     const signupLoginModal = document.getElementById('signup-login-modal');

@@ -574,11 +574,11 @@ function initClientDashboard(clientId, clientData) {
             userInfoSection.classList.add('hidden');
         }
         document.getElementById('gc-buyer-name').value = client.name;
-        document.getElementById('gc-buyer-name').disabled = true;
+        document.getElementById('gc-buyer-name').readOnly = true;
         document.getElementById('gc-buyer-phone').value = client.phone || '';
-        document.getElementById('gc-buyer-phone').disabled = true;
+        document.getElementById('gc-buyer-phone').readOnly = true;
         document.getElementById('gc-buyer-email').value = clientData.email;
-        document.getElementById('gc-buyer-email').disabled = true;
+        document.getElementById('gc-buyer-email').readOnly = true;
 
         initializeLandingGiftCardDesigner();
         purchaseModal.classList.remove('hidden');

@@ -451,10 +451,18 @@ const renderClientMembershipsTable = (members) => {
             actionButtons = `<button data-id="${member.id}" class="activate-membership-btn text-green-500 mr-2"><i class="fas fa-check-circle"></i></button>` + actionButtons;
         }
 
+        // **** THIS BLOCK IS THE FIX ****
+        // Safely get the start date to prevent errors
+        let startDate = 'Invalid Date';
+        if (member.membership.startDate && typeof member.membership.startDate.toDate === 'function') {
+            startDate = member.membership.startDate.toDate().toLocaleDateString();
+        }
+        // **** END OF FIX ****
+
         row.innerHTML = `
             <td class="px-6 py-4">${member.name}</td>
             <td class="px-6 py-4">${member.membership.tierName}</td>
-            <td class="px-6 py-4">${member.membership.startDate.toDate().toLocaleDateString()}</td>
+            <td class="px-6 py-4">${startDate}</td>
             <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-semibold rounded-full ${statusColor}">${status}</span></td>
             <td class="px-6 py-4 text-center">${actionButtons}</td>
         `;
@@ -1309,7 +1317,9 @@ const paymentGuideDisplay = document.getElementById('landing-gc-payment-guide');
         }
     });
 
-// In initLandingPage, REPLACE the landingSignupForm listener
+// Located inside initLandingPage()
+
+// REPLACE the landingSignupForm listener with this one
 landingSignupForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = document.getElementById('signup-name').value;
@@ -1325,11 +1335,13 @@ landingSignupForm.addEventListener('submit', async (e) => {
 
     try {
         // Store signup details in session storage before creating user
-        const signupDetails = { name, email, phone: password };
+        const signupDetails = { name, email, phone: password }; // Using password as phone is a placeholder from your code
         sessionStorage.setItem('signupDetails', JSON.stringify(signupDetails));
 
         await createUserWithEmailAndPassword(auth, email, password);
         // The onAuthStateChanged listener will now handle creating the client document
+        
+        // This was the missing improvement:
         closeAuthModal(); 
     } catch (error) {
         alert(`Sign Up Failed: ${error.message}`);
@@ -1492,29 +1504,29 @@ const updateFeatureVisibility = (settings) => {
     const showPromos = settings.showPromotions !== false;
     const showGiftCards = settings.showGiftCards !== false;
     const showNailArt = settings.showNailArt !== false;
-    // Safely check for the memberships property
+    // **** ADD THIS LINE ****
     const showMemberships = settings.showMemberships !== false;
 
     const signupTab = document.getElementById('signup-tab-btn').parentElement;
     if (signupTab) {
-        signupTab.style.display = showClientRegistration ? 'block' : 'none';
+         signupTab.style.display = showClientRegistration ? 'block' : 'none';
     }
-
+    
     document.getElementById('promotions-landing').style.display = showPromos ? '' : 'none';
     document.querySelector('.nav-item-promotions').style.display = showPromos ? '' : 'none';
-
+    
     document.getElementById('gift-card-landing').style.display = showGiftCards ? '' : 'none';
     document.querySelector('.nav-item-gift-card').style.display = showGiftCards ? '' : 'none';
 
     document.getElementById('nails-idea-landing').style.display = showNailArt ? '' : 'none';
     document.querySelector('.nav-item-nails-idea').style.display = showNailArt ? '' : 'none';
 
+    // **** AND ADD THESE 3 LINES ****
     const membershipSection = document.getElementById('memberships-landing');
     const membershipNavLink = document.querySelector('a[href="#memberships-landing"]');
     if (membershipSection) membershipSection.style.display = showMemberships ? '' : 'none';
     if (membershipNavLink) membershipNavLink.style.display = showMemberships ? '' : 'none';
 };
-
 // Located at the end of initLandingPage()
 onSnapshot(doc(db, "settings", "features"), (docSnap) => {
     if (docSnap.exists()) {

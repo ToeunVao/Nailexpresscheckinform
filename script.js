@@ -720,6 +720,10 @@ const renderClientMembership = (clientData) => {
         `;
     }
 };
+    // **** ADD THIS LINE ****
+    renderClientMembership(clientData);
+    // **********************
+    
     const setupClientTabs = () => {
         const tabs = document.getElementById('client-dashboard-tabs');
         tabs.addEventListener('click', (e) => {

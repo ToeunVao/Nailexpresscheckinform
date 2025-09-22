@@ -902,35 +902,7 @@ if (joinBtn) {
 
     setupClientTabs();
 }
-// --- LANDING PAGE SCRIPT ---
-function initLandingPage() {
-    const signupLoginModal = document.getElementById('signup-login-modal');
-    const userIcon = document.getElementById('user-icon');
-    const closeSignupLoginModalBtn = document.getElementById('close-signup-login-modal-btn');
-    const landingLoginForm = document.getElementById('landing-login-form');
-    const landingSignupForm = document.getElementById('landing-signup-form');
-    const addAppointmentFormLanding = document.getElementById('add-appointment-form-landing');
-    const lockoutMessageDiv = document.getElementById('login-lockout-message');
-    // **** ADD THIS LINE ****
-    renderMembershipTiers(allMembershipTiers, 'landing-memberships-container', false);
-    // **** END OF FIX ****
-// --- NEW E-COMMERCE GIFT CARD LOGIC ---
-    const purchaseModal = document.getElementById('gift-card-purchase-modal');
-    const buyGiftCardBtn = document.getElementById('buy-gift-card-btn');
-    const closePurchaseModalBtn = document.getElementById('close-gift-card-purchase-modal-btn');
-    const purchaseForm = document.getElementById('landing-gift-card-form');
-    const previewCard = document.getElementById('landing-gc-preview-card');
 
-
-
-    // UPDATED listener to open the new purchase modal
-    document.getElementById('landing-memberships-container').addEventListener('click', (e) => {
-        const btn = e.target.closest('.purchase-membership-btn');
-        if (btn) {
-            openMembershipPurchaseModal(btn.dataset.tierId);
-        }
-    });
-        
     // NEW submit listener for the membership form
     document.getElementById('landing-membership-form').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -970,6 +942,37 @@ function initLandingPage() {
             submitBtn.textContent = 'Submit Membership Request';
         }
     });
+    
+// --- LANDING PAGE SCRIPT ---
+function initLandingPage() {
+    const signupLoginModal = document.getElementById('signup-login-modal');
+    const userIcon = document.getElementById('user-icon');
+    const closeSignupLoginModalBtn = document.getElementById('close-signup-login-modal-btn');
+    const landingLoginForm = document.getElementById('landing-login-form');
+    const landingSignupForm = document.getElementById('landing-signup-form');
+    const addAppointmentFormLanding = document.getElementById('add-appointment-form-landing');
+    const lockoutMessageDiv = document.getElementById('login-lockout-message');
+    // **** ADD THIS LINE ****
+    renderMembershipTiers(allMembershipTiers, 'landing-memberships-container', false);
+    // **** END OF FIX ****
+// --- NEW E-COMMERCE GIFT CARD LOGIC ---
+    const purchaseModal = document.getElementById('gift-card-purchase-modal');
+    const buyGiftCardBtn = document.getElementById('buy-gift-card-btn');
+    const closePurchaseModalBtn = document.getElementById('close-gift-card-purchase-modal-btn');
+    const purchaseForm = document.getElementById('landing-gift-card-form');
+    const previewCard = document.getElementById('landing-gc-preview-card');
+
+
+
+    // UPDATED listener to open the new purchase modal
+    document.getElementById('landing-memberships-container').addEventListener('click', (e) => {
+        const btn = e.target.closest('.purchase-membership-btn');
+        if (btn) {
+            openMembershipPurchaseModal(btn.dataset.tierId);
+        }
+    });
+        
+
 
     // Listeners for the new modal
     document.getElementById('close-membership-purchase-modal-btn').addEventListener('click', closeMembershipPurchaseModal);

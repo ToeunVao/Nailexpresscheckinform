@@ -695,16 +695,53 @@ const renderClientMembership = (clientData) => {
 };
 
 const renderPromotionsLanding = (promotions) => {
-        promotionsContainerLanding.innerHTML = '';
-        const now = new Date();
-        const activePromos = promotions.filter(promo => {
-            const startDate = promo.startDate.toDate();
-            const endDate = promo.endDate.toDate();
-            return now >= startDate && now <= endDate;
+    const promotionsContainerLanding = document.getElementById('promotions-container-landing');
+    if (!promotionsContainerLanding) return;
+    promotionsContainerLanding.innerHTML = '';
+    const now = new Date();
+    const activePromos = promotions.filter(promo => {
+        const startDate = promo.startDate.toDate();
+        const endDate = promo.endDate.toDate();
+        return now >= startDate && now <= endDate;
+    });
+    if (activePromos.length === 0) { promotionsContainerLanding.innerHTML = '<p class="text-gray-600 col-span-full text-center">No active promotions right now. Check back soon!</p>'; return; }
+    activePromos.forEach(promo => { const promoEl = document.createElement('div'); promoEl.className = 'bg-white p-6 rounded-lg shadow-md text-center'; promoEl.innerHTML = `<h3 class="text-xl font-bold text-pink-700 mb-2">${promo.title}</h3><p class="text-gray-600">${promo.description}</p>`; promotionsContainerLanding.appendChild(promoEl); });
+};
+const renderNailIdeasGallery = (ideas) => {
+    const landingGallery = document.querySelector('#nails-idea-container-landing');
+    const appGallery = document.getElementById('nails-idea-gallery');
+    currentGalleryData = ideas;
+
+    const renderTo = (container, isLanding) => {
+        if (!container) return;
+        container.innerHTML = '';
+        if (ideas.length === 0) { container.innerHTML = '<p class="text-gray-500 col-span-full text-center">No nail ideas found. Check back later!</p>'; return; }
+        const ideasToRender = isLanding ? ideas.slice(0, 8) : ideas;
+        ideasToRender.forEach((idea, index) => {
+            const ideaEl = document.createElement('div');
+            ideaEl.className = 'break-inside-avoid mb-4 relative gallery-item group';
+            ideaEl.innerHTML = `<img class="w-full rounded-lg shadow-md cursor-pointer" src="${idea.imageURL}" alt="${idea.name}" data-index="${index}"><div class="absolute top-2 right-2 bg-black/40 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><button data-id="${idea.id}" class="share-nail-idea-btn text-white text-lg"><i class="fas fa-share-alt"></i></button></div>${!isLanding ? `<div class="p-2"><h5 class="font-bold text-sm">${idea.name}</h5><p class="text-xs text-gray-600">${idea.categories.join(', ')}</p></div>` : ''}`;
+            container.appendChild(ideaEl);
         });
-        if (activePromos.length === 0) { promotionsContainerLanding.innerHTML = '<p class="text-gray-600 col-span-full text-center">No active promotions right now. Check back soon!</p>'; return; }
-        activePromos.forEach(promo => { const promoEl = document.createElement('div'); promoEl.className = 'bg-white p-6 rounded-lg shadow-md text-center'; promoEl.innerHTML = `<h3 class="text-xl font-bold text-pink-700 mb-2">${promo.title}</h3><p class="text-gray-600">${promo.description}</p>`; promotionsContainerLanding.appendChild(promoEl); });
     };
+
+    renderTo(landingGallery, true);
+    renderTo(appGallery, false);
+};
+
+const applyNailIdeaFilters = () => {
+    const searchTerm = document.getElementById('nail-idea-search')?.value.toLowerCase() || '';
+    const shapeFilter = document.getElementById('nail-idea-shape-filter')?.value || '';
+    const categoryFilter = document.getElementById('nail-idea-category-filter')?.value || '';
+    const filteredIdeas = allNailIdeas.filter(idea => {
+        const matchesSearch = idea.name.toLowerCase().includes(searchTerm) || idea.categories.some(cat => cat.toLowerCase().includes(searchTerm));
+        const matchesShape = !shapeFilter || idea.shape === shapeFilter;
+        const matchesCategory = !categoryFilter || idea.categories.includes(categoryFilter);
+        return matchesSearch && matchesShape && matchesCategory;
+    });
+    renderNailIdeasGallery(filteredIdeas);
+};
+
 
 // **** PASTE THESE TWO FUNCTIONS into your script ****
 
@@ -881,33 +918,28 @@ async function initClientDashboard(clientId, clientData) {
 }
 // **** REPLACE your entire onAuthStateChanged function with this one ****
 
+// --- MAIN AUTHENTICATION ROUTER ---
 onAuthStateChanged(auth, async (user) => {
     try {
         const hoursDoc = await getDoc(doc(db, "settings", "salonHours"));
-        if (hoursDoc.exists()) {
-            salonHours = hoursDoc.data();
-        }
+        if (hoursDoc.exists()) salonHours = hoursDoc.data();
 
         if (user) {
             currentUserId = user.uid;
             if (user.isAnonymous) {
-                // Anonymous user logic
-                anonymousUserId = user.uid;
-                loadingScreen.style.display = 'none';
-                appContent.style.display = 'none';
-                clientDashboardContent.style.display = 'none';
-                landingPageContent.style.display = 'block';
-                if (!landingPageInitialized) {
-                    initLandingPage();
-                    landingPageInitialized = true;
+                if (landingPageContent.style.display !== 'block') {
+                    loadingScreen.style.display = 'none';
+                    appContent.style.display = 'none';
+                    clientDashboardContent.style.display = 'none';
+                    landingPageContent.style.display = 'block';
+                    if (!landingPageInitialized) {
+                        initLandingPage();
+                        landingPageInitialized = true;
+                    }
                 }
             } else {
-                // Authenticated user logic
-                const userDocRef = doc(db, "users", user.uid);
-                const userDoc = await getDoc(userDocRef);
-
+                const userDoc = await getDoc(doc(db, "users", user.uid));
                 if (userDoc.exists()) {
-                    // Staff/Admin User
                     const userData = userDoc.data();
                     currentUserRole = userData.role;
                     currentUserName = userData.name;
@@ -920,20 +952,14 @@ onAuthStateChanged(auth, async (user) => {
                         mainAppInitialized = true;
                     }
                 } else {
-                    const clientDocRef = doc(db, "clients", user.uid);
-                    const clientDoc = await getDoc(clientDocRef);
+                    const clientDoc = await getDoc(doc(db, "clients", user.uid));
                     if (clientDoc.exists()) {
-                        // Existing Client User
-                        currentUserRole = clientDoc.data().role;
                         loadingScreen.style.display = 'none';
                         landingPageContent.style.display = 'none';
                         appContent.style.display = 'none';
                         clientDashboardContent.style.display = 'block';
-                        // Always initialize the dashboard to ensure listeners are attached
                         initClientDashboard(user.uid, clientDoc.data());
-
                     } else {
-                        // NEW Client User (just signed up)
                         const pendingPurchaseJSON = sessionStorage.getItem('pendingGiftCardPurchase');
                         const pendingMembershipId = sessionStorage.getItem('pendingMembershipPurchase');
                         let newClientData;
@@ -942,39 +968,21 @@ onAuthStateChanged(auth, async (user) => {
                             const details = JSON.parse(pendingPurchaseJSON);
                             newClientData = { name: details.buyerName, email: details.buyerEmail, phone: details.buyerPhone, role: 'client', createdAt: serverTimestamp() };
                             await setDoc(doc(db, "clients", user.uid), newClientData);
-
                             const batch = writeBatch(db);
                             const expiryDate = new Date();
                             expiryDate.setMonth(expiryDate.getMonth() + 6);
                             const buyerInfo = { name: details.buyerName, email: details.buyerEmail, phone: details.buyerPhone };
-
                             for (let i = 0; i < details.quantity; i++) {
-                                const cardData = {
-                                    amount: details.amount, balance: details.amount, history: [],
-                                    recipientName: details.recipientName, senderName: details.senderName,
-                                    backgroundUrl: details.backgroundUrl, code: `GC-${Date.now()}-${i}`,
-                                    status: 'Pending', type: 'E-Gift', createdBy: user.uid,
-                                    buyerInfo: buyerInfo, createdAt: serverTimestamp(),
-                                    expiresAt: Timestamp.fromDate(expiryDate)
-                                };
+                                const cardData = { amount: details.amount, balance: details.amount, history: [], recipientName: details.recipientName, senderName: details.senderName, backgroundUrl: details.backgroundUrl, code: `GC-${Date.now()}-${i}`, status: 'Pending', type: 'E-Gift', createdBy: user.uid, buyerInfo: buyerInfo, createdAt: serverTimestamp(), expiresAt: Timestamp.fromDate(expiryDate) };
                                 const newCardRef = doc(collection(db, "gift_cards"));
                                 batch.set(newCardRef, cardData);
                             }
                             await batch.commit();
                             sessionStorage.removeItem('pendingGiftCardPurchase');
                             alert("Success! Your account has been created and your gift card request has been sent.");
-
                         } else if (pendingMembershipId) {
                             const details = JSON.parse(sessionStorage.getItem('signupDetails'));
-                            newClientData = {
-                                name: details.name, email: details.email, phone: details.phone, role: 'client', createdAt: serverTimestamp(),
-                                membership: {
-                                    tierId: pendingMembershipId,
-                                    tierName: allMembershipTiers.find(t => t.id === pendingMembershipId)?.name || 'Unknown',
-                                    startDate: serverTimestamp(),
-                                    status: 'Pending'
-                                }
-                            };
+                            newClientData = { name: details.name, email: details.email, phone: details.phone, role: 'client', createdAt: serverTimestamp(), membership: { tierId: pendingMembershipId, tierName: allMembershipTiers.find(t => t.id === pendingMembershipId)?.name || 'Unknown', startDate: serverTimestamp(), status: 'Pending' } };
                             await setDoc(doc(db, "clients", user.uid), newClientData);
                             sessionStorage.removeItem('pendingMembershipPurchase');
                             sessionStorage.removeItem('signupDetails');
@@ -991,7 +999,7 @@ onAuthStateChanged(auth, async (user) => {
                                 return;
                             }
                         }
-
+                        
                         loadingScreen.style.display = 'none';
                         landingPageContent.style.display = 'none';
                         appContent.style.display = 'none';
@@ -4388,34 +4396,7 @@ function initMainApp(userRole, userName) {
             closeLightbox();
         }
     });
-    // REPLACE the old renderNailIdeasGallery function with this one
-    const renderNailIdeasGallery = (ideas) => {
-        const landingGallery = document.querySelector('#nails-idea-landing .columns-2');
-        const appGallery = document.getElementById('nails-idea-gallery');
-        currentGalleryData = ideas; // Store the current set of ideas for the lightbox
-
-        const renderTo = (container, isLanding) => {
-            if (!container) return;
-            container.innerHTML = '';
-            if (ideas.length === 0) { container.innerHTML = '<p class="text-gray-500 col-span-full text-center">No nail ideas found. Check back later!</p>'; return; }
-            const ideasToRender = isLanding ? ideas.slice(0, 8) : ideas;
-            ideasToRender.forEach((idea, index) => {
-                const ideaEl = document.createElement('div');
-                ideaEl.className = 'break-inside-avoid mb-4 relative gallery-item group';
-                // Note: The share button is now separate from the clickable image
-                ideaEl.innerHTML = `
-                <img class="w-full rounded-lg shadow-md cursor-pointer" src="${idea.imageURL}" alt="${idea.name}" data-index="${index}">
-                <div class="absolute top-2 right-2 bg-black/40 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                   <button data-id="${idea.id}" class="share-nail-idea-btn text-white text-lg"><i class="fas fa-share-alt"></i></button>
-                </div>
-                ${!isLanding ? `<div class="p-2"><h5 class="font-bold text-sm">${idea.name}</h5><p class="text-xs text-gray-600">${idea.categories.join(', ')}</p></div>` : ''}`;
-                container.appendChild(ideaEl);
-            });
-        };
-
-        renderTo(landingGallery, true);
-        renderTo(appGallery, false);
-    };
+  
 
     const renderNailIdeasAdminTable = (ideas) => {
         nailIdeasTableBody.innerHTML = '';
@@ -5885,6 +5866,7 @@ function initMainApp(userRole, userName) {
     }, 60000);
 }
 
+
 // --- GLOBAL DATA FETCHING ---
 onSnapshot(query(collection(db, "memberships"), orderBy("price")), (snapshot) => {
     allMembershipTiers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -5892,26 +5874,31 @@ onSnapshot(query(collection(db, "memberships"), orderBy("price")), (snapshot) =>
         renderMembershipTiers(allMembershipTiers, 'landing-memberships-container', false);
     }
 });
-
- onSnapshot(query(collection(db, "promotions"), orderBy("startDate", "desc")), (snapshot) => {
-        allPromotions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+onSnapshot(query(collection(db, "promotions"), orderBy("startDate", "desc")), (snapshot) => {
+    allPromotions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    if (appContent.style.display === 'block' && typeof renderPromotionsAdminTable !== 'undefined') {
         renderPromotionsAdminTable(allPromotions);
+    }
+    if (landingPageContent.style.display === 'block') {
         renderPromotionsLanding(allPromotions);
-    });
-    onSnapshot(query(collection(db, "nail_ideas"), orderBy("createdAt", "desc")), (snapshot) => {
-        allNailIdeas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        // ADD THIS NEW BLOCK to populate the Nail Shape datalist
-        const shapesDatalist = document.getElementById('nail-shapes-list');
-        if (shapesDatalist) {
-            const uniqueShapes = [...new Set(allNailIdeas.map(idea => idea.shape).filter(Boolean))];
-            shapesDatalist.innerHTML = uniqueShapes.map(shape => `<option value="${shape}"></option>`).join('');
-        }
-        const shapes = [...new Set(allNailIdeas.map(i => i.shape).filter(Boolean))];
-        const categories = [...new Set(allNailIdeas.flatMap(i => i.categories).filter(Boolean))];
-        const shapeFilter = document.getElementById('nail-idea-shape-filter');
-        const categoryFilter = document.getElementById('nail-idea-category-filter');
-        shapeFilter.innerHTML = '<option value="">All Shapes</option>' + shapes.map(s => `<option value="${s}">${s}</option>`).join('');
-        categoryFilter.innerHTML = '<option value="">All Categories</option>' + categories.map(c => `<option value="${c}">${c}</option>`).join('');
-        applyNailIdeaFilters();
+    }
+});
+onSnapshot(query(collection(db, "nail_ideas"), orderBy("createdAt", "desc")), (snapshot) => {
+    allNailIdeas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const shapesDatalist = document.getElementById('nail-shapes-list');
+    if (shapesDatalist) {
+        const uniqueShapes = [...new Set(allNailIdeas.map(idea => idea.shape).filter(Boolean))];
+        shapesDatalist.innerHTML = uniqueShapes.map(shape => `<option value="${shape}"></option>`).join('');
+    }
+    const shapes = [...new Set(allNailIdeas.map(i => i.shape).filter(Boolean))];
+    const categories = [...new Set(allNailIdeas.flatMap(i => i.categories).filter(Boolean))];
+    const shapeFilter = document.getElementById('nail-idea-shape-filter');
+    const categoryFilter = document.getElementById('nail-idea-category-filter');
+    if (shapeFilter) shapeFilter.innerHTML = '<option value="">All Shapes</option>' + shapes.map(s => `<option value="${s}">${s}</option>`).join('');
+    if (categoryFilter) categoryFilter.innerHTML = '<option value="">All Categories</option>' + categories.map(c => `<option value="${c}">${c}</option>`).join('');
+    
+    applyNailIdeaFilters();
+    if (appContent.style.display === 'block' && typeof renderNailIdeasAdminTable !== 'undefined') {
         renderNailIdeasAdminTable(allNailIdeas);
-    });
+    }
+});

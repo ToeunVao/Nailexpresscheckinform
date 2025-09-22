@@ -930,11 +930,7 @@ function initLandingPage() {
             openMembershipPurchaseModal(btn.dataset.tierId);
         }
     });
-    
-    // Listeners for the new modal
-    document.getElementById('close-membership-purchase-modal-btn').addEventListener('click', closeMembershipPurchaseModal);
-    document.getElementById('membership-purchase-modal').querySelector('.modal-overlay').addEventListener('click', closeMembershipPurchaseModal);
-    
+        
     // NEW submit listener for the membership form
     document.getElementById('landing-membership-form').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -974,6 +970,10 @@ function initLandingPage() {
             submitBtn.textContent = 'Submit Membership Request';
         }
     });
+
+    // Listeners for the new modal
+    document.getElementById('close-membership-purchase-modal-btn').addEventListener('click', closeMembershipPurchaseModal);
+    document.getElementById('membership-purchase-modal').querySelector('.modal-overlay').addEventListener('click', closeMembershipPurchaseModal);
 
     const updateLandingGiftCardPreview = () => {
         const showTo = document.getElementById('gc-show-to').checked;

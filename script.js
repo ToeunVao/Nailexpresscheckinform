@@ -1414,35 +1414,40 @@ function initLandingPage() {
         }
     });
 
-    // Located inside initLandingPage()
-    const updateFeatureVisibility = (settings) => {
-        const showClientRegistration = settings.showClientLogin !== false;
-        const showPromos = settings.showPromotions !== false;
-        const showGiftCards = settings.showGiftCards !== false;
-        const showNailArt = settings.showNailArt !== false;
-        // **** ADD THIS LINE ****
-        const showMemberships = settings.showMemberships !== false;
+// Located inside initLandingPage()
+// **** REPLACE your entire updateFeatureVisibility function with this one ****
 
-        const signupTab = document.getElementById('signup-tab-btn').parentElement;
-        if (signupTab) {
-            signupTab.style.display = showClientRegistration ? 'block' : 'none';
-        }
+const updateFeatureVisibility = (settings) => {
+    const showClientRegistration = settings.showClientLogin !== false;
+    const showPromos = settings.showPromotions !== false;
+    const showGiftCards = settings.showGiftCards !== false;
+    const showNailArt = settings.showNailArt !== false;
+    const showMemberships = settings.showMemberships !== false;
 
-        document.getElementById('promotions-landing').style.display = showPromos ? '' : 'none';
-        document.querySelector('.nav-item-promotions').style.display = showPromos ? '' : 'none';
+    // Client Registration Toggle
+    const signupTab = document.getElementById('signup-tab-btn')?.parentElement;
+    if (signupTab) {
+        signupTab.style.display = showClientRegistration ? 'block' : 'none';
+    }
 
-        document.getElementById('gift-card-landing').style.display = showGiftCards ? '' : 'none';
-        document.querySelector('.nav-item-gift-card').style.display = showGiftCards ? '' : 'none';
+    // Promotions Toggle
+    document.getElementById('promotions-landing').style.display = showPromos ? '' : 'none';
+    document.querySelector('.nav-item-promotions').style.display = showPromos ? '' : 'none';
 
-        document.getElementById('nails-idea-landing').style.display = showNailArt ? '' : 'none';
-        document.querySelector('.nav-item-nails-idea').style.display = showNailArt ? '' : 'none';
+    // Gift Card Toggle
+    document.getElementById('gift-card-landing').style.display = showGiftCards ? '' : 'none';
+    document.querySelector('.nav-item-gift-card').style.display = showGiftCards ? '' : 'none';
 
-        // **** AND ADD THESE 3 LINES ****
-        const membershipSection = document.getElementById('memberships-landing');
-        const membershipNavLink = document.querySelector('a[href="#memberships-landing"]');
-        if (membershipSection) membershipSection.style.display = showMemberships ? '' : 'none';
-        if (membershipNavLink) membershipNavLink.style.display = showMemberships ? '' : 'none';
-    };
+    // Nail Art Toggle
+    document.getElementById('nails-idea-landing').style.display = showNailArt ? '' : 'none';
+    document.querySelector('.nav-item-nails-idea').style.display = showNailArt ? '' : 'none';
+
+    // Membership Toggle
+    const membershipSection = document.getElementById('memberships-landing');
+    const membershipNavLink = document.querySelector('a[href="#memberships-landing"]');
+    if (membershipSection) membershipSection.style.display = showMemberships ? '' : 'none';
+    if (membershipNavLink) membershipNavLink.style.display = showMemberships ? '' : 'none';
+};
     // Located at the end of initLandingPage()
     onSnapshot(doc(db, "settings", "features"), (docSnap) => {
         if (docSnap.exists()) {

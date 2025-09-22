@@ -11,7 +11,7 @@ const firebaseConfig = {
     messagingSenderId: "1015991996673",
     appId: "1:1015991996673:web:b6e8888abae83906d34b00"
 };
-///---3
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -27,21 +27,23 @@ const addAppointmentModal = document.getElementById('add-appointment-modal');
 const addAppointmentForm = document.getElementById('add-appointment-form');
 let mainAppInitialized = false;
 let landingPageInitialized = false;
-//let clientDashboardInitialized = false;
 let anonymousUserId = null;
 let bookingSettings = { minBookingHours: 2 };
 let loginSecuritySettings = { maxAttempts: 5, lockoutMinutes: 15 };
-let salonHours = {}; // To store salon operating hours
+let salonHours = {};
 let salonRevenueChart, myEarningsChart, staffEarningsChart;
 let notifications = [];
 let currentUserRole = null;
-let currentUserName = null; // To store the logged-in user's name
+let currentUserName = null;
 let currentUserId = null;
 let initialAppointmentsLoaded = false;
 let initialInventoryLoaded = false;
 let allFinishedClients = [], allAppointments = [], allClients = [], allActiveClients = [], servicesData = {};
 let allColorBrands = [];
 let allMembershipTiers = [];
+let allPromotions = [];
+let allNailIdeas = [];
+let currentGalleryData = [];
 
 const giftCardBackgrounds = {
     'General': [

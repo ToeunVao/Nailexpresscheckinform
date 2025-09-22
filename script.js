@@ -359,29 +359,31 @@ const renderMembershipTiers = (tiers, containerId, isLoggedIn) => {
         container.appendChild(tierEl);
     });
 };
+// REPLACE your old initializeMembershipPurchaseForm function with this one
 
-const initializeMembershipPurchaseForm = (selectedTierId) => {
+const initializeMembershipPurchaseForm = (selectedTierId, clientData = null) => {
     const form = document.getElementById('landing-membership-form');
     const tierSelect = document.getElementById('ms-tier-select');
     const amountInput = document.getElementById('ms-amount');
     const previewCard = document.getElementById('ms-preview-card');
 
     form.reset();
-    // **** ADD THIS BLOCK ****
-if (clientData) {
-    document.getElementById('ms-buyer-name').value = clientData.name;
-    document.getElementById('ms-buyer-phone').value = clientData.phone || '';
-    document.getElementById('ms-buyer-email').value = clientData.email;
-    document.getElementById('membership-user-info-section').classList.add('hidden');
-} else {
-    // Show the user info fields for anonymous users
-    const userInfoSection = document.getElementById('membership-user-info-section');
-    if (userInfoSection) {
-        userInfoSection.classList.remove('hidden');
+
+    // THIS BLOCK IS NOW CORRECTED TO HANDLE BOTH CASES
+    if (clientData) {
+        // For a logged-in client, pre-fill their info and hide the fields
+        document.getElementById('ms-buyer-name').value = clientData.name;
+        document.getElementById('ms-buyer-phone').value = clientData.phone || '';
+        document.getElementById('ms-buyer-email').value = clientData.email;
+        document.getElementById('membership-user-info-section').classList.add('hidden');
+    } else {
+        // For a new visitor, make sure the info fields are visible
+        const userInfoSection = document.getElementById('membership-user-info-section');
+        if (userInfoSection) {
+            userInfoSection.classList.remove('hidden');
+        }
     }
-}
-    // **** END OF BLOCK ****
-    
+
     tierSelect.innerHTML = '';
 
     allMembershipTiers.forEach(tier => {

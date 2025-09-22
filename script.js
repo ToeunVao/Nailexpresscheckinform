@@ -745,15 +745,16 @@ if (clientData.membership.startDate && typeof clientData.membership.startDate.to
         } else {
              container.innerHTML = '<p class="text-gray-500 text-center col-span-full">Your membership tier could not be found. Please contact the salon.</p>';
         }
-    } else {
-        container.innerHTML = `
-            <div class="text-center p-8 bg-gray-50 rounded-lg">
-                <h3 class="text-xl font-semibold text-gray-700">You are not a member yet.</h3>
-                <p class="text-gray-500 mt-2 mb-4">Join our VIP program to enjoy exclusive discounts and benefits!</p>
-                <a href="#memberships-landing" onclick="location.reload()" class="bg-pink-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-pink-700">View Membership Tiers</a>
-            </div>
-        `;
-    }
+// Inside the renderClientMembership function...
+} else {
+    container.innerHTML = `
+        <div class="text-center p-8 bg-gray-50 rounded-lg">
+            <h3 class="text-xl font-semibold text-gray-700">You are not a member yet.</h3>
+            <p class="text-gray-500 mt-2 mb-4">Join our VIP program to enjoy exclusive discounts and benefits!</p>
+            <button class="join-membership-btn bg-pink-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-pink-700">Join Our Membership</button>
+        </div>
+    `;
+}
 };
     // **** ADD THIS LINE ****
     renderClientMembership(clientData);
@@ -867,6 +868,31 @@ if (clientData.membership.startDate && typeof clientData.membership.startDate.to
     document.getElementById('client-buy-gift-card-btn').addEventListener('click', () => {
         openPurchaseModalForClient(clientData);
     });
+
+
+    // **** COPY AND PASTE THIS ENTIRE BLOCK ****
+// Located inside the initClientDashboard function
+
+clientDashboardContent.addEventListener('click', (e) => {
+    const joinBtn = e.target.closest('.join-membership-btn');
+    if (joinBtn) {
+        // Hide the user info section in the modal since we are pre-filling it
+        const userInfoSection = document.getElementById('membership-user-info-section');
+        if (userInfoSection) {
+            userInfoSection.classList.add('hidden');
+        }
+
+        // Pre-fill the form with the logged-in client's data
+        document.getElementById('ms-buyer-name').value = clientData.name;
+        document.getElementById('ms-buyer-phone').value = clientData.phone || '';
+        document.getElementById('ms-buyer-email').value = clientData.email;
+
+        // Open the modal (without a pre-selected tier)
+        openMembershipPurchaseModal();
+    }
+});
+
+
 
     setupClientTabs();
 }

@@ -508,14 +508,46 @@ onAuthStateChanged(auth, async (user) => {
                         const pendingMembershipId = sessionStorage.getItem('pendingMembershipPurchase');
                         let newClientData;
 
-                        if (pendingPurchaseJSON) {
-                            const details = JSON.parse(pendingPurchaseJSON);
-                            newClientData = { name: details.buyerName, email: details.buyerEmail, phone: details.buyerPhone, role: 'client', createdAt: serverTimestamp() };
-                            await setDoc(doc(db, "clients", user.uid), newClientData);
-                            // ... gift card creation logic ...
-                            sessionStorage.removeItem('pendingGiftCardPurchase');
-                            alert("Success! Your account has been created and your gift card request has been sent.");
-                        } else if (pendingMembershipId) {
+                       if (pendingPurchaseJSON) {
+    const details = JSON.parse(pendingPurchaseJSON);
+    newClientData = { name: details.buyerName, email: details.buyerEmail, phone: details.buyerPhone, role: 'client', createdAt: serverTimestamp() };
+    await setDoc(doc(db, "clients", user.uid), newClientData);
+
+    // **** COPY AND PASTE THIS ENTIRE BLOCK TO FIX THE BUG ****
+    const batch = writeBatch(db);
+    const expiryDate = new Date();
+    expiryDate.setMonth(expiryDate.getMonth() + 6);
+    const buyerInfo = {
+        name: details.buyerName,
+        email: details.buyerEmail,
+        phone: details.buyerPhone,
+    };
+
+    for (let i = 0; i < details.quantity; i++) {
+        const cardData = {
+            amount: details.amount,
+            balance: details.amount,
+            history: [],
+            recipientName: details.recipientName,
+            senderName: details.senderName,
+            backgroundUrl: details.backgroundUrl,
+            code: `GC-${Date.now()}-${i}`,
+            status: 'Pending',
+            type: 'E-Gift',
+            createdBy: user.uid, // Use the new user's ID
+            buyerInfo: buyerInfo,
+            createdAt: serverTimestamp(),
+            expiresAt: Timestamp.fromDate(expiryDate)
+        };
+        const newCardRef = doc(collection(db, "gift_cards"));
+        batch.set(newCardRef, cardData);
+    }
+    await batch.commit();
+    // **** END OF FIX ****
+
+    sessionStorage.removeItem('pendingGiftCardPurchase');
+    alert("Success! Your account has been created and your gift card request has been sent.");
+} else if (pendingMembershipId) {
                             const details = JSON.parse(sessionStorage.getItem('signupDetails'));
                             newClientData = {
                                 name: details.name, email: details.email, phone: details.phone, role: 'client', createdAt: serverTimestamp(),
@@ -1055,7 +1087,6 @@ purchaseForm.addEventListener('submit', async (e) => {
             }
             await batch.commit();
             alert("Success! Your gift card request has been sent. It will be activated once payment is confirmed.");
-            document.getElementById('gift-card-purchase-modal').classList.add('hidden');
             // **** FIX FOR LOGGED-IN USER ****
         closePurchaseModal();
 
@@ -1082,7 +1113,7 @@ purchaseForm.addEventListener('submit', async (e) => {
             // onAuthStateChanged will handle the rest
              // **** FIX FOR NEW USER ****
         closePurchaseModal();
-        
+
         }
     } catch (error) {
         if (error.code === 'auth/email-already-in-use') {

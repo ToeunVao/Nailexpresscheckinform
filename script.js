@@ -1034,6 +1034,9 @@ function initLandingPage() {
     renderPromotionsLanding(allPromotions);
     applyNailIdeaFilters(); // This function already calls renderNailIdeasGallery
     // **** END OF FIX ****
+     // **** ADD THIS LINE TO FIX THE BUG ****
+    document.getElementById('nails-idea-landing').addEventListener('click', galleryClickHandler);
+    // *************************************
     // --- NEW E-COMMERCE GIFT CARD LOGIC ---
     const purchaseModal = document.getElementById('gift-card-purchase-modal');
     const buyGiftCardBtn = document.getElementById('buy-gift-card-btn');

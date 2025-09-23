@@ -315,7 +315,41 @@ const getLocalDateString = (date = new Date()) => {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
 };
+    const openCardForPrint = (card) => {
+        const expiryText = card.expiresAt ? `Expires: ${card.expiresAt.toDate().toLocaleDateString()}` : '';
+        const cardHTML = `
+            <html><head><title>Your Gift Card ${card.code}</title><script src="https://cdn.tailwindcss.com"><\/script><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&family=Parisienne&display=swap" rel="stylesheet"><style>body{font-family:'Poppins',sans-serif;display:flex;align-items:center;justify-content:center;margin:0;background-color:#f0f0f0;}.font-parisienne{font-family:'Parisienne',cursive;}.card{text-shadow:1px 1px 3px rgba(0,0,0,0.6);}</style></head><body><div class="card w-[400px] h-[228px] rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" style="background-image: url('${card.backgroundUrl}');"><div class="flex justify-between items-start"><img src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white" /><div class="text-right"><p class="font-parisienne text-3xl">Gift Card</p><p class="text-xs font-semibold tracking-wider">Nails Express</p></div></div><div class="text-center"><p class="text-5xl font-bold">$${card.balance.toFixed(2)}</p></div><div class="text-xs"><div class="flex justify-between font-semibold"><span style="display:${card.recipientName ? 'inline' : 'none'}">FOR: <span class="font-normal">${card.recipientName}</span></span><span style="display:${card.senderName ? 'inline' : 'none'}">FROM: <span class="font-normal">${card.senderName}</span></span></div><p class="mt-2 text-center font-mono tracking-widest text-sm">${card.code}</p><p class="mt-1 text-center text-[10px] opacity-80" style="display:${expiryText ? 'block' : 'none'}">${expiryText}</p></div></div></body></html>
+        `;
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(cardHTML);
+        printWindow.document.close();
+        printWindow.focus();
+    };
+        // PASTE THIS NEW FUNCTION
+    const openMembershipCardForPrint = (client, tier) => {
+        const startDate = client.membership.startDate ? client.membership.startDate.toDate().toLocaleDateString() : new Date().toLocaleDateString();
+        let cardStyle = 'from-gray-700 via-gray-900 to-black';
+        if (tier.name.toLowerCase().includes('silver')) cardStyle = 'from-gray-400 via-gray-500 to-gray-600';
+        if (tier.name.toLowerCase().includes('gold')) cardStyle = 'from-yellow-400 via-yellow-500 to-yellow-600';
+        if (tier.name.toLowerCase().includes('platinum')) cardStyle = 'from-indigo-500 via-purple-600 to-pink-600';
 
+        const cardHTML = `
+        <html><head><title>Membership Card - ${client.name}</title><script src="https://cdn.tailwindcss.com"><\/script><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&family=Parisienne&display=swap" rel="stylesheet"><style>body{font-family:'Poppins',sans-serif;display:flex;align-items:center;justify-content:center;margin:0;background-color:#f0f0f0;}.font-parisienne{font-family:'Parisienne',cursive;}.card{text-shadow:1px 1px 3px rgba(0,0,0,0.6);}</style></head><body>
+        <div class="card w-[400px] h-[228px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-gradient-to-br ${cardStyle} text-white">
+            <div class="flex justify-between items-start">
+                <div class="font-bold text-lg"><p>${tier.name}</p><p class="text-xs font-normal opacity-80">MEMBERSHIP</p></div>
+                <p class="font-parisienne text-3xl">Nails Express</p>
+            </div>
+            <div class="text-left"><p class="text-xs opacity-80">MEMBER</p><p class="text-2xl font-semibold tracking-wider">${client.name}</p></div>
+            <div class="text-right text-xs opacity-80">Member Since: ${startDate}</div>
+        </div>
+        </body></html>
+    `;
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(cardHTML);
+        printWindow.document.close();
+        printWindow.focus();
+    };
 // --- Email Notification Logic ---
 async function sendBookingNotificationEmail(appointmentData) {
     try {
@@ -929,41 +963,8 @@ async function initClientDashboard(clientId, clientData) {
         purchaseModal.classList.remove('hidden');
     };
 
-    const openCardForPrint = (card) => {
-        const expiryText = card.expiresAt ? `Expires: ${card.expiresAt.toDate().toLocaleDateString()}` : '';
-        const cardHTML = `
-            <html><head><title>Your Gift Card ${card.code}</title><script src="https://cdn.tailwindcss.com"><\/script><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&family=Parisienne&display=swap" rel="stylesheet"><style>body{font-family:'Poppins',sans-serif;display:flex;align-items:center;justify-content:center;margin:0;background-color:#f0f0f0;}.font-parisienne{font-family:'Parisienne',cursive;}.card{text-shadow:1px 1px 3px rgba(0,0,0,0.6);}</style></head><body><div class="card w-[400px] h-[228px] rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" style="background-image: url('${card.backgroundUrl}');"><div class="flex justify-between items-start"><img src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white" /><div class="text-right"><p class="font-parisienne text-3xl">Gift Card</p><p class="text-xs font-semibold tracking-wider">Nails Express</p></div></div><div class="text-center"><p class="text-5xl font-bold">$${card.balance.toFixed(2)}</p></div><div class="text-xs"><div class="flex justify-between font-semibold"><span style="display:${card.recipientName ? 'inline' : 'none'}">FOR: <span class="font-normal">${card.recipientName}</span></span><span style="display:${card.senderName ? 'inline' : 'none'}">FROM: <span class="font-normal">${card.senderName}</span></span></div><p class="mt-2 text-center font-mono tracking-widest text-sm">${card.code}</p><p class="mt-1 text-center text-[10px] opacity-80" style="display:${expiryText ? 'block' : 'none'}">${expiryText}</p></div></div></body></html>
-        `;
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(cardHTML);
-        printWindow.document.close();
-        printWindow.focus();
-    };
-    // PASTE THIS NEW FUNCTION
-    const openMembershipCardForPrint = (client, tier) => {
-        const startDate = client.membership.startDate ? client.membership.startDate.toDate().toLocaleDateString() : new Date().toLocaleDateString();
-        let cardStyle = 'from-gray-700 via-gray-900 to-black';
-        if (tier.name.toLowerCase().includes('silver')) cardStyle = 'from-gray-400 via-gray-500 to-gray-600';
-        if (tier.name.toLowerCase().includes('gold')) cardStyle = 'from-yellow-400 via-yellow-500 to-yellow-600';
-        if (tier.name.toLowerCase().includes('platinum')) cardStyle = 'from-indigo-500 via-purple-600 to-pink-600';
 
-        const cardHTML = `
-        <html><head><title>Membership Card - ${client.name}</title><script src="https://cdn.tailwindcss.com"><\/script><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&family=Parisienne&display=swap" rel="stylesheet"><style>body{font-family:'Poppins',sans-serif;display:flex;align-items:center;justify-content:center;margin:0;background-color:#f0f0f0;}.font-parisienne{font-family:'Parisienne',cursive;}.card{text-shadow:1px 1px 3px rgba(0,0,0,0.6);}</style></head><body>
-        <div class="card w-[400px] h-[228px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-gradient-to-br ${cardStyle} text-white">
-            <div class="flex justify-between items-start">
-                <div class="font-bold text-lg"><p>${tier.name}</p><p class="text-xs font-normal opacity-80">MEMBERSHIP</p></div>
-                <p class="font-parisienne text-3xl">Nails Express</p>
-            </div>
-            <div class="text-left"><p class="text-xs opacity-80">MEMBER</p><p class="text-2xl font-semibold tracking-wider">${client.name}</p></div>
-            <div class="text-right text-xs opacity-80">Member Since: ${startDate}</div>
-        </div>
-        </body></html>
-    `;
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(cardHTML);
-        printWindow.document.close();
-        printWindow.focus();
-    };
+
     const renderClientGiftCards = (cards) => {
         const container = document.getElementById('client-gift-cards-container');
         if (!container) return;

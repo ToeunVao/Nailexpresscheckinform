@@ -5188,15 +5188,30 @@ function initMainApp(userRole, userName) {
     const initColorChart = async () => {
         if (colorChartInitialized) return;
 
-        if (!handSVGContent) {
-            try {
-                const response = await fetch('hand.svg');
-                handSVGContent = await response.text();
-            } catch (e) { console.error("Could not load hand.svg", e); return; }
-        }
-        const handContainer = document.getElementById('hand-preview-container');
-        handContainer.innerHTML = handSVGContent;
+    // ADD THIS NEW CODE BLOCK
+const nailShapes = {
+    'Almond': '<svg viewBox="0 0 100 120"><path class="nail" d="M50 0C10 0 0 50 0 100 L 100 100 C100 50 90 0 50 0Z"/></svg>',
+    'Square': '<svg viewBox="0 0 100 100"><path class="nail" d="M0 0 L 100 0 L 100 100 L 0 100 Z"/></svg>',
+    'Squoval': '<svg viewBox="0 0 100 100"><path class="nail" d="M0 20C0 9 9 0 20 0 L 80 0 C 91 0 100 9 100 20 L 100 100 L 0 100 Z"/></svg>',
+    'Round': '<svg viewBox="0 0 100 100"><path class="nail" d="M100 100 L 0 100 L 0 50 C0 22.4 22.4 0 50 0 C77.6 0 100 22.4 100 50 Z"/></svg>',
+    'Stiletto': '<svg viewBox="0 0 100 120"><path class="nail" d="M0 120 L 100 120 L 50 0 Z"/></svg>',
+    'Coffin': '<svg viewBox="0 0 100 120"><path class="nail" d="M20 0 L 80 0 L 100 120 L 0 120 Z"/></svg>'
+};
 
+const shapeContainer = document.getElementById('nail-shape-preview-container');
+shapeContainer.innerHTML = '';
+
+let shapeHTML = '<div class="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-6">';
+for (const shapeName in nailShapes) {
+    shapeHTML += `
+        <div class="text-center">
+            <div class="nail-shape-svg-wrapper">${nailShapes[shapeName]}</div>
+            <p class="text-xs font-semibold text-gray-600 mt-1">${shapeName}</p>
+        </div>
+    `;
+}
+shapeHTML += '</div>';
+shapeContainer.innerHTML = shapeHTML;
         const tabsContainer = document.getElementById('color-brands-tabs');
         tabsContainer.innerHTML = '';
         allColorBrands.forEach((brand, index) => {
@@ -5237,15 +5252,16 @@ function initMainApp(userRole, userName) {
         document.getElementById('color-group-filter').addEventListener('change', reapplyFilters);
         document.getElementById('color-search-input').addEventListener('input', reapplyFilters);
 
-        document.getElementById('color-swatches-container').addEventListener('click', (e) => {
-            const swatch = e.target.closest('.color-swatch');
-            if (swatch) {
-                const color = swatch.dataset.color;
-                handContainer.querySelectorAll('.nail').forEach(nailPath => {
-                    nailPath.style.fill = color;
-                });
-            }
+// ... and CHANGE it to this:
+document.getElementById('color-swatches-container').addEventListener('click', (e) => {
+    const swatch = e.target.closest('.color-swatch');
+    if (swatch) {
+        const color = swatch.dataset.color;
+        document.querySelectorAll('#nail-shape-preview-container .nail').forEach(nailPath => {
+            nailPath.style.fill = color;
         });
+    }
+});
 
         colorChartInitialized = true;
     };

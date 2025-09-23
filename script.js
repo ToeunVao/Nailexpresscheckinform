@@ -936,8 +936,9 @@ function initLandingPage() {
     const buyGiftCardBtn = document.getElementById('buy-gift-card-btn');
     const closePurchaseModalBtn = document.getElementById('close-gift-card-purchase-modal-btn');
     const previewCard = document.getElementById('landing-gc-preview-card');
+    const paymentGuideDisplay = document.getElementById('landing-gc-payment-guide');
 
-    // --- Helper Functions nested inside or defined before use ---
+    // --- HELPER FUNCTIONS (Defined before they are used) ---
 
     const updateFeatureVisibility = (settings) => {
         const showClientRegistration = settings.showClientLogin !== false;
@@ -964,7 +965,32 @@ function initLandingPage() {
         if (membershipNavLink) membershipNavLink.style.display = showMemberships ? '' : 'none';
     };
 
-    // --- Initialization and Event Listeners ---
+    const initializeLandingGiftCardDesigner = () => {
+    const purchaseForm = document.getElementById('landing-gift-card-form');
+    const previewCard = document.getElementById('landing-gc-preview-card');
+    if (!purchaseForm || !previewCard) return;
+
+    purchaseForm.reset();
+    document.getElementById('gc-quantity').value = 1;
+
+    const backgroundTabs = document.getElementById('landing-gc-background-tabs');
+    const backgroundOptions = document.getElementById('landing-gc-background-options');
+
+    backgroundTabs.innerHTML = Object.keys(giftCardBackgrounds).map(cat =>
+        `<button type="button" data-category="${cat}" class="px-3 py-1 text-sm font-medium rounded-t-lg">${cat}</button>`
+    ).join('');
+
+    const firstTab = backgroundTabs.querySelector('button');
+    if (firstTab) {
+        firstTab.classList.add('bg-gray-200', 'border-gray-300', 'border-b-0');
+        backgroundOptions.innerHTML = giftCardBackgrounds[firstTab.dataset.category].map(url =>
+            `<button type="button" data-bg="${url}" class="w-full h-16 bg-cover bg-center rounded-md border-2 border-transparent hover:border-pink-400" style="background-image: url('${url}')"></button>`
+        ).join('');
+        previewCard.style.backgroundImage = `url('${giftCardBackgrounds[firstTab.dataset.category][0]}')`;
+    }
+    updateLandingGiftCardPreview();
+    };
+    // --- INITIALIZATION & EVENT LISTENERS ---
 
     renderMembershipTiers(allMembershipTiers, 'landing-memberships-container', false);
     renderPromotionsLanding(allPromotions);
@@ -979,8 +1005,6 @@ function initLandingPage() {
     buyGiftCardBtn.addEventListener('click', () => {
         const userInfoSection = document.getElementById('gc-user-info-section');
         if (userInfoSection) userInfoSection.classList.remove('hidden');
-        
-        const paymentGuideDisplay = document.getElementById('landing-gc-payment-guide');
         getDoc(doc(db, "settings", "paymentGuide")).then(docSnap => {
             if (docSnap.exists() && docSnap.data().text) {
                 paymentGuideDisplay.innerHTML = `<p class="font-semibold mb-2">How to Pay:</p><p>${docSnap.data().text.replace(/\n/g, '<br>')}</p>`;
@@ -994,6 +1018,11 @@ function initLandingPage() {
 
     closePurchaseModalBtn.addEventListener('click', () => purchaseModal.classList.add('hidden'));
     purchaseModal.querySelector('.modal-overlay').addEventListener('click', () => purchaseModal.classList.add('hidden'));
+    
+    const purchaseForm = document.getElementById('landing-gift-card-form');
+    if (purchaseForm) {
+        purchaseForm.addEventListener('input', updateLandingGiftCardPreview);
+    }
     
     document.getElementById('landing-gc-background-tabs').addEventListener('click', e => {
         const tab = e.target.closest('button');
@@ -1025,13 +1054,23 @@ function initLandingPage() {
     userIcon.addEventListener('click', openAuthModal);
     closeSignupLoginModalBtn.addEventListener('click', closeAuthModal);
     signupLoginModal.querySelector('.modal-overlay').addEventListener('click', closeAuthModal);
-
+    
     const loginTabBtn = document.getElementById('login-tab-btn');
     const signupTabBtn = document.getElementById('signup-tab-btn');
     const loginFormContainer = document.getElementById('login-form-container');
     const signupFormContainer = document.getElementById('signup-form-container');
-    loginTabBtn.addEventListener('click', () => { /* ... */ });
-    signupTabBtn.addEventListener('click', () => { /* ... */ });
+    loginTabBtn.addEventListener('click', () => {
+        loginTabBtn.classList.add('active');
+        signupTabBtn.classList.remove('active');
+        loginFormContainer.classList.remove('hidden');
+        signupFormContainer.classList.add('hidden');
+    });
+    signupTabBtn.addEventListener('click', () => {
+        signupTabBtn.classList.add('active');
+        loginTabBtn.classList.remove('active');
+        signupFormContainer.classList.remove('hidden');
+        loginFormContainer.classList.add('hidden');
+    });
     
     landingLoginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -1131,14 +1170,18 @@ function initLandingPage() {
     document.getElementById('booking-next-btn').addEventListener('click', () => { step1.classList.add('hidden'); step2.classList.remove('hidden'); });
     document.getElementById('booking-prev-btn').addEventListener('click', () => { step2.classList.add('hidden'); step1.classList.remove('hidden'); });
 
-    getDocs(collection(db, "services")).then(servicesSnapshot => {
-        servicesData = {};
-        landingServicesData = {};
-        servicesSnapshot.forEach(doc => {
-            servicesData[doc.id] = doc.data().items;
-            landingServicesData[doc.id] = doc.data().items;
-        });
+    // **** START OF THE FIX ****
+    // We declare the variable here, then populate it inside the promise.
+    // The event listener that USES the variable is now also inside the promise.
+    let landingServicesData = {};
+    const servicesContainerLanding = document.getElementById('services-container-landing');
+    const hiddenCheckboxContainerLanding = document.getElementById('hidden-checkbox-container-landing');
+    const serviceModalLanding = document.getElementById('landing-booking-service-modal');
+    const serviceModalContentLanding = document.getElementById('landing-booking-service-modal-content');
 
+    getDocs(collection(db, "services")).then(servicesSnapshot => {
+        servicesSnapshot.forEach(doc => { landingServicesData[doc.id] = doc.data().items; });
+        
         servicesContainerLanding.innerHTML = '';
         hiddenCheckboxContainerLanding.innerHTML = '';
         Object.keys(landingServicesData).forEach(category => {
@@ -1155,28 +1198,28 @@ function initLandingPage() {
                 hiddenCheckboxContainerLanding.appendChild(cb);
             });
         });
+
+        // The event listener is now INSIDE the .then() block, ensuring landingServicesData exists.
+        servicesContainerLanding.addEventListener('click', (e) => {
+            const btn = e.target.closest('.category-button');
+            if (btn) {
+                const category = btn.dataset.category;
+                document.getElementById('landing-booking-modal-title').textContent = category;
+                serviceModalContentLanding.innerHTML = '';
+                (landingServicesData[category] || []).forEach(service => {
+                    const val = `${service.p || ''}${service.name}${service.price ? ' ' + service.price : ''}`;
+                    const sourceCb = hiddenCheckboxContainerLanding.querySelector(`input[value="${val}"]`);
+                    const label = document.createElement('label');
+                    label.className = 'flex items-center p-3 hover:bg-pink-50 cursor-pointer rounded-lg';
+                    label.innerHTML = `<input type="checkbox" class="form-checkbox modal-checkbox-landing" value="${val}" ${sourceCb && sourceCb.checked ? 'checked' : ''}><span class="ml-3 text-gray-700 flex-grow">${service.name}</span>${service.price ? `<span class="font-semibold">${service.price}</span>` : ''}`;
+                    serviceModalContentLanding.appendChild(label);
+                });
+                serviceModalLanding.classList.remove('hidden');
+            }
+        });
     });
-    
-    const serviceModalLanding = document.getElementById('landing-booking-service-modal');
-    const serviceModalContentLanding = document.getElementById('landing-booking-service-modal-content');
-    document.getElementById('services-container-landing').addEventListener('click', (e) => {
-        const btn = e.target.closest('.category-button');
-        if (btn) {
-            const category = btn.dataset.category;
-            document.getElementById('landing-booking-modal-title').textContent = category;
-            serviceModalContentLanding.innerHTML = '';
-            // This now safely uses the locally scoped landingServicesData
-            (landingServicesData[category] || []).forEach(service => {
-                const val = `${service.p || ''}${service.name}${service.price ? ' ' + service.price : ''}`;
-                const sourceCb = document.getElementById('hidden-checkbox-container-landing').querySelector(`input[value="${val}"]`);
-                const label = document.createElement('label');
-                label.className = 'flex items-center p-3 hover:bg-pink-50 cursor-pointer rounded-lg';
-                label.innerHTML = `<input type="checkbox" class="form-checkbox modal-checkbox-landing" value="${val}" ${sourceCb && sourceCb.checked ? 'checked' : ''}><span class="ml-3 text-gray-700 flex-grow">${service.name}</span>${service.price ? `<span class="font-semibold">${service.price}</span>` : ''}`;
-                serviceModalContentLanding.appendChild(label);
-            });
-            serviceModalLanding.classList.remove('hidden');
-        }
-    });
+    // **** END OF THE FIX ****
+
     document.getElementById('landing-booking-service-modal-done-btn').addEventListener('click', () => {
         serviceModalContentLanding.querySelectorAll('.modal-checkbox-landing').forEach(modalCb => {
             const sourceCb = hiddenCheckboxContainerLanding.querySelector(`input[value="${modalCb.value}"]`);

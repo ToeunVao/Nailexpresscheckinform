@@ -315,37 +315,90 @@ const getLocalDateString = (date = new Date()) => {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
 };
-    const openCardForPrint = (card) => {
-        const expiryText = card.expiresAt ? `Expires: ${card.expiresAt.toDate().toLocaleDateString()}` : '';
-        const cardHTML = `
-            <html><head><title>Your Gift Card ${card.code}</title><script src="https://cdn.tailwindcss.com"><\/script><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&family=Parisienne&display=swap" rel="stylesheet"><style>body{font-family:'Poppins',sans-serif;display:flex;align-items:center;justify-content:center;margin:0;background-color:#f0f0f0;}.font-parisienne{font-family:'Parisienne',cursive;}.card{text-shadow:1px 1px 3px rgba(0,0,0,0.6);}</style></head><body><div class="card w-[400px] h-[228px] rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" style="background-image: url('${card.backgroundUrl}');"><div class="flex justify-between items-start"><img src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white" /><div class="text-right"><p class="font-parisienne text-3xl">Gift Card</p><p class="text-xs font-semibold tracking-wider">Nails Express</p></div></div><div class="text-center"><p class="text-5xl font-bold">$${card.balance.toFixed(2)}</p></div><div class="text-xs"><div class="flex justify-between font-semibold"><span style="display:${card.recipientName ? 'inline' : 'none'}">FOR: <span class="font-normal">${card.recipientName}</span></span><span style="display:${card.senderName ? 'inline' : 'none'}">FROM: <span class="font-normal">${card.senderName}</span></span></div><p class="mt-2 text-center font-mono tracking-widest text-sm">${card.code}</p><p class="mt-1 text-center text-[10px] opacity-80" style="display:${expiryText ? 'block' : 'none'}">${expiryText}</p></div></div></body></html>
-        `;
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(cardHTML);
-        printWindow.document.close();
-        printWindow.focus();
-    };
+// REPLACE your old openCardForPrint function with this one:
+const openCardForPrint = (card) => {
+    const expiryText = card.expiresAt ? `Expires: ${card.expiresAt.toDate().toLocaleDateString()}` : '';
+    const cardHTML = `
+        <html><head><title>Gift Card ${card.code}</title><script src="https://cdn.tailwindcss.com"><\/script><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&family=Parisienne&display=swap" rel="stylesheet">
+        <style>
+            body{font-family:'Poppins',sans-serif;display:flex;align-items:center;justify-content:center;margin:0;padding:20px;background-color:#f0f0f0;}
+            .font-parisienne{font-family:'Parisienne',cursive;}
+            .card-container{display:grid;grid-template-columns:repeat(2, 1fr);gap:20px;}
+            .card{width:400px;height:228px;text-shadow:1px 1px 3px rgba(0,0,0,0.6);box-shadow: 0 4px 8px rgba(0,0,0,0.2);-webkit-print-color-adjust: exact !important; color-adjust: exact !important;}
+            @media print { body { padding: 0; } .card-container { gap: 0; } }
+        </style></head><body>
+        <div class="card-container">
+            <!-- Front of Card -->
+            <div class="card rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" style="background-image: url('${card.backgroundUrl}');">
+                <div class="flex justify-between items-start"><img src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white" /><div class="text-right"><p class="font-parisienne text-3xl">Gift Card</p><p class="text-xs font-semibold tracking-wider">Nails Express</p></div></div>
+                <div class="text-center"><p class="text-5xl font-bold">$${card.balance.toFixed(2)}</p></div>
+                <div class="text-xs"><div class="flex justify-between font-semibold"><span style="display:${card.recipientName?'inline':'none'}">FOR: <span class="font-normal">${card.recipientName}</span></span><span style="display:${card.senderName?'inline':'none'}">FROM: <span class="font-normal">${card.senderName}</span></span></div><p class="mt-2 text-center font-mono tracking-widest text-sm">${card.code}</p><p class="mt-1 text-center text-[10px] opacity-80" style="display:${expiryText?'block':'none'}">${expiryText}</p></div>
+            </div>
+            <!-- Back of Card -->
+            <div class="card rounded-lg p-4 flex flex-col justify-between bg-white text-gray-800" style="text-shadow: none;">
+                <div class="w-full h-10 bg-black mt-2"></div>
+                <p class="text-xs text-center text-gray-600 px-4 leading-relaxed">
+                    This card is redeemable for services at Nails Express. Treat this card like cash; it is not replaceable if lost or stolen. This card is non-refundable and cannot be exchanged for cash.
+                </p>
+                <div class="text-center text-xs pb-2">
+                    <p class="font-bold">Nails Express</p>
+                    <p>1560 Hustonville Rd #345, Danville, KY 40422</p>
+                    <p>(859) 236-2873</p>
+                </div>
+            </div>
+        </div>
+        </body></html>
+    `;
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(cardHTML);
+    printWindow.document.close();
+    printWindow.focus();
+};
 // REPLACE your old openMembershipCardForPrint function with this new one:
 const openMembershipCardForPrint = (client, tier) => {
     const startDate = client.membership.startDate ? client.membership.startDate.toDate().toLocaleDateString() : new Date().toLocaleDateString();
-   const memberId = client.id ? client.id.split('').map(char => char.charCodeAt(0)).join('').substring(0, 4) : 'N/A';
+    const memberId = client.id ? client.id.split('').map(char => char.charCodeAt(0)).join('').substring(0, 6) : 'N/A';
     let cardStyle = 'from-gray-700 via-gray-900 to-black';
     if (tier.name.toLowerCase().includes('silver')) cardStyle = 'from-gray-400 via-gray-500 to-gray-600';
     if (tier.name.toLowerCase().includes('gold')) cardStyle = 'from-yellow-400 via-yellow-500 to-yellow-600';
     if (tier.name.toLowerCase().includes('platinum')) cardStyle = 'from-indigo-500 via-purple-600 to-pink-600';
 
     const cardHTML = `
-        <html><head><title>Membership Card - ${client.name}</title><script src="https://cdn.tailwindcss.com"><\/script><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&family=Parisienne&display=swap" rel="stylesheet"><style>body{font-family:'Poppins',sans-serif;display:flex;align-items:center;justify-content:center;margin:0;background-color:#f0f0f0;}.font-parisienne{font-family:'Parisienne',cursive;}.card{text-shadow:1px 1px 3px rgba(0,0,0,0.6);}</style></head><body>
-        <div class="card w-[400px] h-[228px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-gradient-to-br ${cardStyle} text-white">
-            <div class="flex justify-between items-start">
-                <div class="font-bold text-lg"><p>${tier.name}</p><p class="text-xs font-normal opacity-80">MEMBERSHIP</p></div>
-                <p class="font-parisienne text-3xl">Nails Express</p>
+        <html><head><title>Membership Card - ${client.name}</title><script src="https://cdn.tailwindcss.com"><\/script><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&family=Parisienne&display=swap" rel="stylesheet">
+        <style>
+            body{font-family:'Poppins',sans-serif;display:flex;align-items:center;justify-content:center;margin:0;padding:20px;background-color:#f0f0f0;}
+            .font-parisienne{font-family:'Parisienne',cursive;}
+            .card-container{display:grid;grid-template-columns:repeat(2, 1fr);gap:20px;}
+            .card{width:400px;height:228px;text-shadow:1px 1px 3px rgba(0,0,0,0.6);box-shadow: 0 4px 8px rgba(0,0,0,0.2);-webkit-print-color-adjust: exact !important; color-adjust: exact !important;}
+            @media print { body { padding: 0; } .card-container { gap: 0; } }
+        </style></head><body>
+        <div class="card-container">
+            <!-- Front of Card -->
+            <div class="card rounded-lg p-4 flex flex-col justify-between bg-gradient-to-br ${cardStyle} text-white">
+                <div class="flex justify-between items-start">
+                    <div class="font-bold text-lg"><p>${tier.name}</p><p class="text-xs font-normal opacity-80">MEMBERSHIP</p></div>
+                    <p class="font-parisienne text-3xl">Nails Express</p>
+                </div>
+                <div class="flex justify-between items-end">
+                    <div class="text-left"><p class="text-xs opacity-80">MEMBER</p><p class="text-2xl font-semibold tracking-wider">${client.name}</p></div>
+                    <div class="text-right text-xs opacity-80">
+                        <p>Member Since: ${startDate}</p>
+                        <p>Member ID: ${memberId}</p>
+                    </div>
+                </div>
             </div>
-            <div class="flex justify-between items-end">
-                <div class="text-left"><p class="text-xs opacity-80">MEMBER</p><p class="text-2xl font-semibold tracking-wider">${client.name}</p></div>
-                <div class="text-right text-xs opacity-80">
-                    <p>Member Since: ${startDate}</p>
-                    <p>Member ID: ${memberId}</p>
+            <!-- Back of Card -->
+             <div class="card rounded-lg p-4 flex flex-col justify-between bg-white text-gray-800" style="text-shadow: none;">
+                <p class="text-xs text-center text-gray-600 px-4 leading-relaxed mt-4">
+                    Welcome, VIP! This card must be presented to receive benefits. Membership is non-transferable and benefits apply only to the registered member. Nails Express reserves the right to modify membership terms. Lost cards may be replaced for a small fee.
+                </p>
+                <div class="mb-4">
+                    <div class="w-full border-t border-dashed border-gray-400 my-2"></div>
+                    <p class="text-center text-xs text-gray-500">Member Signature</p>
+                </div>
+                <div class="text-center text-xs pb-2">
+                    <p class="font-bold">Nails Express</p>
+                    <p>1560 Hustonville Rd #345, Danville, KY 40422</p>
                 </div>
             </div>
         </div>
@@ -848,7 +901,7 @@ onAuthStateChanged(auth, async (user) => {
 
 // **** PASTE THESE TWO COMPLETE FUNCTIONS in place of your old initClientDashboard ****
 
-// **** Function 1: The Helper Function ****
+// REPLACE your old renderClientMembership function with this new one:
 const renderClientMembership = (clientData) => {
     const container = document.getElementById('client-membership-display');
     if (!container) return;
@@ -860,6 +913,9 @@ const renderClientMembership = (clientData) => {
             if (clientData.membership.startDate && typeof clientData.membership.startDate.toDate === 'function') {
                 startDate = clientData.membership.startDate.toDate().toLocaleDateString();
             }
+
+            // ADDED: Logic to generate the numeric Member ID
+            const memberId = clientData.id ? clientData.id.split('').map(char => char.charCodeAt(0)).join('').substring(0, 6) : 'N/A';
 
             const benefitsList = tier.benefits.split('\n').map(b => `<li class="flex items-start"><span class="text-green-500 mr-2">✔</span><span>${b}</span></li>`).join('');
             const status = clientData.membership.status || 'Active';
@@ -876,7 +932,7 @@ const renderClientMembership = (clientData) => {
                         <div class="flex justify-between items-start mb-4">
                             <div>
                                 <h3 class="text-2xl font-bold text-pink-700 flex items-end gap-3">
-                                    <span>💎 ${tier.name} Tier</span>
+                                    <span>${tier.name} Tier</span>
                                     <span class="text-xl font-bold text-gray-600">$${tier.price}/month</span>
                                 </h3>
                                 <p class="text-sm text-gray-500">Member since ${startDate}</p>
@@ -900,7 +956,10 @@ const renderClientMembership = (clientData) => {
                             </div>
                             <div class="flex justify-between items-end">
                                 <div class="text-left"><p class="text-xs opacity-80">MEMBER</p><p class="text-xl font-semibold tracking-wider">${clientData.name}</p></div>
-                                <div class="text-right text-xs opacity-80">Since: ${startDate}</div>
+                                <div class="text-right text-xs opacity-80">
+                                    <p>Since: ${startDate}</p>
+                                    <p>ID: ${memberId}</p>
+                                </div>
                             </div>
                         </div>
                         <div class="flex justify-between items-center pt-2 px-2">
@@ -914,7 +973,7 @@ const renderClientMembership = (clientData) => {
                 </div>
             `;
         } else {
-            container.innerHTML = '<p class="text-gray-500 text-center col-span-full">Your membership tier could not be found. Please contact the salon.</p>';
+             container.innerHTML = '<p class="text-gray-500 text-center col-span-full">Your membership tier could not be found. Please contact the salon.</p>';
         }
     } else {
         container.innerHTML = `

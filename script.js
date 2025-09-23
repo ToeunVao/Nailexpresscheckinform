@@ -46,6 +46,7 @@ let allMembershipTiers = [];
 let allPromotions = [];
 let allNailIdeas = [];
 let currentGalleryData = [];
+let currentRotation = 0; // <-- PASTE it here
 
 // ADD THIS ENTIRE NEW BLOCK for the lightbox
 const nailIdeaLightbox = document.getElementById('nail-idea-lightbox');

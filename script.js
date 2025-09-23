@@ -42,6 +42,9 @@ let initialInventoryLoaded = false;
 let allFinishedClients = [], allAppointments = [], allClients = [], allActiveClients = [], servicesData = {};
 let allColorBrands = [];
 let allMembershipTiers = [];
+let allPromotions = [];
+let allNailIdeas = [];
+let currentGalleryData = [];
 
 const giftCardBackgrounds = {
     'General': [
@@ -66,6 +69,45 @@ const giftCardBackgrounds = {
     ]
 };
 
+const renderPromotionsLanding = (promotions) => {
+        promotionsContainerLanding.innerHTML = '';
+        const now = new Date();
+        const activePromos = promotions.filter(promo => {
+            const startDate = promo.startDate.toDate();
+            const endDate = promo.endDate.toDate();
+            return now >= startDate && now <= endDate;
+        });
+        if (activePromos.length === 0) { promotionsContainerLanding.innerHTML = '<p class="text-gray-600 col-span-full text-center">No active promotions right now. Check back soon!</p>'; return; }
+        activePromos.forEach(promo => { const promoEl = document.createElement('div'); promoEl.className = 'bg-white p-6 rounded-lg shadow-md text-center'; promoEl.innerHTML = `<h3 class="text-xl font-bold text-pink-700 mb-2">${promo.title}</h3><p class="text-gray-600">${promo.description}</p>`; promotionsContainerLanding.appendChild(promoEl); });
+    };
+    // REPLACE the old renderNailIdeasGallery function with this one
+const renderNailIdeasGallery = (ideas) => {
+    const landingGallery = document.querySelector('#nails-idea-landing .columns-2');
+    const appGallery = document.getElementById('nails-idea-gallery');
+    currentGalleryData = ideas; // Store the current set of ideas for the lightbox
+
+    const renderTo = (container, isLanding) => {
+        if (!container) return;
+        container.innerHTML = '';
+        if (ideas.length === 0) { container.innerHTML = '<p class="text-gray-500 col-span-full text-center">No nail ideas found. Check back later!</p>'; return; }
+        const ideasToRender = isLanding ? ideas.slice(0, 8) : ideas;
+        ideasToRender.forEach((idea, index) => {
+            const ideaEl = document.createElement('div');
+            ideaEl.className = 'break-inside-avoid mb-4 relative gallery-item group';
+            // Note: The share button is now separate from the clickable image
+            ideaEl.innerHTML = `
+                <img class="w-full rounded-lg shadow-md cursor-pointer" src="${idea.imageURL}" alt="${idea.name}" data-index="${index}">
+                <div class="absolute top-2 right-2 bg-black/40 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                   <button data-id="${idea.id}" class="share-nail-idea-btn text-white text-lg"><i class="fas fa-share-alt"></i></button>
+                </div>
+                ${!isLanding ? `<div class="p-2"><h5 class="font-bold text-sm">${idea.name}</h5><p class="text-xs text-gray-600">${idea.categories.join(', ')}</p></div>` : ''}`;
+            container.appendChild(ideaEl);
+        });
+    };
+
+    renderTo(landingGallery, true);
+    renderTo(appGallery, false);
+};    
 const updateLandingGiftCardPreview = () => {
     const purchaseForm = document.getElementById('landing-gift-card-form');
     if (!purchaseForm) return;
@@ -1100,6 +1142,17 @@ purchaseForm.addEventListener('submit', async (e) => {
 
 // --- LANDING PAGE SCRIPT ---
 function initLandingPage() {
+    // PASTE THIS INSIDE initLandingPage()
+
+onSnapshot(query(collection(db, "promotions"), orderBy("startDate", "desc")), (snapshot) => {
+    allPromotions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    renderPromotionsLanding(allPromotions);
+});
+
+onSnapshot(query(collection(db, "nail_ideas"), orderBy("createdAt", "desc")), (snapshot) => {
+    allNailIdeas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    renderNailIdeasGallery(allNailIdeas);
+});
     const signupLoginModal = document.getElementById('signup-login-modal');
     const userIcon = document.getElementById('user-icon');
     const closeSignupLoginModalBtn = document.getElementById('close-signup-login-modal-btn');
@@ -4470,34 +4523,7 @@ nailIdeaLightbox.addEventListener('click', (e) => {
         closeLightbox();
     }
 });
-    // REPLACE the old renderNailIdeasGallery function with this one
-const renderNailIdeasGallery = (ideas) => {
-    const landingGallery = document.querySelector('#nails-idea-landing .columns-2');
-    const appGallery = document.getElementById('nails-idea-gallery');
-    currentGalleryData = ideas; // Store the current set of ideas for the lightbox
 
-    const renderTo = (container, isLanding) => {
-        if (!container) return;
-        container.innerHTML = '';
-        if (ideas.length === 0) { container.innerHTML = '<p class="text-gray-500 col-span-full text-center">No nail ideas found. Check back later!</p>'; return; }
-        const ideasToRender = isLanding ? ideas.slice(0, 8) : ideas;
-        ideasToRender.forEach((idea, index) => {
-            const ideaEl = document.createElement('div');
-            ideaEl.className = 'break-inside-avoid mb-4 relative gallery-item group';
-            // Note: The share button is now separate from the clickable image
-            ideaEl.innerHTML = `
-                <img class="w-full rounded-lg shadow-md cursor-pointer" src="${idea.imageURL}" alt="${idea.name}" data-index="${index}">
-                <div class="absolute top-2 right-2 bg-black/40 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                   <button data-id="${idea.id}" class="share-nail-idea-btn text-white text-lg"><i class="fas fa-share-alt"></i></button>
-                </div>
-                ${!isLanding ? `<div class="p-2"><h5 class="font-bold text-sm">${idea.name}</h5><p class="text-xs text-gray-600">${idea.categories.join(', ')}</p></div>` : ''}`;
-            container.appendChild(ideaEl);
-        });
-    };
-
-    renderTo(landingGallery, true);
-    renderTo(appGallery, false);
-};
 
     const renderNailIdeasAdminTable = (ideas) => {
         nailIdeasTableBody.innerHTML = '';
@@ -5437,17 +5463,7 @@ const renderGiftCardsAdminTable = (cards) => {
         });
     };
 
-    const renderPromotionsLanding = (promotions) => {
-        promotionsContainerLanding.innerHTML = '';
-        const now = new Date();
-        const activePromos = promotions.filter(promo => {
-            const startDate = promo.startDate.toDate();
-            const endDate = promo.endDate.toDate();
-            return now >= startDate && now <= endDate;
-        });
-        if (activePromos.length === 0) { promotionsContainerLanding.innerHTML = '<p class="text-gray-600 col-span-full text-center">No active promotions right now. Check back soon!</p>'; return; }
-        activePromos.forEach(promo => { const promoEl = document.createElement('div'); promoEl.className = 'bg-white p-6 rounded-lg shadow-md text-center'; promoEl.innerHTML = `<h3 class="text-xl font-bold text-pink-700 mb-2">${promo.title}</h3><p class="text-gray-600">${promo.description}</p>`; promotionsContainerLanding.appendChild(promoEl); });
-    };
+
 
     onSnapshot(query(collection(db, "promotions"), orderBy("startDate", "desc")), (snapshot) => {
         allPromotions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));

@@ -59,7 +59,6 @@ const lightboxColor = document.getElementById('lightbox-color');
 const lightboxCategories = document.getElementById('lightbox-categories');
 const lightboxDescription = document.getElementById('lightbox-description'); // ADD THIS LINE
 let currentLightboxIndex = 0;
-let currentGalleryData = [];
 
 
 const giftCardBackgrounds = {
@@ -229,7 +228,7 @@ nailIdeaLightbox.addEventListener('click', (e) => {
         closeLightbox();
     }
 });
-   
+
 const updateLandingGiftCardPreview = () => {
     const purchaseForm = document.getElementById('landing-gift-card-form');
     if (!purchaseForm) return;

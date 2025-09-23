@@ -325,31 +325,37 @@ const getLocalDateString = (date = new Date()) => {
         printWindow.document.close();
         printWindow.focus();
     };
-        // PASTE THIS NEW FUNCTION
-    const openMembershipCardForPrint = (client, tier) => {
-        const startDate = client.membership.startDate ? client.membership.startDate.toDate().toLocaleDateString() : new Date().toLocaleDateString();
-        let cardStyle = 'from-gray-700 via-gray-900 to-black';
-        if (tier.name.toLowerCase().includes('silver')) cardStyle = 'from-gray-400 via-gray-500 to-gray-600';
-        if (tier.name.toLowerCase().includes('gold')) cardStyle = 'from-yellow-400 via-yellow-500 to-yellow-600';
-        if (tier.name.toLowerCase().includes('platinum')) cardStyle = 'from-indigo-500 via-purple-600 to-pink-600';
+// REPLACE your old openMembershipCardForPrint function with this new one:
+const openMembershipCardForPrint = (client, tier) => {
+    const startDate = client.membership.startDate ? client.membership.startDate.toDate().toLocaleDateString() : new Date().toLocaleDateString();
+    const memberId = client.id ? client.id.substring(0, 8).toUpperCase() : 'N/A'; // <-- Line 1 ADDED
+    let cardStyle = 'from-gray-700 via-gray-900 to-black';
+    if (tier.name.toLowerCase().includes('silver')) cardStyle = 'from-gray-400 via-gray-500 to-gray-600';
+    if (tier.name.toLowerCase().includes('gold')) cardStyle = 'from-yellow-400 via-yellow-500 to-yellow-600';
+    if (tier.name.toLowerCase().includes('platinum')) cardStyle = 'from-indigo-500 via-purple-600 to-pink-600';
 
-        const cardHTML = `
+    const cardHTML = `
         <html><head><title>Membership Card - ${client.name}</title><script src="https://cdn.tailwindcss.com"><\/script><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&family=Parisienne&display=swap" rel="stylesheet"><style>body{font-family:'Poppins',sans-serif;display:flex;align-items:center;justify-content:center;margin:0;background-color:#f0f0f0;}.font-parisienne{font-family:'Parisienne',cursive;}.card{text-shadow:1px 1px 3px rgba(0,0,0,0.6);}</style></head><body>
         <div class="card w-[400px] h-[228px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-gradient-to-br ${cardStyle} text-white">
             <div class="flex justify-between items-start">
                 <div class="font-bold text-lg"><p>${tier.name}</p><p class="text-xs font-normal opacity-80">MEMBERSHIP</p></div>
                 <p class="font-parisienne text-3xl">Nails Express</p>
             </div>
-            <div class="text-left"><p class="text-xs opacity-80">MEMBER</p><p class="text-2xl font-semibold tracking-wider">${client.name}</p></div>
-            <div class="text-right text-xs opacity-80">Member Since: ${startDate}</div>
+            <div class="flex justify-between items-end">
+                <div class="text-left"><p class="text-xs opacity-80">MEMBER</p><p class="text-2xl font-semibold tracking-wider">${client.name}</p></div>
+                <div class="text-right text-xs opacity-80">
+                    <p>Member Since: ${startDate}</p>
+                    <p>Member ID: ${memberId}</p>
+                </div>
+            </div>
         </div>
         </body></html>
     `;
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(cardHTML);
-        printWindow.document.close();
-        printWindow.focus();
-    };
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(cardHTML);
+    printWindow.document.close();
+    printWindow.focus();
+};
 // --- Email Notification Logic ---
 async function sendBookingNotificationEmail(appointmentData) {
     try {

@@ -25,6 +25,7 @@ const clientDashboardContent = document.getElementById('client-dashboard-content
 const policyModal = document.getElementById('policy-modal');
 const addAppointmentModal = document.getElementById('add-appointment-modal');
 const addAppointmentForm = document.getElementById('add-appointment-form');
+const promotionsContainerLanding = document.getElementById('promotions-container-landing');
 let mainAppInitialized = false;
 let landingPageInitialized = false;
 let clientDashboardInitialized = false;

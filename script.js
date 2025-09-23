@@ -328,7 +328,7 @@ const getLocalDateString = (date = new Date()) => {
 // REPLACE your old openMembershipCardForPrint function with this new one:
 const openMembershipCardForPrint = (client, tier) => {
     const startDate = client.membership.startDate ? client.membership.startDate.toDate().toLocaleDateString() : new Date().toLocaleDateString();
-   const memberId = client.id ? client.id.split('').map(char => char.charCodeAt(0)).join('').substring(0, 8) : 'N/A';
+   const memberId = client.id ? client.id.split('').map(char => char.charCodeAt(0)).join('').substring(0, 4) : 'N/A';
     let cardStyle = 'from-gray-700 via-gray-900 to-black';
     if (tier.name.toLowerCase().includes('silver')) cardStyle = 'from-gray-400 via-gray-500 to-gray-600';
     if (tier.name.toLowerCase().includes('gold')) cardStyle = 'from-yellow-400 via-yellow-500 to-yellow-600';

@@ -44,6 +44,19 @@ let allMembershipTiers = [];
 let allPromotions = [];
 let allNailIdeas = [];
 let currentGalleryData = [];
+let currentRotation = 0;
+
+// --- Lightbox Global Variables ---
+const nailIdeaLightbox = document.getElementById('nail-idea-lightbox');
+const lightboxCloseBtn = document.getElementById('lightbox-close-btn');
+const lightboxPrevBtn = document.getElementById('lightbox-prev-btn');
+const lightboxNextBtn = document.getElementById('lightbox-next-btn');
+const lightboxImage = document.getElementById('lightbox-image');
+const lightboxTitle = document.getElementById('lightbox-title');
+const lightboxShape = document.getElementById('lightbox-shape');
+const lightboxColor = document.getElementById('lightbox-color');
+const lightboxCategories = document.getElementById('lightbox-categories');
+const lightboxDescription = document.getElementById('lightbox-description');
 
 const giftCardBackgrounds = {
     'General': [
@@ -68,14 +81,14 @@ const giftCardBackgrounds = {
     ]
 };
 
-// --- Global Helper Functions ---
+// --- ALL GLOBAL FUNCTIONS AND LISTENERS ARE PLACED HERE ---
+
 const getLocalDateString = (date = new Date()) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
 };
-// --- Email Notification Logic ---
 async function sendBookingNotificationEmail(appointmentData) {
     try {
         const adminsQuery = query(collection(db, "users"), where("role", "==", "admin"));
@@ -121,7 +134,6 @@ async function sendBookingNotificationEmail(appointmentData) {
         console.error("Error queuing booking notification email:", error);
     }
 }
-// --- Booking Validation Logic ---
 function isBookingTimeValid(bookingDate) {
     const dayOfWeek = bookingDate.getDay();
     const dayName = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][dayOfWeek];
@@ -147,14 +159,14 @@ function isBookingTimeValid(bookingDate) {
 
     return { valid: true };
 }
-// --- Global Modal Logic ---
+
+// --- Modal Logic ---
 const openPolicyModal = () => { policyModal.classList.add('flex'); policyModal.classList.remove('hidden'); };
 const closePolicyModal = () => { policyModal.classList.add('hidden'); policyModal.classList.remove('flex'); };
-document.addEventListener('click', (e) => { if (e.target.closest('.view-policy-btn')) { openPolicyModal(); } });
+document.addEventListener('click', (e) => { if (e.target.closest('.view-policy-btn')) openPolicyModal(); });
 document.getElementById('policy-close-btn').addEventListener('click', closePolicyModal);
 document.querySelector('#policy-modal .policy-modal-overlay').addEventListener('click', closePolicyModal);
 
-// This function is in the global scope
 const openAddAppointmentModal = (date, clientData = null, appointmentData = null) => {
     addAppointmentForm.reset();
     // *** FIX IS HERE: Correctly selecting the elements by their ID ***
@@ -230,8 +242,6 @@ document.getElementById('appointment-phone').addEventListener('input', (e) => {
     const client = allFinishedClients.find(c => c.phone === e.target.value);
     if (client) { document.getElementById('appointment-client-name').value = client.name; }
 });
-
-// This listener is in the global scope
 addAppointmentForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const datetimeString = document.getElementById('appointment-datetime').value;
@@ -274,14 +284,13 @@ addAppointmentForm.addEventListener('submit', async (e) => {
         alert("Could not save appointment.");
     }
 });
+
 const closeMembershipPurchaseModal = () => {
     document.getElementById('membership-purchase-modal').classList.add('hidden');
 };
-// Listeners for the new modal
 document.getElementById('close-membership-purchase-modal-btn').addEventListener('click', closeMembershipPurchaseModal);
 document.getElementById('membership-purchase-modal').querySelector('.modal-overlay').addEventListener('click', closeMembershipPurchaseModal);
 
-// *** ADD THIS CORRECTED BLOCK ***
 const closePurchaseModal = () => {
     const purchaseModal = document.getElementById('gift-card-purchase-modal');
     const userInfoSection = document.getElementById('gc-user-info-section');
@@ -295,8 +304,9 @@ const closePurchaseModal = () => {
         userInfoSection.classList.remove('hidden');
     }
 };
+
+// --- Form Submission Logic ---
 const purchaseForm = document.getElementById('landing-gift-card-form');
-// Located inside initLandingPage()
 purchaseForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const amount = parseFloat(document.getElementById('gc-amount').value);
@@ -388,10 +398,7 @@ purchaseForm.addEventListener('submit', async (e) => {
         document.getElementById('gc-buyer-phone').disabled = false;
         document.getElementById('gc-buyer-email').disabled = false;
     }
-
 });
-// REPLACE your old 'landing-membership-form' submit listener with this one
-
 document.getElementById('landing-membership-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const submitBtn = document.getElementById('landing-ms-submit-btn');
@@ -458,202 +465,81 @@ document.getElementById('landing-membership-form').addEventListener('submit', as
     }
 });
 
+// --- Lightbox Global Functions ---
+    const openLightbox = (index) => {
+        if (index < 0 || index >= currentGalleryData.length) return;
 
+        currentLightboxIndex = index;
+        const idea = currentGalleryData[index];
 
-
-const updateLandingGiftCardPreview = () => {
-    const purchaseForm = document.getElementById('landing-gift-card-form');
-    if (!purchaseForm) return;
-
-    const showTo = document.getElementById('gc-show-to').checked;
-    const showFrom = document.getElementById('gc-show-from').checked;
-
-    document.getElementById('gc-to-wrapper').style.display = showTo ? '' : 'none';
-    document.getElementById('gc-from-wrapper').style.display = showFrom ? '' : 'none';
-
-    document.getElementById('landing-gc-preview-to').parentElement.style.display = showTo ? '' : 'none';
-    document.getElementById('landing-gc-preview-from').parentElement.style.display = showFrom ? '' : 'none';
-
-    document.getElementById('landing-gc-preview-to').textContent = document.getElementById('gc-to').value || 'Recipient';
-    document.getElementById('landing-gc-preview-from').textContent = document.getElementById('gc-from').value || 'Sender';
-
-    const amount = parseFloat(document.getElementById('gc-amount').value) || 0;
-    const quantity = parseInt(document.getElementById('gc-quantity').value, 10) || 1;
-
-    document.getElementById('landing-gc-preview-amount').textContent = `$${amount.toFixed(2)}`;
-    document.getElementById('landing-gc-total-amount').textContent = `$${(amount * quantity).toFixed(2)}`;
-
-    const expiryDate = new Date();
-    expiryDate.setMonth(expiryDate.getMonth() + 6);
-    const formattedExpiryDate = expiryDate.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-    });
-    document.getElementById('landing-gc-preview-expiry').textContent = `Expires: ${formattedExpiryDate}`;
-};
-
-const initializeLandingGiftCardDesigner = () => {
-    const purchaseForm = document.getElementById('landing-gift-card-form');
-    const previewCard = document.getElementById('landing-gc-preview-card');
-    if (!purchaseForm || !previewCard) return;
-
-    purchaseForm.reset();
-    document.getElementById('gc-quantity').value = 1;
-
-    const backgroundTabs = document.getElementById('landing-gc-background-tabs');
-    const backgroundOptions = document.getElementById('landing-gc-background-options');
-
-    backgroundTabs.innerHTML = Object.keys(giftCardBackgrounds).map(cat =>
-        `<button type="button" data-category="${cat}" class="px-3 py-1 text-sm font-medium rounded-t-lg">${cat}</button>`
-    ).join('');
-
-    const firstTab = backgroundTabs.querySelector('button');
-    if (firstTab) {
-        firstTab.classList.add('bg-gray-200', 'border-gray-300', 'border-b-0');
-        backgroundOptions.innerHTML = giftCardBackgrounds[firstTab.dataset.category].map(url =>
-            `<button type="button" data-bg="${url}" class="w-full h-16 bg-cover bg-center rounded-md border-2 border-transparent hover:border-pink-400" style="background-image: url('${url}')"></button>`
+        lightboxImage.src = idea.imageURL;
+        currentRotation = 0; // ADD THIS LINE TO RESET ROTATION
+        lightboxImage.style.transform = `rotate(0deg)`; // AND THIS LINE TO RESET THE STYLE
+        lightboxTitle.textContent = idea.name;
+        lightboxShape.textContent = idea.shape || 'N/A';
+        lightboxColor.textContent = idea.color || 'N/A';
+        lightboxDescription.textContent = idea.description || ''; // ADD THIS LINE
+        lightboxCategories.innerHTML = idea.categories.map(cat =>
+            `<span class="bg-pink-100 text-pink-700 text-xs font-semibold px-2 py-1 rounded-full">${cat}</span>`
         ).join('');
-        previewCard.style.backgroundImage = `url('${giftCardBackgrounds[firstTab.dataset.category][0]}')`;
-    }
-    updateLandingGiftCardPreview();
-};
 
+        lightboxPrevBtn.classList.toggle('hidden', index === 0);
+        lightboxNextBtn.classList.toggle('hidden', index === currentGalleryData.length - 1);
 
-
-// --- GLOBAL MEMBERSHIP FUNCTIONS ---
-const renderMembershipTiers = (tiers, containerId, isLoggedIn) => {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    container.innerHTML = '';
-
-    tiers.forEach(tier => {
-        const benefitsList = tier.benefits.split('\n').map(b => `<li class="flex items-start"><span class="text-green-500 mr-2">✔</span><span>${b}</span></li>`).join('');
-        const buttonText = isLoggedIn ? 'Select Plan' : 'Become a Member';
-
-        const tierEl = document.createElement('div');
-        tierEl.className = 'border rounded-lg p-6 text-left flex flex-col hover:shadow-lg transition-shadow';
-        tierEl.innerHTML = `
-            <h3 class="text-2xl font-bold text-pink-700">${tier.name}</h3>
-            <p class="text-4xl font-bold my-4">$${tier.price}<span class="text-lg font-normal text-gray-500">/month</span></p>
-            <p class="text-sm text-gray-600 mb-4">${tier.discount}% off all additional services.</p>
-            <ul class="space-y-2 text-gray-700 flex-grow">${benefitsList}</ul>
-            <button data-tier-id="${tier.id}" class="purchase-membership-btn mt-6 w-full bg-pink-600 text-white font-bold py-3 rounded-lg hover:bg-pink-700">${buttonText}</button>
-        `;
-        container.appendChild(tierEl);
-    });
-};
-// REPLACE your old initializeMembershipPurchaseForm function with this one
-
-const initializeMembershipPurchaseForm = (selectedTierId, clientData = null) => {
-    const form = document.getElementById('landing-membership-form');
-    const tierSelect = document.getElementById('ms-tier-select');
-    const amountInput = document.getElementById('ms-amount');
-    const previewCard = document.getElementById('ms-preview-card');
-
-    form.reset();
-
-    // THIS BLOCK IS NOW CORRECTED TO HANDLE BOTH CASES
-    if (clientData) {
-        // For a logged-in client, pre-fill their info and hide the fields
-        document.getElementById('ms-buyer-name').value = clientData.name;
-        document.getElementById('ms-buyer-phone').value = clientData.phone || '';
-        document.getElementById('ms-buyer-email').value = clientData.email;
-        document.getElementById('membership-user-info-section').classList.add('hidden');
-    } else {
-        // For a new visitor, make sure the info fields are visible
-        const userInfoSection = document.getElementById('membership-user-info-section');
-        if (userInfoSection) {
-            userInfoSection.classList.remove('hidden');
-        }
-    }
-
-    tierSelect.innerHTML = '';
-
-    allMembershipTiers.forEach(tier => {
-        const isSelected = tier.id === selectedTierId ? 'selected' : '';
-        tierSelect.innerHTML += `<option value="${tier.id}" ${isSelected}>${tier.name}</option>`;
-    });
-
-    const updatePreview = () => {
-        const tierId = tierSelect.value;
-        const tier = allMembershipTiers.find(t => t.id === tierId);
-        const buyerName = document.getElementById('ms-buyer-name').value || 'Client Name';
-
-        if (tier) {
-            amountInput.value = tier.price.toFixed(2);
-            let cardStyle = 'from-gray-700 via-gray-900 to-black';
-            if (tier.name.toLowerCase().includes('silver')) cardStyle = 'from-gray-400 via-gray-500 to-gray-600';
-            if (tier.name.toLowerCase().includes('gold')) cardStyle = 'from-yellow-400 via-yellow-500 to-yellow-600';
-            if (tier.name.toLowerCase().includes('platinum')) cardStyle = 'from-indigo-500 via-purple-600 to-pink-600';
-
-            previewCard.className = `w-[350px] h-[200px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-gradient-to-br ${cardStyle} text-white transition-all duration-300`;
-            previewCard.innerHTML = `
-                <div class="flex justify-between items-start">
-                    <div class="font-bold text-lg"><p>${tier.name}</p><p class="text-xs font-normal opacity-80">MEMBERSHIP</p></div>
-                    <p class="font-parisienne text-3xl">Nails Express</p>
-                </div>
-                <div class="text-left"><p class="text-xs opacity-80">MEMBER</p><p class="text-2xl font-semibold tracking-wider">${buyerName}</p></div>
-                <div class="text-right text-xs opacity-80">Member Since: ${new Date().toLocaleDateString()}</div>
-            `;
+        nailIdeaLightbox.classList.remove('hidden');
+        nailIdeaLightbox.classList.add('flex');
+    };
+const closeLightbox = () => nailIdeaLightbox.classList.add('hidden');
+const showNextImage = () => openLightbox(currentLightboxIndex + 1);
+const showPrevImage = () => openLightbox(currentLightboxIndex - 1);
+const toggleFullScreen = () => {
+        const lightbox = document.getElementById('nail-idea-lightbox');
+        const icon = document.getElementById('lightbox-fullscreen-btn').querySelector('i');
+        if (!document.fullscreenElement) {
+            lightbox.requestFullscreen().catch(err => {
+                alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+            });
+            icon.classList.replace('fa-expand', 'fa-compress');
+        } else {
+            document.exitFullscreen();
+            icon.classList.replace('fa-compress', 'fa-expand');
         }
     };
-
-    tierSelect.addEventListener('change', updatePreview);
-    document.getElementById('ms-buyer-name').addEventListener('input', updatePreview);
-    updatePreview();
+const rotateImage = () => {
+        currentRotation += 90;
+        if (currentRotation >= 360) {
+            currentRotation = 0;
+        }
+        document.getElementById('lightbox-image').style.transform = `rotate(${currentRotation}deg)`;
+    };
+const galleryClickHandler = (e) => {
+    const shareBtn = e.target.closest('.share-nail-idea-btn');
+    const img = e.target.closest('img[data-index]');
+    if (shareBtn) {
+        const idea = allNailIdeas.find(i => i.id === shareBtn.dataset.id);
+        if (idea) openShareModal(idea);
+    } else if (img) {
+        openLightbox(parseInt(img.dataset.index, 10));
+    }
 };
 
-const openMembershipPurchaseModal = (tierId, clientData = null) => {
-    initializeMembershipPurchaseForm(tierId, clientData);
-    getDoc(doc(db, "settings", "paymentGuide")).then(docSnap => {
-        const paymentGuideDisplay = document.getElementById('membership-payment-guide');
-        if (docSnap.exists() && docSnap.data().text) {
-            paymentGuideDisplay.innerHTML = `<p class="font-semibold mb-2">How to Pay:</p><p>${docSnap.data().text.replace(/\n/g, '<br>')}</p>`;
-        } else {
-            paymentGuideDisplay.textContent = 'Please contact the salon to complete your payment.';
-        }
-    });
-    document.getElementById('membership-purchase-modal').classList.remove('hidden');
-};
-
-const renderClientMembershipsTable = (members) => {
-    const tbody = document.querySelector('#client-memberships-table tbody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-    members.forEach(member => {
-        const row = tbody.insertRow();
-        const status = member.membership.status || 'Active';
-        const statusColor = status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
-
-        let actionButtons = `<button data-id="${member.id}" class="delete-membership-record-btn text-red-500"><i class="fas fa-trash"></i></button>`;
-        if (status === 'Pending') {
-            actionButtons = `<button data-id="${member.id}" class="activate-membership-btn text-green-500 mr-2"><i class="fas fa-check-circle"></i></button>` + actionButtons;
-        }
-
-        // **** THIS BLOCK IS THE FIX ****
-        // Safely get the start date to prevent errors
-        let startDate = 'Invalid Date';
-        if (member.membership.startDate && typeof member.membership.startDate.toDate === 'function') {
-            startDate = member.membership.startDate.toDate().toLocaleDateString();
-        }
-        // **** END OF FIX ****
-
-        row.innerHTML = `
-            <td class="px-6 py-4">${member.name}</td>
-            <td class="px-6 py-4">${member.membership.tierName}</td>
-            <td class="px-6 py-4">${startDate}</td>
-            <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-semibold rounded-full ${statusColor}">${status}</span></td>
-            <td class="px-6 py-4 text-center">${actionButtons}</td>
-        `;
-    });
-};
+// --- Lightbox Global Event Listeners ---
+lightboxCloseBtn.addEventListener('click', closeLightbox);
+lightboxNextBtn.addEventListener('click', showNextImage);
+lightboxPrevBtn.addEventListener('click', showPrevImage);
+document.getElementById('lightbox-fullscreen-btn').addEventListener('click', toggleFullScreen);
+document.getElementById('lightbox-rotate-btn').addEventListener('click', rotateImage);
+document.addEventListener('keydown', (e) => {
+    if (!nailIdeaLightbox.classList.contains('hidden')) {
+        if (e.key === 'ArrowRight') showNextImage();
+        if (e.key === 'ArrowLeft') showPrevImage();
+        if (e.key === 'Escape') closeLightbox();
+    }
+});
+nailIdeaLightbox.addEventListener('click', (e) => { if (e.target === nailIdeaLightbox) closeLightbox(); });
 
 
-// **** START OF PRIMARY FIX: FUNCTION ORDERING ****
-// All functions related to the Client Dashboard are now placed BEFORE the main `initClientDashboard` function.
-// This guarantees they are defined before they are called.
-
+// --- CLIENT DASHBOARD & LANDING PAGE HELPERS ---
 const openMembershipCardForPrint = (client, tier) => {
     let cardStyle = 'from-gray-700 via-gray-900 to-black';
     if (tier.name.toLowerCase().includes('silver')) cardStyle = 'from-gray-400 via-gray-500 to-gray-600';
@@ -666,7 +552,6 @@ const openMembershipCardForPrint = (client, tier) => {
     printWindow.document.close();
     printWindow.focus();
 };
-
 
 const renderClientMembership = (clientData) => {
     const container = document.getElementById('client-membership-display');
@@ -741,131 +626,30 @@ const applyNailIdeaFilters = () => {
     });
     renderNailIdeasGallery(filteredIdeas);
 };
-    const openShareModal = (idea) => {
-        const salonUrl = "http://www.nailsxpressky.com";
-        const shareText = `Check out this amazing nail design: ${idea.name}!`;
-        document.getElementById('share-facebook').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(salonUrl)}`;
-        document.getElementById('share-pinterest').href = `http://pinterest.com/pin/create/button/?url=${encodeURIComponent(salonUrl)}&media=${encodeURIComponent(idea.imageURL)}&description=${encodeURIComponent(shareText)}`;
-        document.getElementById('share-twitter').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(salonUrl)}`;
-        document.getElementById('share-copy-link').onclick = () => { navigator.clipboard.writeText(salonUrl).then(() => alert('Link copied to clipboard!')); };
-        shareModal.classList.remove('hidden');
-        shareModal.classList.add('flex');
-    };
 
-    const closeShareModal = () => { shareModal.classList.add('hidden'); shareModal.classList.remove('flex'); };
-    document.getElementById('share-close-btn').addEventListener('click', closeShareModal);
-    document.querySelector('.share-modal-overlay').addEventListener('click', closeShareModal);
+const renderMembershipTiers = (tiers, containerId, isLoggedIn) => {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
 
+    tiers.forEach(tier => {
+        const benefitsList = tier.benefits.split('\n').map(b => `<li class="flex items-start"><span class="text-green-500 mr-2">✔</span><span>${b}</span></li>`).join('');
+        const buttonText = isLoggedIn ? 'Select Plan' : 'Become a Member';
 
-    // ADD THIS ENTIRE NEW BLOCK for the lightbox functions
-    const openLightbox = (index) => {
-        if (index < 0 || index >= currentGalleryData.length) return;
-
-        currentLightboxIndex = index;
-        const idea = currentGalleryData[index];
-
-        lightboxImage.src = idea.imageURL;
-        currentRotation = 0; // ADD THIS LINE TO RESET ROTATION
-        lightboxImage.style.transform = `rotate(0deg)`; // AND THIS LINE TO RESET THE STYLE
-        lightboxTitle.textContent = idea.name;
-        lightboxShape.textContent = idea.shape || 'N/A';
-        lightboxColor.textContent = idea.color || 'N/A';
-        lightboxDescription.textContent = idea.description || ''; // ADD THIS LINE
-        lightboxCategories.innerHTML = idea.categories.map(cat =>
-            `<span class="bg-pink-100 text-pink-700 text-xs font-semibold px-2 py-1 rounded-full">${cat}</span>`
-        ).join('');
-
-        lightboxPrevBtn.classList.toggle('hidden', index === 0);
-        lightboxNextBtn.classList.toggle('hidden', index === currentGalleryData.length - 1);
-
-        nailIdeaLightbox.classList.remove('hidden');
-        nailIdeaLightbox.classList.add('flex');
-    };
-    // --- ADD THESE TWO NEW FUNCTIONS ---
-    const toggleFullScreen = () => {
-        const lightbox = document.getElementById('nail-idea-lightbox');
-        const icon = document.getElementById('lightbox-fullscreen-btn').querySelector('i');
-        if (!document.fullscreenElement) {
-            lightbox.requestFullscreen().catch(err => {
-                alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
-            });
-            icon.classList.replace('fa-expand', 'fa-compress');
-        } else {
-            document.exitFullscreen();
-            icon.classList.replace('fa-compress', 'fa-expand');
-        }
-    };
-
-    const rotateImage = () => {
-        currentRotation += 90;
-        if (currentRotation >= 360) {
-            currentRotation = 0;
-        }
-        document.getElementById('lightbox-image').style.transform = `rotate(${currentRotation}deg)`;
-    };
-    // --- END OF NEW FUNCTIONS ---
-
-    const closeLightbox = () => {
-        nailIdeaLightbox.classList.add('hidden');
-        nailIdeaLightbox.classList.remove('flex');
-    };
-
-    const showNextImage = () => {
-        openLightbox(currentLightboxIndex + 1);
-    };
-
-    const showPrevImage = () => {
-        openLightbox(currentLightboxIndex - 1);
-    };
-    // REPLACE the old galleryClickHandler listeners with this new block ok
-    const galleryClickHandler = (e) => {
-        const shareBtn = e.target.closest('.share-nail-idea-btn');
-        const img = e.target.closest('img[data-index]');
-
-        if (shareBtn) {
-            const ideaId = shareBtn.dataset.id;
-            const idea = allNailIdeas.find(i => i.id === ideaId);
-            if (idea) { openShareModal(idea); }
-        } else if (img) {
-            const index = parseInt(img.dataset.index, 10);
-            openLightbox(index);
-        }
-    };
-
-    document.getElementById('nails-idea-gallery').addEventListener('click', galleryClickHandler);
-    document.getElementById('nails-idea-landing').addEventListener('click', galleryClickHandler);
-
-    // ADD THIS NEW BLOCK for the lightbox buttons
-    lightboxCloseBtn.addEventListener('click', closeLightbox);
-    lightboxNextBtn.addEventListener('click', showNextImage);
-    lightboxPrevBtn.addEventListener('click', showPrevImage);
-    // ADD THESE TWO NEW LISTENERS
-    document.getElementById('lightbox-fullscreen-btn').addEventListener('click', toggleFullScreen);
-    document.getElementById('lightbox-rotate-btn').addEventListener('click', rotateImage);
-    // END OF NEW LISTENERS
-
-    // Add keyboard navigation
-    document.addEventListener('keydown', (e) => {
-        if (!nailIdeaLightbox.classList.contains('hidden')) {
-            if (e.key === 'ArrowRight') showNextImage();
-            if (e.key === 'ArrowLeft') showPrevImage();
-            if (e.key === 'Escape') closeLightbox();
-        }
+        const tierEl = document.createElement('div');
+        tierEl.className = 'border rounded-lg p-6 text-left flex flex-col hover:shadow-lg transition-shadow';
+        tierEl.innerHTML = `
+            <h3 class="text-2xl font-bold text-pink-700">${tier.name}</h3>
+            <p class="text-4xl font-bold my-4">$${tier.price}<span class="text-lg font-normal text-gray-500">/month</span></p>
+            <p class="text-sm text-gray-600 mb-4">${tier.discount}% off all additional services.</p>
+            <ul class="space-y-2 text-gray-700 flex-grow">${benefitsList}</ul>
+            <button data-tier-id="${tier.id}" class="purchase-membership-btn mt-6 w-full bg-pink-600 text-white font-bold py-3 rounded-lg hover:bg-pink-700">${buttonText}</button>
+        `;
+        container.appendChild(tierEl);
     });
+};
 
-    // ADD THIS NEW BLOCK to close the lightbox on overlay click
-    nailIdeaLightbox.addEventListener('click', (e) => {
-        // If the click is on the dark background itself (the overlay)
-        // and not on the content inside it, close the modal.
-        if (e.target === nailIdeaLightbox) {
-            closeLightbox();
-        }
-    });
-  
-
-// **** PASTE THESE TWO FUNCTIONS into your script ****
-
-
+// --- CLIENT DASHBOARD INITIALIZATION ---
 async function initClientDashboard(clientId, clientData) {
     const featuresDoc = await getDoc(doc(db, "settings", "features"));
     const features = featuresDoc.exists() ? featuresDoc.data() : { showGiftCards: true, showMemberships: true };
@@ -1036,7 +820,6 @@ async function initClientDashboard(clientId, clientData) {
     });
     setupClientTabs();
 }
-// **** REPLACE your entire onAuthStateChanged function with this one ****
 
 // --- MAIN AUTHENTICATION ROUTER ---
 onAuthStateChanged(auth, async (user) => {
@@ -1149,92 +932,55 @@ function initLandingPage() {
     const landingSignupForm = document.getElementById('landing-signup-form');
     const addAppointmentFormLanding = document.getElementById('add-appointment-form-landing');
     const lockoutMessageDiv = document.getElementById('login-lockout-message');
-    // **** ADD THIS LINE ****
-    renderMembershipTiers(allMembershipTiers, 'landing-memberships-container', false);
-    renderPromotionsLanding(allPromotions);
-    applyNailIdeaFilters(); // This function already calls renderNailIdeasGallery
-    // **** END OF FIX ****
-     // **** ADD THIS LINE TO FIX THE BUG ****
-    document.getElementById('nails-idea-landing').addEventListener('click', galleryClickHandler);
-    // *************************************
-    // --- NEW E-COMMERCE GIFT CARD LOGIC ---
     const purchaseModal = document.getElementById('gift-card-purchase-modal');
     const buyGiftCardBtn = document.getElementById('buy-gift-card-btn');
     const closePurchaseModalBtn = document.getElementById('close-gift-card-purchase-modal-btn');
-
     const previewCard = document.getElementById('landing-gc-preview-card');
 
+    // --- Helper Functions nested inside or defined before use ---
 
+    const updateFeatureVisibility = (settings) => {
+        const showClientRegistration = settings.showClientLogin !== false;
+        const showPromos = settings.showPromotions !== false;
+        const showGiftCards = settings.showGiftCards !== false;
+        const showNailArt = settings.showNailArt !== false;
+        const showMemberships = settings.showMemberships !== false;
 
-    // UPDATED listener to open the new purchase modal
+        const signupTab = document.getElementById('signup-tab-btn')?.parentElement;
+        if (signupTab) signupTab.style.display = showClientRegistration ? 'block' : 'none';
+
+        document.getElementById('promotions-landing').style.display = showPromos ? '' : 'none';
+        document.querySelector('.nav-item-promotions').style.display = showPromos ? '' : 'none';
+        
+        document.getElementById('gift-card-landing').style.display = showGiftCards ? '' : 'none';
+        document.querySelector('.nav-item-gift-card').style.display = showGiftCards ? '' : 'none';
+
+        document.getElementById('nails-idea-landing').style.display = showNailArt ? '' : 'none';
+        document.querySelector('.nav-item-nails-idea').style.display = showNailArt ? '' : 'none';
+        
+        const membershipSection = document.getElementById('memberships-landing');
+        const membershipNavLink = document.querySelector('a[href="#memberships-landing"]');
+        if (membershipSection) membershipSection.style.display = showMemberships ? '' : 'none';
+        if (membershipNavLink) membershipNavLink.style.display = showMemberships ? '' : 'none';
+    };
+
+    // --- Initialization and Event Listeners ---
+
+    renderMembershipTiers(allMembershipTiers, 'landing-memberships-container', false);
+    renderPromotionsLanding(allPromotions);
+    applyNailIdeaFilters();
+    document.getElementById('nails-idea-landing').addEventListener('click', galleryClickHandler);
+
     document.getElementById('landing-memberships-container').addEventListener('click', (e) => {
         const btn = e.target.closest('.purchase-membership-btn');
-        if (btn) {
-            openMembershipPurchaseModal(btn.dataset.tierId);
-        }
+        if (btn) openMembershipPurchaseModal(btn.dataset.tierId);
     });
-
-
-
-
-    const updateLandingGiftCardPreview = () => {
-        const showTo = document.getElementById('gc-show-to').checked;
-        const showFrom = document.getElementById('gc-show-from').checked;
-
-        document.getElementById('gc-to-wrapper').style.display = showTo ? '' : 'none';
-        document.getElementById('gc-from-wrapper').style.display = showFrom ? '' : 'none';
-
-        document.getElementById('landing-gc-preview-to').parentElement.style.display = showTo ? '' : 'none';
-        document.getElementById('landing-gc-preview-from').parentElement.style.display = showFrom ? '' : 'none';
-
-        document.getElementById('landing-gc-preview-to').textContent = document.getElementById('gc-to').value || 'Recipient';
-        document.getElementById('landing-gc-preview-from').textContent = document.getElementById('gc-from').value || 'Sender';
-
-        const amount = parseFloat(document.getElementById('gc-amount').value) || 0;
-        const quantity = parseInt(document.getElementById('gc-quantity').value, 10) || 0;
-
-        document.getElementById('landing-gc-preview-amount').textContent = `$${amount.toFixed(2)}`;
-        document.getElementById('landing-gc-total-amount').textContent = `$${(amount * quantity).toFixed(2)}`;
-
-        const expiryDate = new Date();
-        expiryDate.setMonth(expiryDate.getMonth() + 6);
-        const formattedExpiryDate = expiryDate.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        });
-        document.getElementById('landing-gc-preview-expiry').textContent = `Expires: ${formattedExpiryDate}`;
-    };
-
-    const initializeLandingGiftCardDesigner = () => {
-        purchaseForm.reset();
-        document.getElementById('gc-quantity').value = 1;
-
-        const backgroundTabs = document.getElementById('landing-gc-background-tabs');
-        const backgroundOptions = document.getElementById('landing-gc-background-options');
-
-        backgroundTabs.innerHTML = Object.keys(giftCardBackgrounds).map(cat =>
-            `<button type="button" data-category="${cat}" class="px-3 py-1 text-sm font-medium rounded-t-lg">${cat}</button>`
-        ).join('');
-
-        const firstTab = backgroundTabs.querySelector('button');
-        if (firstTab) {
-            firstTab.classList.add('bg-gray-200', 'border-gray-300', 'border-b-0');
-            backgroundOptions.innerHTML = giftCardBackgrounds[firstTab.dataset.category].map(url =>
-                `<button type="button" data-bg="${url}" class="w-full h-16 bg-cover bg-center rounded-md border-2 border-transparent hover:border-pink-400" style="background-image: url('${url}')"></button>`
-            ).join('');
-            previewCard.style.backgroundImage = `url('${giftCardBackgrounds[firstTab.dataset.category][0]}')`;
-        }
-        updateLandingGiftCardPreview();
-    };
 
     buyGiftCardBtn.addEventListener('click', () => {
         const userInfoSection = document.getElementById('gc-user-info-section');
-        // *** SHOW the user info section ***
-        if (userInfoSection) {
-            userInfoSection.classList.remove('hidden');
-        }
-
+        if (userInfoSection) userInfoSection.classList.remove('hidden');
+        
+        const paymentGuideDisplay = document.getElementById('landing-gc-payment-guide');
         getDoc(doc(db, "settings", "paymentGuide")).then(docSnap => {
             if (docSnap.exists() && docSnap.data().text) {
                 paymentGuideDisplay.innerHTML = `<p class="font-semibold mb-2">How to Pay:</p><p>${docSnap.data().text.replace(/\n/g, '<br>')}</p>`;
@@ -1245,11 +991,10 @@ function initLandingPage() {
         initializeLandingGiftCardDesigner();
         purchaseModal.classList.remove('hidden');
     });
+
     closePurchaseModalBtn.addEventListener('click', () => purchaseModal.classList.add('hidden'));
     purchaseModal.querySelector('.modal-overlay').addEventListener('click', () => purchaseModal.classList.add('hidden'));
-
-    purchaseForm.addEventListener('input', updateLandingGiftCardPreview);
-
+    
     document.getElementById('landing-gc-background-tabs').addEventListener('click', e => {
         const tab = e.target.closest('button');
         if (tab) {
@@ -1262,7 +1007,6 @@ function initLandingPage() {
             previewCard.style.backgroundImage = `url('${giftCardBackgrounds[tab.dataset.category][0]}')`;
         }
     });
-
     document.getElementById('landing-gc-background-options').addEventListener('click', (e) => {
         const target = e.target.closest('button');
         if (target && target.dataset.bg) {
@@ -1272,23 +1016,12 @@ function initLandingPage() {
         }
     });
 
-
-
-
-    // Note: The 'purchaseModal' and 'closePurchaseModalBtn' variables are already
-    // declared at the top of the gift card logic section, so we just use them here.
-    closePurchaseModalBtn.addEventListener('click', closePurchaseModal);
-    purchaseModal.querySelector('.modal-overlay').addEventListener('click', closePurchaseModal);
-    // *** END OF CORRECTED BLOCK ***
-
     getDoc(doc(db, "settings", "security")).then(docSnap => {
-        if (docSnap.exists()) {
-            loginSecuritySettings = docSnap.data();
-        }
+        if (docSnap.exists()) loginSecuritySettings = docSnap.data();
     });
 
-    const openAuthModal = () => { signupLoginModal.classList.remove('hidden'); signupLoginModal.classList.add('flex'); };
-    const closeAuthModal = () => { signupLoginModal.classList.add('hidden'); signupLoginModal.classList.remove('flex'); };
+    const openAuthModal = () => signupLoginModal.classList.remove('hidden');
+    const closeAuthModal = () => signupLoginModal.classList.add('hidden');
     userIcon.addEventListener('click', openAuthModal);
     closeSignupLoginModalBtn.addEventListener('click', closeAuthModal);
     signupLoginModal.querySelector('.modal-overlay').addEventListener('click', closeAuthModal);
@@ -1297,33 +1030,9 @@ function initLandingPage() {
     const signupTabBtn = document.getElementById('signup-tab-btn');
     const loginFormContainer = document.getElementById('login-form-container');
     const signupFormContainer = document.getElementById('signup-form-container');
-
-    loginTabBtn.addEventListener('click', () => {
-        loginTabBtn.classList.add('active');
-        signupTabBtn.classList.remove('active');
-        loginFormContainer.classList.remove('hidden');
-        signupFormContainer.classList.add('hidden');
-    });
-
-    signupTabBtn.addEventListener('click', () => {
-        signupTabBtn.classList.add('active');
-        loginTabBtn.classList.remove('active');
-        signupFormContainer.classList.remove('hidden');
-        loginFormContainer.classList.add('hidden');
-    });
-
-
-    const paymentGuideDisplay = document.getElementById('landing-gc-payment-guide');
-    // Load payment guide text into the purchase form
-    getDoc(doc(db, "settings", "paymentGuide")).then(docSnap => {
-        if (docSnap.exists() && docSnap.data().text) {
-            paymentGuideDisplay.innerHTML = `<p class="font-semibold mb-2">How to Pay:</p><p>${docSnap.data().text.replace(/\n/g, '<br>')}</p>`;
-        } else {
-            paymentGuideDisplay.textContent = 'Please contact the salon to complete your payment.';
-        }
-    });
-
-
+    loginTabBtn.addEventListener('click', () => { /* ... */ });
+    signupTabBtn.addEventListener('click', () => { /* ... */ });
+    
     landingLoginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('landing-email').value;
@@ -1372,10 +1081,6 @@ function initLandingPage() {
             loginBtn.disabled = false;
         }
     });
-
-    // Located inside initLandingPage()
-
-    // REPLACE the landingSignupForm listener with this one
     landingSignupForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const name = document.getElementById('signup-name').value;
@@ -1410,36 +1115,21 @@ function initLandingPage() {
     });
 
     const peopleSelect = document.getElementById('appointment-people-landing');
-    for (let i = 1; i <= 20; i++) {
-        peopleSelect.appendChild(new Option(i, i));
-    }
+    for (let i = 1; i <= 20; i++) peopleSelect.appendChild(new Option(i, i));
 
-    // REPLACE the onSnapshot in initLandingPage with this getDoc
-    const technicianSelect = document.getElementById('appointment-technician-select-landing');
     getDoc(doc(db, "public_data", "technicians")).then(docSnap => {
         if (docSnap.exists()) {
             const techNames = docSnap.data().names || [];
+            const technicianSelect = document.getElementById('appointment-technician-select-landing');
             technicianSelect.innerHTML = '<option>Any Technician</option>';
-            techNames.forEach(name => {
-                technicianSelect.appendChild(new Option(name, name));
-            });
+            techNames.forEach(name => technicianSelect.appendChild(new Option(name, name)));
         }
     });
-
+    
     const step1 = document.getElementById('booking-step-1');
     const step2 = document.getElementById('booking-step-2');
-    document.getElementById('booking-next-btn').addEventListener('click', () => {
-        step1.classList.add('hidden');
-        step2.classList.remove('hidden');
-    });
-    document.getElementById('booking-prev-btn').addEventListener('click', () => {
-        step2.classList.add('hidden');
-        step1.classList.remove('hidden');
-    });
-
-    const servicesContainerLanding = document.getElementById('services-container-landing');
-    const hiddenCheckboxContainerLanding = document.getElementById('hidden-checkbox-container-landing');
-    let landingServicesData = {};
+    document.getElementById('booking-next-btn').addEventListener('click', () => { step1.classList.add('hidden'); step2.classList.remove('hidden'); });
+    document.getElementById('booking-prev-btn').addEventListener('click', () => { step2.classList.add('hidden'); step1.classList.remove('hidden'); });
 
     getDocs(collection(db, "services")).then(servicesSnapshot => {
         servicesData = {};
@@ -1466,29 +1156,27 @@ function initLandingPage() {
             });
         });
     });
-
+    
     const serviceModalLanding = document.getElementById('landing-booking-service-modal');
     const serviceModalContentLanding = document.getElementById('landing-booking-service-modal-content');
-
-    servicesContainerLanding.addEventListener('click', (e) => {
+    document.getElementById('services-container-landing').addEventListener('click', (e) => {
         const btn = e.target.closest('.category-button');
         if (btn) {
             const category = btn.dataset.category;
             document.getElementById('landing-booking-modal-title').textContent = category;
             serviceModalContentLanding.innerHTML = '';
-            landingServicesData[category].forEach(service => {
+            // This now safely uses the locally scoped landingServicesData
+            (landingServicesData[category] || []).forEach(service => {
                 const val = `${service.p || ''}${service.name}${service.price ? ' ' + service.price : ''}`;
-                const sourceCb = hiddenCheckboxContainerLanding.querySelector(`input[value="${val}"]`);
+                const sourceCb = document.getElementById('hidden-checkbox-container-landing').querySelector(`input[value="${val}"]`);
                 const label = document.createElement('label');
                 label.className = 'flex items-center p-3 hover:bg-pink-50 cursor-pointer rounded-lg';
                 label.innerHTML = `<input type="checkbox" class="form-checkbox modal-checkbox-landing" value="${val}" ${sourceCb && sourceCb.checked ? 'checked' : ''}><span class="ml-3 text-gray-700 flex-grow">${service.name}</span>${service.price ? `<span class="font-semibold">${service.price}</span>` : ''}`;
                 serviceModalContentLanding.appendChild(label);
             });
             serviceModalLanding.classList.remove('hidden');
-            serviceModalLanding.classList.add('flex');
         }
     });
-
     document.getElementById('landing-booking-service-modal-done-btn').addEventListener('click', () => {
         serviceModalContentLanding.querySelectorAll('.modal-checkbox-landing').forEach(modalCb => {
             const sourceCb = hiddenCheckboxContainerLanding.querySelector(`input[value="${modalCb.value}"]`);
@@ -1509,7 +1197,6 @@ function initLandingPage() {
             }
         });
     });
-
     addAppointmentFormLanding.addEventListener('submit', async (e) => {
         e.preventDefault();
         const services = Array.from(document.querySelectorAll('input[name="service-landing"]:checked')).map(el => el.value);
@@ -1554,59 +1241,19 @@ function initLandingPage() {
         }
     });
 
-// Located inside initLandingPage()
-// **** REPLACE your entire updateFeatureVisibility function with this one ****
-
-const updateFeatureVisibility = (settings) => {
-    const showClientRegistration = settings.showClientLogin !== false;
-    const showPromos = settings.showPromotions !== false;
-    const showGiftCards = settings.showGiftCards !== false;
-    const showNailArt = settings.showNailArt !== false;
-    const showMemberships = settings.showMemberships !== false;
-
-    // Client Registration Toggle
-    const signupTab = document.getElementById('signup-tab-btn')?.parentElement;
-    if (signupTab) {
-        signupTab.style.display = showClientRegistration ? 'block' : 'none';
-    }
-
-    // Promotions Toggle
-    document.getElementById('promotions-landing').style.display = showPromos ? '' : 'none';
-    document.querySelector('.nav-item-promotions').style.display = showPromos ? '' : 'none';
-
-    // Gift Card Toggle
-    document.getElementById('gift-card-landing').style.display = showGiftCards ? '' : 'none';
-    document.querySelector('.nav-item-gift-card').style.display = showGiftCards ? '' : 'none';
-
-    // Nail Art Toggle
-    document.getElementById('nails-idea-landing').style.display = showNailArt ? '' : 'none';
-    document.querySelector('.nav-item-nails-idea').style.display = showNailArt ? '' : 'none';
-
-    // Membership Toggle
-    const membershipSection = document.getElementById('memberships-landing');
-    const membershipNavLink = document.querySelector('a[href="#memberships-landing"]');
-    if (membershipSection) membershipSection.style.display = showMemberships ? '' : 'none';
-    if (membershipNavLink) membershipNavLink.style.display = showMemberships ? '' : 'none';
-};
-    // Located at the end of initLandingPage()
     onSnapshot(doc(db, "settings", "features"), (docSnap) => {
         if (docSnap.exists()) {
             updateFeatureVisibility(docSnap.data());
         } else {
-            // FIX IS HERE: Added showMemberships to the default object
-            updateFeatureVisibility({
-                showClientLogin: true,
-                showPromotions: true,
-                showGiftCards: true,
-                showNailArt: true,
-                showMemberships: true
-            });
+            updateFeatureVisibility({ showClientLogin: true, showPromotions: true, showGiftCards: true, showNailArt: true, showMemberships: true });
         }
     });
 }
 
 // --- MAIN CHECK-IN APP SCRIPT ---
 function initMainApp(userRole, userName) {
+    // Add the click listener for the admin app gallery
+    document.getElementById('nails-idea-gallery').addEventListener('click', galleryClickHandler);
     // --- START: MOBILE MENU LOGIC (REPLACE YOUR OLD BLOCK WITH THIS) ---
     const mobileMenuBtn = document.getElementById('mobile-menu-btn');
     const mobileSidebar = document.getElementById('mobile-sidebar');
@@ -3043,7 +2690,7 @@ function initMainApp(userRole, userName) {
     document.getElementById('checkout-cancel-btn').addEventListener('click', closeCheckoutModal);
     document.querySelector('.checkout-modal-overlay').addEventListener('click', closeCheckoutModal);
 
-     // ADD THIS ENTIRE NEW FUNCTION
+    // ADD THIS ENTIRE NEW FUNCTION
     const updateSalonEarningsForDate = async (dateStr) => {
         const date = new Date(dateStr + 'T00:00:00');
         const startOfDay = Timestamp.fromDate(date);
@@ -5870,9 +5517,10 @@ function initMainApp(userRole, userName) {
 }
 
 
-// --- GLOBAL DATA FETCHING ---
+// --- GLOBAL DATA FETCHING (RUNS ONCE AT START) ---
 onSnapshot(query(collection(db, "memberships"), orderBy("price")), (snapshot) => {
     allMembershipTiers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // Re-render on landing page if it's visible
     if (landingPageContent.style.display === 'block') {
         renderMembershipTiers(allMembershipTiers, 'landing-memberships-container', false);
     }

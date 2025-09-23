@@ -3043,7 +3043,7 @@ function initMainApp(userRole, userName) {
     document.getElementById('checkout-cancel-btn').addEventListener('click', closeCheckoutModal);
     document.querySelector('.checkout-modal-overlay').addEventListener('click', closeCheckoutModal);
 
-    // ADD THIS ENTIRE NEW FUNCTION
+     // ADD THIS ENTIRE NEW FUNCTION
     const updateSalonEarningsForDate = async (dateStr) => {
         const date = new Date(dateStr + 'T00:00:00');
         const startOfDay = Timestamp.fromDate(date);

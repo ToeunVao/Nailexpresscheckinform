@@ -5190,12 +5190,12 @@ function initMainApp(userRole, userName) {
 
     // ADD THIS NEW CODE BLOCK
 const nailShapes = {
-    'Almond': '<svg viewBox="0 0 100 120"><path class="nail" d="M50 0C10 0 0 50 0 100 L 100 100 C100 50 90 0 50 0Z"/></svg>',
-    'Square': '<svg viewBox="0 0 100 100"><path class="nail" d="M0 0 L 100 0 L 100 100 L 0 100 Z"/></svg>',
-    'Squoval': '<svg viewBox="0 0 100 100"><path class="nail" d="M0 20C0 9 9 0 20 0 L 80 0 C 91 0 100 9 100 20 L 100 100 L 0 100 Z"/></svg>',
-    'Round': '<svg viewBox="0 0 100 100"><path class="nail" d="M100 100 L 0 100 L 0 50 C0 22.4 22.4 0 50 0 C77.6 0 100 22.4 100 50 Z"/></svg>',
-    'Stiletto': '<svg viewBox="0 0 100 120"><path class="nail" d="M0 120 L 100 120 L 50 0 Z"/></svg>',
-    'Coffin': '<svg viewBox="0 0 100 120"><path class="nail" d="M20 0 L 80 0 L 100 120 L 0 120 Z"/></svg>'
+    'Almond': '<svg viewBox="0 0 100 150"><path class="nail" d="M50,0 C10,0 0,60 0,130 L100,130 C100,60 90,0 50,0 Z"/></svg>',
+    'Square': '<svg viewBox="0 0 100 150"><path class="nail" d="M5,0 L95,0 C98,0 100,2 100,5 L100,150 L0,150 L0,5 C0,2 2,0 5,0 Z"/></svg>',
+    'Squoval': '<svg viewBox="0 0 100 150"><path class="nail" d="M20,0 L80,0 C91,0 100,9 100,20 L100,150 L0,150 L0,20 C0,9 9,0 20,0 Z"/></svg>',
+    'Round': '<svg viewBox="0 0 100 150"><path class="nail" d="M100,150 L0,150 L0,50 C0,22.4 22.4,0 50,0 C77.6,0 100,22.4 100,50 Z"/></svg>',
+    'Stiletto': '<svg viewBox="0 0 100 150"><path class="nail" d="M50,0 C50,0 100,130 100,130 L100,150 L0,150 L0,130 C0,130 50,0 50,0 Z"/></svg>',
+    'Coffin': '<svg viewBox="0 0 100 150"><path class="nail" d="M30,0 L70,0 L100,150 L0,150 Z"/></svg>'
 };
 
 const shapeContainer = document.getElementById('nail-shape-preview-container');

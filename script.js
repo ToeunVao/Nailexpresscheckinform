@@ -990,6 +990,7 @@ const renderClientMembership = (clientData, clientId) => {
 };
 
 // **** Function 2: The Main Dashboard Function ****
+// REPLACE your old initClientDashboard function with this new one:
 async function initClientDashboard(clientId, clientData) {
     const featuresDoc = await getDoc(doc(db, "settings", "features"));
     const features = featuresDoc.exists() ? featuresDoc.data() : { showGiftCards: true, showMemberships: true };
@@ -1031,8 +1032,6 @@ async function initClientDashboard(clientId, clientData) {
         purchaseModal.classList.remove('hidden');
     };
 
-
-
     const renderClientGiftCards = (cards) => {
         const container = document.getElementById('client-gift-cards-container');
         if (!container) return;
@@ -1052,44 +1051,42 @@ async function initClientDashboard(clientId, clientData) {
         });
     };
 
-renderClientMembership(clientData, clientId);
+    renderClientMembership(clientData, clientId); // Pass clientId here
 
-// ...WITH this new setupClientNav function:
-const setupClientNav = () => {
-    const navContainer = document.getElementById('client-top-nav');
-    const contentSections = document.querySelectorAll('.client-tab-content');
+    const setupClientNav = () => {
+        const navContainer = document.getElementById('client-top-nav');
+        const contentSections = document.querySelectorAll('.client-tab-content');
+        
+        const navItems = [
+            { id: 'appointments', text: 'Appointments' },
+            { id: 'history', text: 'History' },
+            { id: 'favorites', text: 'My Favorites' },
+            { id: 'gift-cards', text: 'My Gift Cards' },
+            { id: 'membership', text: 'My Membership' }
+        ];
 
-    const navItems = [
-        { id: 'appointments', text: 'Appointments' },
-        { id: 'history', text: 'History' },
-        { id: 'favorites', text: 'My Favorites' },
-        { id: 'gift-cards', text: 'My Gift Cards' },
-        { id: 'membership', text: 'My Membership' }
-    ];
+        navContainer.innerHTML = navItems.map(item => 
+            `<button class="top-nav-btn" data-target="${item.id}-content">${item.text}</button>`
+        ).join('');
+        
+        const navButtons = navContainer.querySelectorAll('.top-nav-btn');
 
-    navContainer.innerHTML = navItems.map(item => 
-        `<button class="top-nav-btn" data-target="${item.id}-content">${item.text}</button>`
-    ).join('');
+        navContainer.addEventListener('click', (e) => {
+            const button = e.target.closest('.top-nav-btn');
+            if (!button) return;
 
-    const navButtons = navContainer.querySelectorAll('.top-nav-btn');
+            navButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
 
-    navContainer.addEventListener('click', (e) => {
-        const button = e.target.closest('.top-nav-btn');
-        if (!button) return;
+            contentSections.forEach(content => content.classList.add('hidden'));
+            const targetId = button.dataset.target;
+            document.getElementById(targetId).classList.remove('hidden');
+        });
 
-        navButtons.forEach(btn => btn.classList.remove('active'));
-        button.classList.add('active');
-
-        contentSections.forEach(content => content.classList.add('hidden'));
-        const targetId = button.dataset.target;
-        document.getElementById(targetId).classList.remove('hidden');
-    });
-
-    // Activate the first button by default
-    if (navButtons.length > 0) {
-        navButtons[0].click();
-    }
-};
+        if (navButtons.length > 0) {
+            navButtons[0].click();
+        }
+    };
 
     const renderClientAppointments = (appointments) => {
         const container = document.getElementById('client-upcoming-appointments');
@@ -1108,7 +1105,7 @@ const setupClientNav = () => {
     };
 
     const renderClientHistory = (history) => {
-        const container = document.getElementById('client-appointment-history');
+         const container = document.getElementById('client-appointment-history');
         container.innerHTML = '';
         if (history.length === 0) {
             container.innerHTML = '<p class="text-gray-500">You have no past appointments.</p>';
@@ -1129,7 +1126,7 @@ const setupClientNav = () => {
             return acc;
         }, {});
         const colorCounts = history.reduce((acc, visit) => {
-            if (visit.colorCode) acc[visit.colorCode] = (acc[visit.colorCode] || 0) + 1;
+            if(visit.colorCode) acc[visit.colorCode] = (acc[visit.colorCode] || 0) + 1;
             return acc;
         }, {});
         const favTech = Object.keys(techCounts).length > 0 ? Object.keys(techCounts).reduce((a, b) => techCounts[a] > techCounts[b] ? a : b) : 'N/A';
@@ -1139,11 +1136,11 @@ const setupClientNav = () => {
     };
 
     onSnapshot(query(collection(db, "appointments"), where("name", "==", clientData.name)), (snapshot) => {
-        const appointments = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+        const appointments = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
         renderClientAppointments(appointments);
     });
-    onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientData.name), orderBy("checkOutTimestamp", "desc")), (snapshot) => {
-        const history = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+     onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientData.name), orderBy("checkOutTimestamp", "desc")), (snapshot) => {
+        const history = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
         allFinishedClients = history;
         renderClientHistory(history);
         calculateAndRenderFavorites(history);
@@ -1193,8 +1190,9 @@ const setupClientNav = () => {
 
         if (downloadBtn) {
             const tier = allMembershipTiers.find(t => t.id === clientData.membership.tierId);
+            // THE FIX IS HERE: We pass an object with the ID included
             if (clientData && tier) {
-                openMembershipCardForPrint(clientData, tier);
+                openMembershipCardForPrint({ ...clientData, id: clientId }, tier);
             }
         }
         if (shareBtn) {
@@ -1219,7 +1217,7 @@ const setupClientNav = () => {
         openPurchaseModalForClient(clientData);
     });
 
-setupClientNav();
+    setupClientNav();
 }
 
 // REPLACE your old 'landing-membership-form' submit listener with this one

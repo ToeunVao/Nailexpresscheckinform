@@ -1,6 +1,14 @@
 body { font-family: 'Poppins', sans-serif; background-color: #FEFBF9; }
         h1, h2, h3, .clock { font-family: 'Playfair Display', serif; }
+.quick-nav-link {
+    @apply text-sm font-medium text-pink-600 bg-pink-50 px-3 py-1 rounded-full;
+    @apply hover:bg-pink-100 hover:text-pink-700 transition-colors;
+}
 
+#admin-quick-nav {
+    /* This ensures the nav bar stays at the top of the viewport when scrolling */
+    top: 70px; /* Adjust this value based on your main header's height */
+}
 .nail-shape-svg-wrapper {
     height: 100px;
     width: 80px;

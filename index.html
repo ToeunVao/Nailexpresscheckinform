@@ -366,12 +366,19 @@
             <div id="dashboard-content">
 
                 <div id="admin-dashboard-view" class="hidden">
-                  <div class="flex justify-end items-center mb-6 gap-2">
-    <label class="text-sm font-medium text-gray-700">Date Range:</label>
-    <select id="dashboard-range-filter"
-        class="form-select p-2 border border-gray-300 rounded-lg"></select>
-    <input type="date" id="dashboard-date-filter"
-        class="p-2 border border-gray-300 rounded-lg hidden">
+                 <div id="admin-quick-nav" class="sticky top-0 bg-white/80 backdrop-blur-md z-30 p-2 mb-6 rounded-lg shadow flex justify-between items-center">
+    <div class="flex items-center gap-2">
+        <span class="font-semibold text-sm text-gray-600">Quick Links:</span>
+        <a href="#staff-earning-cards-container" class="quick-nav-link">Staff Summary</a>
+        <a href="#salon-revenue-chart-container" class="quick-nav-link">Revenue Trend</a>
+        <a href="#admin-upcoming-appointments-list-container" class="quick-nav-link">Upcoming</a>
+        <a href="#dashboard-staff-earning-report-container" class="quick-nav-link">Earning Report</a>
+    </div>
+    <div class="flex items-center gap-2">
+        <label class="text-sm font-medium text-gray-700">Date Range:</label>
+        <select id="dashboard-range-filter" class="form-select p-2 border border-gray-300 rounded-lg"></select>
+        <input type="date" id="dashboard-date-filter" class="p-2 border border-gray-300 rounded-lg hidden">
+    </div>
 </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -417,12 +424,12 @@
                         </div>
                     </div>
                   
-                    <div class="bg-white p-6 rounded-2xl shadow-lg h-96 mb-8">
+                    <div id="salon-revenue-chart-container" class="bg-white p-6 rounded-2xl shadow-lg h-96 mb-8">
                         <h3 class="text-xl font-bold text-gray-700 mb-4">Salon Revenue Trend</h3>
                         <canvas id="salon-revenue-chart"></canvas>
                     </div>
 
-                     <div class="mt-8 mb-8 bg-white p-6 rounded-2xl shadow-lg">
+                    <div id="admin-upcoming-appointments-list-container" class="mt-8 mb-8 bg-white p-6 rounded-2xl shadow-lg">
     <div class="flex justify-between items-center mb-4">
         <h3 class="text-xl font-bold text-gray-700">Upcoming Appointments</h3>
         <div id="tech-filter-container-dashboard-appointments" class="tech-filter-container flex gap-2 flex-wrap">
@@ -435,7 +442,7 @@
 </div>
                     
 
-                    <div class="mt-8 bg-white p-6 rounded-2xl shadow-lg">
+                   <div id="dashboard-staff-earning-report-container" class="mt-8 bg-white p-6 rounded-2xl shadow-lg">
                         <h3
                             class="text-xl font-bold text-gray-700 border-b pb-3 mb-6 flex justify-between items-center">
                            <span id="dashboard-staff-earning-title">Staff Earning Report</span>

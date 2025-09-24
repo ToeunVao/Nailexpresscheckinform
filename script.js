@@ -5876,13 +5876,14 @@ const handleSaveAndPrint = async () => {
             <style>
                 body{font-family:'Poppins',sans-serif;margin:0;background-color:#f0f0f0;}
                 .font-parisienne{font-family:'Parisienne',cursive;}
-                .card-container{display:grid;grid-template-columns:repeat(2, 1fr);gap:20px; page-break-after: always; padding: 20px;}
+                .print-page { display: flex; flex-wrap: wrap; justify-content: start; align-content: start; gap: 10mm; padding: 10mm; page-break-after: always; }
+                .card-container{display:grid;grid-template-columns:repeat(2, 1fr);gap:0; width: fit-content;}
                 .card{width:400px;height:228px;text-shadow:1px 1px 3px rgba(0,0,0,0.6);box-shadow: 0 4px 8px rgba(0,0,0,0.2);-webkit-print-color-adjust: exact !important; color-adjust: exact !important;}
                 @media print {
                     body { padding: 0; background-color: #fff; }
-                    .card-container { padding: 10mm; gap: 10mm; }
+                    .card { box-shadow: none; border: 1px solid #eee; }
                 }
-            </style></head><body>
+            </style></head><body><div class="print-page">
         `;
 
         cardsToPrint.forEach(card => {
@@ -5919,7 +5920,7 @@ const handleSaveAndPrint = async () => {
             `;
         });
 
-        printHTML += '</body></html>';
+        printHTML += '</div></body></html>';
         
         const printWindow = window.open('', '_blank');
         printWindow.document.write(printHTML);

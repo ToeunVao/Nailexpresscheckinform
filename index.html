@@ -253,35 +253,36 @@
     </div>
 
     <div id="client-dashboard-content" style="display: none;">
-        <header class="bg-white shadow-md">
-            <div class="container mx-auto max-w-5xl p-4 flex justify-between items-center">
-                <div>
-                    <h1 class="text-2xl font-bold text-pink-700">My Dashboard</h1>
-                    <p id="client-welcome-name" class="text-sm text-gray-500">Welcome back!</p>
-                </div>
-                <button id="client-sign-out-btn"
-                    class="bg-pink-100 text-pink-700 font-semibold py-2 px-4 rounded-lg hover:bg-pink-200 transition-colors">
-                    Sign Out <i class="fas fa-sign-out-alt ml-2"></i>
-                </button>
-            </div>
-        </header>
+<header class="bg-white shadow-md">
+    <div class="container mx-auto max-w-5xl p-4 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-pink-700">My Dashboard</h1>
+            <p id="client-welcome-name" class="text-sm text-gray-500">Welcome back!</p>
+        </div>
+        <button id="client-sign-out-btn"
+            class="bg-pink-100 text-pink-700 font-semibold py-2 px-4 rounded-lg hover:bg-pink-200 transition-colors">
+            Sign Out <i class="fas fa-sign-out-alt ml-2"></i>
+        </button>
+    </div>
+</header>
+
+<header class="bg-white shadow-md">
+    <div class="container mx-auto max-w-5xl p-4 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-pink-700">My Dashboard</h1>
+            <p id="client-welcome-name" class="text-sm text-gray-500">Welcome back!</p>
+        </div>
+        <div class="flex items-center gap-4">
+            <nav id="client-top-nav" class="hidden md:flex items-center gap-2 text-sm font-semibold text-gray-600">
+                </nav>
+            <button id="client-sign-out-btn" class="bg-pink-100 text-pink-700 font-semibold p-2 rounded-lg hover:bg-pink-200 transition-colors h-10 w-10 flex items-center justify-center">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+        </div>
+    </div>
+</header>
 
         <main class="container mx-auto max-w-5xl p-4 sm:p-6 lg:p-8">
-            <div class="mb-4 border-b border-gray-200">
-               <ul class="flex flex-wrap -mb-px text-sm font-medium text-center scrollable-tabs" id="client-dashboard-tabs">
-                    <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg active"
-                            id="appointments-tab" type="button">Appointments</button></li>
-                    <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg" id="history-tab"
-                            type="button">History</button></li>
-                    <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg" id="favorites-tab"
-                            type="button">My Favorites</button></li>
-                    <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg" id="gift-cards-tab"
-                            type="button">My Gift Cards</button></li>
-                    <li class="mr-2"><button class="tab-btn inline-block p-4 border-b-2 rounded-t-lg" id="membership-tab" 
-                            type="button">My Membership</button></li>
-                </ul>
-            </div>
-
             <div id="appointments-content" class="client-tab-content">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-xl font-semibold text-gray-700">Upcoming Appointments</h3>
@@ -1550,23 +1551,30 @@
                                                         ($)</label><input type="number" id="designer-amount"
                                                         class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg"
                                                         required></div>
-                                                <div class="border-t pt-4">
-                                                    <label for="designer-set-expiry"
-                                                        class="flex items-center gap-2"><input type="checkbox"
-                                                            id="designer-set-expiry" class="form-checkbox"> Set
-                                                        Expiration Date</label>
-                                                    <div id="designer-expiry-inputs"
-                                                        class="flex items-center gap-2 mt-2 hidden">
-                                                        <input type="number" id="designer-expiry-value"
-                                                            class="form-input w-24 p-2 border-gray-300 rounded-lg"
-                                                            min="1" value="12">
-                                                        <select id="designer-expiry-unit"
-                                                            class="form-select p-2 border-gray-300 rounded-lg">
-                                                            <option value="months">Months</option>
-                                                            <option value="years">Years</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
+<div class="border-t pt-4">
+    <label for="designer-set-expiry" class="flex items-center gap-2"><input type="checkbox" id="designer-set-expiry" class="form-checkbox"> Set Expiration Date</label>
+    <div id="designer-expiry-inputs" class="flex items-center gap-2 mt-2 hidden">
+        <input type="number" id="designer-expiry-value" class="form-input w-24 p-2 border-gray-300 rounded-lg" min="1" value="12">
+        <select id="designer-expiry-unit" class="form-select p-2 border-gray-300 rounded-lg">
+            <option value="months">Months</option>
+            <option value="years">Years</option>
+        </select>
+    </div>
+</div>
+
+<div class="border-t pt-4">
+    <div class="flex items-center gap-6">
+        <label for="designer-set-expiry" class="flex items-center gap-2"><input type="checkbox" id="designer-set-expiry" class="form-checkbox"> Set Expiration Date</label>
+        <label for="designer-no-expiry" class="flex items-center gap-2"><input type="checkbox" id="designer-no-expiry" class="form-checkbox"> No Expiration (Handwritten)</label>
+    </div>
+    <div id="designer-expiry-inputs" class="flex items-center gap-2 mt-2 hidden">
+        <input type="number" id="designer-expiry-value" class="form-input w-24 p-2 border-gray-300 rounded-lg" min="1" value="12">
+        <select id="designer-expiry-unit" class="form-select p-2 border-gray-300 rounded-lg">
+            <option value="months">Months</option>
+            <option value="years">Years</option>
+        </select>
+    </div>
+</div>
                                                 <div class="border-t pt-4">
                                                     <label for="designer-quantity"
                                                         class="block text-sm font-medium text-gray-600">Quantity to

@@ -905,7 +905,7 @@ onAuthStateChanged(auth, async (user) => {
 
 // **** PASTE THESE TWO COMPLETE FUNCTIONS in place of your old initClientDashboard ****
 // REPLACE your old renderClientMembership function with this new one:
-const renderClientMembership = (clientData, clientId) => { // Added clientId parameter
+const renderClientMembership = (clientData, clientId) => {
     const container = document.getElementById('client-membership-display');
     if (!container) return;
 
@@ -917,7 +917,6 @@ const renderClientMembership = (clientData, clientId) => { // Added clientId par
                 startDate = clientData.membership.startDate.toDate().toLocaleDateString();
             }
 
-            // FIXED: Now uses the correct clientId variable
             const memberId = clientId ? clientId.split('').map(char => char.charCodeAt(0)).join('').substring(0, 6) : 'N/A';
 
             const benefitsList = tier.benefits.split('\n').map(b => `<li class="flex items-start"><span class="text-green-500 mr-2">✔</span><span>${b}</span></li>`).join('');
@@ -929,13 +928,14 @@ const renderClientMembership = (clientData, clientId) => { // Added clientId par
             if (tier.name.toLowerCase().includes('gold')) cardStyle = 'from-yellow-400 via-yellow-500 to-yellow-600';
             if (tier.name.toLowerCase().includes('platinum')) cardStyle = 'from-indigo-500 via-purple-600 to-pink-600';
 
+            // UPDATED: Changed grid-cols-3 to grid-cols-2 and removed col-span-2
             container.innerHTML = `
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                    <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-lg">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                    <div class="bg-white p-6 rounded-lg shadow-lg">
                         <div class="flex justify-between items-start mb-4">
                             <div>
                                 <h3 class="text-2xl font-bold text-pink-700 flex items-end gap-3">
-                                    <span>💎 ${tier.name} Tier</span>
+                                    <span>${tier.name} Tier</span>
                                     <span class="text-xl font-bold text-gray-600">$${tier.price}/month</span>
                                 </h3>
                                 <p class="text-sm text-gray-500">Member since ${startDate}</p>
@@ -949,7 +949,7 @@ const renderClientMembership = (clientData, clientId) => { // Added clientId par
                         ${status === 'Pending' ? '<p class="mt-4 text-center text-sm bg-yellow-100 text-yellow-800 p-3 rounded-lg">Your membership is pending approval. Please contact the salon to complete payment and activate your benefits.</p>' : ''}
                     </div>
                     <div class="space-y-3">
-                        <div class="w-full h-[200px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-gradient-to-br ${cardStyle} text-white" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.4);">
+                        <div class="w-full h-[228px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-gradient-to-br ${cardStyle} text-white" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.4);">
                             <div class="flex justify-between items-start">
                                 <div class="font-bold text-lg"><p>${tier.name}</p><p class="text-xs font-normal opacity-80">MEMBERSHIP</p></div>
                                 <p class="font-parisienne text-3xl">Nails Express</p>

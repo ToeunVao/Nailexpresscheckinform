@@ -454,7 +454,54 @@ async function sendBookingNotificationEmail(appointmentData) {
         console.error("Error queuing booking notification email:", error);
     }
 }
+// PASTE THESE TWO NEW FUNCTIONS
+async function sendGiftCardConfirmationEmail(details) {
+    if (!details.buyerEmail) return;
+    try {
+        const templateDoc = await getDoc(doc(db, "settings", "emailTemplates"));
+        if (!templateDoc.exists()) return;
+        const templates = templateDoc.data();
 
+        let subject = templates.giftCardSubject || 'Your Gift Card Request from Nails Express';
+        let body = templates.giftCardBody || 'Thank you, {clientName}, for your gift card purchase of {amount}.';
+
+        body = body.replace(/{clientName}/g, details.buyerName)
+                   .replace(/{amount}/g, `$${(details.amount * details.quantity).toFixed(2)}`)
+                   .replace(/{recipientName}/g, details.recipientName)
+                   .replace(/{senderName}/g, details.senderName)
+                   .replace(/\n/g, '<br>');
+
+        await addDoc(collection(db, "mail"), {
+            to: details.buyerEmail,
+            message: { subject: subject, html: body },
+        });
+    } catch (error) {
+        console.error("Error sending gift card confirmation email:", error);
+    }
+}
+
+async function sendMembershipConfirmationEmail(details) {
+    if (!details.email) return;
+    try {
+        const templateDoc = await getDoc(doc(db, "settings", "emailTemplates"));
+        if (!templateDoc.exists()) return;
+        const templates = templateDoc.data();
+
+        let subject = templates.membershipSubject || 'Welcome to the Nails Express VIP Membership!';
+        let body = templates.membershipBody || 'Hi {clientName}, thank you for joining our {tierName} membership. Your request is pending payment confirmation.';
+
+        body = body.replace(/{clientName}/g, details.name)
+                   .replace(/{tierName}/g, details.tierName)
+                   .replace(/\n/g, '<br>');
+
+        await addDoc(collection(db, "mail"), {
+            to: details.email,
+            message: { subject: subject, html: body },
+        });
+    } catch (error) {
+        console.error("Error sending membership confirmation email:", error);
+    }
+}
 // --- Booking Validation Logic ---
 function isBookingTimeValid(bookingDate) {
     const dayOfWeek = bookingDate.getDay();
@@ -1269,8 +1316,8 @@ document.getElementById('landing-membership-form').addEventListener('submit', as
 
             sessionStorage.setItem('pendingMembershipPurchase', tierId);
             sessionStorage.setItem('signupDetails', JSON.stringify({ name, email, phone }));
-
             await createUserWithEmailAndPassword(auth, email, phone);
+            await sendMembershipConfirmationEmail({ name, email, phone, tierName: tier.name });
             closeMembershipPurchaseModal();
             // onAuthStateChanged will handle the rest
         }
@@ -1378,6 +1425,7 @@ purchaseForm.addEventListener('submit', async (e) => {
             };
             sessionStorage.setItem('pendingGiftCardPurchase', JSON.stringify(purchaseDetails));
             // onAuthStateChanged will handle the rest
+            await sendGiftCardConfirmationEmail(purchaseDetails);
             // **** FIX FOR NEW USER ****
             closePurchaseModal();
 
@@ -2146,6 +2194,36 @@ function initMainApp(userRole, userName) {
     const logUsageModal = document.getElementById('log-usage-modal');
     const logUsageForm = document.getElementById('log-usage-form');
     const shareModal = document.getElementById('share-modal');
+    // PASTE THIS CODE BLOCK
+const emailTemplatesForm = document.getElementById('email-templates-form');
+if (emailTemplatesForm) {
+    getDoc(doc(db, "settings", "emailTemplates")).then(docSnap => {
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            document.getElementById('gift-card-subject').value = data.giftCardSubject || '';
+            document.getElementById('gift-card-body').value = data.giftCardBody || '';
+            document.getElementById('membership-subject').value = data.membershipSubject || '';
+            document.getElementById('membership-body').value = data.membershipBody || '';
+        }
+    });
+
+    emailTemplatesForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const templateData = {
+            giftCardSubject: document.getElementById('gift-card-subject').value,
+            giftCardBody: document.getElementById('gift-card-body').value,
+            membershipSubject: document.getElementById('membership-subject').value,
+            membershipBody: document.getElementById('membership-body').value,
+        };
+        try {
+            await setDoc(doc(db, "settings", "emailTemplates"), templateData);
+            alert("Email templates saved successfully!");
+        } catch (error) {
+            console.error("Error saving email templates:", error);
+            alert("Could not save email templates.");
+        }
+    });
+}
     const editGiftCardModal = document.getElementById('edit-gift-card-modal');
     const clientProfileModal = document.getElementById('client-profile-modal');
 

@@ -1,5 +1,68 @@
 body { font-family: 'Poppins', sans-serif; background-color: #FEFBF9; }
         h1, h2, h3, .clock { font-family: 'Playfair Display', serif; }
+/* Royalty Card Display on Client Dashboard */
+.royalty-card-container {
+    max-width: 450px;
+    margin: 1rem auto;
+    padding: 1.5rem;
+    background-color: #fff;
+    border-radius: 1rem;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.royalty-card {
+    border-radius: 0.75rem;
+    padding: 1rem;
+    background-image: linear-gradient(to br, #fff1f2, #ffe4e6); /* rose-50 to rose-100 */
+    border: 1px solid #fecdd3; /* rose-200 */
+    color: #9f1239; /* rose-900 */
+}
+
+.royalty-card-header {
+    text-align: center;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px dashed #fda4af; /* rose-300 */
+}
+
+.stamp-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+    padding: 1.5rem 0;
+}
+
+.stamp {
+    width: 50px;
+    height: 50px;
+    border: 2px dashed #fb7185; /* rose-400 */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #fb7185; /* rose-400 */
+    margin: auto;
+    transition: all 0.3s ease;
+}
+
+.stamp.stamped {
+    background-color: #f43f5e; /* rose-500 */
+    border-color: #f43f5e; /* rose-500 */
+    color: white;
+    transform: scale(1.1);
+}
+
+.stamp.stamped .fa-cut {
+    font-size: 1.5rem;
+}
+
+.royalty-card-footer {
+    text-align: center;
+    padding-top: 0.5rem;
+    border-top: 1px dashed #fda4af; /* rose-300 */
+    font-weight: 600;
+}
 /* Royalty Card Specific Styles */
 .royalty-card-header {
     text-align: center;

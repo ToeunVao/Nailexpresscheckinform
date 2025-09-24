@@ -904,22 +904,21 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 // **** PASTE THESE TWO COMPLETE FUNCTIONS in place of your old initClientDashboard ****
-
 // REPLACE your old renderClientMembership function with this new one:
-const renderClientMembership = (clientData) => {
+const renderClientMembership = (clientData, clientId) => { // Added clientId parameter
     const container = document.getElementById('client-membership-display');
     if (!container) return;
 
     if (clientData.membership && allMembershipTiers.length > 0) {
         const tier = allMembershipTiers.find(t => t.id === clientData.membership.tierId);
         if (tier) {
-            let startDate = new Date().toLocaleDateString(); // Default to today for new signups
+            let startDate = new Date().toLocaleDateString();
             if (clientData.membership.startDate && typeof clientData.membership.startDate.toDate === 'function') {
                 startDate = clientData.membership.startDate.toDate().toLocaleDateString();
             }
 
-            // ADDED: Logic to generate the numeric Member ID
-            const memberId = clientData.id ? clientData.id.split('').map(char => char.charCodeAt(0)).join('').substring(0, 6) : 'N/A';
+            // FIXED: Now uses the correct clientId variable
+            const memberId = clientId ? clientId.split('').map(char => char.charCodeAt(0)).join('').substring(0, 6) : 'N/A';
 
             const benefitsList = tier.benefits.split('\n').map(b => `<li class="flex items-start"><span class="text-green-500 mr-2">✔</span><span>${b}</span></li>`).join('');
             const status = clientData.membership.status || 'Active';
@@ -936,7 +935,7 @@ const renderClientMembership = (clientData) => {
                         <div class="flex justify-between items-start mb-4">
                             <div>
                                 <h3 class="text-2xl font-bold text-pink-700 flex items-end gap-3">
-                                    <span>${tier.name} Tier</span>
+                                    <span>💎 ${tier.name} Tier</span>
                                     <span class="text-xl font-bold text-gray-600">$${tier.price}/month</span>
                                 </h3>
                                 <p class="text-sm text-gray-500">Member since ${startDate}</p>
@@ -969,8 +968,8 @@ const renderClientMembership = (clientData) => {
                         <div class="flex justify-between items-center pt-2 px-2">
                             <span class="text-sm text-gray-500">Your digital card</span>
                             <div class="flex gap-4">
-                                <button data-client-id="${clientData.id}" class="download-membership-btn text-gray-500 hover:text-blue-600 text-xl" title="Download/Print"><i class="fas fa-download"></i></button>
-                                <button data-client-id="${clientData.id}" class="share-membership-btn text-gray-500 hover:text-pink-600 text-xl" title="Share"><i class="fas fa-share-alt"></i></button>
+                                <button data-client-id="${clientId}" class="download-membership-btn text-gray-500 hover:text-blue-600 text-xl" title="Download/Print"><i class="fas fa-download"></i></button>
+                                <button data-client-id="${clientId}" class="share-membership-btn text-gray-500 hover:text-pink-600 text-xl" title="Share"><i class="fas fa-share-alt"></i></button>
                             </div>
                         </div>
                     </div>
@@ -1053,7 +1052,7 @@ async function initClientDashboard(clientId, clientData) {
         });
     };
 
-    renderClientMembership(clientData);
+renderClientMembership(clientData, clientId);
 
 // ...WITH this new setupClientNav function:
 const setupClientNav = () => {

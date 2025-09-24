@@ -5766,42 +5766,43 @@ const updateDesignerPreview = () => {
         }
     };
 
-    const initializeGiftCardDesigner = () => {
-        designerForm.reset();
-        document.getElementById('designer-quantity').value = 1;
-        document.getElementById('preview-code').textContent = `GC-${Date.now()}${[...Array(4)].map(() => Math.floor(Math.random() * 10)).join('')}`;
+const initializeGiftCardDesigner = () => {
+    designerForm.reset();
+    document.getElementById('designer-quantity').value = 1;
+    document.getElementById('preview-code').textContent = `GC-${Date.now()}${[...Array(4)].map(() => Math.floor(Math.random() * 10)).join('')}`;
 
-        designerBackgroundTabs.innerHTML = Object.keys(giftCardBackgrounds).map(cat =>
-            `<button type="button" data-category="${cat}" class="px-3 py-1 text-sm font-medium rounded-t-lg">${cat}</button>`
-        ).join('');
+    designerBackgroundTabs.innerHTML = Object.keys(giftCardBackgrounds).map(cat =>
+        `<button type="button" data-category="${cat}" class="px-3 py-1 text-sm font-medium rounded-t-lg">${cat}</button>`
+    ).join('');
 
-        const firstTab = designerBackgroundTabs.querySelector('button');
-        if (firstTab) {
-            firstTab.classList.add('bg-gray-200', 'border-gray-300', 'border-b-0');
-            populateBackgrounds(firstTab.dataset.category);
+    const firstTab = designerBackgroundTabs.querySelector('button');
+    if (firstTab) {
+        firstTab.classList.add('bg-gray-200', 'border-gray-300', 'border-b-0');
+        populateBackgrounds(firstTab.dataset.category);
+    }
+
+    const setExpiryCheck = document.getElementById('designer-set-expiry');
+    const noExpiryCheck = document.getElementById('designer-no-expiry');
+    const expiryInputs = document.getElementById('designer-expiry-inputs');
+
+    setExpiryCheck.addEventListener('change', (e) => {
+        if (e.target.checked) {
+            noExpiryCheck.checked = false;
         }
+        expiryInputs.classList.toggle('hidden', !e.target.checked);
+        updateDesignerPreview();
+    });
 
-// PASTE THIS CODE inside initializeGiftCardDesigner()
-const setExpiryCheck = document.getElementById('designer-set-expiry');
-const noExpiryCheck = document.getElementById('designer-no-expiry');
-const expiryInputs = document.getElementById('designer-expiry-inputs');
+    noExpiryCheck.addEventListener('change', (e) => {
+        if (e.target.checked) {
+            setExpiryCheck.checked = false;
+            expiryInputs.classList.add('hidden');
+        }
+        updateDesignerPreview();
+    });
 
-setExpiryCheck.addEventListener('change', (e) => {
-    if (e.target.checked) {
-        noExpiryCheck.checked = false;
-    }
-    expiryInputs.classList.toggle('hidden', !e.target.checked);
     updateDesignerPreview();
-});
-
-noExpiryCheck.addEventListener('change', (e) => {
-    if (e.target.checked) {
-        setExpiryCheck.checked = false;
-        expiryInputs.classList.add('hidden');
-    }
-    updateDesignerPreview();
-});
-
+};
     designerBackgroundTabs.addEventListener('click', e => {
         const tab = e.target.closest('button');
         if (tab) {

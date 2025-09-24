@@ -681,12 +681,17 @@ const initializeMembershipPurchaseForm = (selectedTierId, clientData = null) => 
 
             previewCard.className = `w-[350px] h-[200px] shadow-lg rounded-lg p-4 flex flex-col justify-between bg-gradient-to-br ${cardStyle} text-white transition-all duration-300`;
             previewCard.innerHTML = `
-                <div class="flex justify-between items-start">
-                    <div class="font-bold text-lg"><p>${tier.name}</p><p class="text-xs font-normal opacity-80">MEMBERSHIP</p></div>
-                    <p class="font-parisienne text-3xl">Nails Express</p>
-                </div>
-                <div class="text-left"><p class="text-xs opacity-80">MEMBER</p><p class="text-2xl font-semibold tracking-wider">${buyerName}</p></div>
-                <div class="text-right text-xs opacity-80">Member Since: ${new Date().toLocaleDateString()}</div>
+                 <div class="flex justify-between items-start">
+        <div class="font-bold text-lg"><p>${tier.name}</p><p class="text-xs font-normal opacity-80">MEMBERSHIP</p></div>
+        <p class="font-parisienne text-3xl">Nails Express</p>
+    </div>
+    <div class="flex justify-between items-end">
+        <div class="text-left"><p class="text-xs opacity-80">MEMBER</p><p class="text-2xl font-semibold tracking-wider">${buyerName}</p></div>
+        <div class="text-right text-xs opacity-80">
+            <p>Member Since: ${new Date().toLocaleDateString()}</p>
+            <p>Member ID: SAMPLE${Date.now().toString().slice(-4)}</p>
+        </div>
+    </div>
             `;
         }
     };

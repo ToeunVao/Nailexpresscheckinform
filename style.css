@@ -1,5 +1,30 @@
 body { font-family: 'Poppins', sans-serif; background-color: #FEFBF9; }
         h1, h2, h3, .clock { font-family: 'Playfair Display', serif; }
+/* Royalty Card Specific Styles */
+.royalty-card-header {
+    text-align: center;
+    padding-top: 8px;
+    color: #831843; /* pink-900 */
+}
+.stamp-grid-designer {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    padding: 0 16px;
+}
+.stamp-outline {
+    width: 40px;
+    height: 40px;
+    border: 2px dashed #fb7185; /* rose-400 */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    color: #fb7185; /* rose-400 */
+    margin: auto;
+}
 .quick-nav-link {
     @apply text-sm font-medium text-pink-600 bg-pink-50 px-3 py-1 rounded-full;
     @apply hover:bg-pink-100 hover:text-pink-700 transition-colors;

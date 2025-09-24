@@ -47,6 +47,9 @@ let allPromotions = [];
 let allNailIdeas = [];
 let currentGalleryData = [];
 let currentRotation = 0; // <-- PASTE it here
+let royaltySettings = { visitsNeeded: 10, rewardDescription: 'One Free Classic Manicure' };
+let allRoyaltyCards = [];
+
 
 // ADD THIS ENTIRE NEW BLOCK for the lightbox
 const nailIdeaLightbox = document.getElementById('nail-idea-lightbox');
@@ -64,7 +67,7 @@ let currentLightboxIndex = 0;
 
 const giftCardBackgrounds = {
     'General': [
-        'https://png.pngtree.com/thumb_back/fh260/background/20240930/pngtree-christmas-banner-with-happy-new-year-festive-for-celebrations-image_16282636.jpg',
+        'https://img.freepik.com/premium-photo/women-s-legs-with-bright-pedicure-pink-background-chamomile-flower-decoration-spa-pedicure-skincare-concept_256259-166.jpg',
         'https://png.pngtree.com/thumb_back/fh260/background/20250205/pngtree-soft-pastel-floral-design-light-blue-background-image_16896113.jpg',
         'https://files.123freevectors.com/wp-content/original/119522-abstract-pastel-pink-background-image.jpg'
     ],
@@ -861,6 +864,8 @@ onAuthStateChanged(auth, async (user) => {
                         // NEW Client User (just signed up)
                         const pendingPurchaseJSON = sessionStorage.getItem('pendingGiftCardPurchase');
                         const pendingMembershipId = sessionStorage.getItem('pendingMembershipPurchase');
+                        const pendingRoyaltyJSON = sessionStorage.getItem('pendingRoyaltyCard'); // <-- ADD THIS LINE
+    
                         let newClientData;
 
                         if (pendingPurchaseJSON) {
@@ -917,7 +922,23 @@ onAuthStateChanged(auth, async (user) => {
                             sessionStorage.removeItem('pendingMembershipPurchase');
                             sessionStorage.removeItem('signupDetails');
                             alert("Welcome! Your account and membership request have been sent.");
-                        } else {
+                        } else if (pendingRoyaltyJSON) { // <-- ADD THIS ENTIRE ELSE IF BLOCK
+        const details = JSON.parse(pendingRoyaltyJSON);
+        newClientData = { 
+            name: details.name, 
+            email: details.email, 
+            phone: details.phone, 
+            role: 'client', 
+            createdAt: serverTimestamp(),
+            royaltyCard: {
+                visits: 0,
+                lastVisit: null
+            }
+        };
+        await setDoc(doc(db, "clients", user.uid), newClientData);
+        sessionStorage.removeItem('pendingRoyaltyCard');
+        alert("Welcome! Your Royalty Card is active. We'll see you soon!");
+    } else {
                             const details = JSON.parse(sessionStorage.getItem('signupDetails'));
                             if (details) {
                                 newClientData = { name: details.name, email: details.email, phone: details.phone, role: 'client', createdAt: serverTimestamp() };
@@ -1109,7 +1130,8 @@ async function initClientDashboard(clientId, clientData) {
             { id: 'history', text: 'History' },
             { id: 'favorites', text: 'My Favorites' },
             { id: 'gift-cards', text: 'My Gift Cards' },
-            { id: 'membership', text: 'My Membership' }
+            { id: 'membership', text: 'My Membership' },
+            { id: 'royalty-card', text: 'Royalty Card' } // <-- ADD THIS ITEM
         ];
 
         navContainer.innerHTML = navItems.map(item => 
@@ -1165,6 +1187,50 @@ async function initClientDashboard(clientId, clientData) {
             container.appendChild(el);
         });
     };
+
+    // PASTE THIS NEW FUNCTION inside initClientDashboard
+const renderClientRoyaltyCard = (clientData) => {
+    const container = document.getElementById('royalty-card-content');
+    if (!clientData.royaltyCard) {
+        container.innerHTML = `
+            <div class="text-center p-8 bg-gray-50 rounded-lg">
+                <h3 class="text-xl font-semibold text-gray-700">You haven't joined the Royalty Program yet.</h3>
+                <p class="text-gray-500 mt-2 mb-4">Join for free to earn rewards with every visit!</p>
+            </div>`;
+        return;
+    }
+
+    const visits = clientData.royaltyCard.visits || 0;
+    const visitsNeeded = royaltySettings.visitsNeeded;
+    const rewardText = royaltySettings.rewardDescription;
+
+    let stampsHTML = '';
+    for (let i = 1; i <= visitsNeeded; i++) {
+        const isStamped = i <= visits;
+        stampsHTML += `<div class="stamp ${isStamped ? 'stamped' : ''}">${isStamped ? '<i class="fas fa-cut"></i>' : i}</div>`;
+    }
+
+    const isRewardReady = visits >= visitsNeeded;
+    const progressText = isRewardReady ? `Congrats! Your reward is ready: ${rewardText}!` : `${visitsNeeded - visits} more visits until your reward!`;
+
+    container.innerHTML = `
+        <div class="royalty-card-container">
+            <h3 class="text-xl font-semibold text-gray-700 mb-4 text-center">Your Royalty Card</h3>
+            <div class="royalty-card">
+                <div class="royalty-card-header">
+                    <p class="font-parisienne text-3xl">Nails Express</p>
+                    <p class="text-xs font-semibold tracking-wider">ROYALTY PROGRAM</p>
+                </div>
+                <div class="stamp-grid">
+                    ${stampsHTML}
+                </div>
+                <div class="royalty-card-footer">
+                    <p>${progressText}</p>
+                </div>
+            </div>
+        </div>
+    `;
+};
 
     const calculateAndRenderFavorites = (history) => {
         if (history.length === 0) return;
@@ -1265,6 +1331,13 @@ async function initClientDashboard(clientId, clientData) {
     });
 
     setupClientNav();
+// ADD THIS AT THE END of initClientDashboard
+getDoc(doc(db, "settings", "royaltyProgram")).then(docSnap => {
+    if (docSnap.exists() && docSnap.data().visitsNeeded) {
+        royaltySettings = docSnap.data();
+    }
+    renderClientRoyaltyCard(clientData);
+});
 }
 
 // REPLACE your old 'landing-membership-form' submit listener with this one
@@ -1450,6 +1523,44 @@ purchaseForm.addEventListener('submit', async (e) => {
 
 // --- LANDING PAGE SCRIPT ---
 function initLandingPage() {
+    // PASTE THIS AT THE START OF initLandingPage()
+const royaltyModal = document.getElementById('royalty-card-modal');
+const openRoyaltyBtn = document.getElementById('join-royalty-btn');
+const closeRoyaltyBtn = document.getElementById('close-royalty-card-modal-btn');
+const royaltyForm = document.getElementById('royalty-card-form');
+
+const openRoyaltyModal = () => royaltyModal.classList.remove('hidden');
+const closeRoyaltyModal = () => royaltyModal.classList.add('hidden');
+
+openRoyaltyBtn.addEventListener('click', openRoyaltyModal);
+closeRoyaltyBtn.addEventListener('click', closeRoyaltyModal);
+royaltyModal.querySelector('.modal-overlay').addEventListener('click', closeRoyaltyModal);
+
+royaltyForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('rc-buyer-name').value;
+    const phone = document.getElementById('rc-buyer-phone').value;
+    const email = document.getElementById('rc-buyer-email').value;
+
+    if (!name || !phone || !email) {
+        alert("Please fill out all fields.");
+        return;
+    }
+
+    sessionStorage.setItem('pendingRoyaltyCard', JSON.stringify({ name, phone, email }));
+
+    try {
+        await createUserWithEmailAndPassword(auth, email, phone); // Using phone as temp password
+        closeRoyaltyModal();
+    } catch (error) {
+        if (error.code === 'auth/email-already-in-use') {
+            alert("An account with this email already exists. Please log in to your dashboard to manage your royalty card.");
+        } else {
+            alert(`Could not create account. Error: ${error.message}`);
+        }
+        sessionStorage.removeItem('pendingRoyaltyCard');
+    }
+});
     // PASTE THIS INSIDE initLandingPage()
     // ADD THIS LINE inside initLandingPage()
     document.getElementById('nails-idea-landing').addEventListener('click', galleryClickHandler);
@@ -2224,6 +2335,163 @@ if (emailTemplatesForm) {
         }
     });
 }
+// PASTE THIS ENTIRE BLOCK inside your initMainApp function
+
+const royaltySettingsForm = document.getElementById('royalty-settings-form');
+if (royaltySettingsForm) {
+    // Load existing settings when the form is displayed
+    getDoc(doc(db, "settings", "royaltyProgram")).then(docSnap => {
+        if (docSnap.exists() && docSnap.data().visitsNeeded) {
+            const data = docSnap.data();
+            document.getElementById('royalty-visits-needed').value = data.visitsNeeded;
+            document.getElementById('royalty-reward-description').value = data.rewardDescription;
+            // Update the global settings variable as well
+            royaltySettings = data;
+        }
+    });
+
+    // Save settings when the form is submitted
+    royaltySettingsForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const visitsNeeded = parseInt(document.getElementById('royalty-visits-needed').value, 10);
+        const rewardDescription = document.getElementById('royalty-reward-description').value;
+
+        if (isNaN(visitsNeeded) || visitsNeeded < 1) {
+            alert("Please enter a valid number of visits.");
+            return;
+        }
+
+        const newSettings = {
+            visitsNeeded: visitsNeeded,
+            rewardDescription: rewardDescription
+        };
+
+        try {
+            await setDoc(doc(db, "settings", "royaltyProgram"), newSettings);
+            // Update the global settings variable so the changes are reflected immediately
+            royaltySettings = newSettings;
+            alert("Royalty program settings saved successfully!");
+            // Also re-initialize the designer to reflect new settings
+            initializeRoyaltyCardDesigner(); 
+        } catch (error) {
+            console.error("Error saving royalty settings:", error);
+            alert("Could not save settings.");
+        }
+    });
+}
+// PASTE THESE NEW FUNCTIONS inside initMainApp, after the royalty settings form listener
+
+const royaltyCardDesignerForm = document.getElementById('royalty-card-designer-form');
+const printRoyaltyCardsBtn = document.getElementById('print-royalty-cards-btn');
+
+const initializeRoyaltyCardDesigner = () => {
+    const visitsNeeded = royaltySettings.visitsNeeded || 10;
+    const rewardText = royaltySettings.rewardDescription || 'Free Service';
+
+    // --- Generate Preview Stamps ---
+    let previewStampsHTML = '';
+    for (let i = 1; i <= visitsNeeded; i++) {
+        previewStampsHTML += `<div class="stamp-outline">${i}</div>`;
+    }
+
+    // --- Populate Front Preview ---
+    const frontPreview = document.getElementById('royalty-card-preview-front');
+    frontPreview.innerHTML = `
+        <div class="royalty-card-header">
+            <p class="font-parisienne text-3xl">Nails Express</p>
+            <p class="text-xs font-semibold tracking-wider">ROYALTY CARD</p>
+        </div>
+        <div class="stamp-grid-designer">
+            ${previewStampsHTML}
+        </div>
+        <div class="royalty-card-footer text-center">
+            <p class="text-xs">Complete all visits to earn a ${rewardText}!</p>
+        </div>
+    `;
+
+    // --- Populate Back Preview ---
+    const backPreview = document.getElementById('royalty-card-preview-back');
+    backPreview.innerHTML = `
+        <div class="text-center pt-4">
+             <p class="font-bold">Royalty Program Rules</p>
+        </div>
+        <p class="text-xs text-center text-gray-600 px-4 leading-relaxed">
+            One stamp per visit. This card is non-transferable and has no cash value. Cannot be combined with other offers. Lost cards cannot be replaced.
+        </p>
+        <div class="text-center text-xs pb-2">
+            <p class="font-bold">Nails Express</p>
+            <p>1560 Hustonville Rd #345, Danville, KY 40422</p>
+        </div>
+    `;
+};
+
+const handlePrintRoyaltyCards = () => {
+    const quantity = parseInt(document.getElementById('designer-royalty-quantity').value, 10);
+    if (isNaN(quantity) || quantity < 1) {
+        alert("Please enter a valid quantity.");
+        return;
+    }
+
+    const visitsNeeded = royaltySettings.visitsNeeded || 10;
+    const rewardText = royaltySettings.rewardDescription || 'Free Service';
+
+    let stampsHTML = '';
+    for (let i = 1; i <= visitsNeeded; i++) {
+        stampsHTML += `<div class="stamp-outline">${i}</div>`;
+    }
+
+    let printHTML = `
+        <html><head><title>Print Royalty Cards</title><script src="https://cdn.tailwindcss.com"><\/script><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&family=Parisienne&display=swap" rel="stylesheet">
+        <style>
+            body{font-family:'Poppins',sans-serif;margin:0;background-color:#f0f0f0;}
+            .font-parisienne{font-family:'Parisienne',cursive;}
+            .print-page { display: flex; flex-wrap: wrap; justify-content: start; align-content: start; gap: 10mm; padding: 10mm; page-break-after: always; }
+            .card-container{display:grid;grid-template-columns:repeat(2, 1fr);gap:0; width: fit-content;}
+            .card{width:400px;height:228px;box-shadow: 0 4px 8px rgba(0,0,0,0.2);-webkit-print-color-adjust: exact !important; color-adjust: exact !important;}
+            .royalty-card-header { text-align: center; padding-top: 8px; color: #831843;}
+            .stamp-grid-designer { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 0 16px;}
+            .stamp-outline { width: 40px; height: 40px; border: 2px dashed #fb7185; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; color: #fb7185; margin: auto; }
+            @media print {
+                body { padding: 0; background-color: #fff; }
+                .card { box-shadow: none; border: 1px solid #eee; }
+            }
+        </style></head><body><div class="print-page">
+    `;
+
+    for (let i = 0; i < quantity; i++) {
+        printHTML += `
+            <div class="card-container">
+                <!-- Front of Card -->
+                <div class="card rounded-lg p-4 flex flex-col justify-between bg-gradient-to-br from-pink-50 to-pink-200 text-pink-900">
+                    <div class="royalty-card-header">
+                        <p class="font-parisienne text-3xl">Nails Express</p>
+                        <p class="text-xs font-semibold tracking-wider">ROYALTY CARD</p>
+                    </div>
+                    <div class="stamp-grid-designer">${stampsHTML}</div>
+                    <div class="royalty-card-footer text-center"><p class="text-xs">Complete all visits to earn a ${rewardText}!</p></div>
+                </div>
+                <!-- Back of Card -->
+                <div class="card rounded-lg p-4 flex flex-col justify-between bg-white text-gray-800">
+                    <div class="text-center pt-4"><p class="font-bold">Royalty Program Rules</p></div>
+                    <p class="text-xs text-center text-gray-600 px-4 leading-relaxed">One stamp per visit. This card is non-transferable and has no cash value. Cannot be combined with other offers. Lost cards cannot be replaced.</p>
+                    <div class="text-center text-xs pb-2"><p class="font-bold">Nails Express</p><p>1560 Hustonville Rd #345, Danville, KY 40422</p></div>
+                </div>
+            </div>
+        `;
+    }
+
+    printHTML += '</div></body></html>';
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printHTML);
+    printWindow.document.close();
+    printWindow.focus();
+};
+
+printRoyaltyCardsBtn.addEventListener('click', handlePrintRoyaltyCards);
+
+// Call the initializer to draw the preview when the page loads
+initializeRoyaltyCardDesigner();
     const editGiftCardModal = document.getElementById('edit-gift-card-modal');
     const clientProfileModal = document.getElementById('client-profile-modal');
 

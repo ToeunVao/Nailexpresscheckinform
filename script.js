@@ -6324,39 +6324,56 @@ document.getElementById('color-swatches-container').addEventListener('click', (e
         document.getElementById('cancel-edit-promotion-btn').classList.add('hidden');
     });
 
-    const openClientModal = (client = null) => {
-        clientForm.reset();
-        const modalTitle = document.getElementById('client-form-title');
-        if (client) {
-            modalTitle.textContent = 'Edit Client Information';
-            document.getElementById('edit-client-id').value = client.id;
-            document.getElementById('client-form-name').value = client.name;
-            document.getElementById('client-form-phone').value = client.phone || '';
-            document.getElementById('client-form-dob').value = client.dob || '';
-        } else {
-            modalTitle.textContent = 'Create New Client';
-            document.getElementById('edit-client-id').value = '';
-        }
-        clientFormModal.classList.remove('hidden');
-        clientFormModal.classList.add('flex');
-    };
+// REPLACE your old openClientModal function with this new one:
+const openClientModal = (client = null) => {
+    clientForm.reset();
+    const modalTitle = document.getElementById('client-form-title');
+    if (client) {
+        modalTitle.textContent = 'Edit Client Information';
+        document.getElementById('edit-client-id').value = client.id;
+        document.getElementById('client-form-name').value = client.name;
+        document.getElementById('client-form-phone').value = client.phone || '';
+        document.getElementById('client-form-email').value = client.email || ''; // <-- ADD THIS LINE
+        document.getElementById('client-form-dob').value = client.dob || '';
+    } else {
+        modalTitle.textContent = 'Create New Client';
+        document.getElementById('edit-client-id').value = '';
+    }
+    clientFormModal.classList.remove('hidden');
+    clientFormModal.classList.add('flex');
+};
 
     const closeClientModal = () => { clientFormModal.classList.add('hidden'); clientFormModal.classList.remove('flex'); };
     document.getElementById('create-new-client-btn').addEventListener('click', () => openClientModal());
     document.getElementById('client-form-cancel-btn').addEventListener('click', closeClientModal);
     document.querySelector('.client-form-modal-overlay').addEventListener('click', closeClientModal);
 
-    clientForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const clientId = document.getElementById('edit-client-id').value;
-        const clientData = { name: document.getElementById('client-form-name').value, phone: document.getElementById('client-form-phone').value, dob: document.getElementById('client-form-dob').value, };
-        if (!clientData.name) { alert('Client name is required.'); return; }
-        try {
-            if (clientId) { await updateDoc(doc(db, "clients", clientId), clientData); }
-            else { await addDoc(collection(db, "clients"), clientData); }
-            closeClientModal();
-        } catch (error) { console.error("Error saving client:", error); alert("Could not save client data."); }
-    });
+// REPLACE your old clientForm event listener with this new one:
+clientForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const clientId = document.getElementById('edit-client-id').value;
+    const clientData = {
+        name: document.getElementById('client-form-name').value,
+        phone: document.getElementById('client-form-phone').value,
+        email: document.getElementById('client-form-email').value || '', // <-- ADD THIS LINE
+        dob: document.getElementById('client-form-dob').value,
+    };
+    if (!clientData.name) {
+        alert('Client name is required.');
+        return;
+    }
+    try {
+        if (clientId) {
+            await updateDoc(doc(db, "clients", clientId), clientData);
+        } else {
+            await addDoc(collection(db, "clients"), clientData);
+        }
+        closeClientModal();
+    } catch (error) {
+        console.error("Error saving client:", error);
+        alert("Could not save client data.");
+    }
+});
 
     const importClientsBtn = document.getElementById('import-clients-btn');
     const importClientsInput = document.getElementById('import-clients-input');

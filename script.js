@@ -6605,6 +6605,7 @@ clientForm.addEventListener('submit', async (e) => {
     const editGiftCardForm = document.getElementById('edit-gift-card-form');
 // PASTE THIS ENTIRE NEW EVENT LISTENER BLOCK
 
+// REPLACE your old editGiftCardForm event listener with this new one:
 editGiftCardForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const cardId = document.getElementById('edit-gift-card-id').value;
@@ -6638,7 +6639,7 @@ editGiftCardForm.addEventListener('submit', async (e) => {
         type: transactionType,
         amount: amount,
         notes: notes,
-        timestamp: serverTimestamp()
+        timestamp: Timestamp.now() // <-- THIS IS THE FIX (changed from serverTimestamp())
     };
 
     let newStatus = newBalance <= 0 ? 'Depleted' : 'Active';

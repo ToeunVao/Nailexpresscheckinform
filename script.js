@@ -2845,6 +2845,9 @@ initializeRoyaltyCardDesigner();
     // ... more variables
     let techniciansAndStaff = [], technicians = [];
     let allExpenseCategories = [], allPaymentAccounts = [], allSuppliers = [];
+    // Add these two new variables
+    let currentExpenseCategoryFilter = 'all';
+    let currentExpenseSupplierFilter = 'all';
     // ADD THIS ENTIRE NEW BLOCK for the lightbox
     let confirmCallback = null;
     const showConfirmModal = (message, onConfirm, confirmText = 'Delete') => {
@@ -5198,15 +5201,33 @@ function renderCalendar(year, month, technicianFilter = 'All') {
     const expenseTableBody = document.querySelector('#expense-table tbody');
     const totalExpenseEl = document.getElementById('total-expense');
 
-    const populateExpenseDropdowns = () => {
-        const categorySelect = document.getElementById('expense-category');
-        const supplierSelect = document.getElementById('expense-supplier');
-        const paymentSelect = document.getElementById('expense-payment-account');
-        const populate = (select, data) => { const first = select.options[0]; select.innerHTML = ''; select.appendChild(first); data.forEach(item => select.appendChild(new Option(item.name, item.name))); };
-        populate(categorySelect, allExpenseCategories);
-        populate(supplierSelect, allSuppliers);
-        populate(paymentSelect, allPaymentAccounts);
+// REPLACE your old populateExpenseDropdowns function with this one:
+const populateExpenseDropdowns = () => {
+    const categorySelect = document.getElementById('expense-category');
+    const supplierSelect = document.getElementById('expense-supplier');
+    const paymentSelect = document.getElementById('expense-payment-account');
+
+    // New filter dropdowns
+    const categoryFilterSelect = document.getElementById('expense-category-filter');
+    const supplierFilterSelect = document.getElementById('expense-supplier-filter');
+
+    const populate = (select, data, defaultOptionText) => {
+        if (!select) return;
+        const first = select.options[0] || document.createElement('option');
+        first.value = defaultOptionText === "All" ? "all" : "";
+        first.textContent = defaultOptionText === "All" ? `All ${select.id.includes('category') ? 'Categories' : 'Suppliers'}` : `Select ${defaultOptionText}`;
+        select.innerHTML = '';
+        select.appendChild(first);
+        data.forEach(item => select.appendChild(new Option(item.name, item.name)));
     };
+
+    populate(categorySelect, allExpenseCategories, 'Category');
+    populate(supplierSelect, allSuppliers, 'Supplier');
+    populate(paymentSelect, allPaymentAccounts, 'Account');
+
+    populate(categoryFilterSelect, allExpenseCategories, 'All');
+    populate(supplierFilterSelect, allSuppliers, 'All');
+};
 
     const populateExpenseMonthFilter = () => {
         const months = [...new Set(allExpenses.map(exp => { const d = new Date(exp.date.seconds * 1000); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }))].sort().reverse();
@@ -5215,23 +5236,45 @@ function renderCalendar(year, month, technicianFilter = 'All') {
         expenseMonthFilter.value = currentExpenseMonthFilter || 'all';
     };
 
-    const renderExpenses = () => {
-        let filtered = allExpenses;
-        if (currentExpenseMonthFilter && currentExpenseMonthFilter !== 'all') {
-            const [year, month] = currentExpenseMonthFilter.split('-').map(Number);
-            filtered = allExpenses.filter(exp => { const d = new Date(exp.date.seconds * 1000); return d.getFullYear() === year && d.getMonth() + 1 === month; });
-        }
-        expenseTableBody.innerHTML = filtered.length === 0 ? `<tr><td colspan="8" class="py-6 text-center text-gray-400">No expenses found.</td></tr>` : '';
-        filtered.forEach(exp => {
-            const row = expenseTableBody.insertRow();
-            row.className = 'bg-white border-b';
-            row.innerHTML = `<td class="px-6 py-4">${new Date(exp.date.seconds * 1000).toLocaleDateString()}</td><td class="px-6 py-4">${exp.name}</td><td class="px-6 py-4">${exp.category || ''}</td><td class="px-6 py-4">${exp.supplier || ''}</td><td class="px-6 py-4">${exp.paymentAccount || ''}</td><td class="px-6 py-4">${exp.attachmentURL ? `<a href="${exp.attachmentURL}" target="_blank" class="text-blue-500 hover:underline">View</a>` : 'N/A'}</td><td class="px-6 py-4 text-right">$${exp.amount.toFixed(2)}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${exp.id}" class="edit-expense-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${exp.id}" class="delete-expense-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
-        });
-        totalExpenseEl.textContent = `$${filtered.reduce((sum, exp) => sum + exp.amount, 0).toFixed(2)}`;
-    };
+// REPLACE your old renderExpenses function with this one:
+const renderExpenses = () => {
+    let filtered = allExpenses;
+
+    // Filter by Month
+    if (currentExpenseMonthFilter && currentExpenseMonthFilter !== 'all') {
+        const [year, month] = currentExpenseMonthFilter.split('-').map(Number);
+        filtered = filtered.filter(exp => { const d = new Date(exp.date.seconds * 1000); return d.getFullYear() === year && d.getMonth() + 1 === month; });
+    }
+
+    // Filter by Category
+    if (currentExpenseCategoryFilter && currentExpenseCategoryFilter !== 'all') {
+        filtered = filtered.filter(exp => exp.category === currentExpenseCategoryFilter);
+    }
+
+    // Filter by Supplier
+    if (currentExpenseSupplierFilter && currentExpenseSupplierFilter !== 'all') {
+        filtered = filtered.filter(exp => exp.supplier === currentExpenseSupplierFilter);
+    }
+
+    expenseTableBody.innerHTML = filtered.length === 0 ? `<tr><td colspan="8" class="py-6 text-center text-gray-400">No expenses found for the selected filters.</td></tr>` : '';
+    filtered.forEach(exp => {
+        const row = expenseTableBody.insertRow();
+        row.className = 'bg-white border-b';
+        row.innerHTML = `<td class="px-6 py-4">${new Date(exp.date.seconds * 1000).toLocaleDateString()}</td><td class="px-6 py-4">${exp.name}</td><td class="px-6 py-4">${exp.category || ''}</td><td class="px-6 py-4">${exp.supplier || ''}</td><td class="px-6 py-4">${exp.paymentAccount || ''}</td><td class="px-6 py-4">${exp.attachmentURL ? `<a href="${exp.attachmentURL}" target="_blank" class="text-blue-500 hover:underline">View</a>` : 'N/A'}</td><td class="px-6 py-4 text-right">$${exp.amount.toFixed(2)}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${exp.id}" class="edit-expense-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${exp.id}" class="delete-expense-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
+    });
+    totalExpenseEl.textContent = `$${filtered.reduce((sum, exp) => sum + exp.amount, 0).toFixed(2)}`;
+};
 
     expenseMonthFilter.addEventListener('change', (e) => { currentExpenseMonthFilter = e.target.value; renderExpenses(); });
-
+// Add these two new event listeners
+document.getElementById('expense-category-filter').addEventListener('change', (e) => {
+    currentExpenseCategoryFilter = e.target.value;
+    renderExpenses();
+});
+document.getElementById('expense-supplier-filter').addEventListener('change', (e) => {
+    currentExpenseSupplierFilter = e.target.value;
+    renderExpenses();
+});
     addExpenseForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const expenseId = document.getElementById('edit-expense-id').value;

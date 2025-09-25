@@ -2730,16 +2730,19 @@ const renderTasks = () => {
         const taskEl = document.createElement('div');
         taskEl.className = `task-item flex items-center justify-between p-3 rounded-lg border-l-4 ${priorityColors[task.priority]}`;
         taskEl.innerHTML = `
-            <span class="task-description flex-grow ${task.completed ? 'completed' : ''}">${task.description}</span>
-            <div class="task-actions flex items-center gap-3 ml-4">
-                <button data-id="${task.id}" class="complete-task-btn text-green-500 hover:text-green-700" title="Complete Task">
-                    <i class="fas ${task.completed ? 'fa-check-square' : 'fa-square'}"></i>
-                </button>
-                <button data-id="${task.id}" class="delete-task-btn text-red-500 hover:text-red-700" title="Delete Task">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-        `;
+    <span class="task-description flex-grow ${task.completed ? 'completed' : ''}">${task.description}</span>
+    <div class="task-actions flex items-center gap-3 ml-4">
+        <button data-id="${task.id}" class="edit-task-btn text-blue-500 hover:text-blue-700" title="Edit Task">
+            <i class="fas fa-edit"></i>
+        </button>
+        <button data-id="${task.id}" class="complete-task-btn text-green-500 hover:text-green-700" title="Complete Task">
+            <i class="fas ${task.completed ? 'fa-check-square' : 'fa-square'}"></i>
+        </button>
+        <button data-id="${task.id}" class="delete-task-btn text-red-500 hover:text-red-700" title="Delete Task">
+            <i class="fas fa-trash"></i>
+        </button>
+    </div>
+`;
         taskListContainer.appendChild(taskEl);
     });
 };
@@ -2772,8 +2775,15 @@ if (taskListContainer) {
     taskListContainer.addEventListener('click', async (e) => {
         const completeBtn = e.target.closest('.complete-task-btn');
         const deleteBtn = e.target.closest('.delete-task-btn');
+        const editBtn = e.target.closest('.edit-task-btn'); // <-- Add this line
 
-        if (completeBtn) {
+        if (editBtn) { // <-- Add this new block
+            const taskId = editBtn.dataset.id;
+            const task = allTasks.find(t => t.id === taskId);
+            if (task) {
+                openEditTaskModal(task);
+            }
+        } else if (completeBtn) {
             const taskId = completeBtn.dataset.id;
             const task = allTasks.find(t => t.id === taskId);
             if (task) {
@@ -2787,6 +2797,46 @@ if (taskListContainer) {
         }
     });
 }
+
+// PASTE THIS ENTIRE NEW BLOCK OF CODE
+const editTaskModal = document.getElementById('edit-task-modal');
+const editTaskForm = document.getElementById('edit-task-form');
+const closeEditTaskBtn = document.getElementById('close-edit-task-modal-btn');
+
+const openEditTaskModal = (task) => {
+    editTaskForm.reset();
+    document.getElementById('edit-task-id').value = task.id;
+    document.getElementById('edit-task-description').value = task.description;
+    document.getElementById('edit-task-priority').value = task.priority;
+    editTaskModal.classList.remove('hidden');
+};
+
+const closeEditTaskModal = () => {
+    editTaskModal.classList.add('hidden');
+};
+
+closeEditTaskBtn.addEventListener('click', closeEditTaskModal);
+editTaskModal.querySelector('.modal-overlay').addEventListener('click', closeEditTaskModal);
+
+editTaskForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const taskId = document.getElementById('edit-task-id').value;
+    const newDescription = document.getElementById('edit-task-description').value;
+    const newPriority = document.getElementById('edit-task-priority').value;
+
+    if (taskId && newDescription) {
+        try {
+            await updateDoc(doc(db, "tasks", taskId), {
+                description: newDescription,
+                priority: newPriority
+            });
+            closeEditTaskModal();
+        } catch (error) {
+            console.error("Error updating task:", error);
+            alert("Could not update task.");
+        }
+    }
+});
 
 onSnapshot(query(collection(db, "tasks"), orderBy("createdAt", "desc")), (snapshot) => {
     allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));

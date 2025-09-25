@@ -1305,10 +1305,14 @@
                         </div>
                         <!-- PASTE THIS NEW DIV -->
 <div id="royalty-card-report-content" class="sub-tab-content hidden">
-    <div class="flex justify-between items-center mb-4">
-        <h3 class="text-xl font-semibold text-gray-700">Royalty Cards</h3>
+<!-- ...WITH this new div that includes the button: -->
+<div class="flex justify-between items-center mb-4">
+    <h3 class="text-xl font-semibold text-gray-700">Royalty Cards</h3>
+    <div class="flex items-center gap-2">
         <input type="text" id="search-royalty-cards" class="form-input w-64 p-2 border border-gray-300 rounded-lg" placeholder="Search by name or phone...">
+        <button id="add-royalty-card-btn" class="bg-pink-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-pink-700 whitespace-nowrap"><i class="fas fa-plus mr-2"></i>Add for Client</button>
     </div>
+</div>
     <div class="overflow-x-auto">
         <table id="royalty-cards-table" class="w-full text-sm text-left text-gray-600">
             <thead class="text-xs text-gray-700 uppercase bg-gray-50">
@@ -1353,6 +1357,9 @@
                                         id="membership-management-tab" type="button">Memberships</button></li>
                                 <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg"
                                         id="settings-management-tab" type="button">Settings</button></li>
+                                        <!-- ADD THIS NEW LIST ITEM -->
+<li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg" 
+        id="backup-management-tab" type="button">Backup & Restore</button></li>
                             </ul>
                         </div>
 
@@ -2081,6 +2088,46 @@
                                 </form>
                             </div>
                         </div>
+                        <!-- PASTE THIS ENTIRE NEW SECTION -->
+<div id="backup-management-content" class="sub-tab-content hidden">
+    <h3 class="text-xl font-semibold text-gray-700 mb-4">Data Management</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Manual Backup & Restore -->
+        <div class="p-6 border rounded-lg bg-gray-50 space-y-4">
+            <h4 class="font-semibold text-gray-800">Manual Backup & Restore</h4>
+            <p class="text-sm text-gray-600">Download a complete backup of all salon data to a single JSON file. You can restore from this file at any time.</p>
+            <div>
+                <button id="backup-data-btn" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center justify-center">
+                    <i class="fas fa-download mr-2"></i> Backup All Data
+                </button>
+            </div>
+            <div class="border-t pt-4">
+                <label for="restore-data-input" class="block text-sm font-medium text-gray-600">Restore from Backup File</label>
+                <input type="file" id="restore-data-input" class="form-input w-full mt-1 text-sm" accept=".json">
+                <p class="text-xs text-red-600 mt-1 font-semibold">Warning: Restoring will overwrite all current data. This action cannot be undone.</p>
+            </div>
+        </div>
+
+        <!-- Automatic Backup Settings -->
+        <div class="p-6 border rounded-lg bg-gray-50 space-y-4">
+            <h4 class="font-semibold text-gray-800">Automatic Backup</h4>
+            <p class="text-sm text-gray-600">The application can automatically prompt you to download a backup file if one hasn't been created recently.</p>
+            <div>
+                <label for="auto-backup-frequency" class="block text-sm font-medium text-gray-600">Backup Frequency</label>
+                <select id="auto-backup-frequency" class="form-select w-full mt-1">
+                    <option value="weekly">Weekly (Default)</option>
+                    <option value="daily">Daily</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="off">Off</option>
+                </select>
+            </div>
+            <div class="border-t pt-4">
+                 <p class="text-sm font-medium text-gray-600">Last Backup Status</p>
+                 <p id="last-backup-status" class="text-sm text-gray-800 font-semibold mt-1">No backup recorded.</p>
+            </div>
+        </div>
+    </div>
+</div>
                         <div id="service-management-content" class="sub-tab-content hidden">
                             <h3 class="text-xl font-semibold text-gray-700 mb-4">Manage Services</h3>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -3040,6 +3087,28 @@
         </form>
     </div>
 </div>
+<!-- PASTE THIS NEW MODAL AT THE END -->
+<div id="add-royalty-card-modal" class="modal hidden fixed inset-0 z-[70] flex items-center justify-center p-4">
+    <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
+    <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
+        <button id="close-add-royalty-card-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times fa-lg"></i></button>
+        <h2 class="text-2xl font-bold text-center text-pink-700 mb-6">Create Royalty Card for Existing Client</h2>
+        <form id="add-royalty-card-form" class="space-y-4">
+            <div>
+                <label for="add-rc-client-name" class="block text-sm font-medium text-gray-600">Client Name</label>
+                <input type="text" id="add-rc-client-name" list="add-rc-client-list" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" required placeholder="Start typing to search for a client...">
+                <datalist id="add-rc-client-list"></datalist>
+            </div>
+            <p class="text-xs text-center text-gray-500">Select an existing client to add a new royalty card to their account. Their visit count will be set to zero.</p>
+            <div class="pt-4">
+                <button type="submit" id="add-royalty-card-submit-btn" class="w-full bg-pink-600 text-white font-bold py-3 px-12 rounded-full hover:bg-pink-700">
+                    Create Card
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
     <script type="module" src="script.js"></script>
 </body>
 

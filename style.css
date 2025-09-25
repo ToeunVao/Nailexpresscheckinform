@@ -1,5 +1,30 @@
 body { font-family: 'Poppins', sans-serif; background-color: #FEFBF9; }
         h1, h2, h3, .clock { font-family: 'Playfair Display', serif; }
+/* Style for highlighting the current day in the calendar */
+.calendar-day.is-today {
+    background-color: #fef3c7; /* A light yellow (amber-100) */
+    border: 1px solid #fcd34d; /* A slightly darker yellow border (amber-300) */
+}
+
+.calendar-day.is-today .font-bold {
+    color: #b45309; /* A darker amber text color for contrast */
+    position: relative;
+    display: inline-block;
+}
+
+/* Optional: Add a small circle around today's date number */
+.calendar-day.is-today .font-bold::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-color: #fde68a; /* A brighter yellow (amber-200) */
+    z-index: -1;
+}
 /* Royalty Card Display on Client Dashboard */
 .royalty-card-container {
     max-width: 450px;

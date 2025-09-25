@@ -2385,64 +2385,60 @@ if (royaltySettingsForm) {
     // PASTE THIS ENTIRE NEW BLOCK OF CODE
 
 // --- ROYALTY CARD ADMIN REPORT LOGIC ---
-if (userRole === 'admin') {
-const royaltyCardsTableBody = document.querySelector('#royalty-cards-table tbody');
-const searchRoyaltyCardsInput = document.getElementById('search-royalty-cards');
-// PASTE THIS NEW CODE BLOCK
-const addRoyaltyCardModal = document.getElementById('add-royalty-card-modal');
-const addRoyaltyCardBtn = document.getElementById('add-royalty-card-btn');
-const closeAddRoyaltyCardBtn = document.getElementById('close-add-royalty-card-modal-btn');
-const addRoyaltyCardForm = document.getElementById('add-royalty-card-form');
-const addRcClientList = document.getElementById('add-rc-client-list');
+ if (userRole === 'admin') {
+        // --- ROYALTY CARD ADMIN REPORT LOGIC ---
+        const royaltyCardsTableBody = document.querySelector('#royalty-cards-table tbody');
+        const searchRoyaltyCardsInput = document.getElementById('search-royalty-cards');
+        const addRoyaltyCardModal = document.getElementById('add-royalty-card-modal');
+        const addRoyaltyCardBtn = document.getElementById('add-royalty-card-btn');
+        const closeAddRoyaltyCardBtn = document.getElementById('close-add-royalty-card-modal-btn');
+        const addRoyaltyCardForm = document.getElementById('add-royalty-card-form');
+        const addRcClientList = document.getElementById('add-rc-client-list');
 
-const openAddRoyaltyCardModal = () => {
-    addRcClientList.innerHTML = '';
-    const clientsWithoutRoyalty = allClients.filter(c => !c.royaltyCard);
-    clientsWithoutRoyalty.forEach(client => {
-        addRcClientList.innerHTML += `<option value="${client.name}"></option>`;
-    });
-    addRoyaltyCardModal.classList.remove('hidden');
-};
+        const openAddRoyaltyCardModal = () => {
+            addRcClientList.innerHTML = '';
+            const clientsWithoutRoyalty = allClients.filter(c => !c.royaltyCard);
+            clientsWithoutRoyalty.forEach(client => {
+                addRcClientList.innerHTML += `<option value="${client.name}"></option>`;
+            });
+            addRoyaltyCardModal.classList.remove('hidden');
+        };
 
-const closeAddRoyaltyCardModal = () => {
-    addRoyaltyCardForm.reset();
-    addRoyaltyCardModal.classList.add('hidden');
-};
+        const closeAddRoyaltyCardModal = () => {
+            addRoyaltyCardForm.reset();
+            addRoyaltyCardModal.classList.add('hidden');
+        };
 
-addRoyaltyCardBtn.addEventListener('click', openAddRoyaltyCardModal);
-closeAddRoyaltyCardBtn.addEventListener('click', closeAddRoyaltyCardModal);
-addRoyaltyCardModal.querySelector('.modal-overlay').addEventListener('click', closeAddRoyaltyCardModal);
+        addRoyaltyCardBtn.addEventListener('click', openAddRoyaltyCardModal);
+        closeAddRoyaltyCardBtn.addEventListener('click', closeAddRoyaltyCardModal);
+        addRoyaltyCardModal.querySelector('.modal-overlay').addEventListener('click', closeAddRoyaltyCardModal);
 
-addRoyaltyCardForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const clientName = document.getElementById('add-rc-client-name').value;
-    const selectedClient = allClients.find(c => c.name === clientName);
+        addRoyaltyCardForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const clientName = document.getElementById('add-rc-client-name').value;
+            const selectedClient = allClients.find(c => c.name === clientName);
 
-    if (!selectedClient) {
-        alert("Please select a valid client from the list.");
-        return;
-    }
+            if (!selectedClient) {
+                alert("Please select a valid client from the list.");
+                return;
+            }
+            if (selectedClient.royaltyCard) {
+                alert(`${selectedClient.name} already has a royalty card.`);
+                return;
+            }
 
-    if (selectedClient.royaltyCard) {
-        alert(`${selectedClient.name} already has a royalty card.`);
-        return;
-    }
-
-    try {
-        const clientDocRef = doc(db, "clients", selectedClient.id);
-        await updateDoc(clientDocRef, {
-            royaltyCard: {
-                visits: 0,
-                lastVisit: null
+            try {
+                const clientDocRef = doc(db, "clients", selectedClient.id);
+                await updateDoc(clientDocRef, {
+                    royaltyCard: { visits: 0, lastVisit: null }
+                });
+                alert(`Royalty card created for ${selectedClient.name}!`);
+                closeAddRoyaltyCardModal();
+            } catch (error) {
+                console.error("Error adding royalty card:", error);
+                alert("Could not create royalty card for this client.");
             }
         });
-        alert(`Royalty card created for ${selectedClient.name}!`);
-        closeAddRoyaltyCardModal();
-    } catch (error) {
-        console.error("Error adding royalty card:", error);
-        alert("Could not create royalty card for this client.");
-    }
-});
 
 const renderRoyaltyCardsAdminTable = () => {
     if (!royaltyCardsTableBody) return;

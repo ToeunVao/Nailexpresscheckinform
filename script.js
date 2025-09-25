@@ -18,6 +18,7 @@ const auth = getAuth(app);
 const storage = getStorage(app);
 
 // --- Global State ---
+let allTasks = [];
 let backupSettings = { frequency: 'weekly', lastBackup: null };
 const loadingScreen = document.getElementById('loading-screen');
 const landingPageContent = document.getElementById('landing-page-content');
@@ -2700,6 +2701,100 @@ onSnapshot(doc(db, "settings", "backup"), (docSnap) => {
 });
 
 
+// PASTE THIS ENTIRE NEW BLOCK OF CODE
+
+// --- TASK MANAGER LOGIC ---
+const addTaskForm = document.getElementById('add-task-form');
+const taskListContainer = document.getElementById('task-list-container');
+
+const renderTasks = () => {
+    if (!taskListContainer) return;
+
+    taskListContainer.innerHTML = '';
+    if (allTasks.length === 0) {
+        taskListContainer.innerHTML = '<p class="text-center text-gray-500 py-4">No tasks yet. Add one to get started!</p>';
+        return;
+    }
+
+    const sortedTasks = [...allTasks].sort((a, b) => {
+        const priorityOrder = { 'high': 0, 'medium': 1, 'low': 2 };
+        return priorityOrder[a.priority] - priorityOrder[b.priority];
+    });
+
+    sortedTasks.forEach(task => {
+        const priorityColors = {
+            high: 'border-red-500 bg-red-50',
+            medium: 'border-yellow-500 bg-yellow-50',
+            low: 'border-gray-300 bg-gray-50'
+        };
+        const taskEl = document.createElement('div');
+        taskEl.className = `task-item flex items-center justify-between p-3 rounded-lg border-l-4 ${priorityColors[task.priority]}`;
+        taskEl.innerHTML = `
+            <span class="task-description flex-grow ${task.completed ? 'completed' : ''}">${task.description}</span>
+            <div class="task-actions flex items-center gap-3 ml-4">
+                <button data-id="${task.id}" class="complete-task-btn text-green-500 hover:text-green-700" title="Complete Task">
+                    <i class="fas ${task.completed ? 'fa-check-square' : 'fa-square'}"></i>
+                </button>
+                <button data-id="${task.id}" class="delete-task-btn text-red-500 hover:text-red-700" title="Delete Task">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+        taskListContainer.appendChild(taskEl);
+    });
+};
+
+if (addTaskForm) {
+    addTaskForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const descriptionInput = document.getElementById('task-description');
+        const priority = document.getElementById('task-priority').value;
+        const description = descriptionInput.value.trim();
+
+        if (description) {
+            try {
+                await addDoc(collection(db, "tasks"), {
+                    description: description,
+                    priority: priority,
+                    completed: false,
+                    createdAt: serverTimestamp()
+                });
+                descriptionInput.value = '';
+            } catch (error) {
+                console.error("Error adding task:", error);
+                alert("Could not add the task.");
+            }
+        }
+    });
+}
+
+if (taskListContainer) {
+    taskListContainer.addEventListener('click', async (e) => {
+        const completeBtn = e.target.closest('.complete-task-btn');
+        const deleteBtn = e.target.closest('.delete-task-btn');
+
+        if (completeBtn) {
+            const taskId = completeBtn.dataset.id;
+            const task = allTasks.find(t => t.id === taskId);
+            if (task) {
+                await updateDoc(doc(db, "tasks", taskId), { completed: !task.completed });
+            }
+        } else if (deleteBtn) {
+            const taskId = deleteBtn.dataset.id;
+            showConfirmModal("Are you sure you want to delete this task?", async () => {
+                await deleteDoc(doc(db, "tasks", taskId));
+            });
+        }
+    });
+}
+
+onSnapshot(query(collection(db, "tasks"), orderBy("createdAt", "desc")), (snapshot) => {
+    allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    renderTasks();
+});
+
+
+// END OF initMainApp }
 }
 // PASTE THESE NEW FUNCTIONS inside initMainApp, after the royalty settings form listener
 

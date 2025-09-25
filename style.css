@@ -1,5 +1,20 @@
 body { font-family: 'Poppins', sans-serif; background-color: #FEFBF9; }
         h1, h2, h3, .clock { font-family: 'Playfair Display', serif; }
+/* Task Manager Styles */
+.task-item .task-description.completed {
+    text-decoration: line-through;
+    color: #9ca3af; /* gray-400 */
+}
+
+.task-item .task-actions {
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.task-item:hover .task-actions {
+    opacity: 1;
+}
+
 /* Style for highlighting the current day in the calendar */
 .calendar-day.is-today {
     background-color: #fef3c7; /* A light yellow (amber-100) */

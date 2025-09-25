@@ -1407,8 +1407,7 @@
 
                         <div id="user-management-content" class="sub-tab-content">
                             <h3 class="text-xl font-semibold text-gray-700 mb-4">Manage Users</h3>
-                            <form id="add-user-form"
-                                class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 border rounded-lg bg-gray-50 items-end">
+                            <form id="add-user-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 border rounded-lg bg-gray-50 items-end">
                                 <input type="hidden" id="edit-user-id">
                                 <div><label for="new-user-name"
                                         class="block text-sm font-medium text-gray-600">Name</label><input type="text"
@@ -1430,6 +1429,15 @@
                                         <option value="staff">Staff</option>
                                         <option value="admin">Admin</option>
                                     </select></div>
+                                    <!-- PASTE THIS NEW DIV HERE -->
+<div>
+    <label for="payout-type" class="block text-sm font-medium text-gray-600">Payout Type</label>
+    <select id="payout-type" class="form-select w-full mt-1">
+        <option value="standard">Standard (Commission Only)</option>
+        <option value="commission_plus_tips">Commission + Tips</option>
+    </select>
+    <p class="text-xs text-gray-500 mt-1">Determines how staff payout is calculated.</p>
+</div>
                                 <div class="self-end"><button type="submit"
                                         class="w-full bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">Add/Update
                                         User</button></div>
@@ -1442,6 +1450,7 @@
                                             <th scope="col" class="px-6 py-3">Email</th>
                                             <th scope="col" class="px-6 py-3">Phone</th>
                                             <th scope="col" class="px-6 py-3">Role</th>
+                                            <th scope="col" class="px-6 py-3">Payout Type</th>
                                             <th scope="col" class="px-6 py-3 text-center">Action</th>
                                         </tr>
                                     </thead>

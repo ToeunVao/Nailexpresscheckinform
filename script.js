@@ -3861,54 +3861,64 @@ const getDateRange = (filter, specificDate = null) => {
         }
     });
 
-    // Located inside initMainApp()
-    const openClientProfileModal = async (client) => {
-        // Find all relevant data for the selected client
-        const clientData = aggregatedClients.find(c => c.id === client.id);
-        if (!clientData) {
-            console.error("Could not find aggregated data for client:", client);
-            alert("Could not load client profile.");
-            return;
+// REPLACE your old openClientProfileModal function with this new one:
+const openClientProfileModal = async (client) => {
+    const clientData = aggregatedClients.find(c => c.id === client.id);
+    if (!clientData) {
+        console.error("Could not find aggregated data for client:", client);
+        alert("Could not load client profile.");
+        return;
+    }
+    const clientHistory = allFinishedClients.filter(c => c.name === clientData.name);
+    const clientAppointments = allAppointments.filter(c => c.name === clientData.name && c.appointmentTimestamp.toDate() > new Date());
+
+    // --- NEW: Comprehensive Total Spent Calculation ---
+    // 1. Calculate spending from services
+    let serviceSpent = clientHistory.reduce((sum, visit) => {
+        const servicesString = Array.isArray(visit.services) ? visit.services.join(', ') : visit.services;
+        const prices = (servicesString.match(/\$\d+/g) || []).map(p => Number(p.slice(1)));
+        return sum + prices.reduce((a, b) => a + b, 0);
+    }, 0);
+
+    // 2. Calculate spending from gift cards purchased
+    const giftCardsPurchased = allGiftCards.filter(gc => gc.createdBy === client.id);
+    let giftCardSpent = giftCardsPurchased.reduce((sum, gc) => sum + gc.amount, 0);
+
+    // 3. Calculate spending from membership
+    let membershipSpent = 0;
+    if (clientData.membership && clientData.membership.tierId) {
+        const tier = allMembershipTiers.find(t => t.id === clientData.membership.tierId);
+        if (tier) {
+            membershipSpent = tier.price;
         }
-        const clientHistory = allFinishedClients.filter(c => c.name === clientData.name);
-        const clientAppointments = allAppointments.filter(c => c.name === clientData.name && c.appointmentTimestamp.toDate() > new Date());
+    }
+    
+    const totalSpent = serviceSpent + giftCardSpent + membershipSpent;
+    // --- END of new calculation ---
 
-        // Populate the modal with basic info
-        document.getElementById('profile-client-name').textContent = clientData.name;
-        document.getElementById('profile-client-phone').textContent = clientData.phone || 'No phone number';
+    document.getElementById('profile-client-name').textContent = clientData.name;
+    document.getElementById('profile-client-phone').textContent = clientData.phone || 'No phone number';
+    document.getElementById('profile-total-visits').textContent = clientHistory.length;
+    document.getElementById('profile-total-spent').textContent = `$${totalSpent.toFixed(2)}`;
+    document.getElementById('profile-fav-tech').textContent = clientData.favoriteTech;
+    document.getElementById('profile-fav-color').textContent = clientData.favoriteColor;
 
-        // Populate stats cards
-        document.getElementById('profile-total-visits').textContent = clientHistory.length;
-        const totalSpent = clientHistory.reduce((sum, visit) => {
-            const servicesString = Array.isArray(visit.services) ? visit.services.join(', ') : visit.services;
-            const prices = (servicesString.match(/\$\d+/g) || []).map(p => Number(p.slice(1)));
-            return sum + prices.reduce((a, b) => a + b, 0);
-        }, 0);
-        document.getElementById('profile-total-spent').textContent = `$${totalSpent.toFixed(2)}`;
-        document.getElementById('profile-fav-tech').textContent = clientData.favoriteTech;
-        document.getElementById('profile-fav-color').textContent = clientData.favoriteColor;
-
-        // Populate the visit history table
-        const historyBody = document.getElementById('profile-history-table-body');
-        historyBody.innerHTML = clientHistory.length > 0 ? clientHistory.map(v =>
-            `<tr>
+    const historyBody = document.getElementById('profile-history-table-body');
+    historyBody.innerHTML = clientHistory.length > 0 ? clientHistory.map(v =>
+        `<tr>
             <td class="px-4 py-2">${v.checkOutTimestamp.toDate().toLocaleDateString()}</td>
             <td class="px-4 py-2">${Array.isArray(v.services) ? v.services.join(', ') : v.services}</td>
             <td class="px-4 py-2">${v.technician}</td>
         </tr>`
-        ).join('') : '<tr><td colspan="3" class="text-center p-4 text-gray-500">No visit history found.</td></tr>';
+    ).join('') : '<tr><td colspan="3" class="text-center p-4 text-gray-500">No visit history found.</td></tr>';
 
-        // Populate upcoming appointments
-        const apptsContainer = document.getElementById('profile-upcoming-appts');
-        apptsContainer.innerHTML = clientAppointments.length > 0
-            ? clientAppointments.map(a => `<div class="bg-blue-50 p-2 rounded-md"><p class="font-semibold">${a.appointmentTimestamp.toDate().toLocaleString()}</p><p class="text-sm">${a.services.join(', ')}</p></div>`).join('')
-            : '<p class="text-sm text-gray-500">No upcoming appointments.</p>';
+    const apptsContainer = document.getElementById('profile-upcoming-appts');
+    apptsContainer.innerHTML = clientAppointments.length > 0
+        ? clientAppointments.map(a => `<div class="bg-blue-50 p-2 rounded-md"><p class="font-semibold">${a.appointmentTimestamp.toDate().toLocaleString()}</p><p class="text-sm">${a.services.join(', ')}</p></div>`).join('')
+        : '<p class="text-sm text-gray-500">No upcoming appointments.</p>';
 
-        // The photo gallery logic has been removed from this function.
-
-        // Show the modal
-        clientProfileModal.classList.remove('hidden');
-    };
+    clientProfileModal.classList.remove('hidden');
+};
     document.getElementById('finished-content').addEventListener('click', async (e) => {
         const deleteBtn = e.target.closest('.delete-btn-finished');
         const feedbackBtn = e.target.closest('.view-feedback-btn');

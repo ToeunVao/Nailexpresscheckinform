@@ -3715,31 +3715,105 @@ const updateStaffDashboard = () => {
         return filtered;
     };
 
+// REPLACE your old, broken renderSalonEarnings function with this complete one:
 const renderSalonEarnings = (earnings) => {
     const tbody = document.querySelector('#salon-earning-table tbody');
     const tfoot = document.querySelector('#salon-earning-table-foot');
     if (!tbody || !tfoot) return;
+
     tbody.innerHTML = '';
     const staffAndTechNames = techniciansAndStaff.map(t => t.name.toLowerCase());
+
+    // Clear footer totals before doing anything else
+    const allFooterIds = [...staffAndTechNames, 'sell-gc', 'return-gc', 'check', 'no-credit', 'total-credit', 'venmo', 'square', 'total', 'cash'];
+    allFooterIds.forEach(id => {
+        const el = document.getElementById(`total-${id.replace(/_/g, '-')}`);
+        if (el) el.textContent = id === 'no-credit' ? '0' : '$0.00';
+    });
+    staffAndTechNames.forEach(name => {
+        document.getElementById(`commission-${name}`).textContent = '$0.00';
+        document.getElementById(`check70-${name}`).textContent = '$0.00';
+        document.getElementById(`cash30-${name}`).textContent = '$0.00';
+    });
+
+
     if (earnings.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="${staffAndTechNames.length + 10}" class="py-6 text-center text-gray-400">No salon earnings found.</td></tr>`;
-        // Clear footer totals...
+        tbody.innerHTML = `<tr><td colspan="${staffAndTechNames.length + 10}" class="py-6 text-center text-gray-400">No salon earnings found for this period.</td></tr>`;
         return;
     }
 
     let grandTotals = {};
-    earnings.forEach(earning => {
-        // ... (row rendering logic remains the same) ...
+    staffAndTechNames.forEach(name => grandTotals[name] = 0); // Initialize all staff totals
+    grandTotals.sellGiftCard = 0;
+    grandTotals.returnGiftCard = 0;
+    grandTotals.check = 0;
+    grandTotals.noOfCredit = 0;
+    grandTotals.totalCredit = 0;
+    grandTotals.venmo = 0;
+    grandTotals.square = 0;
+    grandTotals.total = 0;
+    grandTotals.cash = 0;
+
+    // This is the main loop that was missing the row rendering part. It's now fixed.
+    earnings.sort((a, b) => b.date.seconds - a.date.seconds).forEach(earning => {
+        const row = tbody.insertRow();
+        row.className = 'bg-white border-b';
+        let rowHTML = `<td class="px-6 py-4">${new Date(earning.date.seconds * 1000).toLocaleDateString()}</td>`;
+        
         let rowStaffTotal = 0;
         staffAndTechNames.forEach(name => {
             const techEarning = earning[name] || 0;
-            grandTotals[name] = (grandTotals[name] || 0) + techEarning;
+            rowHTML += `<td class="px-6 py-4">$${techEarning.toFixed(2)}</td>`;
             rowStaffTotal += techEarning;
+            grandTotals[name] += techEarning;
         });
-        // ... (rest of grandTotal calculations remain the same) ...
+
+        const rowTotal = rowStaffTotal + (earning.sellGiftCard || 0);
+        const cash = rowTotal - ((earning.totalCredit || 0) + (earning.check || 0) + (earning.returnGiftCard || 0) + (earning.venmo || 0) + (earning.square || 0));
+        
+        rowHTML += `
+            <td class="px-6 py-4">$${(earning.sellGiftCard || 0).toFixed(2)}</td>
+            <td class="px-6 py-4">$${(earning.returnGiftCard || 0).toFixed(2)}</td>
+            <td class="px-6 py-4">$${(earning.check || 0).toFixed(2)}</td>
+            <td class="px-6 py-4">${earning.noOfCredit || 0}</td>
+            <td class="px-6 py-4">$${(earning.totalCredit || 0).toFixed(2)}</td>
+            <td class="px-6 py-4">$${(earning.venmo || 0).toFixed(2)}</td>
+            <td class="px-6 py-4">$${(earning.square || 0).toFixed(2)}</td>
+            <td class="px-6 py-4 font-bold">$${rowTotal.toFixed(2)}</td>
+            <td class="px-6 py-4 font-bold">$${cash.toFixed(2)}</td>
+            <td class="px-6 py-4 text-center space-x-2">
+                <button data-id="${earning.id}" class="edit-salon-earning-btn text-blue-500 hover:text-blue-700" title="Edit Salon Earning"><i class="fas fa-edit text-lg"></i></button>
+                <button data-id="${earning.id}" class="delete-salon-earning-btn text-red-500 hover:text-red-700" title="Delete Salon Earning"><i class="fas fa-trash-alt text-lg"></i></button>
+            </td>`;
+        row.innerHTML = rowHTML;
+
+        // Accumulate grand totals
+        grandTotals.sellGiftCard += earning.sellGiftCard || 0;
+        grandTotals.returnGiftCard += earning.returnGiftCard || 0;
+        grandTotals.check += earning.check || 0;
+        grandTotals.noOfCredit += earning.noOfCredit || 0;
+        grandTotals.totalCredit += earning.totalCredit || 0;
+        grandTotals.venmo += earning.venmo || 0;
+        grandTotals.square += earning.square || 0;
+        grandTotals.total += rowTotal;
+        grandTotals.cash += cash;
     });
 
-    // --- NEW PAYOUT CALCULATION LOGIC ---
+    // Update the main footer totals
+    document.getElementById('total-sell-gc').textContent = `$${grandTotals.sellGiftCard.toFixed(2)}`;
+    document.getElementById('total-return-gc').textContent = `$${grandTotals.returnGiftCard.toFixed(2)}`;
+    document.getElementById('total-check').textContent = `$${grandTotals.check.toFixed(2)}`;
+    document.getElementById('total-no-credit').textContent = grandTotals.noOfCredit;
+    document.getElementById('total-total-credit').textContent = `$${grandTotals.totalCredit.toFixed(2)}`;
+    document.getElementById('total-venmo').textContent = `$${grandTotals.venmo.toFixed(2)}`;
+    document.getElementById('total-square').textContent = `$${grandTotals.square.toFixed(2)}`;
+    document.getElementById('total-total').textContent = `$${grandTotals.total.toFixed(2)}`;
+    document.getElementById('total-cash').textContent = `$${grandTotals.cash.toFixed(2)}`;
+    staffAndTechNames.forEach(name => {
+        document.getElementById(`total-${name}`).textContent = `$${(grandTotals[name] || 0).toFixed(2)}`;
+    });
+
+    // Update the payout footer totals with the new logic
     staffAndTechNames.forEach(name => {
         const staffMember = techniciansAndStaff.find(s => s.name.toLowerCase() === name);
         const payoutType = staffMember ? staffMember.payoutType : 'standard';
@@ -3754,10 +3828,10 @@ const renderSalonEarnings = (earnings) => {
         } else {
             totalPayout = totalEarningForStaff * 0.70;
         }
-
+        
         const check70 = totalPayout * 0.70;
         const cash30 = totalPayout - check70;
-
+        
         document.getElementById(`commission-${name}`).textContent = `$${totalPayout.toFixed(2)}`;
         document.getElementById(`check70-${name}`).textContent = `$${check70.toFixed(2)}`;
         document.getElementById(`cash30-${name}`).textContent = `$${cash30.toFixed(2)}`;

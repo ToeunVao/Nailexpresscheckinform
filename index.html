@@ -570,6 +570,41 @@
                             </table>
                         </div>
                     </div>
+
+                    <!-- PASTE THIS ENTIRE NEW SECTION -->
+<div class="mt-8 bg-white p-6 rounded-2xl shadow-lg">
+    <h3 class="text-xl font-bold text-gray-700 border-b pb-3 mb-6">Salon Task Manager</h3>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Add Task Form -->
+        <div class="md:col-span-1">
+            <form id="add-task-form" class="space-y-4">
+                <div>
+                    <label for="task-description" class="block text-sm font-medium text-gray-600">New Task</label>
+                    <input type="text" id="task-description" class="form-input w-full mt-1" placeholder="e.g., Order more DND #401" required>
+                </div>
+                <div>
+                    <label for="task-priority" class="block text-sm font-medium text-gray-600">Priority</label>
+                    <select id="task-priority" class="form-select w-full mt-1">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+                <button type="submit" class="w-full bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">
+                    <i class="fas fa-plus mr-2"></i>Add Task
+                </button>
+            </form>
+        </div>
+        <!-- Task List -->
+        <div class="md:col-span-2">
+            <div id="task-list-container" class="space-y-3 max-h-72 overflow-y-auto pr-2">
+                <!-- Tasks will be added here by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+
                 </div>
 
                 <div id="staff-dashboard-view" class="hidden">

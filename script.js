@@ -2385,6 +2385,7 @@ if (royaltySettingsForm) {
     // PASTE THIS ENTIRE NEW BLOCK OF CODE
 
 // --- ROYALTY CARD ADMIN REPORT LOGIC ---
+if (userRole === 'admin') {
 const royaltyCardsTableBody = document.querySelector('#royalty-cards-table tbody');
 const searchRoyaltyCardsInput = document.getElementById('search-royalty-cards');
 // PASTE THIS NEW CODE BLOCK
@@ -2515,6 +2516,9 @@ royaltyCardsTableBody.addEventListener('click', async (e) => {
         }, "Remove Card");
     }
 });
+
+}
+
 
 // PASTE THIS ENTIRE NEW BLOCK OF CODE
 

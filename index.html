@@ -1189,13 +1189,20 @@
                                 </div>
                             </form>
 
-                            <div class="flex justify-end items-center mb-4">
-                                <label for="expense-month-filter" class="text-sm font-medium text-gray-700 mr-2">Filter
-                                    by Month:</label>
-                                <select id="expense-month-filter"
-                                    class="form-select p-2 border border-gray-300 rounded-lg"></select>
-                            </div>
-
+<div class="flex justify-end items-center mb-4 gap-4">
+    <div>
+        <label for="expense-category-filter" class="text-sm font-medium text-gray-700 mr-2">Category:</label>
+        <select id="expense-category-filter" class="form-select p-2 border border-gray-300 rounded-lg"></select>
+    </div>
+    <div>
+        <label for="expense-supplier-filter" class="text-sm font-medium text-gray-700 mr-2">Supplier:</label>
+        <select id="expense-supplier-filter" class="form-select p-2 border border-gray-300 rounded-lg"></select>
+    </div>
+    <div>
+        <label for="expense-month-filter" class="text-sm font-medium text-gray-700 mr-2">Month:</label>
+        <select id="expense-month-filter" class="form-select p-2 border border-gray-300 rounded-lg"></select>
+    </div>
+</div>
                             <div class="overflow-x-auto">
                                 <table id="expense-table" class="w-full text-sm text-left text-gray-600">
                                     <thead class="text-xs text-gray-700 uppercase bg-gray-50">

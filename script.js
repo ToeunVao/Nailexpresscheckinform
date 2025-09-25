@@ -18,6 +18,7 @@ const auth = getAuth(app);
 const storage = getStorage(app);
 
 // --- Global State ---
+let backupSettings = { frequency: 'weekly', lastBackup: null };
 const loadingScreen = document.getElementById('loading-screen');
 const landingPageContent = document.getElementById('landing-page-content');
 const appContent = document.getElementById('app-content');
@@ -2378,6 +2379,327 @@ if (royaltySettingsForm) {
             alert("Could not save settings.");
         }
     });
+
+    // PASTE THIS ENTIRE NEW BLOCK OF CODE
+
+// --- ROYALTY CARD ADMIN REPORT LOGIC ---
+const royaltyCardsTableBody = document.querySelector('#royalty-cards-table tbody');
+const searchRoyaltyCardsInput = document.getElementById('search-royalty-cards');
+// PASTE THIS NEW CODE BLOCK
+const addRoyaltyCardModal = document.getElementById('add-royalty-card-modal');
+const addRoyaltyCardBtn = document.getElementById('add-royalty-card-btn');
+const closeAddRoyaltyCardBtn = document.getElementById('close-add-royalty-card-modal-btn');
+const addRoyaltyCardForm = document.getElementById('add-royalty-card-form');
+const addRcClientList = document.getElementById('add-rc-client-list');
+
+const openAddRoyaltyCardModal = () => {
+    addRcClientList.innerHTML = '';
+    const clientsWithoutRoyalty = allClients.filter(c => !c.royaltyCard);
+    clientsWithoutRoyalty.forEach(client => {
+        addRcClientList.innerHTML += `<option value="${client.name}"></option>`;
+    });
+    addRoyaltyCardModal.classList.remove('hidden');
+};
+
+const closeAddRoyaltyCardModal = () => {
+    addRoyaltyCardForm.reset();
+    addRoyaltyCardModal.classList.add('hidden');
+};
+
+addRoyaltyCardBtn.addEventListener('click', openAddRoyaltyCardModal);
+closeAddRoyaltyCardBtn.addEventListener('click', closeAddRoyaltyCardModal);
+addRoyaltyCardModal.querySelector('.modal-overlay').addEventListener('click', closeAddRoyaltyCardModal);
+
+addRoyaltyCardForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const clientName = document.getElementById('add-rc-client-name').value;
+    const selectedClient = allClients.find(c => c.name === clientName);
+
+    if (!selectedClient) {
+        alert("Please select a valid client from the list.");
+        return;
+    }
+
+    if (selectedClient.royaltyCard) {
+        alert(`${selectedClient.name} already has a royalty card.`);
+        return;
+    }
+
+    try {
+        const clientDocRef = doc(db, "clients", selectedClient.id);
+        await updateDoc(clientDocRef, {
+            royaltyCard: {
+                visits: 0,
+                lastVisit: null
+            }
+        });
+        alert(`Royalty card created for ${selectedClient.name}!`);
+        closeAddRoyaltyCardModal();
+    } catch (error) {
+        console.error("Error adding royalty card:", error);
+        alert("Could not create royalty card for this client.");
+    }
+});
+
+const renderRoyaltyCardsAdminTable = () => {
+    if (!royaltyCardsTableBody) return;
+    
+    const searchTerm = searchRoyaltyCardsInput.value.toLowerCase();
+    const filteredCards = allRoyaltyCards.filter(client => 
+        client.name.toLowerCase().includes(searchTerm) || 
+        (client.phone && client.phone.toLowerCase().includes(searchTerm))
+    );
+
+    royaltyCardsTableBody.innerHTML = '';
+    if (filteredCards.length === 0) {
+        royaltyCardsTableBody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-gray-400">No royalty card clients found.</td></tr>`;
+        return;
+    }
+
+    filteredCards.forEach(client => {
+        const visits = client.royaltyCard.visits || 0;
+        const visitsNeeded = royaltySettings.visitsNeeded;
+        const isRewardReady = visits >= visitsNeeded;
+        
+        const statusText = isRewardReady ? 'Reward Ready' : `${visits} / ${visitsNeeded}`;
+        const statusColor = isRewardReady ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800';
+
+        const row = royaltyCardsTableBody.insertRow();
+        row.innerHTML = `
+            <td class="px-6 py-4 font-medium">${client.name}</td>
+            <td class="px-6 py-4">${client.phone || 'N/A'}</td>
+            <td class="px-6 py-4 text-center font-bold">${visits}</td>
+            <td class="px-6 py-4 text-center"><span class="px-2 py-1 text-xs font-semibold rounded-full ${statusColor}">${statusText}</span></td>
+            <td class="px-6 py-4 text-center space-x-2">
+                <button data-id="${client.id}" class="stamp-royalty-card-btn text-green-500 hover:text-green-700" title="Add Visit Stamp"><i class="fas fa-stamp"></i></button>
+                <button data-id="${client.id}" class="reset-royalty-card-btn text-yellow-500 hover:text-yellow-700" title="Reset Visits (After Reward)"><i class="fas fa-undo"></i></button>
+                <button data-id="${client.id}" class="delete-royalty-card-btn text-red-500 hover:text-red-700" title="Remove Royalty Card"><i class="fas fa-trash"></i></button>
+            </td>
+        `;
+    });
+};
+
+// Listen for all clients that have a royalty card
+onSnapshot(query(collection(db, "clients"), where("royaltyCard", "!=", null)), (snapshot) => {
+    allRoyaltyCards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    renderRoyaltyCardsAdminTable();
+});
+
+searchRoyaltyCardsInput.addEventListener('input', renderRoyaltyCardsAdminTable);
+
+royaltyCardsTableBody.addEventListener('click', async (e) => {
+    const stampBtn = e.target.closest('.stamp-royalty-card-btn');
+    const resetBtn = e.target.closest('.reset-royalty-card-btn');
+    const deleteBtn = e.target.closest('.delete-royalty-card-btn');
+    const clientRef = (stampBtn || resetBtn || deleteBtn)?.dataset.id;
+    if (!clientRef) return;
+
+    const clientDocRef = doc(db, "clients", clientRef);
+
+    if (stampBtn) {
+        const client = allRoyaltyCards.find(c => c.id === clientRef);
+        const currentVisits = client.royaltyCard.visits || 0;
+        await updateDoc(clientDocRef, { 
+            "royaltyCard.visits": currentVisits + 1,
+            "royaltyCard.lastVisit": serverTimestamp()
+        });
+    } else if (resetBtn) {
+        showConfirmModal("Are you sure you want to reset this card's visits to 0? This is usually done after a client redeems their reward.", async () => {
+            await updateDoc(clientDocRef, { "royaltyCard.visits": 0 });
+        }, "Reset Card");
+    } else if (deleteBtn) {
+        showConfirmModal("Are you sure you want to remove the royalty card from this client? Their visit history will be lost.", async () => {
+            await updateDoc(clientDocRef, { royaltyCard: null });
+        }, "Remove Card");
+    }
+});
+
+// PASTE THIS ENTIRE NEW BLOCK OF CODE
+
+// --- BACKUP & RESTORE LOGIC ---
+const backupDataBtn = document.getElementById('backup-data-btn');
+const restoreDataInput = document.getElementById('restore-data-input');
+const autoBackupSelect = document.getElementById('auto-backup-frequency');
+const lastBackupStatusEl = document.getElementById('last-backup-status');
+
+const collectionsToBackup = [
+    'users', 'clients', 'appointments', 'finished_clients', 'earnings', 'salon_earnings',
+    'expenses', 'inventory', 'promotions', 'services', 'nail_ideas', 'gift_cards',
+    'memberships', 'suppliers', 'color_brands', 'expense_categories', 'payment_accounts'
+];
+
+// Helper to convert Firestore Timestamps to strings
+const processDataForBackup = (data) => {
+    if (data instanceof Timestamp) {
+        return { __fsTimestamp: true, value: data.toDate().toISOString() };
+    }
+    if (Array.isArray(data)) {
+        return data.map(processDataForBackup);
+    }
+    if (data !== null && typeof data === 'object') {
+        const newData = {};
+        for (const key in data) {
+            newData[key] = processDataForBackup(data[key]);
+        }
+        return newData;
+    }
+    return data;
+};
+
+// Helper to convert strings back to Firestore Timestamps
+const processDataForRestore = (data) => {
+    if (data && data.__fsTimestamp) {
+        return Timestamp.fromDate(new Date(data.value));
+    }
+    if (Array.isArray(data)) {
+        return data.map(processDataForRestore);
+    }
+    if (data !== null && typeof data === 'object') {
+        const newData = {};
+        for (const key in data) {
+            newData[key] = processDataForRestore(data[key]);
+        }
+        return newData;
+    }
+    return data;
+};
+
+const backupAllData = async () => {
+    alert("Starting backup process. This may take a moment. Your download will begin automatically.");
+    backupDataBtn.disabled = true;
+    backupDataBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Backing up...';
+
+    const backupObject = {};
+    try {
+        for (const collectionName of collectionsToBackup) {
+            const querySnapshot = await getDocs(collection(db, collectionName));
+            backupObject[collectionName] = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...processDataForBackup(doc.data())
+            }));
+        }
+
+        const jsonString = JSON.stringify(backupObject, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `nailexpress_backup_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        // Update last backup timestamp
+        const now = Timestamp.now();
+        await setDoc(doc(db, "settings", "backup"), { ...backupSettings, lastBackup: now }, { merge: true });
+
+    } catch (error) {
+        console.error("Backup failed:", error);
+        alert("Backup failed. Please check the console for details.");
+    } finally {
+        backupDataBtn.disabled = false;
+        backupDataBtn.innerHTML = '<i class="fas fa-download mr-2"></i> Backup All Data';
+    }
+};
+
+const handleRestore = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const confirmation = prompt('This is a highly destructive action that will overwrite ALL existing data. To confirm, please type "RESTORE" in the box below.');
+    if (confirmation !== "RESTORE") {
+        alert("Restore cancelled.");
+        restoreDataInput.value = ''; // Clear the input
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            alert("Restore process starting. The app will be unresponsive until it is complete. You will be alerted upon completion.");
+
+            for (const collectionName in data) {
+                if (data.hasOwnProperty(collectionName)) {
+                    const collectionData = data[collectionName];
+                    const batch = writeBatch(db);
+                    for (const docData of collectionData) {
+                        const { id, ...restOfData } = docData;
+                        const processedData = processDataForRestore(restOfData);
+                        const docRef = doc(db, collectionName, id);
+                        batch.set(docRef, processedData);
+                    }
+                    await batch.commit();
+                }
+            }
+            alert("Data restore completed successfully! The page will now reload.");
+            window.location.reload();
+        } catch (error) {
+            console.error("Restore failed:", error);
+            alert("Restore failed. The backup file may be corrupt. Please check the console for details.");
+        } finally {
+            restoreDataInput.value = '';
+        }
+    };
+    reader.readAsText(file);
+};
+
+const checkAutoBackup = () => {
+    if (backupSettings.frequency === 'off' || !backupSettings.lastBackup) {
+        return;
+    }
+    const lastBackupDate = backupSettings.lastBackup.toDate();
+    const now = new Date();
+    let daysSinceLastBackup = (now - lastBackupDate) / (1000 * 60 * 60 * 24);
+    
+    let shouldBackup = false;
+    if (backupSettings.frequency === 'daily' && daysSinceLastBackup >= 1) {
+        shouldBackup = true;
+    } else if (backupSettings.frequency === 'weekly' && daysSinceLastBackup >= 7) {
+        shouldBackup = true;
+    } else if (backupSettings.frequency === 'monthly' && daysSinceLastBackup >= 30) {
+        shouldBackup = true;
+    }
+
+    if (shouldBackup) {
+        if (confirm("It's time for your scheduled backup. Do you want to download the backup file now?")) {
+            backupAllData();
+        }
+    }
+};
+
+backupDataBtn.addEventListener('click', backupAllData);
+restoreDataInput.addEventListener('change', handleRestore);
+
+autoBackupSelect.addEventListener('change', async (e) => {
+    const newFrequency = e.target.value;
+    try {
+        await setDoc(doc(db, "settings", "backup"), { frequency: newFrequency }, { merge: true });
+        backupSettings.frequency = newFrequency;
+    } catch (error) {
+        console.error("Failed to save backup frequency:", error);
+    }
+});
+
+onSnapshot(doc(db, "settings", "backup"), (docSnap) => {
+    if (docSnap.exists()) {
+        const data = docSnap.data();
+        backupSettings = data;
+        autoBackupSelect.value = data.frequency || 'weekly';
+        if (data.lastBackup) {
+            lastBackupStatusEl.textContent = `Last backup: ${data.lastBackup.toDate().toLocaleString()}`;
+        } else {
+            lastBackupStatusEl.textContent = 'No backup recorded.';
+        }
+        // Run check on first load for admin
+        if (currentUserRole === 'admin') {
+           checkAutoBackup();
+        }
+    }
+});
+
+
 }
 // PASTE THESE NEW FUNCTIONS inside initMainApp, after the royalty settings form listener
 
@@ -2552,50 +2874,50 @@ initializeRoyaltyCardDesigner();
         return chartInstance;
     };
 
-    // REPLACE the old getDateRange function with this one
-    const getDateRange = (filter, specificDate = null) => {
-        const now = new Date();
-        let startDate, endDate = new Date(now);
+// REPLACE your old getDateRange function with this corrected one:
+const getDateRange = (filter, specificDate = null) => {
+    const now = new Date();
+    let startDate, endDate = new Date(now);
 
-        if (filter === 'daily' || filter === 'today') {
-            const dateToUse = specificDate ? new Date(specificDate + 'T00:00:00') : now;
-            startDate = new Date(dateToUse.getFullYear(), dateToUse.getMonth(), dateToUse.getDate());
-            endDate = new Date(dateToUse.getFullYear(), dateToUse.getMonth(), dateToUse.getDate(), 23, 59, 59, 999);
-            return { startDate, endDate };
-        }
-
-        switch (filter) {
-            case 'this_week':
-                const firstDayOfWeek = now.getDate() - now.getDay();
-                startDate = new Date(now.setDate(firstDayOfWeek));
-                startDate.setHours(0, 0, 0, 0);
-                endDate = new Date(startDate);
-                endDate.setDate(startDate.getDate() + 6);
-                endDate.setHours(23, 59, 59, 999);
-                break;
-            case 'this_month':
-                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-                endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-                break;
-            case 'this_year':
-                startDate = new Date(now.getFullYear(), 0, 1);
-                endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
-                break;
-            case 'last-year':
-                const lastYear = now.getFullYear() - 1;
-                startDate = new Date(lastYear, 0, 1);
-                endDate = new Date(lastYear, 11, 31, 23, 59, 59, 999);
-                break;
-            default: // Monthly filter
-                if (!isNaN(parseInt(filter))) {
-                    const month = parseInt(filter, 10);
-                    startDate = new Date(now.getFullYear(), month, 1);
-                    endDate = new Date(now.getFullYear(), month + 1, 0, 23, 59, 59, 999);
-                }
-                break;
-        }
+    if (filter === 'daily' || filter === 'today') {
+        const dateToUse = specificDate ? new Date(specificDate + 'T00:00:00') : now;
+        startDate = new Date(dateToUse.getFullYear(), dateToUse.getMonth(), dateToUse.getDate());
+        endDate = new Date(dateToUse.getFullYear(), dateToUse.getMonth(), dateToUse.getDate(), 23, 59, 59, 999);
         return { startDate, endDate };
-    };
+    }
+
+    switch (filter) {
+        case 'this_week':
+            const firstDayOfWeek = now.getDate() - now.getDay();
+            startDate = new Date(now.setDate(firstDayOfWeek));
+            startDate.setHours(0, 0, 0, 0);
+            endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + 6);
+            endDate.setHours(23, 59, 59, 999);
+            break;
+        case 'this_month':
+            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+            break;
+        case 'this_year':
+            startDate = new Date(now.getFullYear(), 0, 1);
+            endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+            break; // <-- This was missing
+         case 'last-year':
+            const lastYear = now.getFullYear() - 1;
+            startDate = new Date(lastYear, 0, 1);
+            endDate = new Date(lastYear, 11, 31, 23, 59, 59, 999);
+            break; // <-- This was also missing
+        default: // Monthly filter
+            if (!isNaN(parseInt(filter))) {
+                const month = parseInt(filter, 10);
+                startDate = new Date(now.getFullYear(), month, 1);
+                endDate = new Date(now.getFullYear(), month + 1, 0, 23, 59, 59, 999);
+            }
+            break;
+    }
+    return { startDate, endDate };
+};
     // --- NEW DASHBOARD LOGIC ---
     const updateDashboard = () => {
         if (currentUserRole === 'admin') {

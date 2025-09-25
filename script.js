@@ -4163,59 +4163,65 @@ const getDateRange = (filter, specificDate = null) => {
     setupSubTabs('admin-sub-tabs', 'sub-tab-content');
 
 
-    function renderCalendar(year, month, technicianFilter = 'All') {
-        monthYearDisplay.textContent = `${new Date(year, month).toLocaleString('default', { month: 'long' })} ${year}`;
-        calendarGrid.innerHTML = '';
-        const firstDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        for (let i = 0; i < firstDay; i++) { calendarGrid.insertAdjacentHTML('beforeend', '<div></div>'); }
-        for (let day = 1; day <= daysInMonth; day++) {
-            const dayCell = document.createElement('div');
-            dayCell.className = 'calendar-day border p-2';
-            dayCell.dataset.date = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            dayCell.innerHTML = `<div class="font-bold">${day}</div><div id="day-${day}" class="appointments"></div>`;
-            calendarGrid.appendChild(dayCell);
+// REPLACE your old renderCalendar function with this new one:
+function renderCalendar(year, month, technicianFilter = 'All') {
+    monthYearDisplay.textContent = `${new Date(year, month).toLocaleString('default', { month: 'long' })} ${year}`;
+    calendarGrid.innerHTML = '';
+    const today = new Date(); // Get today's date for comparison
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    for (let i = 0; i < firstDay; i++) { calendarGrid.insertAdjacentHTML('beforeend', '<div></div>'); }
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dayCell = document.createElement('div');
+        dayCell.className = 'calendar-day border p-2';
+
+        // ADDED: Check if the current cell is today's date
+        if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+            dayCell.classList.add('is-today');
         }
-        let filteredAppointments = allAppointments;
-        if (technicianFilter !== 'All' && technicianFilter !== 'Any Technician') {
-            filteredAppointments = allAppointments.filter(appt => appt.technician === technicianFilter);
-        } else if (technicianFilter === 'Any Technician') {
-            filteredAppointments = allAppointments.filter(appt => appt.technician === 'Any Technician');
-        }
 
-        // Sort appointments by time to display them chronologically
-        filteredAppointments.sort((a, b) => a.appointmentTimestamp.seconds - b.appointmentTimestamp.seconds);
-
-        filteredAppointments.forEach(appt => {
-            const apptDate = new Date(appt.appointmentTimestamp.seconds * 1000);
-            if (apptDate.getFullYear() === year && apptDate.getMonth() === month) {
-                const dayCell = document.getElementById(`day-${apptDate.getDate()}`);
-                if (dayCell) {
-                    const timeString = apptDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-                    const serviceString = Array.isArray(appt.services) ? appt.services[0] : appt.services;
-
-                    // --- Get the color for the assigned technician ---
-                    const technicianName = appt.technician;
-                    let colorTheme = { card: 'bg-gray-100', text: 'text-gray-800' }; // Default for "Any Technician"
-                    if (technicianName && technicianColorMap[technicianName]) {
-                        colorTheme = technicianColorMap[technicianName];
-                    }
-                    // --- End of color logic ---
-
-                    const entryHTML = `
-                        <div class="appointment-entry ${colorTheme.card} p-1" data-id="${appt.id}" data-type="appointment">
-                            <p class="font-semibold text-xs ${colorTheme.text} truncate">${timeString} - ${appt.name}</p>
-                            <p class="text-xs text-gray-600 truncate">${serviceString || 'Service not specified'}</p>
-                        </div>`;
-
-                    dayCell.insertAdjacentHTML('beforeend', entryHTML);
-                }
-            }
-        });
-        if (calendarCountSpan) {
-            calendarCountSpan.textContent = calendarGrid.querySelectorAll('.appointment-entry').length;
-        }
+        dayCell.dataset.date = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        dayCell.innerHTML = `<div class="font-bold">${day}</div><div id="day-${day}" class="appointments"></div>`;
+        calendarGrid.appendChild(dayCell);
     }
+
+    let filteredAppointments = allAppointments;
+    if (technicianFilter !== 'All' && technicianFilter !== 'Any Technician') {
+        filteredAppointments = allAppointments.filter(appt => appt.technician === technicianFilter);
+    } else if (technicianFilter === 'Any Technician') {
+        filteredAppointments = allAppointments.filter(appt => appt.technician === 'Any Technician');
+    }
+
+    filteredAppointments.sort((a, b) => a.appointmentTimestamp.seconds - b.appointmentTimestamp.seconds);
+
+    filteredAppointments.forEach(appt => {
+        const apptDate = new Date(appt.appointmentTimestamp.seconds * 1000);
+        if (apptDate.getFullYear() === year && apptDate.getMonth() === month) {
+            const dayCell = document.getElementById(`day-${apptDate.getDate()}`);
+            if (dayCell) {
+                const timeString = apptDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+                const serviceString = Array.isArray(appt.services) ? appt.services[0] : appt.services;
+                const technicianName = appt.technician;
+                let colorTheme = { card: 'bg-gray-100', text: 'text-gray-800' };
+                if (technicianName && technicianColorMap[technicianName]) {
+                    colorTheme = technicianColorMap[technicianName];
+                }
+                const entryHTML = `
+                    <div class="appointment-entry ${colorTheme.card} p-1" data-id="${appt.id}" data-type="appointment">
+                        <p class="font-semibold text-xs ${colorTheme.text} truncate">${timeString} - ${appt.name}</p>
+                        <p class="text-xs text-gray-600 truncate">${serviceString || 'Service not specified'}</p>
+                    </div>`;
+                dayCell.insertAdjacentHTML('beforeend', entryHTML);
+            }
+        }
+    });
+
+    if(calendarCountSpan) {
+        calendarCountSpan.textContent = calendarGrid.querySelectorAll('.appointment-entry').length;
+    }
+}
     document.getElementById('prev-month-btn').addEventListener('click', () => { currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(currentYear, currentMonth, currentTechFilterCalendar); });
     document.getElementById('next-month-btn').addEventListener('click', () => { currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; } renderCalendar(currentYear, currentMonth, currentTechFilterCalendar); });
     calendarGrid.addEventListener('click', (e) => {

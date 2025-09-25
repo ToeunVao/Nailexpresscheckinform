@@ -1193,7 +1193,7 @@ const renderClientMembership = (clientData, clientId) => {
 };
 
 // **** Function 2: The Main Dashboard Function ****
-// REPLACE your old initClientDashboard function with this new one:
+// REPLACE your old initClientDashboard function with this corrected one:
 async function initClientDashboard(clientId, clientData) {
     const featuresDoc = await getDoc(doc(db, "settings", "features"));
     const features = featuresDoc.exists() ? featuresDoc.data() : { showGiftCards: true, showMemberships: true };
@@ -1254,7 +1254,7 @@ async function initClientDashboard(clientId, clientData) {
         });
     };
 
-    renderClientMembership(clientData, clientId); // Pass clientId here
+    renderClientMembership(clientData, clientId);
 
     const setupClientNav = () => {
         const navContainer = document.getElementById('client-top-nav');
@@ -1266,7 +1266,7 @@ async function initClientDashboard(clientId, clientData) {
             { id: 'favorites', text: 'My Favorites' },
             { id: 'gift-cards', text: 'My Gift Cards' },
             { id: 'membership', text: 'My Membership' },
-            { id: 'royalty-card', text: 'Royalty Card' } // <-- ADD THIS ITEM
+            { id: 'royalty-card', text: 'Royalty Card' }
         ];
 
         navContainer.innerHTML = navItems.map(item => 
@@ -1323,50 +1323,6 @@ async function initClientDashboard(clientId, clientData) {
         });
     };
 
-    // PASTE THIS NEW FUNCTION inside initClientDashboard
-const renderClientRoyaltyCard = (clientData) => {
-    const container = document.getElementById('royalty-card-content');
-    if (!clientData.royaltyCard) {
-        container.innerHTML = `
-            <div class="text-center p-8 bg-gray-50 rounded-lg">
-                <h3 class="text-xl font-semibold text-gray-700">You haven't joined the Royalty Program yet.</h3>
-                <p class="text-gray-500 mt-2 mb-4">Join for free to earn rewards with every visit!</p>
-            </div>`;
-        return;
-    }
-
-    const visits = clientData.royaltyCard.visits || 0;
-    const visitsNeeded = royaltySettings.visitsNeeded;
-    const rewardText = royaltySettings.rewardDescription;
-
-    let stampsHTML = '';
-    for (let i = 1; i <= visitsNeeded; i++) {
-        const isStamped = i <= visits;
-        stampsHTML += `<div class="stamp ${isStamped ? 'stamped' : ''}">${isStamped ? '<i class="fas fa-cut"></i>' : i}</div>`;
-    }
-
-    const isRewardReady = visits >= visitsNeeded;
-    const progressText = isRewardReady ? `Congrats! Your reward is ready: ${rewardText}!` : `${visitsNeeded - visits} more visits until your reward!`;
-
-    container.innerHTML = `
-        <div class="royalty-card-container">
-            <h3 class="text-xl font-semibold text-gray-700 mb-4 text-center">Your Royalty Card</h3>
-            <div class="royalty-card">
-                <div class="royalty-card-header">
-                    <p class="font-parisienne text-3xl">Nails Express</p>
-                    <p class="text-xs font-semibold tracking-wider">ROYALTY PROGRAM</p>
-                </div>
-                <div class="stamp-grid">
-                    ${stampsHTML}
-                </div>
-                <div class="royalty-card-footer">
-                    <p>${progressText}</p>
-                </div>
-            </div>
-        </div>
-    `;
-};
-
     const calculateAndRenderFavorites = (history) => {
         if (history.length === 0) return;
         const techCounts = history.reduce((acc, visit) => {
@@ -1382,6 +1338,27 @@ const renderClientRoyaltyCard = (clientData) => {
         document.getElementById('favorite-technician').textContent = favTech;
         document.getElementById('favorite-color').textContent = favColor;
     };
+    
+    // THIS IS THE CODE BLOCK THAT WAS IN THE WRONG PLACE
+    document.getElementById('appointment-services-container').addEventListener('click', (e) => {
+        const btn = e.target.closest('.category-button');
+        if (btn) {
+            const category = btn.dataset.category;
+            const sourceContainer = document.getElementById('appointment-hidden-checkboxes');
+            modalTitle.textContent = category;
+            modalContent.innerHTML = '';
+            servicesData[category].forEach(service => {
+                const val = `${service.p || ''}${service.name}${service.price ? ' ' + service.price : ''}`;
+                const sourceCb = sourceContainer.querySelector(`input[value="${val}"]`);
+                const label = document.createElement('label');
+                label.className = 'flex items-center p-3 hover:bg-pink-50 cursor-pointer rounded-lg';
+                label.innerHTML = `<input type="checkbox" class="form-checkbox modal-checkbox" data-source-container="appointment-hidden-checkboxes" value="${val}" ${sourceCb && sourceCb.checked ? 'checked' : ''}><span class="ml-3 text-gray-700 flex-grow">${service.name}</span>${service.price ? `<span class="font-semibold">${service.price}</span>` : ''}`;
+                modalContent.appendChild(label);
+            });
+            serviceModal.classList.add('flex');
+            serviceModal.classList.remove('hidden');
+        }
+    });
 
     onSnapshot(query(collection(db, "appointments"), where("name", "==", clientData.name)), (snapshot) => {
         const appointments = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
@@ -1438,7 +1415,6 @@ const renderClientRoyaltyCard = (clientData) => {
 
         if (downloadBtn) {
             const tier = allMembershipTiers.find(t => t.id === clientData.membership.tierId);
-            // THE FIX IS HERE: We pass an object with the ID included
             if (clientData && tier) {
                 openMembershipCardForPrint({ ...clientData, id: clientId }, tier);
             }
@@ -1464,15 +1440,15 @@ const renderClientRoyaltyCard = (clientData) => {
     document.getElementById('client-buy-gift-card-btn').addEventListener('click', () => {
         openPurchaseModalForClient(clientData);
     });
+    
+    getDoc(doc(db, "settings", "royaltyProgram")).then(docSnap => {
+        if (docSnap.exists() && docSnap.data().visitsNeeded) {
+            royaltySettings = docSnap.data();
+        }
+        renderClientRoyaltyCard(clientData);
+    });
 
     setupClientNav();
-// ADD THIS AT THE END of initClientDashboard
-getDoc(doc(db, "settings", "royaltyProgram")).then(docSnap => {
-    if (docSnap.exists() && docSnap.data().visitsNeeded) {
-        royaltySettings = docSnap.data();
-    }
-    renderClientRoyaltyCard(clientData);
-});
 }
 
 // REPLACE your old 'landing-membership-form' submit listener with this one

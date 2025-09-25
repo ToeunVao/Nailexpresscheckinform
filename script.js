@@ -6553,7 +6553,60 @@ clientForm.addEventListener('submit', async (e) => {
     const printableCard = document.getElementById('printable-gift-card');
     const saveAndPrintBtn = document.getElementById('save-and-print-btn');
     const editGiftCardForm = document.getElementById('edit-gift-card-form');
+// PASTE THIS ENTIRE NEW EVENT LISTENER BLOCK
 
+editGiftCardForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const cardId = document.getElementById('edit-gift-card-id').value;
+    const card = allGiftCards.find(c => c.id === cardId);
+    if (!card) {
+        alert("Could not find the gift card to update.");
+        return;
+    }
+
+    const transactionType = document.getElementById('edit-gc-transaction-type').value;
+    const amount = parseFloat(document.getElementById('edit-gc-transaction-amount').value);
+    const notes = document.getElementById('edit-gc-transaction-notes').value.trim();
+
+    if (isNaN(amount) || amount <= 0) {
+        alert("Please enter a valid, positive amount for the transaction.");
+        return;
+    }
+
+    let newBalance = card.balance;
+    if (transactionType === 'redeem') {
+        if (amount > card.balance) {
+            alert("Cannot redeem an amount greater than the current balance.");
+            return;
+        }
+        newBalance -= amount;
+    } else { // 'add'
+        newBalance += amount;
+    }
+
+    const newTransaction = {
+        type: transactionType,
+        amount: amount,
+        notes: notes,
+        timestamp: serverTimestamp()
+    };
+
+    let newStatus = newBalance <= 0 ? 'Depleted' : 'Active';
+
+    try {
+        const cardDocRef = doc(db, "gift_cards", cardId);
+        await updateDoc(cardDocRef, {
+            balance: newBalance,
+            status: newStatus,
+            history: arrayUnion(newTransaction)
+        });
+        alert("Transaction applied successfully!");
+        editGiftCardModal.classList.add('hidden');
+    } catch (error) {
+        console.error("Error applying transaction:", error);
+        alert("Could not apply the transaction. Please try again.");
+    }
+});
 
 // REPLACE the entire updateDesignerPreview function with this one:
 const updateDesignerPreview = () => {

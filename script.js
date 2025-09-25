@@ -52,7 +52,7 @@ let currentRotation = 0; // <-- PASTE it here
 let royaltySettings = { visitsNeeded: 10, rewardDescription: 'One Free Classic Manicure' };
 let allRoyaltyCards = [];
 
-
+const purchaseForm = document.getElementById('landing-gift-card-form');
 // ADD THIS ENTIRE NEW BLOCK for the lightbox
 const nailIdeaLightbox = document.getElementById('nail-idea-lightbox');
 const lightboxCloseBtn = document.getElementById('lightbox-close-btn');
@@ -542,6 +542,21 @@ document.addEventListener('click', (e) => { if (e.target.closest('.view-policy-b
 document.getElementById('policy-close-btn').addEventListener('click', closePolicyModal);
 document.querySelector('#policy-modal .policy-modal-overlay').addEventListener('click', closePolicyModal);
 
+// *** ADD THIS CORRECTED BLOCK ***
+const closePurchaseModal = () => {
+    const purchaseModal = document.getElementById('gift-card-purchase-modal');
+    const userInfoSection = document.getElementById('gc-user-info-section');
+    purchaseModal.classList.add('hidden');
+    // Reset the form fields for the next user
+    document.getElementById('gc-buyer-name').disabled = false;
+    document.getElementById('gc-buyer-phone').disabled = false;
+    document.getElementById('gc-buyer-email').disabled = false;
+    // *** SHOW the user info section again for the next user ***
+    if (userInfoSection) {
+        userInfoSection.classList.remove('hidden');
+    }
+};
+
 // This function is in the global scope
 const openAddAppointmentModal = (date, clientData = null, appointmentData = null) => {
     addAppointmentForm.reset();
@@ -665,6 +680,101 @@ addAppointmentForm.addEventListener('submit', async (e) => {
     }
 });
 
+// Located inside initLandingPage()
+purchaseForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const amount = parseFloat(document.getElementById('gc-amount').value);
+    const quantity = parseInt(document.getElementById('gc-quantity').value, 10);
+
+    if (isNaN(amount) || amount <= 0 || isNaN(quantity) || quantity <= 0) {
+        alert('Please fill out the gift card amount and quantity correctly.');
+        return;
+    }
+
+    const submitBtn = document.getElementById('landing-gc-submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Processing...';
+
+    try {
+        // SCENARIO 1: User is already a logged-in client
+        if (currentUserId && auth.currentUser && !auth.currentUser.isAnonymous) {
+            const batch = writeBatch(db);
+            const expiryDate = new Date();
+            expiryDate.setMonth(expiryDate.getMonth() + 6);
+
+            const buyerInfo = {
+                name: document.getElementById('gc-buyer-name').value,
+                email: document.getElementById('gc-buyer-email').value,
+                phone: document.getElementById('gc-buyer-phone').value,
+            };
+
+            for (let i = 0; i < quantity; i++) {
+                const cardData = {
+                    amount: amount,
+                    balance: amount,
+                    history: [],
+                    recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerInfo.name,
+                    senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerInfo.name,
+                    backgroundUrl: document.getElementById('landing-gc-preview-card').style.backgroundImage.slice(5, -2),
+                    code: `GC-${Date.now()}-${i}`,
+                    status: 'Pending',
+                    type: 'E-Gift',
+                    createdBy: currentUserId,
+                    buyerInfo: buyerInfo,
+                    createdAt: serverTimestamp(),
+                    expiresAt: Timestamp.fromDate(expiryDate)
+                };
+                const newCardRef = doc(collection(db, "gift_cards"));
+                batch.set(newCardRef, cardData);
+            }
+            await batch.commit();
+            alert("Success! Your gift card request has been sent. It will be activated once payment is confirmed.");
+            // **** FIX FOR LOGGED-IN USER ****
+            closePurchaseModal();
+
+        } else {
+            // SCENARIO 2: New or anonymous user (original flow)
+            const buyerName = document.getElementById('gc-buyer-name').value;
+            const buyerPhone = document.getElementById('gc-buyer-phone').value;
+            const buyerEmail = document.getElementById('gc-buyer-email').value;
+
+            if (!buyerName || !buyerPhone || !buyerEmail) {
+                alert('Please fill out all your information to create an account.');
+                throw new Error("Missing buyer information.");
+            }
+
+            await createUserWithEmailAndPassword(auth, buyerEmail, buyerPhone);
+
+            const purchaseDetails = {
+                buyerName, buyerPhone, buyerEmail, amount, quantity,
+                recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerName,
+                senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerName,
+                backgroundUrl: document.getElementById('landing-gc-preview-card').style.backgroundImage.slice(5, -2),
+            };
+            sessionStorage.setItem('pendingGiftCardPurchase', JSON.stringify(purchaseDetails));
+            // onAuthStateChanged will handle the rest
+            await sendGiftCardConfirmationEmail(purchaseDetails);
+            // **** FIX FOR NEW USER ****
+            closePurchaseModal();
+
+        }
+    } catch (error) {
+        if (error.code === 'auth/email-already-in-use') {
+            alert("An account with this email already exists. Please log in to purchase a gift card.");
+        } else {
+            console.error("Error during gift card purchase:", error);
+            alert(`Could not process your request. Error: ${error.message}`);
+        }
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Purchase Request';
+        // Re-enable form fields that might have been disabled
+        document.getElementById('gc-buyer-name').disabled = false;
+        document.getElementById('gc-buyer-phone').disabled = false;
+        document.getElementById('gc-buyer-email').disabled = false;
+    }
+
+});
 // --- GLOBAL MEMBERSHIP FUNCTIONS ---
 const renderMembershipTiers = (tiers, containerId, isLoggedIn) => {
     const container = document.getElementById(containerId);
@@ -1410,118 +1520,10 @@ document.getElementById('landing-membership-form').addEventListener('submit', as
     }
 });
 
-// *** ADD THIS CORRECTED BLOCK ***
-const closePurchaseModal = () => {
-    const purchaseModal = document.getElementById('gift-card-purchase-modal');
-    const userInfoSection = document.getElementById('gc-user-info-section');
-    purchaseModal.classList.add('hidden');
-    // Reset the form fields for the next user
-    document.getElementById('gc-buyer-name').disabled = false;
-    document.getElementById('gc-buyer-phone').disabled = false;
-    document.getElementById('gc-buyer-email').disabled = false;
-    // *** SHOW the user info section again for the next user ***
-    if (userInfoSection) {
-        userInfoSection.classList.remove('hidden');
-    }
-};
 
-const purchaseForm = document.getElementById('landing-gift-card-form');
+///const purchaseForm = document.getElementById('landing-gift-card-form');
 
-// Located inside initLandingPage()
-purchaseForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const amount = parseFloat(document.getElementById('gc-amount').value);
-    const quantity = parseInt(document.getElementById('gc-quantity').value, 10);
 
-    if (isNaN(amount) || amount <= 0 || isNaN(quantity) || quantity <= 0) {
-        alert('Please fill out the gift card amount and quantity correctly.');
-        return;
-    }
-
-    const submitBtn = document.getElementById('landing-gc-submit-btn');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Processing...';
-
-    try {
-        // SCENARIO 1: User is already a logged-in client
-        if (currentUserId && auth.currentUser && !auth.currentUser.isAnonymous) {
-            const batch = writeBatch(db);
-            const expiryDate = new Date();
-            expiryDate.setMonth(expiryDate.getMonth() + 6);
-
-            const buyerInfo = {
-                name: document.getElementById('gc-buyer-name').value,
-                email: document.getElementById('gc-buyer-email').value,
-                phone: document.getElementById('gc-buyer-phone').value,
-            };
-
-            for (let i = 0; i < quantity; i++) {
-                const cardData = {
-                    amount: amount,
-                    balance: amount,
-                    history: [],
-                    recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerInfo.name,
-                    senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerInfo.name,
-                    backgroundUrl: document.getElementById('landing-gc-preview-card').style.backgroundImage.slice(5, -2),
-                    code: `GC-${Date.now()}-${i}`,
-                    status: 'Pending',
-                    type: 'E-Gift',
-                    createdBy: currentUserId,
-                    buyerInfo: buyerInfo,
-                    createdAt: serverTimestamp(),
-                    expiresAt: Timestamp.fromDate(expiryDate)
-                };
-                const newCardRef = doc(collection(db, "gift_cards"));
-                batch.set(newCardRef, cardData);
-            }
-            await batch.commit();
-            alert("Success! Your gift card request has been sent. It will be activated once payment is confirmed.");
-            // **** FIX FOR LOGGED-IN USER ****
-            closePurchaseModal();
-
-        } else {
-            // SCENARIO 2: New or anonymous user (original flow)
-            const buyerName = document.getElementById('gc-buyer-name').value;
-            const buyerPhone = document.getElementById('gc-buyer-phone').value;
-            const buyerEmail = document.getElementById('gc-buyer-email').value;
-
-            if (!buyerName || !buyerPhone || !buyerEmail) {
-                alert('Please fill out all your information to create an account.');
-                throw new Error("Missing buyer information.");
-            }
-
-            await createUserWithEmailAndPassword(auth, buyerEmail, buyerPhone);
-
-            const purchaseDetails = {
-                buyerName, buyerPhone, buyerEmail, amount, quantity,
-                recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerName,
-                senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerName,
-                backgroundUrl: document.getElementById('landing-gc-preview-card').style.backgroundImage.slice(5, -2),
-            };
-            sessionStorage.setItem('pendingGiftCardPurchase', JSON.stringify(purchaseDetails));
-            // onAuthStateChanged will handle the rest
-            await sendGiftCardConfirmationEmail(purchaseDetails);
-            // **** FIX FOR NEW USER ****
-            closePurchaseModal();
-
-        }
-    } catch (error) {
-        if (error.code === 'auth/email-already-in-use') {
-            alert("An account with this email already exists. Please log in to purchase a gift card.");
-        } else {
-            console.error("Error during gift card purchase:", error);
-            alert(`Could not process your request. Error: ${error.message}`);
-        }
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Submit Purchase Request';
-        // Re-enable form fields that might have been disabled
-        document.getElementById('gc-buyer-name').disabled = false;
-        document.getElementById('gc-buyer-phone').disabled = false;
-        document.getElementById('gc-buyer-email').disabled = false;
-    }
-
-});
 
 // --- LANDING PAGE SCRIPT ---
 function initLandingPage() {

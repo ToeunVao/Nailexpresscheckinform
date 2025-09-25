@@ -570,41 +570,6 @@
                             </table>
                         </div>
                     </div>
-
-                    <!-- PASTE THIS ENTIRE NEW SECTION -->
-<div class="mt-8 bg-white p-6 rounded-2xl shadow-lg">
-    <h3 class="text-xl font-bold text-gray-700 border-b pb-3 mb-6">Salon Task Manager</h3>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <!-- Add Task Form -->
-        <div class="md:col-span-1">
-            <form id="add-task-form" class="space-y-4">
-                <div>
-                    <label for="task-description" class="block text-sm font-medium text-gray-600">New Task</label>
-                    <input type="text" id="task-description" class="form-input w-full mt-1" placeholder="e.g., Order more DND #401" required>
-                </div>
-                <div>
-                    <label for="task-priority" class="block text-sm font-medium text-gray-600">Priority</label>
-                    <select id="task-priority" class="form-select w-full mt-1">
-                        <option value="low">Low</option>
-                        <option value="medium" selected>Medium</option>
-                        <option value="high">High</option>
-                    </select>
-                </div>
-                <button type="submit" class="w-full bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">
-                    <i class="fas fa-plus mr-2"></i>Add Task
-                </button>
-            </form>
-        </div>
-        <!-- Task List -->
-        <div class="md:col-span-2">
-            <div id="task-list-container" class="space-y-3 max-h-72 overflow-y-auto pr-2">
-                <!-- Tasks will be added here by JavaScript -->
-            </div>
-        </div>
-    </div>
-</div>
-
-
                 </div>
 
                 <div id="staff-dashboard-view" class="hidden">
@@ -1224,20 +1189,13 @@
                                 </div>
                             </form>
 
-<div class="flex justify-end items-center mb-4 gap-4">
-    <div>
-        <label for="expense-category-filter" class="text-sm font-medium text-gray-700 mr-2">Category:</label>
-        <select id="expense-category-filter" class="form-select p-2 border border-gray-300 rounded-lg"></select>
-    </div>
-    <div>
-        <label for="expense-supplier-filter" class="text-sm font-medium text-gray-700 mr-2">Supplier:</label>
-        <select id="expense-supplier-filter" class="form-select p-2 border border-gray-300 rounded-lg"></select>
-    </div>
-    <div>
-        <label for="expense-month-filter" class="text-sm font-medium text-gray-700 mr-2">Month:</label>
-        <select id="expense-month-filter" class="form-select p-2 border border-gray-300 rounded-lg"></select>
-    </div>
-</div>
+                            <div class="flex justify-end items-center mb-4">
+                                <label for="expense-month-filter" class="text-sm font-medium text-gray-700 mr-2">Filter
+                                    by Month:</label>
+                                <select id="expense-month-filter"
+                                    class="form-select p-2 border border-gray-300 rounded-lg"></select>
+                            </div>
+
                             <div class="overflow-x-auto">
                                 <table id="expense-table" class="w-full text-sm text-left text-gray-600">
                                     <thead class="text-xs text-gray-700 uppercase bg-gray-50">
@@ -1347,14 +1305,10 @@
                         </div>
                         <!-- PASTE THIS NEW DIV -->
 <div id="royalty-card-report-content" class="sub-tab-content hidden">
-<!-- ...WITH this new div that includes the button: -->
-<div class="flex justify-between items-center mb-4">
-    <h3 class="text-xl font-semibold text-gray-700">Royalty Cards</h3>
-    <div class="flex items-center gap-2">
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-semibold text-gray-700">Royalty Cards</h3>
         <input type="text" id="search-royalty-cards" class="form-input w-64 p-2 border border-gray-300 rounded-lg" placeholder="Search by name or phone...">
-        <button id="add-royalty-card-btn" class="bg-pink-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-pink-700 whitespace-nowrap"><i class="fas fa-plus mr-2"></i>Add for Client</button>
     </div>
-</div>
     <div class="overflow-x-auto">
         <table id="royalty-cards-table" class="w-full text-sm text-left text-gray-600">
             <thead class="text-xs text-gray-700 uppercase bg-gray-50">
@@ -1399,15 +1353,13 @@
                                         id="membership-management-tab" type="button">Memberships</button></li>
                                 <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg"
                                         id="settings-management-tab" type="button">Settings</button></li>
-                                        <!-- ADD THIS NEW LIST ITEM -->
-<li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg" 
-        id="backup-management-tab" type="button">Backup & Restore</button></li>
                             </ul>
                         </div>
 
                         <div id="user-management-content" class="sub-tab-content">
                             <h3 class="text-xl font-semibold text-gray-700 mb-4">Manage Users</h3>
-                            <form id="add-user-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 border rounded-lg bg-gray-50 items-end">
+                            <form id="add-user-form"
+                                class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 border rounded-lg bg-gray-50 items-end">
                                 <input type="hidden" id="edit-user-id">
                                 <div><label for="new-user-name"
                                         class="block text-sm font-medium text-gray-600">Name</label><input type="text"
@@ -1429,15 +1381,6 @@
                                         <option value="staff">Staff</option>
                                         <option value="admin">Admin</option>
                                     </select></div>
-                                    <!-- PASTE THIS NEW DIV HERE -->
-<div>
-    <label for="payout-type" class="block text-sm font-medium text-gray-600">Payout Type</label>
-    <select id="payout-type" class="form-select w-full mt-1">
-        <option value="standard">Standard (Commission Only)</option>
-        <option value="commission_plus_tips">Commission + Tips</option>
-    </select>
-    <p class="text-xs text-gray-500 mt-1">Determines how staff payout is calculated.</p>
-</div>
                                 <div class="self-end"><button type="submit"
                                         class="w-full bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">Add/Update
                                         User</button></div>
@@ -1450,7 +1393,6 @@
                                             <th scope="col" class="px-6 py-3">Email</th>
                                             <th scope="col" class="px-6 py-3">Phone</th>
                                             <th scope="col" class="px-6 py-3">Role</th>
-                                            <th scope="col" class="px-6 py-3">Payout Type</th>
                                             <th scope="col" class="px-6 py-3 text-center">Action</th>
                                         </tr>
                                     </thead>
@@ -2139,46 +2081,6 @@
                                 </form>
                             </div>
                         </div>
-                        <!-- PASTE THIS ENTIRE NEW SECTION -->
-<div id="backup-management-content" class="sub-tab-content hidden">
-    <h3 class="text-xl font-semibold text-gray-700 mb-4">Data Management</h3>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <!-- Manual Backup & Restore -->
-        <div class="p-6 border rounded-lg bg-gray-50 space-y-4">
-            <h4 class="font-semibold text-gray-800">Manual Backup & Restore</h4>
-            <p class="text-sm text-gray-600">Download a complete backup of all salon data to a single JSON file. You can restore from this file at any time.</p>
-            <div>
-                <button id="backup-data-btn" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center justify-center">
-                    <i class="fas fa-download mr-2"></i> Backup All Data
-                </button>
-            </div>
-            <div class="border-t pt-4">
-                <label for="restore-data-input" class="block text-sm font-medium text-gray-600">Restore from Backup File</label>
-                <input type="file" id="restore-data-input" class="form-input w-full mt-1 text-sm" accept=".json">
-                <p class="text-xs text-red-600 mt-1 font-semibold">Warning: Restoring will overwrite all current data. This action cannot be undone.</p>
-            </div>
-        </div>
-
-        <!-- Automatic Backup Settings -->
-        <div class="p-6 border rounded-lg bg-gray-50 space-y-4">
-            <h4 class="font-semibold text-gray-800">Automatic Backup</h4>
-            <p class="text-sm text-gray-600">The application can automatically prompt you to download a backup file if one hasn't been created recently.</p>
-            <div>
-                <label for="auto-backup-frequency" class="block text-sm font-medium text-gray-600">Backup Frequency</label>
-                <select id="auto-backup-frequency" class="form-select w-full mt-1">
-                    <option value="weekly">Weekly (Default)</option>
-                    <option value="daily">Daily</option>
-                    <option value="monthly">Monthly</option>
-                    <option value="off">Off</option>
-                </select>
-            </div>
-            <div class="border-t pt-4">
-                 <p class="text-sm font-medium text-gray-600">Last Backup Status</p>
-                 <p id="last-backup-status" class="text-sm text-gray-800 font-semibold mt-1">No backup recorded.</p>
-            </div>
-        </div>
-    </div>
-</div>
                         <div id="service-management-content" class="sub-tab-content hidden">
                             <h3 class="text-xl font-semibold text-gray-700 mb-4">Manage Services</h3>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -2371,11 +2273,14 @@
                         <option value="Phone">Phone</option>
                         <option value="Online">Online</option>
                     </select></div>
-                <div><label for="appointment-services"
-                        class="block text-sm font-medium text-gray-600">Services</label><input type="text"
-                        id="appointment-services" list="main-services-list"
-                        class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg"
-                        placeholder="Select or type a service..."><datalist id="main-services-list"></datalist></div>
+               <!-- ...WITH this new, improved section: -->
+<div class="md:col-span-2">
+    <label class="block text-sm font-medium text-gray-600">Services</label>
+    <div id="appointment-services-container" class="grid grid-cols-2 md:grid-cols-3 gap-2 mt-1">
+        <!-- Service category buttons will be added here by JavaScript -->
+    </div>
+    <div id="appointment-hidden-checkboxes" class="hidden"></div>
+</div>
                 <div><label for="appointment-technician-select"
                         class="block text-sm font-medium text-gray-600">Technician Request</label><select
                         id="appointment-technician-select"
@@ -2509,10 +2414,6 @@
                     <input type="tel" id="client-form-phone"
                         class="form-input w-full p-3 border border-gray-300 rounded-lg">
                 </div>
-                <div>
-    <label for="client-form-email" class="block text-sm font-medium text-gray-600 mb-1">Email Address (Optional)</label>
-    <input type="email" id="client-form-email" class="form-input w-full p-3 border border-gray-300 rounded-lg">
-</div>
                 <div>
                     <label for="client-form-dob" class="block text-sm font-medium text-gray-600 mb-1">Date of
                         Birth</label>
@@ -3137,55 +3038,6 @@
             <div class="pt-4">
                 <button type="submit" id="royalty-card-submit-btn" class="w-full bg-pink-600 text-white font-bold py-3 px-12 rounded-full hover:bg-pink-700">
                     Sign Up & Get My Card
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-<!-- PASTE THIS NEW MODAL AT THE END -->
-<div id="add-royalty-card-modal" class="modal hidden fixed inset-0 z-[70] flex items-center justify-center p-4">
-    <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
-    <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
-        <button id="close-add-royalty-card-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times fa-lg"></i></button>
-        <h2 class="text-2xl font-bold text-center text-pink-700 mb-6">Create Royalty Card for Existing Client</h2>
-        <form id="add-royalty-card-form" class="space-y-4">
-            <div>
-                <label for="add-rc-client-name" class="block text-sm font-medium text-gray-600">Client Name</label>
-                <input type="text" id="add-rc-client-name" list="add-rc-client-list" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" required placeholder="Start typing to search for a client...">
-                <datalist id="add-rc-client-list"></datalist>
-            </div>
-            <p class="text-xs text-center text-gray-500">Select an existing client to add a new royalty card to their account. Their visit count will be set to zero.</p>
-            <div class="pt-4">
-                <button type="submit" id="add-royalty-card-submit-btn" class="w-full bg-pink-600 text-white font-bold py-3 px-12 rounded-full hover:bg-pink-700">
-                    Create Card
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-<!-- PASTE THIS NEW MODAL AT THE END OF THE FILE -->
-<div id="edit-task-modal" class="modal hidden fixed inset-0 z-[70] flex items-center justify-center p-4">
-    <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
-    <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
-        <button id="close-edit-task-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times fa-lg"></i></button>
-        <h2 class="text-2xl font-bold text-center text-pink-700 mb-6">Edit Task</h2>
-        <form id="edit-task-form" class="space-y-4">
-            <input type="hidden" id="edit-task-id">
-            <div>
-                <label for="edit-task-description" class="block text-sm font-medium text-gray-600">Task Description</label>
-                <input type="text" id="edit-task-description" class="form-input w-full mt-1" required>
-            </div>
-            <div>
-                <label for="edit-task-priority" class="block text-sm font-medium text-gray-600">Priority</label>
-                <select id="edit-task-priority" class="form-select w-full mt-1">
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                </select>
-            </div>
-            <div class="pt-4">
-                <button type="submit" class="w-full bg-pink-600 text-white font-bold py-3 px-12 rounded-full hover:bg-pink-700">
-                    Save Changes
                 </button>
             </div>
         </form>

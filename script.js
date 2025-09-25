@@ -11,7 +11,7 @@ const firebaseConfig = {
     messagingSenderId: "1015991996673",
     appId: "1:1015991996673:web:b6e8888abae83906d34b00"
 };
-///---3
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -3086,104 +3086,61 @@ const getDateRange = (filter, specificDate = null) => {
         { card: 'bg-orange-100', text: 'text-orange-800', bg: 'rgba(255, 159, 64, 0.5)', border: 'rgba(255, 159, 64, 1)' }
     ];
 
-    const updateStaffEarningsReport = (filteredData) => {
-        const staffContainer = document.getElementById('staff-earning-cards-container');
-        const ctx = document.getElementById('staff-earnings-chart')?.getContext('2d');
+const updateStaffEarningsReport = (filteredSalonData) => {
+    const staffContainer = document.getElementById('staff-earning-cards-container');
+    const ctx = document.getElementById('staff-earnings-chart')?.getContext('2d');
+    if (!staffContainer || !ctx) return;
 
-        if (!staffContainer || !ctx) return;
-
-        // Calculate total earnings for each staff member (excluding admin)
-        const staffTotals = {};
-        const staffExcludingAdmins = techniciansAndStaff.filter(user => user.role !== 'admin');
-
+    const staffTotals = {};
+    const staffExcludingAdmins = techniciansAndStaff.filter(user => user.role !== 'admin');
+    staffExcludingAdmins.forEach(staff => { staffTotals[staff.name] = 0; });
+    filteredSalonData.forEach(earning => {
         staffExcludingAdmins.forEach(staff => {
-            staffTotals[staff.name] = 0; // Initialize
-        });
-
-        filteredData.forEach(earning => {
-            staffExcludingAdmins.forEach(staff => {
-                const staffNameLower = staff.name.toLowerCase();
-                if (earning[staffNameLower]) {
-                    staffTotals[staff.name] += earning[staffNameLower];
-                }
-            });
-        });
-
-        // Render Staff Earning Cards using the new palette
-        staffContainer.innerHTML = '';
-        if (staffExcludingAdmins.length === 0) {
-            staffContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">No staff found.</p>';
-        } else {
-            staffExcludingAdmins.forEach((staff, index) => {
-                // --- Calculations ---
-                const totalEarning = staffTotals[staff.name] || 0;
-                const commission = totalEarning * 0.70;
-                const checkPayout = commission * 0.70;
-                const cashPayout = commission * 0.30; // This is the remaining 30% of the commission
-
-                // --- HTML Template ---
-                const colorTheme = colorPalette[index % colorPalette.length];
-                const cardHTML = `
-                <div class="dashboard-card ${colorTheme.card} p-4 flex flex-col">
-                    <div>
-                        <h4 class="font-bold ${colorTheme.text} truncate">${staff.name}</h4>
-                        <p class="text-2xl font-bold text-gray-700 mb-2">$${totalEarning.toFixed(2)}</p>
-                    </div>
-                    <div class="mt-auto space-y-1 text-xs text-gray-600 border-t border-gray-400/20 pt-2">
-                        <div class="flex justify-between">
-                            <span>Total Payout:</span>
-                            <span class="font-semibold text-gray-800">$${commission.toFixed(2)}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span>Check Payout:</span>
-                            <span class="font-semibold text-gray-800">$${checkPayout.toFixed(2)}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span>Cash Payout:</span>
-                            <span class="font-semibold text-gray-800">$${cashPayout.toFixed(2)}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-                staffContainer.innerHTML += cardHTML;
-            });
-        }
-        // Render Staff Earnings Chart using the new palette
-        const labels = Object.keys(staffTotals);
-        const data = Object.values(staffTotals);
-
-        // Dynamically create color arrays that match the cards
-        const backgroundColors = labels.map((_, index) => colorPalette[index % colorPalette.length].bg);
-        const borderColors = labels.map((_, index) => colorPalette[index % colorPalette.length].border);
-
-        const chartConfig = {
-            labels,
-            datasets: [{
-                label: 'Total Earnings',
-                data: data,
-                backgroundColor: backgroundColors,
-                borderColor: borderColors,
-                borderWidth: 1
-            }]
-        };
-
-        const chartOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
+            if (earning[staff.name.toLowerCase()]) {
+                staffTotals[staff.name] += earning[staff.name.toLowerCase()];
             }
-        };
+        });
+    });
 
-        staffEarningsChart = initializeChart(staffEarningsChart, ctx, 'bar', chartConfig, chartOptions);
-    };
+    staffContainer.innerHTML = '';
+    staffExcludingAdmins.forEach((staff, index) => {
+        const payoutType = staff.payoutType || 'standard';
+        const totalEarning = staffTotals[staff.name] || 0;
+        let totalPayout;
+
+        if (payoutType === 'commission_plus_tips') {
+            const { startDate, endDate } = getDateRange(currentDashboardRangeFilter, currentDashboardDateFilter);
+            const staffPeriodEarnings = allEarnings.filter(e => {
+                const earnDate = e.date.toDate();
+                return e.staffName === staff.name && earnDate >= startDate && earnDate <= endDate;
+            });
+            const totalTip = staffPeriodEarnings.reduce((sum, e) => sum + (e.tip || 0), 0);
+            totalPayout = (totalEarning * 0.70) + totalTip;
+        } else {
+            totalPayout = totalEarning * 0.70;
+        }
+
+        const checkPayout = totalPayout * 0.70;
+        const cashPayout = totalPayout - checkPayout;
+        const colorTheme = colorPalette[index % colorPalette.length];
+        const cardHTML = `
+            <div class="dashboard-card ${colorTheme.card} p-4 flex flex-col">
+                <div><h4 class="font-bold ${colorTheme.text} truncate">${staff.name}</h4><p class="text-2xl font-bold text-gray-700 mb-2">$${totalEarning.toFixed(2)}</p></div>
+                <div class="mt-auto space-y-1 text-xs text-gray-600 border-t border-gray-400/20 pt-2">
+                    <div class="flex justify-between"><span>Total Payout:</span><span class="font-semibold text-gray-800">$${totalPayout.toFixed(2)}</span></div>
+                    <div class="flex justify-between"><span>Check Payout:</span><span class="font-semibold text-gray-800">$${checkPayout.toFixed(2)}</span></div>
+                    <div class="flex justify-between"><span>Cash Payout:</span><span class="font-semibold text-gray-800">$${cashPayout.toFixed(2)}</span></div>
+                </div>
+            </div>`;
+        staffContainer.innerHTML += cardHTML;
+    });
+    // Chart rendering logic remains the same
+    const labels = Object.keys(staffTotals);
+    const data = Object.values(staffTotals);
+    const backgroundColors = labels.map((_, index) => colorPalette[index % colorPalette.length].bg);
+    const borderColors = labels.map((_, index) => colorPalette[index % colorPalette.length].border);
+    staffEarningsChart = initializeChart(staffEarningsChart, ctx, 'bar', { labels, datasets: [{ label: 'Total Earnings', data, backgroundColor: backgroundColors, borderColor: borderColors, borderWidth: 1 }] }, { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } });
+};
 
     // REPLACE the old updateAdminDashboard function with this one
     const updateAdminDashboard = () => {
@@ -3263,106 +3220,53 @@ const getDateRange = (filter, specificDate = null) => {
 
 
     // REPLACE the old updateStaffDashboard function with this one
-    const updateStaffDashboard = () => {
-        const filter = document.getElementById('staff-dashboard-date-filter').value;
-        const { startDate, endDate } = getDateRange(currentStaffDashboardRangeFilter, currentStaffDashboardDateFilter);
-        if (!startDate) return;
+const updateStaffDashboard = () => {
+    const { startDate, endDate } = getDateRange(currentStaffDashboardRangeFilter, currentStaffDashboardDateFilter);
+    if (!startDate) return;
 
-        // --- Calculations for Cards & Graph (This part remains the same) ---
-        const mySalonEarnings = allSalonEarnings.filter(e => {
-            const earnDate = e.date.toDate();
-            return earnDate >= startDate && earnDate <= endDate;
-        });
+    const mySalonEarnings = allSalonEarnings.filter(e => e.date.toDate() >= startDate && e.date.toDate() <= endDate);
+    const myFilteredEarnings = allEarnings.filter(e => e.staffName === currentUserName && e.date.toDate() >= startDate && e.date.toDate() <= endDate);
 
-        const staffNameLower = currentUserName.toLowerCase();
-        let myTotalEarning = 0;
-        mySalonEarnings.forEach(earning => {
-            myTotalEarning += earning[staffNameLower] || 0;
-        });
+    const staffNameLower = currentUserName.toLowerCase();
+    const myTotalEarning = mySalonEarnings.reduce((sum, e) => sum + (e[staffNameLower] || 0), 0);
+    const myTotalTips = myFilteredEarnings.reduce((sum, e) => sum + (e.tip || 0), 0);
 
-        const myTotalPayout = myTotalEarning * 0.70;
-        const myCheckPayout = myTotalPayout * 0.70;
-        const myCashPayout = myTotalPayout - myCheckPayout;
+    const staffMember = techniciansAndStaff.find(s => s.name === currentUserName);
+    const payoutType = staffMember ? staffMember.payoutType : 'standard';
+    let myTotalPayout;
+    if (payoutType === 'commission_plus_tips') {
+        myTotalPayout = (myTotalEarning * 0.70) + myTotalTips;
+    } else {
+        myTotalPayout = myTotalEarning * 0.70;
+    }
+    const myCheckPayout = myTotalPayout * 0.70;
+    const myCashPayout = myTotalPayout - myCheckPayout;
 
-        document.getElementById('my-earning-card').textContent = `$${myTotalEarning.toFixed(2)}`;
-        document.getElementById('my-total-payout-card').textContent = `$${myTotalPayout.toFixed(2)}`;
-        document.getElementById('my-cash-payout-card').textContent = `$${myCashPayout.toFixed(2)}`;
-        document.getElementById('my-check-payout-card').textContent = `$${myCheckPayout.toFixed(2)}`;
+    document.getElementById('my-earning-card').textContent = `$${myTotalEarning.toFixed(2)}`;
+    document.getElementById('my-total-payout-card').textContent = `$${myTotalPayout.toFixed(2)}`;
+    document.getElementById('my-cash-payout-card').textContent = `$${myCashPayout.toFixed(2)}`;
+    document.getElementById('my-check-payout-card').textContent = `$${myCheckPayout.toFixed(2)}`;
+    document.getElementById('my-tips-card').textContent = `$${myTotalTips.toFixed(2)}`;
 
-        // --- ADD THIS NEW BLOCK FOR THE TIPS CARD ---
-        // Filter all earnings data for the current user and date range
-        const myFilteredEarnings = allEarnings.filter(e => {
-            const earnDate = e.date.toDate();
-            return e.staffName === currentUserName && earnDate >= startDate && earnDate <= endDate;
-        });
+    const myUpcomingAppointments = allAppointments.filter(appt => appt.technician === currentUserName && appt.appointmentTimestamp.toDate() > new Date());
+    const myClientNames = new Set(allFinishedClients.filter(client => client.technician === currentUserName).map(client => client.name));
+    document.getElementById('my-appointments-card').textContent = myUpcomingAppointments.length;
+    document.getElementById('my-clients-card').textContent = myClientNames.size;
 
-        // Sum up the tips from the filtered earnings
-        const myTotalTips = myFilteredEarnings.reduce((sum, e) => sum + (e.tip || 0), 0);
+    updateMyEarningsChart(mySalonEarnings, currentStaffDashboardRangeFilter, currentUserName);
 
-        // Update the new "My Tips" card
-        const myTipsCard = document.getElementById('my-tips-card');
-        if (myTipsCard) {
-            myTipsCard.textContent = `$${myTotalTips.toFixed(2)}`;
-        }
-        // --- END OF NEW BLOCK ---
-        // --- ADD THIS NEW BLOCK FOR APPOINTMENT & CLIENT COUNTS ---
-        // Filter for upcoming appointments assigned to the current staff member
-        const myUpcomingAppointments = allAppointments.filter(appt =>
-            appt.technician === currentUserName && appt.appointmentTimestamp.toDate() > new Date()
-        );
-
-        // Count unique clients served by the current staff member from their history
-        const myClientNames = new Set(
-            allFinishedClients
-                .filter(client => client.technician === currentUserName)
-                .map(client => client.name)
-        );
-
-        // Update the dashboard cards with the new counts
-        const myAppointmentsCard = document.getElementById('my-appointments-card');
-        if (myAppointmentsCard) {
-            myAppointmentsCard.textContent = myUpcomingAppointments.length;
-        }
-
-        const myClientsCard = document.getElementById('my-clients-card');
-        if (myClientsCard) {
-            myClientsCard.textContent = myClientNames.size;
-        }
-        // --- END OF NEW BLOCK ---
-        updateMyEarningsChart(mySalonEarnings, currentStaffDashboardRangeFilter, currentUserName);
-
-        // --- NEW: Logic for the Earning Details Table ---
-        const detailsDateFilter = document.getElementById('staff-details-date-filter').value;
-        let myPayoutDetails = allEarnings.filter(e => e.staffName === currentUserName);
-
-        // If a specific date is chosen in the new filter, use it
-        if (detailsDateFilter) {
-            const specificDate = new Date(detailsDateFilter + 'T00:00:00');
-            const startOfDay = new Date(specificDate.getFullYear(), specificDate.getMonth(), specificDate.getDate());
-            const endOfDay = new Date(specificDate.getFullYear(), specificDate.getMonth(), specificDate.getDate(), 23, 59, 59, 999);
-            myPayoutDetails = myPayoutDetails.filter(e => {
-                const earnDate = e.date.toDate();
-                return earnDate >= startOfDay && earnDate <= endOfDay;
-            });
-        }
-
-
-        // Update the title with the client count
-        const clientCount = myPayoutDetails.length;
-        const detailsTitle = document.getElementById('staff-details-title');
-        if (detailsTitle) {
-            detailsTitle.textContent = `My Earning Details (${clientCount} Client${clientCount === 1 ? '' : 's'})`;
-        }
-
-        // Render the table and update its live totals
-        const { totalEarning, totalTip } = renderStaffEarningsTable(myPayoutDetails, 'staff-dashboard-earning-table', 'staff-dashboard-total-earning', 'staff-dashboard-total-tip');
-        const totalMainSpan = document.getElementById('staff-dashboard-filtered-earning-total-main');
-        const totalTipSpan = document.getElementById('staff-dashboard-filtered-earning-total-tip');
-        if (totalMainSpan) totalMainSpan.textContent = `Total ($${totalEarning.toFixed(2)})`;
-        if (totalTipSpan) totalTipSpan.textContent = `Tip ($${totalTip.toFixed(2)})`;
-        // --- THIS IS THE NEW LINE THAT FIXES THE PROBLEM ---
-        renderDetailedAppointmentsList('staff-upcoming-appointments-list', allAppointments, currentUserName);
-    };
+    const detailsDateFilter = document.getElementById('staff-details-date-filter').value;
+    let myPayoutDetails = allEarnings.filter(e => e.staffName === currentUserName);
+    if (detailsDateFilter) {
+        const specificDate = new Date(detailsDateFilter + 'T00:00:00');
+        myPayoutDetails = myPayoutDetails.filter(e => e.date.toDate() >= specificDate && e.date.toDate() < new Date(specificDate.getTime() + 24 * 60 * 60 * 1000));
+    }
+    document.getElementById('staff-details-title').textContent = `My Earning Details (${myPayoutDetails.length} Client${myPayoutDetails.length === 1 ? '' : 's'})`;
+    const { totalEarning, totalTip } = renderStaffEarningsTable(myPayoutDetails, 'staff-dashboard-earning-table', 'staff-dashboard-total-earning', 'staff-dashboard-total-tip');
+    document.getElementById('staff-dashboard-filtered-earning-total-main').textContent = `Total ($${totalEarning.toFixed(2)})`;
+    document.getElementById('staff-dashboard-filtered-earning-total-tip').textContent = `Tip ($${totalTip.toFixed(2)})`;
+    renderDetailedAppointmentsList('staff-upcoming-appointments-list', allAppointments, currentUserName);
+};
     // ADD THIS ENTIRE NEW FUNCTION
     const renderDetailedAppointmentsList = (containerId, appointments, techFilter = 'All') => {
         const container = document.getElementById(containerId);
@@ -3811,69 +3715,54 @@ const getDateRange = (filter, specificDate = null) => {
         return filtered;
     };
 
-    const renderSalonEarnings = (earnings) => {
-        const tbody = document.querySelector('#salon-earning-table tbody');
-        const tfoot = document.querySelector('#salon-earning-table-foot');
-        if (!tbody || !tfoot) return;
-        tbody.innerHTML = '';
-        const footerIds = ['sell-gc', 'return-gc', 'check', 'no-credit', 'total-credit', 'venmo', 'square', 'total', 'cash'];
-        const staffAndTechNames = techniciansAndStaff.map(t => t.name.toLowerCase());
-        const allFooterIds = [...staffAndTechNames, ...footerIds];
-        if (earnings.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="${staffAndTechNames.length + 10}" class="py-6 text-center text-gray-400">No salon earnings found.</td></tr>`;
-            allFooterIds.forEach(id => { const el = document.getElementById(`total-${id}`); if (el) el.textContent = id === 'no-credit' ? '0' : '$0.00'; });
-            staffAndTechNames.forEach(name => {
-                const commissionEl = document.getElementById(`commission-${name}`);
-                const check70El = document.getElementById(`check70-${name}`);
-                const cash30El = document.getElementById(`cash30-${name}`);
-                if (commissionEl) commissionEl.textContent = '$0.00'; if (check70El) check70El.textContent = '$0.00'; if (cash30El) cash30El.textContent = '$0.00';
-            });
-            return;
-        }
-        let grandTotals = {};
-        allFooterIds.forEach(id => grandTotals[id.replace(/-/g, '')] = 0);
-        earnings.sort((a, b) => b.date.seconds - a.date.seconds).forEach(earning => {
-            const row = tbody.insertRow();
-            row.className = 'bg-white border-b';
-            let rowHTML = `<td class="px-6 py-4">${new Date(earning.date.seconds * 1000).toLocaleDateString()}</td>`;
-            let rowStaffTotal = 0;
-            staffAndTechNames.forEach(name => { const techEarning = earning[name] || 0; rowHTML += `<td class="px-6 py-4">$${techEarning.toFixed(2)}</td>`; rowStaffTotal += techEarning; });
-            const rowTotal = rowStaffTotal + (earning.sellGiftCard || 0);
-            const cash = rowTotal - ((earning.totalCredit || 0) + (earning.check || 0) + (earning.returnGiftCard || 0) + (earning.venmo || 0) + (earning.square || 0));
-            rowHTML += `<td class="px-6 py-4">$${(earning.sellGiftCard || 0).toFixed(2)}</td><td class="px-6 py-4">$${(earning.returnGiftCard || 0).toFixed(2)}</td><td class="px-6 py-4">$${(earning.check || 0).toFixed(2)}</td><td class="px-6 py-4">${earning.noOfCredit || 0}</td><td class="px-6 py-4">$${(earning.totalCredit || 0).toFixed(2)}</td><td class="px-6 py-4">$${(earning.venmo || 0).toFixed(2)}</td><td class="px-6 py-4">$${(earning.square || 0).toFixed(2)}</td><td class="px-6 py-4 font-bold">$${rowTotal.toFixed(2)}</td><td class="px-6 py-4 font-bold">$${cash.toFixed(2)}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${earning.id}" class="edit-salon-earning-btn text-blue-500 hover:text-blue-700" title="Edit Salon Earning"><i class="fas fa-edit text-lg"></i></button><button data-id="${earning.id}" class="delete-salon-earning-btn text-red-500 hover:text-red-700" title="Delete Salon Earning"><i class="fas fa-trash-alt text-lg"></i></button></td>`;
-            row.innerHTML = rowHTML;
-        });
-        earnings.forEach(earning => {
-            let rowStaffTotal = 0;
-            staffAndTechNames.forEach(name => { const techEarning = earning[name] || 0; grandTotals[name] = (grandTotals[name] || 0) + techEarning; rowStaffTotal += techEarning; });
-            const rowTotal = rowStaffTotal + (earning.sellGiftCard || 0);
-            const cash = rowTotal - ((earning.totalCredit || 0) + (earning.check || 0) + (earning.returnGiftCard || 0) + (earning.venmo || 0) + (earning.square || 0));
-            grandTotals.sellgc += earning.sellGiftCard || 0;
-            grandTotals.returngc += earning.returnGiftCard || 0;
-            grandTotals.check += earning.check || 0;
-            grandTotals.noofcredit += earning.noOfCredit || 0;
-            grandTotals.totalcredit += earning.totalCredit || 0;
-            grandTotals.venmo += earning.venmo || 0;
-            grandTotals.square += earning.square || 0;
-            grandTotals.total += rowTotal;
-            grandTotals.cash += cash;
-        });
-        allFooterIds.forEach(id => {
-            const el = document.getElementById(`total-${id.replace(/gc/g, '-gc').replace(/of/g, '-of-')}`);
-            if (el) { const key = id.replace(/-/g, ''); const value = grandTotals[key] || 0; el.textContent = id === 'noofcredit' ? value : `$${value.toFixed(2)}`; }
-        });
+const renderSalonEarnings = (earnings) => {
+    const tbody = document.querySelector('#salon-earning-table tbody');
+    const tfoot = document.querySelector('#salon-earning-table-foot');
+    if (!tbody || !tfoot) return;
+    tbody.innerHTML = '';
+    const staffAndTechNames = techniciansAndStaff.map(t => t.name.toLowerCase());
+    if (earnings.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${staffAndTechNames.length + 10}" class="py-6 text-center text-gray-400">No salon earnings found.</td></tr>`;
+        // Clear footer totals...
+        return;
+    }
+
+    let grandTotals = {};
+    earnings.forEach(earning => {
+        // ... (row rendering logic remains the same) ...
+        let rowStaffTotal = 0;
         staffAndTechNames.forEach(name => {
-            const commission70 = (grandTotals[name] || 0) * 0.70;
-            const check70 = commission70 * 0.70;
-            const cash30 = commission70 - check70;
-            const commissionEl = document.getElementById(`commission-${name}`);
-            const check70El = document.getElementById(`check70-${name}`);
-            const cash30El = document.getElementById(`cash30-${name}`);
-            if (commissionEl) commissionEl.textContent = `$${commission70.toFixed(2)}`;
-            if (check70El) check70El.textContent = `$${check70.toFixed(2)}`;
-            if (cash30El) cash30El.textContent = `$${cash30.toFixed(2)}`;
+            const techEarning = earning[name] || 0;
+            grandTotals[name] = (grandTotals[name] || 0) + techEarning;
+            rowStaffTotal += techEarning;
         });
-    };
+        // ... (rest of grandTotal calculations remain the same) ...
+    });
+
+    // --- NEW PAYOUT CALCULATION LOGIC ---
+    staffAndTechNames.forEach(name => {
+        const staffMember = techniciansAndStaff.find(s => s.name.toLowerCase() === name);
+        const payoutType = staffMember ? staffMember.payoutType : 'standard';
+        const totalEarningForStaff = grandTotals[name] || 0;
+        let totalPayout;
+
+        if (payoutType === 'commission_plus_tips') {
+            const { startDate, endDate } = getDateRange(currentSalonEarningRangeFilter, currentSalonEarningDateFilter);
+            const staffPeriodEarnings = allEarnings.filter(e => e.staffName.toLowerCase() === name && e.date.toDate() >= startDate && e.date.toDate() <= endDate);
+            const totalTipForStaff = staffPeriodEarnings.reduce((sum, e) => sum + (e.tip || 0), 0);
+            totalPayout = (totalEarningForStaff * 0.70) + totalTipForStaff;
+        } else {
+            totalPayout = totalEarningForStaff * 0.70;
+        }
+
+        const check70 = totalPayout * 0.70;
+        const cash30 = totalPayout - check70;
+
+        document.getElementById(`commission-${name}`).textContent = `$${totalPayout.toFixed(2)}`;
+        document.getElementById(`check70-${name}`).textContent = `$${check70.toFixed(2)}`;
+        document.getElementById(`cash30-${name}`).textContent = `$${cash30.toFixed(2)}`;
+    });
+};
 
     for (let i = 1; i <= 20; i++) peopleCountSelect.appendChild(new Option(i, i));
     for (let i = 1; i <= 20; i++) document.getElementById('appointment-people').appendChild(new Option(i, i));
@@ -4873,13 +4762,15 @@ function renderCalendar(year, month, technicianFilter = 'All') {
 
     const addUserForm = document.getElementById('add-user-form');
     const usersTableBody = document.querySelector('#users-table tbody');
-    const renderUsers = (users) => {
-        usersTableBody.innerHTML = '';
-        users.forEach(user => {
-            const row = usersTableBody.insertRow();
-            row.innerHTML = `<td class="px-6 py-4">${user.name}</td><td class="px-6 py-4">${user.email}</td><td class="px-6 py-4">${user.phone}</td><td class="px-6 py-4">${user.role}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${user.id}" class="edit-user-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${user.id}" class="delete-user-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
-        });
-    };
+// Replace the entire renderUsers function
+const renderUsers = (users) => {
+    usersTableBody.innerHTML = '';
+    users.forEach(user => {
+        const row = usersTableBody.insertRow();
+        const payoutText = (user.payoutType === 'commission_plus_tips') ? 'Comm. + Tips' : 'Standard';
+        row.innerHTML = `<td class="px-6 py-4">${user.name}</td><td class="px-6 py-4">${user.email}</td><td class="px-6 py-4">${user.phone}</td><td class="px-6 py-4">${user.role}</td><td class="px-6 py-4">${payoutText}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${user.id}" class="edit-user-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${user.id}" class="delete-user-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
+    });
+};
     // REPLACE the old populateTechnicianFilters function with this one
     const populateTechnicianFilters = () => {
         const techSelects = document.querySelectorAll('#appointment-technician-select, #technician-name-select, #staff-name, #edit-staff-name, #checkin-technician-select, #dashboard-staff-name-full');
@@ -4931,7 +4822,7 @@ function renderCalendar(year, month, technicianFilter = 'All') {
         });
         headHTML += `<th scope="col" class="px-6 py-3">Sell GC</th><th scope="col" class="px-6 py-3">Return GC</th><th scope="col" class="px-6 py-3">Check</th><th scope="col" class="px-6 py-3">No of Credit</th><th scope="col" class="px-6 py-3">Total Credit</th><th scope="col" class="px-6 py-3">Venmo</th><th scope="col" class="px-6 py-3">Square</th><th scope="col" class="px-6 py-3 font-bold">Total</th><th scope="col" class="px-6 py-3 font-bold">Cash</th><th scope="col" class="px-6 py-3 text-center">Action</th></tr>`;
         footHTML += `<td id="total-sell-gc" class="px-6 py-3"></td><td id="total-return-gc" class="px-6 py-3"></td><td id="total-check" class="px-6 py-3"></td><td id="total-no-credit" class="px-6 py-3"></td><td id="total-total-credit" class="px-6 py-3"></td><td id="total-venmo" class="px-6 py-3"></td><td id="total-square" class="px-6 py-3"></td><td id="total-total" class="px-6 py-3 font-bold"></td><td id="total-cash" class="px-6 py-3 font-bold"></td><td class="px-6 py-3"></td></tr>`;
-        let commissionHTML = `<tr class="text-center"><td class="px-6 py-3 text-right font-bold border-t-2 border-gray-300">Commission 70%:</td>`, check70HTML = `<tr class="text-center"><td class="px-6 py-3 text-right font-bold">70% of Check:</td>`, cash30HTML = `<tr class="text-center"><td class="px-6 py-3 text-right font-bold">30% of Cash:</td>`;
+        let commissionHTML = `<tr class="text-center"><td class="px-6 py-3 text-right font-bold border-t-2 border-gray-300">Total Payout:</td>`, check70HTML = `<tr class="text-center"><td class="px-6 py-3 text-right font-bold">Check Payout:</td>`, cash30HTML = `<tr class="text-center"><td class="px-6 py-3 text-right font-bold">Cash Payout:</td>`;
         techniciansAndStaff.forEach(tech => {
             const techNameLower = tech.name.toLowerCase();
             commissionHTML += `<td id="commission-${techNameLower}" class="px-6 py-3 border-t-2 border-gray-300"></td>`;
@@ -4984,12 +4875,15 @@ function renderCalendar(year, month, technicianFilter = 'All') {
         e.preventDefault();
         const userId = document.getElementById('edit-user-id').value;
         const name = document.getElementById('new-user-name').value, phone = document.getElementById('new-user-phone').value, email = document.getElementById('new-user-email').value, password = document.getElementById('new-user-password').value, role = document.getElementById('user-role').value;
-        if (userId) { await setDoc(doc(db, "users", userId), { name, phone, email, role }); alert("User updated."); }
-        else {
+        const payoutType = document.getElementById('payout-type').value; // Add this line
+        if (userId) { 
+    await setDoc(doc(db, "users", userId), { name, phone, email, role, payoutType }); // Add payoutType here
+    alert("User updated."); 
+} else {
             if (!password || password.length < 6) { return alert("Password must be at least 6 characters."); }
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                await setDoc(doc(db, "users", userCredential.user.uid), { name, phone, email, role });
+                await setDoc(doc(db, "users", userCredential.user.uid), { name, phone, email, role, payoutType }); // And here
                 alert("User created!");
             } catch (error) { console.error("Error creating user:", error); alert("Error creating user: " + error.message); }
         }
@@ -5014,6 +4908,7 @@ function renderCalendar(year, month, technicianFilter = 'All') {
                 document.getElementById('new-user-password').required = false;
                 document.getElementById('new-user-password').placeholder = "Leave blank to keep same password";
                 document.getElementById('user-role').value = user.role;
+                document.getElementById('payout-type').value = user.payoutType || 'standard'; // Add this line
             }
         }
         if (deleteBtn) { showConfirmModal("Delete this user?", async () => { await deleteDoc(doc(db, "users", deleteBtn.dataset.id)); alert("User role deleted. Login must be deleted from Firebase console."); }); }

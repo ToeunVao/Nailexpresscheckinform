@@ -2371,11 +2371,13 @@
                         <option value="Phone">Phone</option>
                         <option value="Online">Online</option>
                     </select></div>
-                <div><label for="appointment-services"
-                        class="block text-sm font-medium text-gray-600">Services</label><input type="text"
-                        id="appointment-services" list="main-services-list"
-                        class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg"
-                        placeholder="Select or type a service..."><datalist id="main-services-list"></datalist></div>
+                <div class="md:col-span-2">
+    <label class="block text-sm font-medium text-gray-600">Services</label>
+    <div id="appointment-services-container" class="grid grid-cols-2 md:grid-cols-3 gap-2 mt-1">
+        <!-- Service category buttons will be added here by JavaScript -->
+    </div>
+    <div id="appointment-hidden-checkboxes" class="hidden"></div>
+</div>
                 <div><label for="appointment-technician-select"
                         class="block text-sm font-medium text-gray-600">Technician Request</label><select
                         id="appointment-technician-select"

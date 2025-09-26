@@ -2682,36 +2682,45 @@ const checkAutoBackup = () => {
     }
 };
 
-backupDataBtn.addEventListener('click', backupAllData);
-restoreDataInput.addEventListener('change', handleRestore);
-
-autoBackupSelect.addEventListener('change', async (e) => {
-    const newFrequency = e.target.value;
-    try {
-        await setDoc(doc(db, "settings", "backup"), { frequency: newFrequency }, { merge: true });
-        backupSettings.frequency = newFrequency;
-    } catch (error) {
-        console.error("Failed to save backup frequency:", error);
+ if (backupDataBtn) {
+        backupDataBtn.addEventListener('click', backupAllData);
+}
+if (restoreDataInput) {
+        restoreDataInput.addEventListener('change', handleRestore);
     }
-});
+    
+    if (autoBackupSelect) {
+        autoBackupSelect.addEventListener('change', async (e) => {
+            const newFrequency = e.target.value;
+            try {
+                await setDoc(doc(db, "settings", "backup"), { frequency: newFrequency }, { merge: true });
+                backupSettings.frequency = newFrequency;
+            } catch (error) {
+                console.error("Failed to save backup frequency:", error);
+            }
+        });
+    }
 
 onSnapshot(doc(db, "settings", "backup"), (docSnap) => {
-    if (docSnap.exists()) {
-        const data = docSnap.data();
-        backupSettings = data;
-        autoBackupSelect.value = data.frequency || 'weekly';
-        if (data.lastBackup) {
-            lastBackupStatusEl.textContent = `Last backup: ${data.lastBackup.toDate().toLocaleString()}`;
-        } else {
-            lastBackupStatusEl.textContent = 'No backup recorded.';
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            backupSettings = data;
+            if (autoBackupSelect) {
+                autoBackupSelect.value = data.frequency || 'weekly';
+            }
+            if (lastBackupStatusEl) {
+                if (data.lastBackup) {
+                    lastBackupStatusEl.textContent = `Last backup: ${data.lastBackup.toDate().toLocaleString()}`;
+                } else {
+                    lastBackupStatusEl.textContent = 'No backup recorded.';
+                }
+            }
+            // The checkAutoBackup is already inside the admin block, so no extra check is needed here.
+            checkAutoBackup();
         }
-        // Run check on first load for admin
-        if (currentUserRole === 'admin') {
-           checkAutoBackup();
-        }
-    }
     });
 }
+// ...
 
 // PASTE THIS ENTIRE NEW BLOCK OF CODE
 

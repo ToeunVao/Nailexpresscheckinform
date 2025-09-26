@@ -3144,7 +3144,8 @@ const updateStaffEarningsReport = (filteredSalonData) => {
 };
 
     // REPLACE the old updateAdminDashboard function with this one
-    const updateAdminDashboard = () => {
+   const updateAdminDashboard = () => {
+        document.getElementById('dashboard-date-filter').addEventListener('change', updateAdminDashboard);
         const filter = document.getElementById('dashboard-date-filter').value;
         const { startDate, endDate } = getDateRange(currentDashboardRangeFilter, currentDashboardDateFilter);
         if (!startDate) return;
@@ -3222,6 +3223,7 @@ const updateStaffEarningsReport = (filteredSalonData) => {
 
     // REPLACE the old updateStaffDashboard function with this one
 const updateStaffDashboard = () => {
+    document.getElementById('staff-dashboard-date-filter').addEventListener('change', updateStaffDashboard);
     const { startDate, endDate } = getDateRange(currentStaffDashboardRangeFilter, currentStaffDashboardDateFilter);
     if (!startDate) return;
 
@@ -3460,8 +3462,6 @@ const updateStaffDashboard = () => {
         };
         myEarningsChart = initializeChart(myEarningsChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
     };
-    document.getElementById('dashboard-date-filter').addEventListener('change', updateAdminDashboard);
-    document.getElementById('staff-dashboard-date-filter').addEventListener('change', updateStaffDashboard);
 
     // END NEW DASHBOARD LOGIC
 

@@ -1263,7 +1263,6 @@ async function initClientDashboard(clientId, clientData) {
 
         const navItems = [
             { id: 'appointments', text: 'Appointments' },
-            { id: 'history', text: 'History' },
             { id: 'favorites', text: 'My Favorites' },
             { id: 'gift-cards', text: 'My Gift Cards' },
             { id: 'membership', text: 'My Membership' },

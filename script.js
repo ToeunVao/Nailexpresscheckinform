@@ -1341,7 +1341,51 @@ const renderClientHistory = (history) => {
         document.getElementById('favorite-technician').textContent = favTech;
         document.getElementById('favorite-color').textContent = favColor;
     };
+// PASTE THE NEW FUNCTION RIGHT BELOW IT:
+const renderClientRoyaltyCard = (clientData) => {
+    const container = document.getElementById('royalty-card-content');
+    if (!container) return;
 
+    if (!clientData.royaltyCard) {
+        container.innerHTML = `
+            <div class="text-center p-8 bg-gray-50 rounded-lg">
+                <h3 class="text-xl font-semibold text-gray-700">You haven't joined the Royalty Program yet.</h3>
+                <p class="text-gray-500 mt-2 mb-4">Join for free to earn rewards with every visit!</p>
+            </div>`;
+        return;
+    }
+    
+    const visits = clientData.royaltyCard.visits || 0;
+    const visitsNeeded = royaltySettings.visitsNeeded;
+    const rewardText = royaltySettings.rewardDescription;
+    
+    let stampsHTML = '';
+    for (let i = 1; i <= visitsNeeded; i++) {
+        const isStamped = i <= visits;
+        stampsHTML += `<div class="stamp ${isStamped ? 'stamped' : ''}">${isStamped ? '<i class="fas fa-star"></i>' : i}</div>`;
+    }
+
+    const isRewardReady = visits >= visitsNeeded;
+    const progressText = isRewardReady ? `Congrats! Your reward is ready: ${rewardText}!` : `${visitsNeeded - visits} more visits until your reward!`;
+
+    container.innerHTML = `
+        <div class="royalty-card-container">
+            <h3 class="text-xl font-semibold text-gray-700 mb-4 text-center">Your Royalty Card</h3>
+            <div class="royalty-card">
+                <div class="royalty-card-header">
+                    <p class="font-parisienne text-3xl">Nails Express</p>
+                    <p class="text-xs font-semibold tracking-wider">ROYALTY PROGRAM</p>
+                </div>
+                <div class="stamp-grid">
+                    ${stampsHTML}
+                </div>
+                <div class="royalty-card-footer">
+                    <p>${progressText}</p>
+                </div>
+            </div>
+        </div>
+    `;
+};
     onSnapshot(query(collection(db, "appointments"), where("name", "==", clientData.name)), (snapshot) => {
         const appointments = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
         renderClientAppointments(appointments);

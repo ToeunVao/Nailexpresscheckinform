@@ -1201,8 +1201,6 @@ async function initClientDashboard(clientId, clientData) {
         });
     });
 
-    const featuresDoc = await getDoc(doc(db, "settings", "features"));
-    const features = featuresDoc.exists() ? featuresDoc.data() : { showGiftCards: true, showMemberships: true };
 
     // ... (the rest of the function remains exactly the same) ...
 

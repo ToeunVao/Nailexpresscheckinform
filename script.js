@@ -2529,6 +2529,7 @@ royaltyCardsTableBody.addEventListener('click', async (e) => {
 // PASTE THIS ENTIRE NEW BLOCK OF CODE
 
 // --- BACKUP & RESTORE LOGIC ---
+if (userRole === 'admin') {
 const backupDataBtn = document.getElementById('backup-data-btn');
 const restoreDataInput = document.getElementById('restore-data-input');
 const autoBackupSelect = document.getElementById('auto-backup-frequency');
@@ -2709,8 +2710,8 @@ onSnapshot(doc(db, "settings", "backup"), (docSnap) => {
            checkAutoBackup();
         }
     }
-});
-
+    });
+}
 
 // PASTE THIS ENTIRE NEW BLOCK OF CODE
 

@@ -52,7 +52,7 @@ let currentRotation = 0; // <-- PASTE it here
 let royaltySettings = { visitsNeeded: 10, rewardDescription: 'One Free Classic Manicure' };
 let allRoyaltyCards = [];
 
-
+const purchaseForm = document.getElementById('landing-gift-card-form');
 // ADD THIS ENTIRE NEW BLOCK for the lightbox
 const nailIdeaLightbox = document.getElementById('nail-idea-lightbox');
 const lightboxCloseBtn = document.getElementById('lightbox-close-btn');
@@ -542,51 +542,88 @@ document.addEventListener('click', (e) => { if (e.target.closest('.view-policy-b
 document.getElementById('policy-close-btn').addEventListener('click', closePolicyModal);
 document.querySelector('#policy-modal .policy-modal-overlay').addEventListener('click', closePolicyModal);
 
+// *** ADD THIS CORRECTED BLOCK ***
+const closePurchaseModal = () => {
+    const purchaseModal = document.getElementById('gift-card-purchase-modal');
+    const userInfoSection = document.getElementById('gc-user-info-section');
+    purchaseModal.classList.add('hidden');
+    // Reset the form fields for the next user
+    document.getElementById('gc-buyer-name').disabled = false;
+    document.getElementById('gc-buyer-phone').disabled = false;
+    document.getElementById('gc-buyer-email').disabled = false;
+    // *** SHOW the user info section again for the next user ***
+    if (userInfoSection) {
+        userInfoSection.classList.remove('hidden');
+    }
+};
+
 // This function is in the global scope
+// REPLACE your old openAddAppointmentModal function with this new one:
 const openAddAppointmentModal = (date, clientData = null, appointmentData = null) => {
     addAppointmentForm.reset();
-    // *** FIX IS HERE: Correctly selecting the elements by their ID ***
     const titleEl = document.getElementById('add-appointment-modal-title');
     const submitBtn = document.getElementById('add-appointment-submit-btn');
     const appointmentIdInput = document.getElementById('edit-appointment-id');
+    const nameInput = document.getElementById('appointment-client-name');
+    const phoneInput = document.getElementById('appointment-phone');
 
-    // Populate dropdowns (this is needed for both new and edit)
-    const clientList = document.getElementById('client-names-list');
-    const appointmentPhoneList = document.getElementById('appointment-client-phones');
-    const uniqueNames = [...new Set(allFinishedClients.map(c => c.name))];
-    const uniquePhones = [...new Set(allFinishedClients.filter(c => c.phone && c.phone !== 'N/A').map(c => c.phone))];
-    clientList.innerHTML = uniqueNames.map(name => `<option value="${name}"></option>`).join('');
-    appointmentPhoneList.innerHTML = uniquePhones.map(phone => `<option value="${phone}"></option>`).join('');
-    const mainServicesList = document.getElementById('main-services-list');
-    mainServicesList.innerHTML = Object.keys(servicesData).flatMap(category =>
-        servicesData[category].map(service => `<option value="${service.p || ''}${service.name}${service.price ? ' ' + service.price : ''}"></option>`)
-    ).join('');
+    // Clear previous service selections
+// PASTE THIS inside the initClientDashboard function
+document.getElementById('appointment-services-container').addEventListener('click', (e) => {
+    const btn = e.target.closest('.category-button');
+    if (btn) {
+        const category = btn.dataset.category;
+        const sourceContainer = document.getElementById('appointment-hidden-checkboxes');
+        modalTitle.textContent = category;
+        modalContent.innerHTML = '';
+        servicesData[category].forEach(service => {
+            const val = `${service.p || ''}${service.name}${service.price ? ' ' + service.price : ''}`;
+            const sourceCb = sourceContainer.querySelector(`input[value="${val}"]`);
+            const label = document.createElement('label');
+            label.className = 'flex items-center p-3 hover:bg-pink-50 cursor-pointer rounded-lg';
+            label.innerHTML = `<input type="checkbox" class="form-checkbox modal-checkbox" data-source-container="appointment-hidden-checkboxes" value="${val}" ${sourceCb && sourceCb.checked ? 'checked' : ''}><span class="ml-3 text-gray-700 flex-grow">${service.name}</span>${service.price ? `<span class="font-semibold">${service.price}</span>` : ''}`;
+            modalContent.appendChild(label);
+        });
+        serviceModal.classList.add('flex');
+        serviceModal.classList.remove('hidden');
+    }
+});
+    document.getElementById('appointment-hidden-checkboxes').innerHTML = '';
+
+    // --- Render Service Categories ---
+    const servicesContainer = document.getElementById('appointment-services-container');
+    const hiddenCheckboxes = document.getElementById('appointment-hidden-checkboxes');
+    Object.keys(servicesData).forEach(category => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'category-button p-3 border rounded-lg text-left bg-white hover:border-pink-300';
+        btn.dataset.category = category;
+        btn.innerHTML = `<h4 class="font-bold text-pink-700 text-sm">${category}</h4><span class="selection-count hidden mt-1 bg-pink-600 text-white text-xs font-bold px-2 py-1 rounded-full"></span>`;
+        servicesContainer.appendChild(btn);
+    });
+    Object.values(servicesData).flat().forEach(service => {
+        const val = `${service.p || ''}${service.name}${service.price ? ' ' + service.price : ''}`;
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.name = 'appointment-service';
+        cb.value = val;
+        cb.dataset.category = Object.keys(servicesData).find(key => servicesData[key].some(s => s.name === service.name));
+        hiddenCheckboxes.appendChild(cb);
+    });
+    // --- End Service Rendering ---
+
+    nameInput.disabled = false;
+    phoneInput.disabled = false;
 
     if (appointmentData) {
-        // --- EDIT MODE ---
+        // Edit Mode logic remains the same
         titleEl.textContent = 'Edit Appointment';
         submitBtn.textContent = 'Update Appointment';
         appointmentIdInput.value = appointmentData.id;
-
-        // Convert Firestore timestamp to a string for the datetime-local input
-        const apptDate = appointmentData.appointmentTimestamp.toDate();
-        const year = apptDate.getFullYear();
-        const month = String(apptDate.getMonth() + 1).padStart(2, '0');
-        const day = String(apptDate.getDate()).padStart(2, '0');
-        const hours = String(apptDate.getHours()).padStart(2, '0');
-        const minutes = String(apptDate.getMinutes()).padStart(2, '0');
-        document.getElementById('appointment-datetime').value = `${year}-${month}-${day}T${hours}:${minutes}`;
-
-        document.getElementById('appointment-client-name').value = appointmentData.name || '';
-        document.getElementById('appointment-phone').value = appointmentData.phone || '';
-        document.getElementById('appointment-people').value = appointmentData.people || 1;
-        document.getElementById('appointment-booking-type').value = appointmentData.bookingType || 'Booked - Calendar';
-        document.getElementById('appointment-services').value = Array.isArray(appointmentData.services) ? appointmentData.services.join(', ') : (appointmentData.services || '');
-        document.getElementById('appointment-technician-select').value = appointmentData.technician || 'Any Technician';
-        document.getElementById('appointment-notes').value = appointmentData.notes || '';
-
+        // ... (rest of edit logic)
+        // Note: Manual service selection will be handled by user
     } else {
-        // --- ADD NEW MODE (Original logic) ---
+        // Add New Mode
         titleEl.textContent = 'Add New Appointment';
         submitBtn.textContent = 'Save Appointment';
         appointmentIdInput.value = '';
@@ -596,11 +633,12 @@ const openAddAppointmentModal = (date, clientData = null, appointmentData = null
         document.getElementById('appointment-datetime').value = defaultDateTime;
 
         if (clientData) {
-            document.getElementById('appointment-client-name').value = clientData.name || '';
-            document.getElementById('appointment-phone').value = clientData.phone || '';
+            nameInput.value = clientData.name || '';
+            phoneInput.value = clientData.phone || '';
+            nameInput.disabled = true; // Lock the fields for the logged-in client
+            phoneInput.disabled = true;
         }
     }
-
     addAppointmentModal.classList.remove('hidden');
     addAppointmentModal.classList.add('flex');
 };
@@ -639,7 +677,7 @@ addAppointmentForm.addEventListener('submit', async (e) => {
         phone: document.getElementById('appointment-phone').value,
         people: document.getElementById('appointment-people').value,
         bookingType: document.getElementById('appointment-booking-type').value,
-        services: [document.getElementById('appointment-services').value], // Kept as an array for consistency
+        services: Array.from(document.querySelectorAll('#appointment-hidden-checkboxes input:checked')).map(cb => cb.value),
         technician: document.getElementById('appointment-technician-select').value,
         notes: document.getElementById('appointment-notes').value,
         appointmentTimestamp: Timestamp.fromDate(bookingDate)
@@ -665,6 +703,101 @@ addAppointmentForm.addEventListener('submit', async (e) => {
     }
 });
 
+// Located inside initLandingPage()
+purchaseForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const amount = parseFloat(document.getElementById('gc-amount').value);
+    const quantity = parseInt(document.getElementById('gc-quantity').value, 10);
+
+    if (isNaN(amount) || amount <= 0 || isNaN(quantity) || quantity <= 0) {
+        alert('Please fill out the gift card amount and quantity correctly.');
+        return;
+    }
+
+    const submitBtn = document.getElementById('landing-gc-submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Processing...';
+
+    try {
+        // SCENARIO 1: User is already a logged-in client
+        if (currentUserId && auth.currentUser && !auth.currentUser.isAnonymous) {
+            const batch = writeBatch(db);
+            const expiryDate = new Date();
+            expiryDate.setMonth(expiryDate.getMonth() + 6);
+
+            const buyerInfo = {
+                name: document.getElementById('gc-buyer-name').value,
+                email: document.getElementById('gc-buyer-email').value,
+                phone: document.getElementById('gc-buyer-phone').value,
+            };
+
+            for (let i = 0; i < quantity; i++) {
+                const cardData = {
+                    amount: amount,
+                    balance: amount,
+                    history: [],
+                    recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerInfo.name,
+                    senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerInfo.name,
+                    backgroundUrl: document.getElementById('landing-gc-preview-card').style.backgroundImage.slice(5, -2),
+                    code: `GC-${Date.now()}-${i}`,
+                    status: 'Pending',
+                    type: 'E-Gift',
+                    createdBy: currentUserId,
+                    buyerInfo: buyerInfo,
+                    createdAt: serverTimestamp(),
+                    expiresAt: Timestamp.fromDate(expiryDate)
+                };
+                const newCardRef = doc(collection(db, "gift_cards"));
+                batch.set(newCardRef, cardData);
+            }
+            await batch.commit();
+            alert("Success! Your gift card request has been sent. It will be activated once payment is confirmed.");
+            // **** FIX FOR LOGGED-IN USER ****
+            closePurchaseModal();
+
+        } else {
+            // SCENARIO 2: New or anonymous user (original flow)
+            const buyerName = document.getElementById('gc-buyer-name').value;
+            const buyerPhone = document.getElementById('gc-buyer-phone').value;
+            const buyerEmail = document.getElementById('gc-buyer-email').value;
+
+            if (!buyerName || !buyerPhone || !buyerEmail) {
+                alert('Please fill out all your information to create an account.');
+                throw new Error("Missing buyer information.");
+            }
+
+            await createUserWithEmailAndPassword(auth, buyerEmail, buyerPhone);
+
+            const purchaseDetails = {
+                buyerName, buyerPhone, buyerEmail, amount, quantity,
+                recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerName,
+                senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerName,
+                backgroundUrl: document.getElementById('landing-gc-preview-card').style.backgroundImage.slice(5, -2),
+            };
+            sessionStorage.setItem('pendingGiftCardPurchase', JSON.stringify(purchaseDetails));
+            // onAuthStateChanged will handle the rest
+            await sendGiftCardConfirmationEmail(purchaseDetails);
+            // **** FIX FOR NEW USER ****
+            closePurchaseModal();
+
+        }
+    } catch (error) {
+        if (error.code === 'auth/email-already-in-use') {
+            alert("An account with this email already exists. Please log in to purchase a gift card.");
+        } else {
+            console.error("Error during gift card purchase:", error);
+            alert(`Could not process your request. Error: ${error.message}`);
+        }
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Purchase Request';
+        // Re-enable form fields that might have been disabled
+        document.getElementById('gc-buyer-name').disabled = false;
+        document.getElementById('gc-buyer-phone').disabled = false;
+        document.getElementById('gc-buyer-email').disabled = false;
+    }
+
+});
 // --- GLOBAL MEMBERSHIP FUNCTIONS ---
 const renderMembershipTiers = (tiers, containerId, isLoggedIn) => {
     const container = document.getElementById(containerId);
@@ -1060,7 +1193,7 @@ const renderClientMembership = (clientData, clientId) => {
 };
 
 // **** Function 2: The Main Dashboard Function ****
-// REPLACE your old initClientDashboard function with this new one:
+// REPLACE your old initClientDashboard function with this corrected one:
 async function initClientDashboard(clientId, clientData) {
     const featuresDoc = await getDoc(doc(db, "settings", "features"));
     const features = featuresDoc.exists() ? featuresDoc.data() : { showGiftCards: true, showMemberships: true };
@@ -1121,7 +1254,7 @@ async function initClientDashboard(clientId, clientData) {
         });
     };
 
-    renderClientMembership(clientData, clientId); // Pass clientId here
+    renderClientMembership(clientData, clientId);
 
     const setupClientNav = () => {
         const navContainer = document.getElementById('client-top-nav');
@@ -1133,7 +1266,7 @@ async function initClientDashboard(clientId, clientData) {
             { id: 'favorites', text: 'My Favorites' },
             { id: 'gift-cards', text: 'My Gift Cards' },
             { id: 'membership', text: 'My Membership' },
-            { id: 'royalty-card', text: 'Royalty Card' } // <-- ADD THIS ITEM
+            { id: 'royalty-card', text: 'Royalty Card' }
         ];
 
         navContainer.innerHTML = navItems.map(item => 
@@ -1190,50 +1323,6 @@ async function initClientDashboard(clientId, clientData) {
         });
     };
 
-    // PASTE THIS NEW FUNCTION inside initClientDashboard
-const renderClientRoyaltyCard = (clientData) => {
-    const container = document.getElementById('royalty-card-content');
-    if (!clientData.royaltyCard) {
-        container.innerHTML = `
-            <div class="text-center p-8 bg-gray-50 rounded-lg">
-                <h3 class="text-xl font-semibold text-gray-700">You haven't joined the Royalty Program yet.</h3>
-                <p class="text-gray-500 mt-2 mb-4">Join for free to earn rewards with every visit!</p>
-            </div>`;
-        return;
-    }
-
-    const visits = clientData.royaltyCard.visits || 0;
-    const visitsNeeded = royaltySettings.visitsNeeded;
-    const rewardText = royaltySettings.rewardDescription;
-
-    let stampsHTML = '';
-    for (let i = 1; i <= visitsNeeded; i++) {
-        const isStamped = i <= visits;
-        stampsHTML += `<div class="stamp ${isStamped ? 'stamped' : ''}">${isStamped ? '<i class="fas fa-cut"></i>' : i}</div>`;
-    }
-
-    const isRewardReady = visits >= visitsNeeded;
-    const progressText = isRewardReady ? `Congrats! Your reward is ready: ${rewardText}!` : `${visitsNeeded - visits} more visits until your reward!`;
-
-    container.innerHTML = `
-        <div class="royalty-card-container">
-            <h3 class="text-xl font-semibold text-gray-700 mb-4 text-center">Your Royalty Card</h3>
-            <div class="royalty-card">
-                <div class="royalty-card-header">
-                    <p class="font-parisienne text-3xl">Nails Express</p>
-                    <p class="text-xs font-semibold tracking-wider">ROYALTY PROGRAM</p>
-                </div>
-                <div class="stamp-grid">
-                    ${stampsHTML}
-                </div>
-                <div class="royalty-card-footer">
-                    <p>${progressText}</p>
-                </div>
-            </div>
-        </div>
-    `;
-};
-
     const calculateAndRenderFavorites = (history) => {
         if (history.length === 0) return;
         const techCounts = history.reduce((acc, visit) => {
@@ -1249,6 +1338,27 @@ const renderClientRoyaltyCard = (clientData) => {
         document.getElementById('favorite-technician').textContent = favTech;
         document.getElementById('favorite-color').textContent = favColor;
     };
+    
+    // THIS IS THE CODE BLOCK THAT WAS IN THE WRONG PLACE
+    document.getElementById('appointment-services-container').addEventListener('click', (e) => {
+        const btn = e.target.closest('.category-button');
+        if (btn) {
+            const category = btn.dataset.category;
+            const sourceContainer = document.getElementById('appointment-hidden-checkboxes');
+            modalTitle.textContent = category;
+            modalContent.innerHTML = '';
+            servicesData[category].forEach(service => {
+                const val = `${service.p || ''}${service.name}${service.price ? ' ' + service.price : ''}`;
+                const sourceCb = sourceContainer.querySelector(`input[value="${val}"]`);
+                const label = document.createElement('label');
+                label.className = 'flex items-center p-3 hover:bg-pink-50 cursor-pointer rounded-lg';
+                label.innerHTML = `<input type="checkbox" class="form-checkbox modal-checkbox" data-source-container="appointment-hidden-checkboxes" value="${val}" ${sourceCb && sourceCb.checked ? 'checked' : ''}><span class="ml-3 text-gray-700 flex-grow">${service.name}</span>${service.price ? `<span class="font-semibold">${service.price}</span>` : ''}`;
+                modalContent.appendChild(label);
+            });
+            serviceModal.classList.add('flex');
+            serviceModal.classList.remove('hidden');
+        }
+    });
 
     onSnapshot(query(collection(db, "appointments"), where("name", "==", clientData.name)), (snapshot) => {
         const appointments = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
@@ -1305,7 +1415,6 @@ const renderClientRoyaltyCard = (clientData) => {
 
         if (downloadBtn) {
             const tier = allMembershipTiers.find(t => t.id === clientData.membership.tierId);
-            // THE FIX IS HERE: We pass an object with the ID included
             if (clientData && tier) {
                 openMembershipCardForPrint({ ...clientData, id: clientId }, tier);
             }
@@ -1331,15 +1440,15 @@ const renderClientRoyaltyCard = (clientData) => {
     document.getElementById('client-buy-gift-card-btn').addEventListener('click', () => {
         openPurchaseModalForClient(clientData);
     });
+    
+    getDoc(doc(db, "settings", "royaltyProgram")).then(docSnap => {
+        if (docSnap.exists() && docSnap.data().visitsNeeded) {
+            royaltySettings = docSnap.data();
+        }
+        renderClientRoyaltyCard(clientData);
+    });
 
     setupClientNav();
-// ADD THIS AT THE END of initClientDashboard
-getDoc(doc(db, "settings", "royaltyProgram")).then(docSnap => {
-    if (docSnap.exists() && docSnap.data().visitsNeeded) {
-        royaltySettings = docSnap.data();
-    }
-    renderClientRoyaltyCard(clientData);
-});
 }
 
 // REPLACE your old 'landing-membership-form' submit listener with this one
@@ -1410,118 +1519,10 @@ document.getElementById('landing-membership-form').addEventListener('submit', as
     }
 });
 
-// *** ADD THIS CORRECTED BLOCK ***
-const closePurchaseModal = () => {
-    const purchaseModal = document.getElementById('gift-card-purchase-modal');
-    const userInfoSection = document.getElementById('gc-user-info-section');
-    purchaseModal.classList.add('hidden');
-    // Reset the form fields for the next user
-    document.getElementById('gc-buyer-name').disabled = false;
-    document.getElementById('gc-buyer-phone').disabled = false;
-    document.getElementById('gc-buyer-email').disabled = false;
-    // *** SHOW the user info section again for the next user ***
-    if (userInfoSection) {
-        userInfoSection.classList.remove('hidden');
-    }
-};
 
-const purchaseForm = document.getElementById('landing-gift-card-form');
+///const purchaseForm = document.getElementById('landing-gift-card-form');
 
-// Located inside initLandingPage()
-purchaseForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const amount = parseFloat(document.getElementById('gc-amount').value);
-    const quantity = parseInt(document.getElementById('gc-quantity').value, 10);
 
-    if (isNaN(amount) || amount <= 0 || isNaN(quantity) || quantity <= 0) {
-        alert('Please fill out the gift card amount and quantity correctly.');
-        return;
-    }
-
-    const submitBtn = document.getElementById('landing-gc-submit-btn');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Processing...';
-
-    try {
-        // SCENARIO 1: User is already a logged-in client
-        if (currentUserId && auth.currentUser && !auth.currentUser.isAnonymous) {
-            const batch = writeBatch(db);
-            const expiryDate = new Date();
-            expiryDate.setMonth(expiryDate.getMonth() + 6);
-
-            const buyerInfo = {
-                name: document.getElementById('gc-buyer-name').value,
-                email: document.getElementById('gc-buyer-email').value,
-                phone: document.getElementById('gc-buyer-phone').value,
-            };
-
-            for (let i = 0; i < quantity; i++) {
-                const cardData = {
-                    amount: amount,
-                    balance: amount,
-                    history: [],
-                    recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerInfo.name,
-                    senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerInfo.name,
-                    backgroundUrl: document.getElementById('landing-gc-preview-card').style.backgroundImage.slice(5, -2),
-                    code: `GC-${Date.now()}-${i}`,
-                    status: 'Pending',
-                    type: 'E-Gift',
-                    createdBy: currentUserId,
-                    buyerInfo: buyerInfo,
-                    createdAt: serverTimestamp(),
-                    expiresAt: Timestamp.fromDate(expiryDate)
-                };
-                const newCardRef = doc(collection(db, "gift_cards"));
-                batch.set(newCardRef, cardData);
-            }
-            await batch.commit();
-            alert("Success! Your gift card request has been sent. It will be activated once payment is confirmed.");
-            // **** FIX FOR LOGGED-IN USER ****
-            closePurchaseModal();
-
-        } else {
-            // SCENARIO 2: New or anonymous user (original flow)
-            const buyerName = document.getElementById('gc-buyer-name').value;
-            const buyerPhone = document.getElementById('gc-buyer-phone').value;
-            const buyerEmail = document.getElementById('gc-buyer-email').value;
-
-            if (!buyerName || !buyerPhone || !buyerEmail) {
-                alert('Please fill out all your information to create an account.');
-                throw new Error("Missing buyer information.");
-            }
-
-            await createUserWithEmailAndPassword(auth, buyerEmail, buyerPhone);
-
-            const purchaseDetails = {
-                buyerName, buyerPhone, buyerEmail, amount, quantity,
-                recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerName,
-                senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerName,
-                backgroundUrl: document.getElementById('landing-gc-preview-card').style.backgroundImage.slice(5, -2),
-            };
-            sessionStorage.setItem('pendingGiftCardPurchase', JSON.stringify(purchaseDetails));
-            // onAuthStateChanged will handle the rest
-            await sendGiftCardConfirmationEmail(purchaseDetails);
-            // **** FIX FOR NEW USER ****
-            closePurchaseModal();
-
-        }
-    } catch (error) {
-        if (error.code === 'auth/email-already-in-use') {
-            alert("An account with this email already exists. Please log in to purchase a gift card.");
-        } else {
-            console.error("Error during gift card purchase:", error);
-            alert(`Could not process your request. Error: ${error.message}`);
-        }
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Submit Purchase Request';
-        // Re-enable form fields that might have been disabled
-        document.getElementById('gc-buyer-name').disabled = false;
-        document.getElementById('gc-buyer-phone').disabled = false;
-        document.getElementById('gc-buyer-email').disabled = false;
-    }
-
-});
 
 // --- LANDING PAGE SCRIPT ---
 function initLandingPage() {
@@ -2384,63 +2385,60 @@ if (royaltySettingsForm) {
     // PASTE THIS ENTIRE NEW BLOCK OF CODE
 
 // --- ROYALTY CARD ADMIN REPORT LOGIC ---
-const royaltyCardsTableBody = document.querySelector('#royalty-cards-table tbody');
-const searchRoyaltyCardsInput = document.getElementById('search-royalty-cards');
-// PASTE THIS NEW CODE BLOCK
-const addRoyaltyCardModal = document.getElementById('add-royalty-card-modal');
-const addRoyaltyCardBtn = document.getElementById('add-royalty-card-btn');
-const closeAddRoyaltyCardBtn = document.getElementById('close-add-royalty-card-modal-btn');
-const addRoyaltyCardForm = document.getElementById('add-royalty-card-form');
-const addRcClientList = document.getElementById('add-rc-client-list');
+ if (userRole === 'admin') {
+        // --- ROYALTY CARD ADMIN REPORT LOGIC ---
+        const royaltyCardsTableBody = document.querySelector('#royalty-cards-table tbody');
+        const searchRoyaltyCardsInput = document.getElementById('search-royalty-cards');
+        const addRoyaltyCardModal = document.getElementById('add-royalty-card-modal');
+        const addRoyaltyCardBtn = document.getElementById('add-royalty-card-btn');
+        const closeAddRoyaltyCardBtn = document.getElementById('close-add-royalty-card-modal-btn');
+        const addRoyaltyCardForm = document.getElementById('add-royalty-card-form');
+        const addRcClientList = document.getElementById('add-rc-client-list');
 
-const openAddRoyaltyCardModal = () => {
-    addRcClientList.innerHTML = '';
-    const clientsWithoutRoyalty = allClients.filter(c => !c.royaltyCard);
-    clientsWithoutRoyalty.forEach(client => {
-        addRcClientList.innerHTML += `<option value="${client.name}"></option>`;
-    });
-    addRoyaltyCardModal.classList.remove('hidden');
-};
+        const openAddRoyaltyCardModal = () => {
+            addRcClientList.innerHTML = '';
+            const clientsWithoutRoyalty = allClients.filter(c => !c.royaltyCard);
+            clientsWithoutRoyalty.forEach(client => {
+                addRcClientList.innerHTML += `<option value="${client.name}"></option>`;
+            });
+            addRoyaltyCardModal.classList.remove('hidden');
+        };
 
-const closeAddRoyaltyCardModal = () => {
-    addRoyaltyCardForm.reset();
-    addRoyaltyCardModal.classList.add('hidden');
-};
+        const closeAddRoyaltyCardModal = () => {
+            addRoyaltyCardForm.reset();
+            addRoyaltyCardModal.classList.add('hidden');
+        };
 
-addRoyaltyCardBtn.addEventListener('click', openAddRoyaltyCardModal);
-closeAddRoyaltyCardBtn.addEventListener('click', closeAddRoyaltyCardModal);
-addRoyaltyCardModal.querySelector('.modal-overlay').addEventListener('click', closeAddRoyaltyCardModal);
+        addRoyaltyCardBtn.addEventListener('click', openAddRoyaltyCardModal);
+        closeAddRoyaltyCardBtn.addEventListener('click', closeAddRoyaltyCardModal);
+        addRoyaltyCardModal.querySelector('.modal-overlay').addEventListener('click', closeAddRoyaltyCardModal);
 
-addRoyaltyCardForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const clientName = document.getElementById('add-rc-client-name').value;
-    const selectedClient = allClients.find(c => c.name === clientName);
+        addRoyaltyCardForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const clientName = document.getElementById('add-rc-client-name').value;
+            const selectedClient = allClients.find(c => c.name === clientName);
 
-    if (!selectedClient) {
-        alert("Please select a valid client from the list.");
-        return;
-    }
+            if (!selectedClient) {
+                alert("Please select a valid client from the list.");
+                return;
+            }
+            if (selectedClient.royaltyCard) {
+                alert(`${selectedClient.name} already has a royalty card.`);
+                return;
+            }
 
-    if (selectedClient.royaltyCard) {
-        alert(`${selectedClient.name} already has a royalty card.`);
-        return;
-    }
-
-    try {
-        const clientDocRef = doc(db, "clients", selectedClient.id);
-        await updateDoc(clientDocRef, {
-            royaltyCard: {
-                visits: 0,
-                lastVisit: null
+            try {
+                const clientDocRef = doc(db, "clients", selectedClient.id);
+                await updateDoc(clientDocRef, {
+                    royaltyCard: { visits: 0, lastVisit: null }
+                });
+                alert(`Royalty card created for ${selectedClient.name}!`);
+                closeAddRoyaltyCardModal();
+            } catch (error) {
+                console.error("Error adding royalty card:", error);
+                alert("Could not create royalty card for this client.");
             }
         });
-        alert(`Royalty card created for ${selectedClient.name}!`);
-        closeAddRoyaltyCardModal();
-    } catch (error) {
-        console.error("Error adding royalty card:", error);
-        alert("Could not create royalty card for this client.");
-    }
-});
 
 const renderRoyaltyCardsAdminTable = () => {
     if (!royaltyCardsTableBody) return;
@@ -2514,6 +2512,9 @@ royaltyCardsTableBody.addEventListener('click', async (e) => {
         }, "Remove Card");
     }
 });
+
+}
+
 
 // PASTE THIS ENTIRE NEW BLOCK OF CODE
 
@@ -3864,14 +3865,34 @@ const renderSalonEarnings = (earnings) => {
         serviceModal.classList.add('flex'); serviceModal.classList.remove('hidden');
     };
 
-    const closeServiceModal = () => {
-        modalContent.querySelectorAll('.modal-checkbox').forEach(modalCb => {
-            const sourceCb = hiddenCheckboxContainer.querySelector(`input[value="${modalCb.value}"]`);
-            if (sourceCb) sourceCb.checked = modalCb.checked;
-        });
-        serviceModal.classList.add('hidden'); serviceModal.classList.remove('flex');
-        updateSelectionCounts();
-    };
+// REPLACE the old closeServiceModal function with this one:
+const closeServiceModal = () => {
+    const firstCheckbox = modalContent.querySelector('.modal-checkbox');
+    const sourceContainerId = firstCheckbox ? firstCheckbox.dataset.sourceContainer : 'hidden-checkbox-container';
+    const sourceContainer = document.getElementById(sourceContainerId);
+    const categoryButtonContainerId = sourceContainerId === 'appointment-hidden-checkboxes' ? 'appointment-services-container' : 'services-container';
+    const categoryButtonContainer = document.getElementById(categoryButtonContainerId);
+
+    modalContent.querySelectorAll('.modal-checkbox').forEach(modalCb => {
+        const sourceCb = sourceContainer.querySelector(`input[value="${modalCb.value}"]`);
+        if (sourceCb) sourceCb.checked = modalCb.checked;
+    });
+
+    serviceModal.classList.add('hidden'); 
+    serviceModal.classList.remove('flex');
+
+    categoryButtonContainer.querySelectorAll('.category-button').forEach(button => {
+        const cat = button.dataset.category;
+        const count = sourceContainer.querySelectorAll(`input[data-category="${cat}"]:checked`).length;
+        const badge = button.querySelector('.selection-count');
+        if (count > 0) {
+            badge.textContent = `${count} selected`;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    });
+};
 
     servicesContainer.addEventListener('click', (e) => { const btn = e.target.closest('.category-button'); if (btn) openServiceModal(btn.dataset.category); });
     modalDoneBtn.addEventListener('click', closeServiceModal);

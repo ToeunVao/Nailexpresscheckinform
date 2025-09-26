@@ -1186,6 +1186,13 @@ const renderClientMembership = (clientData, clientId) => {
 
 // REPLACE your old initClientDashboard function with this new one:
 async function initClientDashboard(clientId, clientData) {
+       const featuresDoc = await getDoc(doc(db, "settings", "features"));
+    const features = featuresDoc.exists() ? docSnap.data() : { 
+        showGiftCards: true, 
+        showMemberships: true, 
+        showRoyaltyCard: true 
+    };
+
     // PRE-LOAD SERVICES FOR THE BOOKING MODAL
     await getDocs(collection(db, "services")).then(servicesSnapshot => {
         servicesData = {};
@@ -1257,22 +1264,35 @@ async function initClientDashboard(clientId, clientData) {
 
     renderClientMembership(clientData, clientId);
 
-    const setupClientNav = () => {
+// THIS IS THE MAIN FIX: The navigation is now built based on the feature toggles
+    const setupClientNav = (featureSettings) => {
         const navContainer = document.getElementById('client-top-nav');
         const contentSections = document.querySelectorAll('.client-tab-content');
-
-        const navItems = [
+        
+        // Start with the base navigation items
+        let navItems = [
             { id: 'appointments', text: 'Appointments' },
-            { id: 'favorites', text: 'My Favorites' },
-            { id: 'gift-cards', text: 'My Gift Cards' },
-            { id: 'membership', text: 'My Membership' },
-            { id: 'royalty-card', text: 'Royalty Card' }
+            { id: 'favorites', text: 'My Favorites' }
         ];
+
+        // Conditionally add items based on admin settings
+        if (featureSettings.showGiftCards) {
+            navItems.push({ id: 'gift-cards', text: 'My Gift Cards' });
+        }
+        if (featureSettings.showMemberships) {
+            navItems.push({ id: 'membership', text: 'My Membership' });
+        }
+        if (featureSettings.showRoyaltyCard) {
+            navItems.push({ id: 'royalty-card', text: 'Royalty Card' });
+        }
+        
+        // Hide all content sections first
+        contentSections.forEach(content => content.classList.add('hidden'));
 
         navContainer.innerHTML = navItems.map(item => 
             `<button class="top-nav-btn" data-target="${item.id}-content">${item.text}</button>`
         ).join('');
-
+        
         const navButtons = navContainer.querySelectorAll('.top-nav-btn');
 
         navContainer.addEventListener('click', (e) => {
@@ -1284,13 +1304,17 @@ async function initClientDashboard(clientId, clientData) {
 
             contentSections.forEach(content => content.classList.add('hidden'));
             const targetId = button.dataset.target;
-            document.getElementById(targetId).classList.remove('hidden');
+            const targetContent = document.getElementById(targetId);
+            if (targetContent) {
+                targetContent.classList.remove('hidden');
+            }
         });
 
         if (navButtons.length > 0) {
             navButtons[0].click();
         }
     };
+
 
     const renderClientAppointments = (appointments) => {
         const container = document.getElementById('client-upcoming-appointments');
@@ -1480,7 +1504,7 @@ onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientD
         renderClientRoyaltyCard(clientData);
     });
 
-    setupClientNav();
+    setupClientNav(features); // Pass the settings to the nav builder
 }
 
 // REPLACE your old 'landing-membership-form' submit listener with this one

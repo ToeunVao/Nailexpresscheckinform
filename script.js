@@ -557,7 +557,7 @@ document.addEventListener('click', (e) => { if (e.target.closest('.view-policy-b
 document.getElementById('policy-close-btn').addEventListener('click', closePolicyModal);
 document.querySelector('#policy-modal .policy-modal-overlay').addEventListener('click', closePolicyModal);
 
-// REPLACE your old openAddAppointmentModal function with this new one:
+// REPLACE your old openAddAppointmentModal function with this one:
 const openAddAppointmentModal = (date, clientData = null, appointmentData = null) => {
     addAppointmentForm.reset();
     const titleEl = document.getElementById('add-appointment-modal-title');
@@ -568,7 +568,7 @@ const openAddAppointmentModal = (date, clientData = null, appointmentData = null
     const peopleSelect = document.getElementById('appointment-people');
     const technicianSelect = document.getElementById('appointment-technician-select');
 
-    // --- Populate Dropdowns ---
+    // --- Populate Dropdowns (including the new service datalist) ---
     peopleSelect.innerHTML = '';
     for (let i = 1; i <= 20; i++) {
         peopleSelect.appendChild(new Option(i, i));
@@ -583,38 +583,18 @@ const openAddAppointmentModal = (date, clientData = null, appointmentData = null
             });
         }
     });
+
+    const mainServicesList = document.getElementById('main-services-list');
+    mainServicesList.innerHTML = Object.keys(servicesData).flatMap(category =>
+        servicesData[category].map(service => `<option value="${service.p || ''}${service.name}${service.price ? ' ' + service.price : ''}"></option>`)
+    ).join('');
     // --- End Dropdown Population ---
-
-    // Clear previous service selections
-    document.getElementById('appointment-services-container').innerHTML = '';
-    document.getElementById('appointment-hidden-checkboxes').innerHTML = '';
-
-    // --- Render Service Categories ---
-    const servicesContainer = document.getElementById('appointment-services-container');
-    const hiddenCheckboxes = document.getElementById('appointment-hidden-checkboxes');
-    Object.keys(servicesData).forEach(category => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'category-button p-3 border rounded-lg text-left bg-white hover:border-pink-300';
-        btn.dataset.category = category;
-        btn.innerHTML = `<h4 class="font-bold text-pink-700 text-sm">${category}</h4><span class="selection-count hidden mt-1 bg-pink-600 text-white text-xs font-bold px-2 py-1 rounded-full"></span>`;
-        servicesContainer.appendChild(btn);
-    });
-    Object.values(servicesData).flat().forEach(service => {
-        const val = `${service.p || ''}${service.name}${service.price ? ' ' + service.price : ''}`;
-        const cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.name = 'appointment-service';
-        cb.value = val;
-        cb.dataset.category = Object.keys(servicesData).find(key => servicesData[key].some(s => s.name === service.name));
-        hiddenCheckboxes.appendChild(cb);
-    });
 
     nameInput.disabled = false;
     phoneInput.disabled = false;
 
     if (appointmentData) {
-        // Edit Mode (logic remains mostly the same, but services will be selected via buttons now)
+        // Edit Mode
         titleEl.textContent = 'Edit Appointment';
         submitBtn.textContent = 'Update Appointment';
         appointmentIdInput.value = appointmentData.id;
@@ -631,6 +611,9 @@ const openAddAppointmentModal = (date, clientData = null, appointmentData = null
         document.getElementById('appointment-booking-type').value = appointmentData.bookingType || 'Booked - Calendar';
         technicianSelect.value = appointmentData.technician || 'Any Technician';
         document.getElementById('appointment-notes').value = appointmentData.notes || '';
+        // Handle single or multiple services for editing
+        document.getElementById('appointment-services').value = Array.isArray(appointmentData.services) ? appointmentData.services.join(', ') : (appointmentData.services || '');
+
     } else {
         // Add New Mode
         titleEl.textContent = 'Add New Appointment';
@@ -686,7 +669,7 @@ addAppointmentForm.addEventListener('submit', async (e) => {
         people: document.getElementById('appointment-people').value,
         bookingType: document.getElementById('appointment-booking-type').value,
         // And REPLACE it with this:
-        services: Array.from(document.querySelectorAll('#appointment-hidden-checkboxes input:checked')).map(cb => cb.value),
+        services: [document.getElementById('appointment-services').value],
         technician: document.getElementById('appointment-technician-select').value,
         notes: document.getElementById('appointment-notes').value,
         appointmentTimestamp: Timestamp.fromDate(bookingDate)
@@ -1356,26 +1339,6 @@ async function initClientDashboard(clientId, clientData) {
         document.getElementById('favorite-technician').textContent = favTech;
         document.getElementById('favorite-color').textContent = favColor;
     };
-
-    document.getElementById('appointment-services-container').addEventListener('click', (e) => {
-        const btn = e.target.closest('.category-button');
-        if (btn) {
-            const category = btn.dataset.category;
-            const sourceContainer = document.getElementById('appointment-hidden-checkboxes');
-            modalTitle.textContent = category;
-            modalContent.innerHTML = '';
-            servicesData[category].forEach(service => {
-                const val = `${service.p || ''}${service.name}${service.price ? ' ' + service.price : ''}`;
-                const sourceCb = sourceContainer.querySelector(`input[value="${val}"]`);
-                const label = document.createElement('label');
-                label.className = 'flex items-center p-3 hover:bg-pink-50 cursor-pointer rounded-lg';
-                label.innerHTML = `<input type="checkbox" class="form-checkbox modal-checkbox" data-source-container="appointment-hidden-checkboxes" value="${val}" ${sourceCb && sourceCb.checked ? 'checked' : ''}><span class="ml-3 text-gray-700 flex-grow">${service.name}</span>${service.price ? `<span class="font-semibold">${service.price}</span>` : ''}`;
-                modalContent.appendChild(label);
-            });
-            serviceModal.classList.add('flex');
-            serviceModal.classList.remove('hidden');
-        }
-    });
 
     onSnapshot(query(collection(db, "appointments"), where("name", "==", clientData.name)), (snapshot) => {
         const appointments = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));

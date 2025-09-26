@@ -1307,7 +1307,12 @@
 <div id="royalty-card-report-content" class="sub-tab-content hidden">
     <div class="flex justify-between items-center mb-4">
         <h3 class="text-xl font-semibold text-gray-700">Royalty Cards</h3>
-        <input type="text" id="search-royalty-cards" class="form-input w-64 p-2 border border-gray-300 rounded-lg" placeholder="Search by name or phone...">
+        <div class="flex items-center gap-2">
+            <input type="text" id="search-royalty-cards" class="form-input w-64 p-2 border border-gray-300 rounded-lg" placeholder="Search by name or phone...">
+            <button id="add-royalty-card-btn" class="bg-pink-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-pink-700">
+                <i class="fas fa-plus mr-2"></i>Add Card
+            </button>
+        </div>
     </div>
     <div class="overflow-x-auto">
         <table id="royalty-cards-table" class="w-full text-sm text-left text-gray-600">
@@ -3043,6 +3048,27 @@
         </form>
     </div>
 </div>
+<div id="add-royalty-card-modal" class="modal hidden fixed inset-0 z-[70] flex items-center justify-center p-4">
+    <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
+    <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
+        <button id="close-add-royalty-card-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times fa-lg"></i></button>
+        <h2 class="text-2xl font-bold text-center text-pink-700 mb-6">Add Royalty Card to Client</h2>
+        <form id="add-royalty-card-form" class="space-y-4">
+            <p class="text-sm text-center text-gray-600">Select an existing client who does not already have a royalty card.</p>
+            <div>
+                <label for="add-rc-client-name" class="block text-sm font-medium text-gray-600">Client Name</label>
+                <input type="text" id="add-rc-client-name" list="add-rc-client-list" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" required>
+                <datalist id="add-rc-client-list"></datalist>
+            </div>
+            <div class="pt-4">
+                <button type="submit" class="w-full bg-pink-600 text-white font-bold py-3 px-12 rounded-full hover:bg-pink-700">
+                    Create Card
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
     <script type="module" src="script.js"></script>
 </body>
 

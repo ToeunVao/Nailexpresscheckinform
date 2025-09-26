@@ -2948,6 +2948,7 @@ const initializeRoyaltyCardDesigner = () => {
     `;
 };
 
+// REPLACE your old handlePrintRoyaltyCards function with this new one:
 const handlePrintRoyaltyCards = () => {
     const quantity = parseInt(document.getElementById('designer-royalty-quantity').value, 10);
     if (isNaN(quantity) || quantity < 1) {
@@ -2994,9 +2995,12 @@ const handlePrintRoyaltyCards = () => {
                     <div class="royalty-card-footer text-center"><p class="text-xs">Complete all visits to earn a ${rewardText}!</p></div>
                 </div>
                 <!-- Back of Card -->
-                <div class="card rounded-lg p-4 flex flex-col justify-between bg-white text-gray-800">
-                    <div class="text-center pt-4"><p class="font-bold">Royalty Program Rules</p></div>
-                    <p class="text-xs text-center text-gray-600 px-4 leading-relaxed">One stamp per visit. This card is non-transferable and has no cash value. Cannot be combined with other offers. Lost cards cannot be replaced.</p>
+                <div class="card rounded-lg p-4 flex flex-col justify-between bg-white text-gray-800" style="text-shadow: none;">
+                    <div class="w-full h-10 bg-black mt-2"></div> 
+                    <div class="text-center pt-2"><p class="font-bold">Royalty Program Rules</p></div>
+                    <p class="text-xs text-center text-gray-600 px-4 leading-relaxed">
+                        One stamp per visit. This card is non-transferable and has no cash value. Cannot be combined with other offers. Lost cards cannot be replaced.
+                    </p>
                     <div class="text-center text-xs pb-2"><p class="font-bold">Nails Express</p><p>1560 Hustonville Rd #345, Danville, KY 40422</p></div>
                 </div>
             </div>
@@ -3004,7 +3008,7 @@ const handlePrintRoyaltyCards = () => {
     }
 
     printHTML += '</div></body></html>';
-
+    
     const printWindow = window.open('', '_blank');
     printWindow.document.write(printHTML);
     printWindow.document.close();

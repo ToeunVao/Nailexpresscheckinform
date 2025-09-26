@@ -557,7 +557,6 @@ document.addEventListener('click', (e) => { if (e.target.closest('.view-policy-b
 document.getElementById('policy-close-btn').addEventListener('click', closePolicyModal);
 document.querySelector('#policy-modal .policy-modal-overlay').addEventListener('click', closePolicyModal);
 
-// This function is in the global scope
 // REPLACE your old openAddAppointmentModal function with this new one:
 const openAddAppointmentModal = (date, clientData = null, appointmentData = null) => {
     addAppointmentForm.reset();
@@ -566,6 +565,25 @@ const openAddAppointmentModal = (date, clientData = null, appointmentData = null
     const appointmentIdInput = document.getElementById('edit-appointment-id');
     const nameInput = document.getElementById('appointment-client-name');
     const phoneInput = document.getElementById('appointment-phone');
+    const peopleSelect = document.getElementById('appointment-people');
+    const technicianSelect = document.getElementById('appointment-technician-select');
+
+    // --- Populate Dropdowns ---
+    peopleSelect.innerHTML = '';
+    for (let i = 1; i <= 20; i++) {
+        peopleSelect.appendChild(new Option(i, i));
+    }
+
+    getDoc(doc(db, "public_data", "technicians")).then(docSnap => {
+        if (docSnap.exists()) {
+            const techNames = docSnap.data().names || [];
+            technicianSelect.innerHTML = '<option>Any Technician</option>';
+            techNames.forEach(name => {
+                technicianSelect.appendChild(new Option(name, name));
+            });
+        }
+    });
+    // --- End Dropdown Population ---
 
     // Clear previous service selections
     document.getElementById('appointment-services-container').innerHTML = '';
@@ -591,24 +609,33 @@ const openAddAppointmentModal = (date, clientData = null, appointmentData = null
         cb.dataset.category = Object.keys(servicesData).find(key => servicesData[key].some(s => s.name === service.name));
         hiddenCheckboxes.appendChild(cb);
     });
-    // --- End Service Rendering ---
 
     nameInput.disabled = false;
     phoneInput.disabled = false;
 
     if (appointmentData) {
-        // Edit Mode logic remains the same
+        // Edit Mode (logic remains mostly the same, but services will be selected via buttons now)
         titleEl.textContent = 'Edit Appointment';
         submitBtn.textContent = 'Update Appointment';
         appointmentIdInput.value = appointmentData.id;
-        // ... (rest of edit logic)
-        // Note: Manual service selection will be handled by user
+        const apptDate = appointmentData.appointmentTimestamp.toDate();
+        const year = apptDate.getFullYear();
+        const month = String(apptDate.getMonth() + 1).padStart(2, '0');
+        const day = String(apptDate.getDate()).padStart(2, '0');
+        const hours = String(apptDate.getHours()).padStart(2, '0');
+        const minutes = String(apptDate.getMinutes()).padStart(2, '0');
+        document.getElementById('appointment-datetime').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+        nameInput.value = appointmentData.name || '';
+        phoneInput.value = appointmentData.phone || '';
+        peopleSelect.value = appointmentData.people || 1;
+        document.getElementById('appointment-booking-type').value = appointmentData.bookingType || 'Booked - Calendar';
+        technicianSelect.value = appointmentData.technician || 'Any Technician';
+        document.getElementById('appointment-notes').value = appointmentData.notes || '';
     } else {
         // Add New Mode
         titleEl.textContent = 'Add New Appointment';
         submitBtn.textContent = 'Save Appointment';
         appointmentIdInput.value = '';
-
         const now = new Date();
         const defaultDateTime = `${date}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
         document.getElementById('appointment-datetime').value = defaultDateTime;
@@ -616,7 +643,7 @@ const openAddAppointmentModal = (date, clientData = null, appointmentData = null
         if (clientData) {
             nameInput.value = clientData.name || '';
             phoneInput.value = clientData.phone || '';
-            nameInput.disabled = true; // Lock the fields for the logged-in client
+            nameInput.disabled = true;
             phoneInput.disabled = true;
         }
     }
@@ -1174,32 +1201,20 @@ const renderClientMembership = (clientData, clientId) => {
     }
 };
 
-// **** Function 2: The Main Dashboard Function ****
 // REPLACE your old initClientDashboard function with this new one:
 async function initClientDashboard(clientId, clientData) {
-    // PASTE THIS inside the initClientDashboard function
-document.getElementById('appointment-services-container').addEventListener('click', (e) => {
-    const btn = e.target.closest('.category-button');
-    if (btn) {
-        const category = btn.dataset.category;
-        const sourceContainer = document.getElementById('appointment-hidden-checkboxes');
-        modalTitle.textContent = category;
-        modalContent.innerHTML = '';
-        servicesData[category].forEach(service => {
-            const val = `${service.p || ''}${service.name}${service.price ? ' ' + service.price : ''}`;
-            const sourceCb = sourceContainer.querySelector(`input[value="${val}"]`);
-            const label = document.createElement('label');
-            label.className = 'flex items-center p-3 hover:bg-pink-50 cursor-pointer rounded-lg';
-            label.innerHTML = `<input type="checkbox" class="form-checkbox modal-checkbox" data-source-container="appointment-hidden-checkboxes" value="${val}" ${sourceCb && sourceCb.checked ? 'checked' : ''}><span class="ml-3 text-gray-700 flex-grow">${service.name}</span>${service.price ? `<span class="font-semibold">${service.price}</span>` : ''}`;
-            modalContent.appendChild(label);
+    // PRE-LOAD SERVICES FOR THE BOOKING MODAL
+    await getDocs(collection(db, "services")).then(servicesSnapshot => {
+        servicesData = {};
+        servicesSnapshot.forEach(doc => {
+            servicesData[doc.id] = doc.data().items;
         });
-        serviceModal.classList.add('flex');
-        serviceModal.classList.remove('hidden');
-    }
-});
+    });
 
     const featuresDoc = await getDoc(doc(db, "settings", "features"));
     const features = featuresDoc.exists() ? featuresDoc.data() : { showGiftCards: true, showMemberships: true };
+
+    // ... (the rest of the function remains exactly the same) ...
 
     const giftCardTab = document.getElementById('gift-cards-tab')?.parentElement;
     const giftCardContent = document.getElementById('gift-cards-content');
@@ -1257,25 +1272,25 @@ document.getElementById('appointment-services-container').addEventListener('clic
         });
     };
 
-    renderClientMembership(clientData, clientId); // Pass clientId here
+    renderClientMembership(clientData, clientId);
 
     const setupClientNav = () => {
         const navContainer = document.getElementById('client-top-nav');
         const contentSections = document.querySelectorAll('.client-tab-content');
-        
+
         const navItems = [
             { id: 'appointments', text: 'Appointments' },
             { id: 'history', text: 'History' },
             { id: 'favorites', text: 'My Favorites' },
             { id: 'gift-cards', text: 'My Gift Cards' },
             { id: 'membership', text: 'My Membership' },
-            { id: 'royalty-card', text: 'Royalty Card' } // <-- ADD THIS ITEM
+            { id: 'royalty-card', text: 'Royalty Card' }
         ];
 
         navContainer.innerHTML = navItems.map(item => 
             `<button class="top-nav-btn" data-target="${item.id}-content">${item.text}</button>`
         ).join('');
-        
+
         const navButtons = navContainer.querySelectorAll('.top-nav-btn');
 
         navContainer.addEventListener('click', (e) => {
@@ -1312,7 +1327,7 @@ document.getElementById('appointment-services-container').addEventListener('clic
     };
 
     const renderClientHistory = (history) => {
-         const container = document.getElementById('client-appointment-history');
+        const container = document.getElementById('client-appointment-history');
         container.innerHTML = '';
         if (history.length === 0) {
             container.innerHTML = '<p class="text-gray-500">You have no past appointments.</p>';
@@ -1325,50 +1340,6 @@ document.getElementById('appointment-services-container').addEventListener('clic
             container.appendChild(el);
         });
     };
-
-    // PASTE THIS NEW FUNCTION inside initClientDashboard
-const renderClientRoyaltyCard = (clientData) => {
-    const container = document.getElementById('royalty-card-content');
-    if (!clientData.royaltyCard) {
-        container.innerHTML = `
-            <div class="text-center p-8 bg-gray-50 rounded-lg">
-                <h3 class="text-xl font-semibold text-gray-700">You haven't joined the Royalty Program yet.</h3>
-                <p class="text-gray-500 mt-2 mb-4">Join for free to earn rewards with every visit!</p>
-            </div>`;
-        return;
-    }
-
-    const visits = clientData.royaltyCard.visits || 0;
-    const visitsNeeded = royaltySettings.visitsNeeded;
-    const rewardText = royaltySettings.rewardDescription;
-
-    let stampsHTML = '';
-    for (let i = 1; i <= visitsNeeded; i++) {
-        const isStamped = i <= visits;
-        stampsHTML += `<div class="stamp ${isStamped ? 'stamped' : ''}">${isStamped ? '<i class="fas fa-cut"></i>' : i}</div>`;
-    }
-
-    const isRewardReady = visits >= visitsNeeded;
-    const progressText = isRewardReady ? `Congrats! Your reward is ready: ${rewardText}!` : `${visitsNeeded - visits} more visits until your reward!`;
-
-    container.innerHTML = `
-        <div class="royalty-card-container">
-            <h3 class="text-xl font-semibold text-gray-700 mb-4 text-center">Your Royalty Card</h3>
-            <div class="royalty-card">
-                <div class="royalty-card-header">
-                    <p class="font-parisienne text-3xl">Nails Express</p>
-                    <p class="text-xs font-semibold tracking-wider">ROYALTY PROGRAM</p>
-                </div>
-                <div class="stamp-grid">
-                    ${stampsHTML}
-                </div>
-                <div class="royalty-card-footer">
-                    <p>${progressText}</p>
-                </div>
-            </div>
-        </div>
-    `;
-};
 
     const calculateAndRenderFavorites = (history) => {
         if (history.length === 0) return;
@@ -1386,11 +1357,31 @@ const renderClientRoyaltyCard = (clientData) => {
         document.getElementById('favorite-color').textContent = favColor;
     };
 
+    document.getElementById('appointment-services-container').addEventListener('click', (e) => {
+        const btn = e.target.closest('.category-button');
+        if (btn) {
+            const category = btn.dataset.category;
+            const sourceContainer = document.getElementById('appointment-hidden-checkboxes');
+            modalTitle.textContent = category;
+            modalContent.innerHTML = '';
+            servicesData[category].forEach(service => {
+                const val = `${service.p || ''}${service.name}${service.price ? ' ' + service.price : ''}`;
+                const sourceCb = sourceContainer.querySelector(`input[value="${val}"]`);
+                const label = document.createElement('label');
+                label.className = 'flex items-center p-3 hover:bg-pink-50 cursor-pointer rounded-lg';
+                label.innerHTML = `<input type="checkbox" class="form-checkbox modal-checkbox" data-source-container="appointment-hidden-checkboxes" value="${val}" ${sourceCb && sourceCb.checked ? 'checked' : ''}><span class="ml-3 text-gray-700 flex-grow">${service.name}</span>${service.price ? `<span class="font-semibold">${service.price}</span>` : ''}`;
+                modalContent.appendChild(label);
+            });
+            serviceModal.classList.add('flex');
+            serviceModal.classList.remove('hidden');
+        }
+    });
+
     onSnapshot(query(collection(db, "appointments"), where("name", "==", clientData.name)), (snapshot) => {
         const appointments = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
         renderClientAppointments(appointments);
     });
-     onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientData.name), orderBy("checkOutTimestamp", "desc")), (snapshot) => {
+    onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientData.name), orderBy("checkOutTimestamp", "desc")), (snapshot) => {
         const history = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
         allFinishedClients = history;
         renderClientHistory(history);
@@ -1441,7 +1432,6 @@ const renderClientRoyaltyCard = (clientData) => {
 
         if (downloadBtn) {
             const tier = allMembershipTiers.find(t => t.id === clientData.membership.tierId);
-            // THE FIX IS HERE: We pass an object with the ID included
             if (clientData && tier) {
                 openMembershipCardForPrint({ ...clientData, id: clientId }, tier);
             }
@@ -1468,14 +1458,14 @@ const renderClientRoyaltyCard = (clientData) => {
         openPurchaseModalForClient(clientData);
     });
 
+    getDoc(doc(db, "settings", "royaltyProgram")).then(docSnap => {
+        if (docSnap.exists() && docSnap.data().visitsNeeded) {
+            royaltySettings = docSnap.data();
+        }
+        renderClientRoyaltyCard(clientData);
+    });
+
     setupClientNav();
-// ADD THIS AT THE END of initClientDashboard
-getDoc(doc(db, "settings", "royaltyProgram")).then(docSnap => {
-    if (docSnap.exists() && docSnap.data().visitsNeeded) {
-        royaltySettings = docSnap.data();
-    }
-    renderClientRoyaltyCard(clientData);
-});
 }
 
 // REPLACE your old 'landing-membership-form' submit listener with this one

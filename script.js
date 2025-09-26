@@ -1969,40 +1969,39 @@ royaltyForm.addEventListener('submit', async (e) => {
         }
     });
 
-    // Located inside initLandingPage()
-    const updateFeatureVisibility = (settings) => {
-        const showClientRegistration = settings.showClientLogin !== false;
-        const showPromos = settings.showPromotions !== false;
-        const showGiftCards = settings.showGiftCards !== false;
-        const showNailArt = settings.showNailArt !== false;
-        // **** ADD THIS LINE ****
-        const showMemberships = settings.showMemberships !== false;
-        const showRoyaltyCard = settings.showRoyaltyCard !== false;
-        const signupTab = document.getElementById('signup-tab-btn').parentElement;
-        if (signupTab) {
-            signupTab.style.display = showClientRegistration ? 'block' : 'none';
-        }
+// REPLACE this function inside initLandingPage
+const updateFeatureVisibility = (settings) => {
+    const showClientRegistration = settings.showClientLogin !== false;
+    const showPromos = settings.showPromotions !== false;
+    const showGiftCards = settings.showGiftCards !== false;
+    const showNailArt = settings.showNailArt !== false;
+    const showMemberships = settings.showMemberships !== false;
+    const showRoyaltyCard = settings.showRoyaltyCard !== false; // This line was missing
 
-        document.getElementById('promotions-landing').style.display = showPromos ? '' : 'none';
-        document.querySelector('.nav-item-promotions').style.display = showPromos ? '' : 'none';
+    const signupTab = document.getElementById('signup-tab-btn').parentElement;
+    if (signupTab) {
+        signupTab.style.display = showClientRegistration ? 'block' : 'none';
+    }
 
-        document.getElementById('gift-card-landing').style.display = showGiftCards ? '' : 'none';
-        document.querySelector('.nav-item-gift-card').style.display = showGiftCards ? '' : 'none';
+    document.getElementById('promotions-landing').style.display = showPromos ? '' : 'none';
+    document.querySelector('.nav-item-promotions').style.display = showPromos ? '' : 'none';
 
-        document.getElementById('nails-idea-landing').style.display = showNailArt ? '' : 'none';
-        document.querySelector('.nav-item-nails-idea').style.display = showNailArt ? '' : 'none';
+    document.getElementById('gift-card-landing').style.display = showGiftCards ? '' : 'none';
+    document.querySelector('.nav-item-gift-card').style.display = showGiftCards ? '' : 'none';
 
-        // **** AND ADD THESE 3 LINES ****
-        const membershipSection = document.getElementById('memberships-landing');
-        const membershipNavLink = document.querySelector('a[href="#memberships-landing"]');
-        if (membershipSection) membershipSection.style.display = showMemberships ? '' : 'none';
-        if (membershipNavLink) membershipNavLink.style.display = showMemberships ? '' : 'none';
-        // PASTE THIS NEW BLOCK AT THE END of the function
-        const royaltySection = document.getElementById('royalty-card-landing');
-        const royaltyNavLink = document.querySelector('a[href="#royalty-card-landing"]');
-        if (royaltySection) royaltySection.style.display = showRoyaltyCard ? '' : 'none';
-        if (royaltyNavLink) royaltyNavLink.style.display = showRoyaltyCard ? '' : 'none';
+    document.getElementById('nails-idea-landing').style.display = showNailArt ? '' : 'none';
+    document.querySelector('.nav-item-nails-idea').style.display = showNailArt ? '' : 'none';
 
+    const membershipSection = document.getElementById('memberships-landing');
+    const membershipNavLink = document.querySelector('a[href="#memberships-landing"]');
+    if (membershipSection) membershipSection.style.display = showMemberships ? '' : 'none';
+    if (membershipNavLink) membershipNavLink.style.display = showMemberships ? '' : 'none';
+
+    // This block was missing
+    const royaltySection = document.getElementById('royalty-card-landing');
+    const royaltyNavLink = document.querySelector('a[href="#royalty-card-landing"]');
+    if (royaltySection) royaltySection.style.display = showRoyaltyCard ? '' : 'none';
+    if (royaltyNavLink) royaltyNavLink.style.display = showRoyaltyCard ? '' : 'none';
 };
     // Located at the end of initLandingPage()
     onSnapshot(doc(db, "settings", "features"), (docSnap) => {
@@ -5195,43 +5194,41 @@ const renderUsers = (users) => {
         catch (error) { console.error("Error saving salon hours:", error); alert("Could not save salon hours."); }
     });
 
-    // Located inside initMainApp()
-    const loadFeatureToggles = async () => {
-        const settingsDoc = await getDoc(doc(db, "settings", "features"));
-        if (settingsDoc.exists()) {
-            const settings = settingsDoc.data();
-            document.getElementById('toggle-client-login').checked = settings.showClientLogin !== false;
-            document.getElementById('toggle-promotions').checked = settings.showPromotions !== false;
-            document.getElementById('toggle-gift-card').checked = settings.showGiftCards !== false;
-            document.getElementById('toggle-nails-idea').checked = settings.showNailArt !== false;
-            // Safely check for the memberships property
-            document.getElementById('toggle-memberships').checked = settings.showMemberships !== false;
-            document.getElementById('toggle-royalty-card').checked = settings.showRoyaltyCard !== false; 
-        } else {
-            // Default all to true if no settings exist yet
-            document.getElementById('toggle-client-login').checked = true;
-            document.getElementById('toggle-promotions').checked = true;
-            document.getElementById('toggle-gift-card').checked = true;
-            document.getElementById('toggle-nails-idea').checked = true;
-            document.getElementById('toggle-memberships').checked = true; 
-            document.getElementById('toggle-royalty-card').checked = true; 
-        }
-    };
-
-    featureTogglesForm.addEventListener('change', async (e) => {
-        if (e.target.type === 'checkbox') {
-            const settings = {
-                showClientLogin: document.getElementById('toggle-client-login').checked,
-                showPromotions: document.getElementById('toggle-promotions').checked,
-                showGiftCards: document.getElementById('toggle-gift-card').checked,
-                showNailArt: document.getElementById('toggle-nails-idea').checked,
-                showMemberships: document.getElementById('toggle-memberships').checked,
-                showRoyaltyCard: document.getElementById('toggle-royalty-card').checked // <-- ADD THIS LINE
-
-            };
-            await setDoc(doc(db, "settings", "features"), settings, { merge: true });
-        }
-    });
+// REPLACE this function inside initMainApp
+const loadFeatureToggles = async () => {
+    const settingsDoc = await getDoc(doc(db, "settings", "features"));
+    if (settingsDoc.exists()) {
+        const settings = settingsDoc.data();
+        document.getElementById('toggle-client-login').checked = settings.showClientLogin !== false;
+        document.getElementById('toggle-promotions').checked = settings.showPromotions !== false;
+        document.getElementById('toggle-gift-card').checked = settings.showGiftCards !== false;
+        document.getElementById('toggle-nails-idea').checked = settings.showNailArt !== false;
+        document.getElementById('toggle-memberships').checked = settings.showMemberships !== false;
+        document.getElementById('toggle-royalty-card').checked = settings.showRoyaltyCard !== false; // This line was missing
+    } else {
+        // Default all to true if no settings exist yet
+        document.getElementById('toggle-client-login').checked = true;
+        document.getElementById('toggle-promotions').checked = true;
+        document.getElementById('toggle-gift-card').checked = true;
+        document.getElementById('toggle-nails-idea').checked = true;
+        document.getElementById('toggle-memberships').checked = true;
+        document.getElementById('toggle-royalty-card').checked = true; // This line was missing
+    }
+};
+// REPLACE this event listener inside initMainApp
+featureTogglesForm.addEventListener('change', async (e) => {
+    if (e.target.type === 'checkbox') {
+        const settings = {
+            showClientLogin: document.getElementById('toggle-client-login').checked,
+            showPromotions: document.getElementById('toggle-promotions').checked,
+            showGiftCards: document.getElementById('toggle-gift-card').checked,
+            showNailArt: document.getElementById('toggle-nails-idea').checked,
+            showMemberships: document.getElementById('toggle-memberships').checked,
+            showRoyaltyCard: document.getElementById('toggle-royalty-card').checked // This line was missing
+        };
+        await setDoc(doc(db, "settings", "features"), settings, { merge: true });
+    }
+});
 
     const loadSettings = async () => {
         const bookingSnap = await getDoc(doc(db, "settings", "booking"));

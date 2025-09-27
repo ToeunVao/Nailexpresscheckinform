@@ -1203,16 +1203,8 @@ const renderClientMembership = (clientData, clientId) => {
     }
 };
 
-// REPLACE your old initClientDashboard function with this new one:
+// REPLACE your old initClientDashboard function with this corrected one:
 async function initClientDashboard(clientId, clientData) {
-       const featuresDoc = await getDoc(doc(db, "settings", "features"));
-    const features = featuresDoc.exists() ? docSnap.data() : { 
-        showGiftCards: true, 
-        showMemberships: true, 
-        showRoyaltyCard: true 
-    };
-
-    // PRE-LOAD SERVICES FOR THE BOOKING MODAL
     await getDocs(collection(db, "services")).then(servicesSnapshot => {
         servicesData = {};
         servicesSnapshot.forEach(doc => {
@@ -1220,26 +1212,13 @@ async function initClientDashboard(clientId, clientData) {
         });
     });
 
-
-    // ... (the rest of the function remains exactly the same) ...
-
-    const giftCardTab = document.getElementById('gift-cards-tab')?.parentElement;
-    const giftCardContent = document.getElementById('gift-cards-content');
-    if (features.showGiftCards === false) {
-        if (giftCardTab) giftCardTab.classList.add('hidden');
-        if (giftCardContent) giftCardContent.classList.add('hidden');
-    } else {
-        if (giftCardTab) giftCardTab.classList.remove('hidden');
-    }
-
-    const membershipTab = document.getElementById('membership-tab')?.parentElement;
-    const membershipContent = document.getElementById('membership-content');
-    if (features.showMemberships === false) {
-        if (membershipTab) membershipTab.classList.add('hidden');
-        if (membershipContent) membershipContent.classList.add('hidden');
-    } else {
-        if (membershipTab) membershipTab.classList.remove('hidden');
-    }
+    const featuresDoc = await getDoc(doc(db, "settings", "features"));
+    // THIS IS THE FIX: Changed 'docSnap' to 'featuresDoc'
+    const features = featuresDoc.exists() ? featuresDoc.data() : { 
+        showGiftCards: true, 
+        showMemberships: true, 
+        showRoyaltyCard: true 
+    };
 
     document.getElementById('client-welcome-name').textContent = `Welcome back, ${clientData.name}!`;
     document.getElementById('client-sign-out-btn').addEventListener('click', () => signOut(auth));
@@ -1280,19 +1259,61 @@ async function initClientDashboard(clientId, clientData) {
     };
 
     renderClientMembership(clientData, clientId);
+    
+    const renderClientRoyaltyCard = (clientData) => {
+        const container = document.getElementById('royalty-card-content');
+        if (!container) return;
 
-// THIS IS THE MAIN FIX: The navigation is now built based on the feature toggles
+        if (!clientData.royaltyCard) {
+            container.innerHTML = `
+                <div class="text-center p-8 bg-gray-50 rounded-lg">
+                    <h3 class="text-xl font-semibold text-gray-700">You haven't joined the Royalty Program yet.</h3>
+                    <p class="text-gray-500 mt-2 mb-4">Join for free to earn rewards with every visit!</p>
+                </div>`;
+            return;
+        }
+        
+        const visits = clientData.royaltyCard.visits || 0;
+        const visitsNeeded = royaltySettings.visitsNeeded;
+        const rewardText = royaltySettings.rewardDescription;
+        
+        let stampsHTML = '';
+        for (let i = 1; i <= visitsNeeded; i++) {
+            const isStamped = i <= visits;
+            stampsHTML += `<div class="stamp ${isStamped ? 'stamped' : ''}">${isStamped ? '<i class="fas fa-star"></i>' : i}</div>`;
+        }
+
+        const isRewardReady = visits >= visitsNeeded;
+        const progressText = isRewardReady ? `Congrats! Your reward is ready: ${rewardText}!` : `${visitsNeeded - visits} more visits until your reward!`;
+
+        container.innerHTML = `
+            <div class="royalty-card-container">
+                <h3 class="text-xl font-semibold text-gray-700 mb-4 text-center">Your Royalty Card</h3>
+                <div class="royalty-card">
+                    <div class="royalty-card-header">
+                        <p class="font-parisienne text-3xl">Nails Express</p>
+                        <p class="text-xs font-semibold tracking-wider">ROYALTY PROGRAM</p>
+                    </div>
+                    <div class="stamp-grid">
+                        ${stampsHTML}
+                    </div>
+                    <div class="royalty-card-footer">
+                        <p>${progressText}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    };
+
     const setupClientNav = (featureSettings) => {
         const navContainer = document.getElementById('client-top-nav');
         const contentSections = document.querySelectorAll('.client-tab-content');
         
-        // Start with the base navigation items
         let navItems = [
             { id: 'appointments', text: 'Appointments' },
             { id: 'favorites', text: 'My Favorites' }
         ];
 
-        // Conditionally add items based on admin settings
         if (featureSettings.showGiftCards) {
             navItems.push({ id: 'gift-cards', text: 'My Gift Cards' });
         }
@@ -1303,7 +1324,6 @@ async function initClientDashboard(clientId, clientData) {
             navItems.push({ id: 'royalty-card', text: 'Royalty Card' });
         }
         
-        // Hide all content sections first
         contentSections.forEach(content => content.classList.add('hidden'));
 
         navContainer.innerHTML = navItems.map(item => 
@@ -1332,7 +1352,6 @@ async function initClientDashboard(clientId, clientData) {
         }
     };
 
-
     const renderClientAppointments = (appointments) => {
         const container = document.getElementById('client-upcoming-appointments');
         container.innerHTML = '';
@@ -1349,24 +1368,23 @@ async function initClientDashboard(clientId, clientData) {
         });
     };
 
-// REPLACE the old renderClientHistory function with this one:
-const renderClientHistory = (history) => {
-    const container = document.getElementById('client-appointment-history');
-    if (!container) return; // <-- Safety check added here
+    const renderClientHistory = (history) => {
+        const container = document.getElementById('client-appointment-history');
+        if (!container) return;
 
-    container.innerHTML = '';
-    if (history.length === 0) {
-        container.innerHTML = '<p class="text-gray-500">You have no past appointments.</p>';
-        return;
-    }
-    history.forEach(visit => {
-        const el = document.createElement('div');
-        el.className = 'bg-white p-4 rounded-lg shadow';
-        // The 'visit.services' is now guaranteed to be a string
-        el.innerHTML = `<p class="font-bold">${new Date(visit.checkOutTimestamp.seconds * 1000).toLocaleDateString()}</p><p>${visit.services}</p><p class="text-sm text-gray-600">With: ${visit.technician}</p>${visit.colorCode ? `<p class="text-sm text-gray-600">Color: ${visit.colorCode}</p>` : ''}`;
-        container.appendChild(el);
-    });
-};
+        container.innerHTML = '';
+        if (history.length === 0) {
+            container.innerHTML = '<p class="text-gray-500">You have no past appointments.</p>';
+            return;
+        }
+        history.forEach(visit => {
+            const el = document.createElement('div');
+            el.className = 'bg-white p-4 rounded-lg shadow';
+            el.innerHTML = `<p class="font-bold">${new Date(visit.checkOutTimestamp.seconds * 1000).toLocaleDateString()}</p><p>${visit.services}</p><p class="text-sm text-gray-600">With: ${visit.technician}</p>${visit.colorCode ? `<p class="text-sm text-gray-600">Color: ${visit.colorCode}</p>` : ''}`;
+            container.appendChild(el);
+        });
+    };
+
     const calculateAndRenderFavorites = (history) => {
         if (history.length === 0) return;
         const techCounts = history.reduce((acc, visit) => {
@@ -1382,67 +1400,21 @@ const renderClientHistory = (history) => {
         document.getElementById('favorite-technician').textContent = favTech;
         document.getElementById('favorite-color').textContent = favColor;
     };
-// PASTE THE NEW FUNCTION RIGHT BELOW IT:
-const renderClientRoyaltyCard = (clientData) => {
-    const container = document.getElementById('royalty-card-content');
-    if (!container) return;
-
-    if (!clientData.royaltyCard) {
-        container.innerHTML = `
-            <div class="text-center p-8 bg-gray-50 rounded-lg">
-                <h3 class="text-xl font-semibold text-gray-700">You haven't joined the Royalty Program yet.</h3>
-                <p class="text-gray-500 mt-2 mb-4">Join for free to earn rewards with every visit!</p>
-            </div>`;
-        return;
-    }
     
-    const visits = clientData.royaltyCard.visits || 0;
-    const visitsNeeded = royaltySettings.visitsNeeded;
-    const rewardText = royaltySettings.rewardDescription;
-    
-    let stampsHTML = '';
-    for (let i = 1; i <= visitsNeeded; i++) {
-        const isStamped = i <= visits;
-        stampsHTML += `<div class="stamp ${isStamped ? 'stamped' : ''}">${isStamped ? '<i class="fas fa-star"></i>' : i}</div>`;
-    }
-
-    const isRewardReady = visits >= visitsNeeded;
-    const progressText = isRewardReady ? `Congrats! Your reward is ready: ${rewardText}!` : `${visitsNeeded - visits} more visits until your reward!`;
-
-    container.innerHTML = `
-        <div class="royalty-card-container">
-            <h3 class="text-xl font-semibold text-gray-700 mb-4 text-center">Your Royalty Card</h3>
-            <div class="royalty-card">
-                <div class="royalty-card-header">
-                    <p class="font-parisienne text-3xl">Nails Express</p>
-                    <p class="text-xs font-semibold tracking-wider">ROYALTY PROGRAM</p>
-                </div>
-                <div class="stamp-grid">
-                    ${stampsHTML}
-                </div>
-                <div class="royalty-card-footer">
-                    <p>${progressText}</p>
-                </div>
-            </div>
-        </div>
-    `;
-};
     onSnapshot(query(collection(db, "appointments"), where("name", "==", clientData.name)), (snapshot) => {
         const appointments = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
         renderClientAppointments(appointments);
     });
-// REPLACE the old onSnapshot for finished_clients with this one:
-onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientData.name), orderBy("checkOutTimestamp", "desc")), (snapshot) => {
-    // THE FIX IS HERE: We now join the services array into a clean string
-    const history = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        services: (doc.data().services || []).join(', ') // Ensures services is a string
-    }));
-    allFinishedClients = history;
-    renderClientHistory(history);
-    calculateAndRenderFavorites(history);
-});
+     onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientData.name), orderBy("checkOutTimestamp", "desc")), (snapshot) => {
+        const history = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            services: (doc.data().services || []).join(', ')
+        }));
+        allFinishedClients = history;
+        renderClientHistory(history);
+        calculateAndRenderFavorites(history);
+    });
 
     let allClientGiftCards = [];
     onSnapshot(query(collection(db, "gift_cards"), where("createdBy", "==", clientId), orderBy("createdAt", "desc")), (snapshot) => {
@@ -1513,7 +1485,7 @@ onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientD
     document.getElementById('client-buy-gift-card-btn').addEventListener('click', () => {
         openPurchaseModalForClient(clientData);
     });
-
+    
     getDoc(doc(db, "settings", "royaltyProgram")).then(docSnap => {
         if (docSnap.exists() && docSnap.data().visitsNeeded) {
             royaltySettings = docSnap.data();
@@ -1521,7 +1493,7 @@ onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientD
         renderClientRoyaltyCard(clientData);
     });
 
-    setupClientNav(features); // Pass the settings to the nav builder
+    setupClientNav(features);
 }
 
 // REPLACE your old 'landing-membership-form' submit listener with this one

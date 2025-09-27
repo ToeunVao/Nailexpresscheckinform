@@ -2794,7 +2794,7 @@ if (taskListContainer) {
             const taskId = completeBtn.dataset.id;
             const task = allTasks.find(t => t.id === taskId);
             if (task) {
-                // This line was the problem. I've fixed it to correctly update the task.
+                // FIX: Was using undefined variables. Now correctly toggles the completed status.
                 await updateDoc(doc(db, "tasks", taskId), { completed: !task.completed });
             }
         } else if (deleteBtn) {
@@ -2836,7 +2836,7 @@ editTaskForm.addEventListener('submit', async (e) => {
         try {
             await updateDoc(doc(db, "tasks", taskId), {
                 description: newDescription,
-                priority: newPriority
+                category: newCategory // FIX: Was trying to save 'priority: newPriority'
             });
             closeEditTaskModal();
         } catch (error) {

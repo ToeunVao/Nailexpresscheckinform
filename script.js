@@ -5479,6 +5479,77 @@ document.getElementById('expense-supplier-filter').addEventListener('change', (e
     currentExpenseSupplierFilter = e.target.value;
     renderExpenses();
 });
+
+// PASTE THIS ENTIRE NEW BLOCK inside the if (userRole === 'admin') block
+
+const exportExpensesBtn = document.getElementById('export-expenses-btn');
+if (exportExpensesBtn) {
+    exportExpensesBtn.addEventListener('click', () => {
+        // 1. Get the currently filtered data
+        let filteredExpenses = [...allExpenses];
+        if (currentExpenseMonthFilter && currentExpenseMonthFilter !== 'all') {
+            const [year, month] = currentExpenseMonthFilter.split('-').map(Number);
+            filteredExpenses = filteredExpenses.filter(exp => {
+                const d = new Date(exp.date.seconds * 1000);
+                return d.getFullYear() === year && d.getMonth() + 1 === month;
+            });
+        }
+        if (currentExpenseCategoryFilter && currentExpenseCategoryFilter !== 'all') {
+            filteredExpenses = filteredExpenses.filter(exp => exp.category === currentExpenseCategoryFilter);
+        }
+        if (currentExpenseSupplierFilter && currentExpenseSupplierFilter !== 'all') {
+            filteredExpenses = filteredExpenses.filter(exp => exp.supplier === currentExpenseSupplierFilter);
+        }
+
+        if (filteredExpenses.length === 0) {
+            alert("There is no data to export for the current filters.");
+            return;
+        }
+
+        // 2. Prepare the data for the worksheet
+        const dataToExport = filteredExpenses.map(exp => ({
+            'Date': new Date(exp.date.seconds * 1000).toLocaleDateString(),
+            'Expense Name': exp.name,
+            'Category': exp.category || '',
+            'Supplier': exp.supplier || '',
+            'Paid Via': exp.paymentAccount || '',
+            'Amount': exp.amount
+        }));
+
+        // 3. Add a total row at the bottom
+        const totalAmount = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+        dataToExport.push({}); // Add a blank row for spacing
+        dataToExport.push({
+            'Date': 'Total:',
+            'Amount': totalAmount
+        });
+
+        // 4. Create the worksheet and workbook
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        
+        // Optional: Set column widths for better readability
+        worksheet['!cols'] = [
+            { wch: 12 }, { wch: 30 }, { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 12 }
+        ];
+
+        // Format the 'Amount' column as currency
+        const amountColumnIndex = 'F';
+        for (let i = 2; i <= dataToExport.length + 1; i++) {
+            const cellRef = `${amountColumnIndex}${i}`;
+            if (worksheet[cellRef] && typeof worksheet[cellRef].v === 'number') {
+                worksheet[cellRef].t = 'n'; // Set type to number
+                worksheet[cellRef].z = '$#,##0.00'; // Set format to currency
+            }
+        }
+        
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Expenses Report");
+
+        // 5. Trigger the download
+        XLSX.writeFile(workbook, `NailsExpress_Expenses_${new Date().toISOString().split('T')[0]}.xlsx`);
+    });
+}
+
     addExpenseForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const expenseId = document.getElementById('edit-expense-id').value;

@@ -52,6 +52,7 @@ let currentGalleryData = [];
 let currentRotation = 0; // <-- PASTE it here
 let royaltySettings = { visitsNeeded: 10, rewardDescription: 'One Free Classic Manicure' };
 let allRoyaltyCards = [];
+let globalListenersAttached = false; // <-- ADD THIS LINE
 
 
 // ADD THIS ENTIRE NEW BLOCK for the lightbox

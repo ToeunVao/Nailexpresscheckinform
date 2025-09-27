@@ -930,24 +930,32 @@ const renderClientMembershipsTable = (members) => {
 };
 
 // --- GLOBAL DATA FETCHING ---
-onSnapshot(query(collection(db, "memberships"), orderBy("price")), (snapshot) => {
-    allMembershipTiers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    if (landingPageContent.style.display === 'block') {
-        renderMembershipTiers(allMembershipTiers, 'landing-memberships-container', false);
-    }
-});
+function initializeGlobalListeners() {
+    if (globalListenersAttached) return; // Prevents attaching listeners multiple times
+
+    onSnapshot(query(collection(db, "memberships"), orderBy("price")), (snapshot) => {
+        allMembershipTiers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (landingPageContent.style.display === 'block') {
+            renderMembershipTiers(allMembershipTiers, 'landing-memberships-container', false);
+        }
+    });
+
+    // If you ever add more global listeners, they should go inside this function.
+
+    globalListenersAttached = true;
+}
 
 // --- Primary Authentication Router ---
 // REPLACE your entire onAuthStateChanged function with this one:
 onAuthStateChanged(auth, async (user) => {
     try {
         if (user) {
-            // A user is signed in (either real or anonymous)
+            // A user (anonymous or real) is now authenticated. It's safe to load global data.
+            initializeGlobalListeners();
             currentUserId = user.uid;
 
             if (user.isAnonymous) {
-                // If it's an ANONYMOUS user, show the landing page.
-                // This is the SAFE place to initialize the page.
+                // Anonymous user -> Show the landing page
                 loadingScreen.style.display = 'none';
                 appContent.style.display = 'none';
                 clientDashboardContent.style.display = 'none';
@@ -957,10 +965,8 @@ onAuthStateChanged(auth, async (user) => {
                     landingPageInitialized = true;
                 }
             } else {
-                // It's a REAL user, check if they are staff or a client.
-                const userDocRef = doc(db, "users", user.uid);
-                const userDoc = await getDoc(userDocRef);
-
+                // Real user -> Route to the correct dashboard
+                const userDoc = await getDoc(doc(db, "users", user.uid));
                 if (userDoc.exists()) {
                     // Staff/Admin User
                     const userData = userDoc.data();
@@ -975,7 +981,7 @@ onAuthStateChanged(auth, async (user) => {
                         mainAppInitialized = true;
                     }
                 } else {
-                    // Client User
+                    // Client User (or new signup)
                     const clientDocRef = doc(db, "clients", user.uid);
                     const clientDoc = await getDoc(clientDocRef);
                     if (clientDoc.exists()) {
@@ -986,7 +992,6 @@ onAuthStateChanged(auth, async (user) => {
                         initClientDashboard(user.uid, clientDoc.data());
                     } else {
                         // This handles the brief moment a new client signs up
-                        // The logic to create their document is now self-contained here.
                         const pendingPurchaseJSON = sessionStorage.getItem('pendingGiftCardPurchase');
                         const pendingMembershipId = sessionStorage.getItem('pendingMembershipPurchase');
                         const pendingRoyaltyJSON = sessionStorage.getItem('pendingRoyaltyCard');
@@ -1022,7 +1027,7 @@ onAuthStateChanged(auth, async (user) => {
                                 sessionStorage.removeItem('signupDetails');
                             } else {
                                 console.error("New user with no client doc and no pending action.");
-                                await signOut(auth); // Sign out if something is wrong
+                                await signOut(auth);
                                 return;
                             }
                         }
@@ -1036,12 +1041,7 @@ onAuthStateChanged(auth, async (user) => {
                 }
             }
         } else {
-            // NO user is signed in. This is the first load for a new visitor.
-            // Sign them in anonymously. This will re-trigger onAuthStateChanged,
-            // which will then fall into the 'user.isAnonymous' block above.
-            currentUserId = null;
-            currentUserRole = null;
-            currentUserName = null;
+            // No user is logged in. This triggers ONLY on the very first load for a new visitor.
             signInAnonymously(auth).catch((error) => {
                 console.error("Initial anonymous sign-in failed:", error);
             });
@@ -1051,6 +1051,7 @@ onAuthStateChanged(auth, async (user) => {
         loadingScreen.innerHTML = `<div class="text-center"><h2 class="text-3xl font-bold text-red-700">Connection Error</h2><p>Could not connect to services. Please check your internet connection and refresh the page.</p><p class="text-xs text-gray-400 mt-4">Error: ${error.message}</p></div>`;
     }
 });
+
 
 
 

@@ -2772,6 +2772,7 @@ onSnapshot(doc(db, "settings", "backup"), (docSnap) => {
 const addTaskForm = document.getElementById('add-task-form');
 const taskListContainer = document.getElementById('task-list-container');
 
+// REPLACE your old renderTasks function with this new one:
 const renderTasks = () => {
     if (!taskListContainer) return;
 
@@ -2781,33 +2782,30 @@ const renderTasks = () => {
         return;
     }
 
-    const sortedTasks = [...allTasks].sort((a, b) => {
-        const priorityOrder = { 'high': 0, 'medium': 1, 'low': 2 };
-        return priorityOrder[a.priority] - priorityOrder[b.priority];
-    });
+    // Sort by creation time (newest first)
+    const sortedTasks = [...allTasks].sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
 
     sortedTasks.forEach(task => {
-        const priorityColors = {
-            high: 'border-red-500 bg-red-50',
-            medium: 'border-yellow-500 bg-yellow-50',
-            low: 'border-gray-300 bg-gray-50'
+        const categoryStyles = {
+            'Nails Supply': { border: 'border-blue-500', bg: 'bg-blue-50', icon: 'fa-shopping-cart' },
+            'Maintenance': { border: 'border-yellow-500', bg: 'bg-yellow-50', icon: 'fa-tools' },
+            'Other': { border: 'border-gray-400', bg: 'bg-gray-50', icon: 'fa-clipboard-list' }
         };
+        const styles = categoryStyles[task.category] || categoryStyles['Other'];
+
         const taskEl = document.createElement('div');
-        taskEl.className = `task-item flex items-center justify-between p-3 rounded-lg border-l-4 ${priorityColors[task.priority]}`;
+        taskEl.className = `task-item flex items-center justify-between p-3 rounded-lg border-l-4 ${styles.border} ${styles.bg}`;
         taskEl.innerHTML = `
-    <span class="task-description flex-grow ${task.completed ? 'completed' : ''}">${task.description}</span>
-    <div class="task-actions flex items-center gap-3 ml-4">
-        <button data-id="${task.id}" class="edit-task-btn text-blue-500 hover:text-blue-700" title="Edit Task">
-            <i class="fas fa-edit"></i>
-        </button>
-        <button data-id="${task.id}" class="complete-task-btn text-green-500 hover:text-green-700" title="Complete Task">
-            <i class="fas ${task.completed ? 'fa-check-square' : 'fa-square'}"></i>
-        </button>
-        <button data-id="${task.id}" class="delete-task-btn text-red-500 hover:text-red-700" title="Delete Task">
-            <i class="fas fa-trash"></i>
-        </button>
-    </div>
-`;
+            <div class="flex items-center">
+                <i class="fas ${styles.icon} mr-3 text-gray-500"></i>
+                <span class="task-description flex-grow ${task.completed ? 'completed' : ''}">${task.description}</span>
+            </div>
+            <div class="task-actions flex items-center gap-3 ml-4">
+                <button data-id="${task.id}" class="edit-task-btn text-blue-500 hover:text-blue-700" title="Edit Task"><i class="fas fa-edit"></i></button>
+                <button data-id="${task.id}" class="complete-task-btn text-green-500 hover:text-green-700" title="Complete Task"><i class="fas ${task.completed ? 'fa-check-square' : 'fa-square'}"></i></button>
+                <button data-id="${task.id}" class="delete-task-btn text-red-500 hover:text-red-700" title="Delete Task"><i class="fas fa-trash"></i></button>
+            </div>
+        `;
         taskListContainer.appendChild(taskEl);
     });
 };
@@ -2816,17 +2814,12 @@ if (addTaskForm) {
     addTaskForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const descriptionInput = document.getElementById('task-description');
-        const priority = document.getElementById('task-priority').value;
+        const category = document.getElementById('task-category').value;
         const description = descriptionInput.value.trim();
 
         if (description) {
             try {
-                await addDoc(collection(db, "tasks"), {
-                    description: description,
-                    priority: priority,
-                    completed: false,
-                    createdAt: serverTimestamp()
-                });
+            await addDoc(collection(db, "tasks"), { description, category, completed: false, createdAt: serverTimestamp() });
                 descriptionInput.value = '';
             } catch (error) {
                 console.error("Error adding task:", error);
@@ -2852,7 +2845,7 @@ if (taskListContainer) {
             const taskId = completeBtn.dataset.id;
             const task = allTasks.find(t => t.id === taskId);
             if (task) {
-                await updateDoc(doc(db, "tasks", taskId), { completed: !task.completed });
+                await updateDoc(doc(db, "tasks", taskId), { description: newDescription, category: newCategory });
             }
         } else if (deleteBtn) {
             const taskId = deleteBtn.dataset.id;
@@ -2872,7 +2865,7 @@ const openEditTaskModal = (task) => {
     editTaskForm.reset();
     document.getElementById('edit-task-id').value = task.id;
     document.getElementById('edit-task-description').value = task.description;
-    document.getElementById('edit-task-priority').value = task.priority;
+    document.getElementById('edit-task-category').value = task.category;
     editTaskModal.classList.remove('hidden');
 };
 
@@ -2887,7 +2880,7 @@ editTaskForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const taskId = document.getElementById('edit-task-id').value;
     const newDescription = document.getElementById('edit-task-description').value;
-    const newPriority = document.getElementById('edit-task-priority').value;
+    const newCategory = document.getElementById('edit-task-category').value;
 
     if (taskId && newDescription) {
         try {

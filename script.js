@@ -1405,16 +1405,24 @@ async function initClientDashboard(clientId, clientData) {
         const appointments = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
         renderClientAppointments(appointments);
     });
-     onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientData.name), orderBy("checkOutTimestamp", "desc")), (snapshot) => {
-        const history = snapshot.docs.map(doc => ({
+// REPLACE the old onSnapshot for finished_clients with this one:
+onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientData.name), orderBy("checkOutTimestamp", "desc")), (snapshot) => {
+    const history = snapshot.docs.map(doc => {
+        const data = doc.data();
+        const servicesRaw = data.services;
+        // This makes the code safer
+        const servicesString = Array.isArray(servicesRaw) ? servicesRaw.join(', ') : (servicesRaw || '');
+        
+        return {
             id: doc.id,
-            ...doc.data(),
-            services: (doc.data().services || []).join(', ')
-        }));
-        allFinishedClients = history;
-        renderClientHistory(history);
-        calculateAndRenderFavorites(history);
+            ...data,
+            services: servicesString
+        };
     });
+    allFinishedClients = history;
+    renderClientHistory(history);
+    calculateAndRenderFavorites(history);
+});
 
     let allClientGiftCards = [];
     onSnapshot(query(collection(db, "gift_cards"), where("createdBy", "==", clientId), orderBy("createdAt", "desc")), (snapshot) => {

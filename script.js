@@ -3861,7 +3861,7 @@ const renderSalonEarnings = (earnings) => {
         });
     };
 
-    const openServiceModal = (category) => {
+const openServiceModal = (category) => {
         modalTitle.textContent = category;
         modalContent.innerHTML = '';
         servicesData[category].forEach(service => {
@@ -3869,7 +3869,8 @@ const renderSalonEarnings = (earnings) => {
             const sourceCb = hiddenCheckboxContainer.querySelector(`input[value="${val}"]`);
             const label = document.createElement('label');
             label.className = 'flex items-center p-3 hover:bg-pink-50 cursor-pointer rounded-lg';
-            label.innerHTML = `<input type="checkbox" class="form-checkbox modal-checkbox" value="${val}" ${sourceCb && sourceCb.checked ? 'checked' : ''}><span class="ml-3 text-gray-700 flex-grow">${service.name}</span>${service.price ? `<span class="font-semibold">${service.price}</span>` : ''}`;
+            // FIX: Added data-source-container to link modal checkboxes to their origin
+            label.innerHTML = `<input type="checkbox" class="form-checkbox modal-checkbox" data-source-container="hidden-checkbox-container" value="${val}" ${sourceCb && sourceCb.checked ? 'checked' : ''}><span class="ml-3 text-gray-700 flex-grow">${service.name}</span>${service.price ? `<span class="font-semibold">${service.price}</span>` : ''}`;
             modalContent.appendChild(label);
         });
         serviceModal.classList.add('flex'); serviceModal.classList.remove('hidden');
@@ -3877,32 +3878,42 @@ const renderSalonEarnings = (earnings) => {
 
 // REPLACE the old closeServiceModal function with this one:
 const closeServiceModal = () => {
-    const firstCheckbox = modalContent.querySelector('.modal-checkbox');
-    const sourceContainerId = firstCheckbox ? firstCheckbox.dataset.sourceContainer : 'hidden-checkbox-container';
-    const sourceContainer = document.getElementById(sourceContainerId);
-    const categoryButtonContainerId = sourceContainerId === 'appointment-hidden-checkboxes' ? 'appointment-services-container' : 'services-container';
-    const categoryButtonContainer = document.getElementById(categoryButtonContainerId);
-
-    modalContent.querySelectorAll('.modal-checkbox').forEach(modalCb => {
-        const sourceCb = sourceContainer.querySelector(`input[value="${modalCb.value}"]`);
-        if (sourceCb) sourceCb.checked = modalCb.checked;
-    });
-
-    serviceModal.classList.add('hidden'); 
-    serviceModal.classList.remove('flex');
-
-    categoryButtonContainer.querySelectorAll('.category-button').forEach(button => {
-        const cat = button.dataset.category;
-        const count = sourceContainer.querySelectorAll(`input[data-category="${cat}"]:checked`).length;
-        const badge = button.querySelector('.selection-count');
-        if (count > 0) {
-            badge.textContent = `${count} selected`;
-            badge.classList.remove('hidden');
-        } else {
-            badge.classList.add('hidden');
+        const firstCheckbox = modalContent.querySelector('.modal-checkbox');
+        
+        // FIX: Gracefully exit if the modal is empty to prevent errors.
+        if (!firstCheckbox) {
+            serviceModal.classList.add('hidden');
+            serviceModal.classList.remove('flex');
+            return;
         }
-    });
-};
+
+        const sourceContainerId = firstCheckbox.dataset.sourceContainer || 'hidden-checkbox-container';
+        const sourceContainer = document.getElementById(sourceContainerId);
+        const categoryButtonContainerId = sourceContainerId === 'appointment-hidden-checkboxes' ? 'appointment-services-container' : 'services-container';
+        const categoryButtonContainer = document.getElementById(categoryButtonContainerId);
+
+        modalContent.querySelectorAll('.modal-checkbox').forEach(modalCb => {
+            const sourceCb = sourceContainer.querySelector(`input[value="${modalCb.value}"]`);
+            if (sourceCb) sourceCb.checked = modalCb.checked;
+        });
+
+        serviceModal.classList.add('hidden');
+        serviceModal.classList.remove('flex');
+
+        if (categoryButtonContainer) {
+            categoryButtonContainer.querySelectorAll('.category-button').forEach(button => {
+                const cat = button.dataset.category;
+                const count = sourceContainer.querySelectorAll(`input[data-category="${cat}"]:checked`).length;
+                const badge = button.querySelector('.selection-count');
+                if (count > 0) {
+                    badge.textContent = `${count} selected`;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            });
+        }
+    };
     servicesContainer.addEventListener('click', (e) => { const btn = e.target.closest('.category-button'); if (btn) openServiceModal(btn.dataset.category); });
     modalDoneBtn.addEventListener('click', closeServiceModal);
     modalOverlay.addEventListener('click', closeServiceModal);

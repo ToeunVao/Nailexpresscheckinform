@@ -2782,9 +2782,9 @@ if (taskListContainer) {
     taskListContainer.addEventListener('click', async (e) => {
         const completeBtn = e.target.closest('.complete-task-btn');
         const deleteBtn = e.target.closest('.delete-task-btn');
-        const editBtn = e.target.closest('.edit-task-btn'); // <-- Add this line
+        const editBtn = e.target.closest('.edit-task-btn');
 
-        if (editBtn) { // <-- Add this new block
+        if (editBtn) {
             const taskId = editBtn.dataset.id;
             const task = allTasks.find(t => t.id === taskId);
             if (task) {
@@ -2794,7 +2794,8 @@ if (taskListContainer) {
             const taskId = completeBtn.dataset.id;
             const task = allTasks.find(t => t.id === taskId);
             if (task) {
-                await updateDoc(doc(db, "tasks", taskId), { description: newDescription, category: newCategory });
+                // This line was the problem. I've fixed it to correctly update the task.
+                await updateDoc(doc(db, "tasks", taskId), { completed: !task.completed });
             }
         } else if (deleteBtn) {
             const taskId = deleteBtn.dataset.id;

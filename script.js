@@ -2794,7 +2794,7 @@ if (taskListContainer) {
             const taskId = completeBtn.dataset.id;
             const task = allTasks.find(t => t.id === taskId);
             if (task) {
-                // FIX: Was using undefined variables. Now correctly toggles the completed status.
+                // This is the corrected line for the checkmark button
                 await updateDoc(doc(db, "tasks", taskId), { completed: !task.completed });
             }
         } else if (deleteBtn) {
@@ -2805,7 +2805,6 @@ if (taskListContainer) {
         }
     });
 }
-
 // PASTE THIS ENTIRE NEW BLOCK OF CODE
 const editTaskModal = document.getElementById('edit-task-modal');
 const editTaskForm = document.getElementById('edit-task-form');
@@ -2834,9 +2833,10 @@ editTaskForm.addEventListener('submit', async (e) => {
 
     if (taskId && newDescription) {
         try {
+            // This is the corrected block for saving edits
             await updateDoc(doc(db, "tasks", taskId), {
                 description: newDescription,
-                category: newCategory // FIX: Was trying to save 'priority: newPriority'
+                category: newCategory 
             });
             closeEditTaskModal();
         } catch (error) {

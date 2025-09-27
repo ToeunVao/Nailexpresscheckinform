@@ -1086,12 +1086,31 @@ onAuthStateChanged(auth, async (user) => {
                     }
                 }
             }
-        } else {
-            currentUserId = null;
-            currentUserRole = null;
-            currentUserName = null;
-            await signInAnonymously(auth);
-        }
+// REPLACE with this new block:
+} else {
+    // NO USER is signed in (or they just signed out)
+    currentUserId = null;
+    currentUserRole = null;
+    currentUserName = null;
+
+    // This is the FIX: Only sign in anonymously if there isn't already an anonymous user.
+    // This stops the creation of new anonymous users on every sign-out.
+    if (!auth.currentUser || !auth.currentUser.isAnonymous) {
+        signInAnonymously(auth).catch((error) => {
+            console.error("Anonymous sign-in failed on initial load:", error);
+        });
+    }
+
+    // Show the landing page because no real user is logged in
+    loadingScreen.style.display = 'none';
+    appContent.style.display = 'none';
+    clientDashboardContent.style.display = 'none';
+    landingPageContent.style.display = 'block';
+    if (!landingPageInitialized) {
+        initLandingPage();
+        landingPageInitialized = true;
+    }
+}
     } catch (error) {
         console.error("Authentication Error:", error);
         loadingScreen.innerHTML = `<div class="text-center"><h2 class="text-3xl font-bold text-red-700">Connection Error</h2><p>Could not connect to services. Please check your internet connection and refresh the page.</p><p class="text-xs text-gray-400 mt-4">Error: ${error.message}</p></div>`;

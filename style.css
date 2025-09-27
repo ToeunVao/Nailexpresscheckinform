@@ -1,5 +1,11 @@
 body { font-family: 'Poppins', sans-serif; background-color: #FEFBF9; }
         h1, h2, h3, .clock { font-family: 'Playfair Display', serif; }
+/* Style for the Task Manager Category Icon */
+.task-item .fa-shopping-cart,
+.task-item .fa-tools,
+.task-item .fa-clipboard-list {
+    width: 20px; /* Ensures icons are aligned */
+}
 /* Task Manager Styles */
 .task-item .task-description.completed {
     text-decoration: line-through;

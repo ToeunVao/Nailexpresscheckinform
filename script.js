@@ -70,27 +70,134 @@ const lightboxDescription = document.getElementById('lightbox-description');
 let currentLightboxIndex = 0;
 
 const giftCardBackgrounds = {
-    'General': [
-        'https://img.freepik.com/premium-photo/women-s-legs-with-bright-pedicure-pink-background-chamomile-flower-decoration-spa-pedicure-skincare-concept_256259-166.jpg',
-        'https://png.pngtree.com/thumb_back/fh260/background/20250205/pngtree-soft-pastel-floral-design-light-blue-background-image_16896113.jpg',
-        'https://files.123freevectors.com/wp-content/original/119522-abstract-pastel-pink-background-image.jpg'
-    ],
-    'Holidays': [
-        'https://media.istockphoto.com/id/1281966270/vector/christmas-background-with-snowflakes.jpg?s=612x612&w=0&k=20&c=3t2mJbipFc4aln2M8qDbd3kJvUwtjl1md1F3Rj0xVI4=',
-        'https://media.istockphoto.com/id/1180986336/vector/red-bokeh-snowflakes-background.jpg?s=612x612&w=0&k=20&c=NR_Hf8C2owuvtCxtjk789Ckynqdm6l2oDWLHwI7uqlE=',
-        'https://png.pngtree.com/background/20210710/original/pngtree-red-christmas-snow-winter-cartoon-show-board-background-picture-image_979028.jpg'
-    ],
-    'Valentines': [
-        'https://slidescorner.com/wp-content/uploads/2023/02/01-Cute-Pink-Hearts-Valentines-Day-Background-Aesthetic-FREE-by-SlidesCorner.com_.jpg',
-        'https://images.rawpixel.com/image_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDIzLTExL2xhdXJhc3RlZmFubzI2Nl9waW5rX3ZhbGVudGluZXNfZGF5X2JhY2tncm91bmRfd2l0aF9oZWFydHNfYm9rZV9kZTAzMWNjMy05MmJmLTQ2NzAtYjliZC0wN2Y2ZDkzYTM1ZDBfMS5qcGc.jpg',
-        'https://cms-artifacts.artlist.io/content/motion_array/1390934/Valentines_Day_Romantic_Background_high_resolution_preview_1390934.jpg?Expires=2037527646045&Key-Pair-Id=K2ZDLYDZI2R1DF&Signature=fCbOC95RTvVc0Ld-pyxhFN5gzuS-VqGG1UYsxvu48kx8A6rdAPf~gjuv0sVBrV~0p0~2u99BYafKT5oRUsRbluBt9c8eH4k~YXVcT2KdNrQUjVD-wKS2qTcgdp8aVDYCCILMkFT4hrWRWzKlsjjgoBe7mAIaHV3cc2iqMErb-qGWlk8jX0J8vLfCvXH~daNNPMqO7tssbeYiHVrD7y89fbJ0YRVfR6wwb1AoBLseF8-7IsAZe8Hh2bn-kUEp8KocRZ4X7DBTFD~9Ho-E0HeRym4oZ37u3BdLAqY-y0a1HdIf3dOXXkF6X~UQpMlPtxTvWj4857QSez20b1mhnBhpsQ__'
-    ],
-    'Birthday': [
-        'https://marketplace.canva.com/EAGhbM7XcuY/1/0/1600w/canva-white-and-blue-birthday-background-card-yqLk4e5MQjY.jpg',
-        'https://images.rawpixel.com/image_800/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvam9iNTE2LW51bm9vbi0xMC5qcGc.jpg',
-        'https://www.creativefabrica.com/wp-content/uploads/2021/08/30/Happy-birthday-background-design-Graphics-16518598-1-1-580x430.jpg'
-    ]
+    'General': [ 'https://img.freepik.com/premium-photo/women-s-legs-with-bright-pedicure-pink-background-chamomile-flower-decoration-spa-pedicure-skincare-concept_256259-166.jpg', 'https://png.pngtree.com/thumb_back/fh260/background/20250205/pngtree-soft-pastel-floral-design-light-blue-background-image_16896113.jpg', 'https://files.123freevectors.com/wp-content/original/119522-abstract-pastel-pink-background-image.jpg' ],
+    'Holidays': [ 'https://media.istockphoto.com/id/1281966270/vector/christmas-background-with-snowflakes.jpg?s=612x612&w=0&k=20&c=3t2mJbipFc4aln2M8qDbd3kJvUwtjl1md1F3Rj0xVI4=', 'https://media.istockphoto.com/id/1180986336/vector/red-bokeh-snowflakes-background.jpg?s=612x612&w=0&k=20&c=NR_Hf8C2owuvtCxtjk789Ckynqdm6l2oDWLHwI7uqlE=', 'https://png.pngtree.com/background/20210710/original/pngtree-red-christmas-snow-winter-cartoon-show-board-background-picture-image_979028.jpg' ],
+    'Valentines': [ 'https://slidescorner.com/wp-content/uploads/2023/02/01-Cute-Pink-Hearts-Valentines-Day-Background-Aesthetic-FREE-by-SlidesCorner.com_.jpg', 'https://images.rawpixel.com/image_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDIzLTExL2xhdXJhc3RlZmFubzI2Nl9waW5rX3ZhbGVudGluZXNfZGF5X2JhY2tncm91bmRfd2l0aF9oZWFydHNfYm9rZV9kZTAzMWNjMy05MmJmLTQ2NzAtYjliZC0wN2Y2ZDkzYTM1ZDBfMS5qcGc.jpg', 'https://cms-artifacts.artlist.io/content/motion_array/1390934/Valentines_Day_Romantic_Background_high_resolution_preview_1390934.jpg?Expires=2037527646045&Key-Pair-Id=K2ZDLYDZI2R1DF&Signature=fCbOC95RTvVc0Ld-pyxhFN5gzuS-VqGG1UYsxvu48kx8A6rdAPf~gjuv0sVBrV~0p0~2u99BYafKT5oRUsRbluBt9c8eH4k~YXVcT2KdNrQUjVD-wKS2qTcgdp8aVDYCCILMkFT4hrWRWzKlsjjgoBe7mAIaHV3cc2iqMErb-qGWlk8jX0J8vLfCvXH~daNNPMqO7tssbeYiHVrD7y89fbJ0YRVfR6wwb1AoBLseF8-7IsAZe8Hh2bn-kUEp8KocRZ4X7DBTFD~9Ho-E0HeRym4oZ37u3BdLAqY-y0a1HdIf3dOXXkF6X~UQpMlPtxTvWj4857QSez20b1mhnBhpsQ__' ],
+    'Birthday': [ 'https://marketplace.canva.com/EAGhbM7XcuY/1/0/1600w/canva-white-and-blue-birthday-background-card-yqLk4e5MQjY.jpg', 'https://images.rawpixel.com/image_800/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvam9iNTE2LW51bm9vbi0xMC5qcGc.jpg', 'https://www.creativefabrica.com/wp-content/uploads/2021/08/30/Happy-birthday-background-design-Graphics-16518598-1-1-580x430.jpg' ]
 };
+
+// ---
+// --- NEW SAFE DATA LOADING FUNCTION ---
+// ---
+function initializeGlobalListeners() {
+    if (globalListenersAttached) return;
+
+    onSnapshot(query(collection(db, "memberships"), orderBy("price")), (snapshot) => {
+        allMembershipTiers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (landingPageContent.style.display === 'block') {
+            renderMembershipTiers(allMembershipTiers, 'landing-memberships-container', false);
+        }
+    });
+
+    globalListenersAttached = true;
+}
+
+// ---
+// --- PRIMARY AUTHENTICATION ROUTER ---
+// ---
+onAuthStateChanged(auth, async (user) => {
+    try {
+        if (user) {
+            initializeGlobalListeners(); // It's now safe to attach listeners
+            currentUserId = user.uid;
+
+            const hoursDoc = await getDoc(doc(db, "settings", "salonHours"));
+            if (hoursDoc.exists()) {
+                salonHours = hoursDoc.data();
+            }
+
+            if (user.isAnonymous) {
+                loadingScreen.style.display = 'none';
+                appContent.style.display = 'none';
+                clientDashboardContent.style.display = 'none';
+                landingPageContent.style.display = 'block';
+                if (!landingPageInitialized) {
+                    initLandingPage();
+                    landingPageInitialized = true;
+                }
+            } else {
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    currentUserRole = userData.role;
+                    currentUserName = userData.name;
+                    loadingScreen.style.display = 'none';
+                    landingPageContent.style.display = 'none';
+                    clientDashboardContent.style.display = 'none';
+                    appContent.style.display = 'block';
+                    if (!mainAppInitialized) {
+                        initMainApp(currentUserRole, currentUserName);
+                        mainAppInitialized = true;
+                    }
+                } else {
+                    const clientDoc = await getDoc(doc(db, "clients", user.uid));
+                    if (clientDoc.exists()) {
+                        loadingScreen.style.display = 'none';
+                        landingPageContent.style.display = 'none';
+                        appContent.style.display = 'none';
+                        clientDashboardContent.style.display = 'block';
+                        initClientDashboard(user.uid, clientDoc.data());
+                    } else {
+                        const pendingPurchaseJSON = sessionStorage.getItem('pendingGiftCardPurchase');
+                        const pendingMembershipId = sessionStorage.getItem('pendingMembershipPurchase');
+                        const pendingRoyaltyJSON = sessionStorage.getItem('pendingRoyaltyCard');
+                        let newClientData;
+
+                        if (pendingPurchaseJSON) {
+                            const details = JSON.parse(pendingPurchaseJSON);
+                            newClientData = { name: details.buyerName, email: details.buyerEmail, phone: details.buyerPhone, role: 'client', createdAt: serverTimestamp() };
+                            await setDoc(doc(db, "clients", user.uid), newClientData);
+                            // ... gift card creation logic ...
+                            await sendGiftCardConfirmationEmail(details);
+                            sessionStorage.removeItem('pendingGiftCardPurchase');
+                            alert("Success! Your account has been created and your gift card request has been sent.");
+                        } else if (pendingMembershipId) {
+                            const details = JSON.parse(sessionStorage.getItem('signupDetails'));
+                            const tier = allMembershipTiers.find(t => t.id === pendingMembershipId);
+                            newClientData = { name: details.name, email: details.email, phone: details.phone, role: 'client', createdAt: serverTimestamp(), membership: { tierId: pendingMembershipId, tierName: tier?.name || 'Unknown', startDate: serverTimestamp(), status: 'Pending' } };
+                            await setDoc(doc(db, "clients", user.uid), newClientData);
+                            await sendMembershipConfirmationEmail({ ...details, tierName: tier?.name || 'Unknown' });
+                            sessionStorage.removeItem('pendingMembershipPurchase');
+                            sessionStorage.removeItem('signupDetails');
+                            alert("Welcome! Your account and membership request have been sent.");
+                        } else if (pendingRoyaltyJSON) {
+                            const details = JSON.parse(pendingRoyaltyJSON);
+                            newClientData = { name: details.name, email: details.email, phone: details.phone, role: 'client', createdAt: serverTimestamp(), royaltyCard: { visits: 0, lastVisit: null } };
+                            await setDoc(doc(db, "clients", user.uid), newClientData);
+                            sessionStorage.removeItem('pendingRoyaltyCard');
+                            alert("Welcome! Your Royalty Card is active. We'll see you soon!");
+                        } else {
+                            const details = JSON.parse(sessionStorage.getItem('signupDetails'));
+                            if (details) {
+                                newClientData = { name: details.name, email: details.email, phone: details.phone, role: 'client', createdAt: serverTimestamp() };
+                                await setDoc(doc(db, "clients", user.uid), newClientData);
+                                sessionStorage.removeItem('signupDetails');
+                            } else {
+                                console.error("New user with no client doc and no pending action.");
+                                await signOut(auth);
+                                return;
+                            }
+                        }
+                        
+                        loadingScreen.style.display = 'none';
+                        landingPageContent.style.display = 'none';
+                        appContent.style.display = 'none';
+                        clientDashboardContent.style.display = 'block';
+                        initClientDashboard(user.uid, newClientData);
+                    }
+                }
+            }
+        } else {
+            signInAnonymously(auth).catch((error) => {
+                console.error("Initial anonymous sign-in failed:", error);
+            });
+        }
+    } catch (error) {
+        console.error("Authentication Error:", error);
+        loadingScreen.innerHTML = `<div class="text-center"><h2 class="text-3xl font-bold text-red-700">Connection Error</h2><p>Could not connect to services. Please check your internet connection and refresh the page.</p><p class="text-xs text-gray-400 mt-4">Error: ${error.message}</p></div>`;
+    }
+});
+
 
 const renderPromotionsLanding = (promotions) => {
     promotionsContainerLanding.innerHTML = '';
@@ -929,94 +1036,6 @@ const renderClientMembershipsTable = (members) => {
         `;
     });
 };
-
-// --- GLOBAL DATA FETCHING ---
-function initializeGlobalListeners() {
-    if (globalListenersAttached) return;
-
-    onSnapshot(query(collection(db, "memberships"), orderBy("price")), (snapshot) => {
-        allMembershipTiers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        if (landingPageContent.style.display === 'block') {
-            renderMembershipTiers(allMembershipTiers, 'landing-memberships-container', false);
-        }
-    });
-    
-    globalListenersAttached = true;
-}
-
-// --- Primary Authentication Router ---
-onAuthStateChanged(auth, async (user) => {
-    try {
-        if (user) {
-            initializeGlobalListeners(); // It's now safe to attach listeners
-            currentUserId = user.uid;
-
-            if (user.isAnonymous) {
-                loadingScreen.style.display = 'none';
-                appContent.style.display = 'none';
-                clientDashboardContent.style.display = 'none';
-                landingPageContent.style.display = 'block';
-                if (!landingPageInitialized) {
-                    initLandingPage();
-                    landingPageInitialized = true;
-                }
-            } else {
-                const userDoc = await getDoc(doc(db, "users", user.uid));
-                if (userDoc.exists()) {
-                    const userData = userDoc.data();
-                    currentUserRole = userData.role;
-                    currentUserName = userData.name;
-                    loadingScreen.style.display = 'none';
-                    landingPageContent.style.display = 'none';
-                    clientDashboardContent.style.display = 'none';
-                    appContent.style.display = 'block';
-                    if (!mainAppInitialized) {
-                        initMainApp(currentUserRole, currentUserName);
-                        mainAppInitialized = true;
-                    }
-                } else {
-                    const clientDoc = await getDoc(doc(db, "clients", user.uid));
-                    if (clientDoc.exists()) {
-                        loadingScreen.style.display = 'none';
-                        landingPageContent.style.display = 'none';
-                        appContent.style.display = 'none';
-                        clientDashboardContent.style.display = 'block';
-                        initClientDashboard(user.uid, clientDoc.data());
-                    } else {
-                        const pendingPurchaseJSON = sessionStorage.getItem('pendingGiftCardPurchase');
-                        const pendingMembershipId = sessionStorage.getItem('pendingMembershipPurchase');
-                        const pendingRoyaltyJSON = sessionStorage.getItem('pendingRoyaltyCard');
-                        let newClientData;
-
-                        if (pendingPurchaseJSON) {
-                            // ... gift card creation logic ...
-                        } else if (pendingMembershipId) {
-                            // ... membership creation logic ...
-                        } else if (pendingRoyaltyJSON) {
-                            // ... royalty card creation logic ...
-                        } else {
-                            // ... new client from signup form logic ...
-                        }
-                        
-                        loadingScreen.style.display = 'none';
-                        landingPageContent.style.display = 'none';
-                        appContent.style.display = 'none';
-                        clientDashboardContent.style.display = 'block';
-                        initClientDashboard(user.uid, newClientData);
-                    }
-                }
-            }
-        } else {
-            signInAnonymously(auth).catch((error) => {
-                console.error("Initial anonymous sign-in failed:", error);
-            });
-        }
-    } catch (error) {
-        console.error("Authentication Error:", error);
-        loadingScreen.innerHTML = `<div class="text-center"><h2 class="text-3xl font-bold text-red-700">Connection Error</h2><p>Could not connect to services. Please check your internet connection and refresh the page.</p><p class="text-xs text-gray-400 mt-4">Error: ${error.message}</p></div>`;
-    }
-});
-
 
 
 

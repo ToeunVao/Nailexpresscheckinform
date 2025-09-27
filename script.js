@@ -1405,12 +1405,13 @@ async function initClientDashboard(clientId, clientData) {
         const appointments = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
         renderClientAppointments(appointments);
     });
-// REPLACE the old onSnapshot for finished_clients with this one:
-onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientData.name), orderBy("checkOutTimestamp", "desc")), (snapshot) => {
+
+// REPLACE the old onSnapshot for finished_clients with this new one:
+onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientData.name)), (snapshot) => {
+    // Sort the results in JavaScript, which is more reliable
     const history = snapshot.docs.map(doc => {
         const data = doc.data();
         const servicesRaw = data.services;
-        // This makes the code safer
         const servicesString = Array.isArray(servicesRaw) ? servicesRaw.join(', ') : (servicesRaw || '');
         
         return {
@@ -1418,11 +1419,20 @@ onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientD
             ...data,
             services: servicesString
         };
-    });
+    }).sort((a, b) => b.checkOutTimestamp.seconds - a.checkOutTimestamp.seconds); // Sorting happens here
+
     allFinishedClients = history;
     renderClientHistory(history);
     calculateAndRenderFavorites(history);
+}, (error) => {
+    // This will help us see any new errors directly
+    console.error("Error fetching client history:", error);
+    const container = document.getElementById('client-appointment-history');
+    if (container) {
+        container.innerHTML = '<p class="text-red-500">Could not load appointment history due to a permission issue.</p>';
+    }
 });
+
 
     let allClientGiftCards = [];
     onSnapshot(query(collection(db, "gift_cards"), where("createdBy", "==", clientId), orderBy("createdAt", "desc")), (snapshot) => {

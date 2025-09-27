@@ -2774,18 +2774,26 @@ const taskListContainer = document.getElementById('task-list-container');
 
 // REPLACE your old renderTasks function with this new one:
 const renderTasks = () => {
-    if (!taskListContainer) return;
+    const supplyContainer = document.getElementById('task-list-supply');
+    const maintenanceContainer = document.getElementById('task-list-maintenance');
+    const otherContainer = document.getElementById('task-list-other');
 
-    taskListContainer.innerHTML = '';
-    if (allTasks.length === 0) {
-        taskListContainer.innerHTML = '<p class="text-center text-gray-500 py-4">No tasks yet. Add one to get started!</p>';
-        return;
-    }
+    if (!supplyContainer || !maintenanceContainer || !otherContainer) return;
 
-    // Sort by creation time (newest first)
-    const sortedTasks = [...allTasks].sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+    // Clear all columns
+    supplyContainer.innerHTML = '';
+    maintenanceContainer.innerHTML = '';
+    otherContainer.innerHTML = '';
 
-    sortedTasks.forEach(task => {
+    // Group tasks by category
+    const tasksByCategory = {
+        'Nails Supply': allTasks.filter(t => t.category === 'Nails Supply').sort((a, b) => a.createdAt.seconds - b.createdAt.seconds),
+        'Maintenance': allTasks.filter(t => t.category === 'Maintenance').sort((a, b) => a.createdAt.seconds - b.createdAt.seconds),
+        'Other': allTasks.filter(t => t.category === 'Other').sort((a, b) => a.createdAt.seconds - b.createdAt.seconds)
+    };
+
+    // A function to create the HTML for a single task
+    const createTaskElement = (task) => {
         const categoryStyles = {
             'Nails Supply': { border: 'border-blue-500', bg: 'bg-blue-50', icon: 'fa-shopping-cart' },
             'Maintenance': { border: 'border-yellow-500', bg: 'bg-yellow-50', icon: 'fa-tools' },
@@ -2806,8 +2814,27 @@ const renderTasks = () => {
                 <button data-id="${task.id}" class="delete-task-btn text-red-500 hover:text-red-700" title="Delete Task"><i class="fas fa-trash"></i></button>
             </div>
         `;
-        taskListContainer.appendChild(taskEl);
-    });
+        return taskEl;
+    };
+
+    // Render tasks into their respective columns
+    if (tasksByCategory['Nails Supply'].length > 0) {
+        tasksByCategory['Nails Supply'].forEach(task => supplyContainer.appendChild(createTaskElement(task)));
+    } else {
+        supplyContainer.innerHTML = '<p class="text-xs text-center text-gray-400 py-2">No supply tasks.</p>';
+    }
+
+    if (tasksByCategory['Maintenance'].length > 0) {
+        tasksByCategory['Maintenance'].forEach(task => maintenanceContainer.appendChild(createTaskElement(task)));
+    } else {
+        maintenanceContainer.innerHTML = '<p class="text-xs text-center text-gray-400 py-2">No maintenance tasks.</p>';
+    }
+
+    if (tasksByCategory['Other'].length > 0) {
+        tasksByCategory['Other'].forEach(task => otherContainer.appendChild(createTaskElement(task)));
+    } else {
+        otherContainer.innerHTML = '<p class="text-xs text-center text-gray-400 py-2">No other tasks.</p>';
+    }
 };
 
 if (addTaskForm) {

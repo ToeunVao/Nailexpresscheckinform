@@ -150,10 +150,8 @@ body { font-family: 'Poppins', sans-serif; background-color: #FEFBF9; }
     height: 100px;
     width: 80px;
     margin: 0 auto;
-    border: 1px solid #e2e8f0;
     border-radius: 8px;
     padding: 8px;
-    background-color: #f7fafc;
 }
 
 .nail-shape-svg-wrapper svg {
@@ -162,9 +160,6 @@ body { font-family: 'Poppins', sans-serif; background-color: #FEFBF9; }
 }
 
 .nail-shape-svg-wrapper .nail {
-    stroke: #4a5568;
-    stroke-width: 4px;
-    fill: #ffffff; /* Default fill color */
     transition: fill 0.2s ease-in-out;
 }
 /* Add this to the end of your style.css file */

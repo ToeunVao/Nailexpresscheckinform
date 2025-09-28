@@ -2689,166 +2689,164 @@ onSnapshot(doc(db, "settings", "backup"), (docSnap) => {
 
 
 // PASTE THIS ENTIRE NEW BLOCK OF CODE
-
 // --- TASK MANAGER LOGIC ---
-// --- TASK MANAGER LOGIC ---
-    const addTaskForm = document.getElementById('add-task-form');
-    const taskListContainer = document.getElementById('task-list-container');
-    const editTaskModal = document.getElementById('edit-task-modal');
-    const editTaskForm = document.getElementById('edit-task-form');
-    const closeEditTaskBtn = document.getElementById('close-edit-task-modal-btn');
+const addTaskForm = document.getElementById('add-task-form');
+const taskListContainer = document.getElementById('task-list-container');
+const editTaskModal = document.getElementById('edit-task-modal');
+const editTaskForm = document.getElementById('edit-task-form');
+const closeEditTaskBtn = document.getElementById('close-edit-task-modal-btn');
 
-    const renderTasks = () => {
-        const supplyContainer = document.getElementById('task-list-supply');
-        const maintenanceContainer = document.getElementById('task-list-maintenance');
-        const otherContainer = document.getElementById('task-list-other');
+const renderTasks = () => {
+    const supplyContainer = document.getElementById('task-list-supply');
+    const maintenanceContainer = document.getElementById('task-list-maintenance');
+    const otherContainer = document.getElementById('task-list-other');
 
-        if (!supplyContainer || !maintenanceContainer || !otherContainer) return;
+    if (!supplyContainer || !maintenanceContainer || !otherContainer) return;
 
-        supplyContainer.innerHTML = '';
-        maintenanceContainer.innerHTML = '';
-        otherContainer.innerHTML = '';
+    supplyContainer.innerHTML = '';
+    maintenanceContainer.innerHTML = '';
+    otherContainer.innerHTML = '';
 
-        const tasksByCategory = {
-            'Nails Supply': allTasks.filter(t => t.category === 'Nails Supply').sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0)),
-            'Maintenance': allTasks.filter(t => t.category === 'Maintenance').sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0)),
-            'Other': allTasks.filter(t => t.category === 'Other').sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0))
+    const tasksByCategory = {
+        'Nails Supply': allTasks.filter(t => t.category === 'Nails Supply').sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0)),
+        'Maintenance': allTasks.filter(t => t.category === 'Maintenance').sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0)),
+        'Other': allTasks.filter(t => t.category === 'Other').sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0))
+    };
+
+    const createTaskElement = (task) => {
+        const categoryStyles = {
+            'Nails Supply': { border: 'border-blue-500', bg: 'bg-blue-50', icon: 'fa-shopping-cart' },
+            'Maintenance': { border: 'border-yellow-500', bg: 'bg-yellow-50', icon: 'fa-tools' },
+            'Other': { border: 'border-gray-400', bg: 'bg-gray-50', icon: 'fa-clipboard-list' }
         };
+        const styles = categoryStyles[task.category] || categoryStyles['Other'];
 
-        const createTaskElement = (task) => {
-            const categoryStyles = {
-                'Nails Supply': { border: 'border-blue-500', bg: 'bg-blue-50', icon: 'fa-shopping-cart' },
-                'Maintenance': { border: 'border-yellow-500', bg: 'bg-yellow-50', icon: 'fa-tools' },
-                'Other': { border: 'border-gray-400', bg: 'bg-gray-50', icon: 'fa-clipboard-list' }
-            };
-            const styles = categoryStyles[task.category] || categoryStyles['Other'];
-
-            const taskEl = document.createElement('div');
-            taskEl.className = `task-item flex items-center justify-between p-3 rounded-lg border-l-4 ${styles.border} ${styles.bg}`;
-            taskEl.innerHTML = `
-                <div class="flex items-center flex-grow min-w-0">
-                    <i class="fas ${styles.icon} mr-3 text-gray-500"></i>
-                    <span class="task-description flex-grow ${task.completed ? 'completed' : ''} truncate">${task.description}</span>
-                </div>
-                <div class="task-actions flex items-center gap-3 ml-4 flex-shrink-0">
-                    <button data-id="${task.id}" class="edit-task-btn text-blue-500 hover:text-blue-700" title="Edit Task"><i class="fas fa-edit"></i></button>
-                    <button data-id="${task.id}" class="complete-task-btn text-green-500 hover:text-green-700" title="Complete Task"><i class="fas ${task.completed ? 'fa-check-square' : 'fa-square'}"></i></button>
-                    <button data-id="${task.id}" class="delete-task-btn text-red-500 hover:text-red-700" title="Delete Task"><i class="fas fa-trash"></i></button>
-                </div>
-            `;
-            return taskEl;
-        };
-        
-        if (tasksByCategory['Nails Supply'].length > 0) {
-            tasksByCategory['Nails Supply'].forEach(task => supplyContainer.appendChild(createTaskElement(task)));
-        } else {
-            supplyContainer.innerHTML = '<p class="text-xs text-center text-gray-400 py-2">No supply tasks.</p>';
-        }
-
-        if (tasksByCategory['Maintenance'].length > 0) {
-            tasksByCategory['Maintenance'].forEach(task => maintenanceContainer.appendChild(createTaskElement(task)));
-        } else {
-            maintenanceContainer.innerHTML = '<p class="text-xs text-center text-gray-400 py-2">No maintenance tasks.</p>';
-        }
-
-        if (tasksByCategory['Other'].length > 0) {
-            tasksByCategory['Other'].forEach(task => otherContainer.appendChild(createTaskElement(task)));
-        } else {
-            otherContainer.innerHTML = '<p class="text-xs text-center text-gray-400 py-2">No other tasks.</p>';
-        }
+        const taskEl = document.createElement('div');
+        taskEl.className = `task-item flex items-center justify-between p-3 rounded-lg border-l-4 ${styles.border} ${styles.bg}`;
+        taskEl.innerHTML = `
+            <div class="flex items-center flex-grow min-w-0">
+                <i class="fas ${styles.icon} mr-3 text-gray-500"></i>
+                <span class="task-description flex-grow ${task.completed ? 'completed' : ''} truncate">${task.description}</span>
+            </div>
+            <div class="task-actions flex items-center gap-3 ml-4 flex-shrink-0">
+                <button data-id="${task.id}" class="edit-task-btn text-blue-500 hover:text-blue-700" title="Edit Task"><i class="fas fa-edit"></i></button>
+                <button data-id="${task.id}" class="complete-task-btn text-green-500 hover:text-green-700" title="Complete Task"><i class="fas ${task.completed ? 'fa-check-square' : 'fa-square'}"></i></button>
+                <button data-id="${task.id}" class="delete-task-btn text-red-500 hover:text-red-700" title="Delete Task"><i class="fas fa-trash"></i></button>
+            </div>
+        `;
+        return taskEl;
     };
-
-    if (addTaskForm) {
-        addTaskForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const descriptionInput = document.getElementById('task-description');
-            const category = document.getElementById('task-category').value;
-            const description = descriptionInput.value.trim();
-
-            if (description) {
-                try {
-                    await addDoc(collection(db, "tasks"), { description, category, completed: false, createdAt: serverTimestamp() });
-                    descriptionInput.value = '';
-                } catch (error) {
-                    console.error("Error adding task:", error);
-                    alert("Could not add the task.");
-                }
-            }
-        });
-    }
-
-    if (taskListContainer) {
-        taskListContainer.addEventListener('click', async (e) => {
-            const completeBtn = e.target.closest('.complete-task-btn');
-            const deleteBtn = e.target.closest('.delete-task-btn');
-            const editBtn = e.target.closest('.edit-task-btn');
-
-            if (editBtn) {
-                const taskId = editBtn.dataset.id;
-                const task = allTasks.find(t => t.id === taskId);
-                if (task) {
-                    openEditTaskModal(task);
-                }
-            } else if (completeBtn) {
-                const taskId = completeBtn.dataset.id;
-                const task = allTasks.find(t => t.id === taskId);
-                if (task) {
-                    await updateDoc(doc(db, "tasks", taskId), { completed: !task.completed });
-                }
-            } else if (deleteBtn) {
-                const taskId = deleteBtn.dataset.id;
-                showConfirmModal("Are you sure you want to delete this task?", async () => {
-                    await deleteDoc(doc(db, "tasks", taskId));
-                });
-            }
-        });
-    }
-
-    const openEditTaskModal = (task) => {
-        editTaskForm.reset();
-        document.getElementById('edit-task-id').value = task.id;
-        document.getElementById('edit-task-description').value = task.description;
-        document.getElementById('edit-task-category').value = task.category;
-        editTaskModal.classList.remove('hidden');
-    };
-
-    const closeEditTaskModal = () => {
-        editTaskModal.classList.add('hidden');
-    };
-
-    if(closeEditTaskBtn) {
-        closeEditTaskBtn.addEventListener('click', closeEditTaskModal);
-    }
-    if(editTaskModal) {
-        editTaskModal.querySelector('.modal-overlay').addEventListener('click', closeEditTaskModal);
-    }
     
-    if (editTaskForm) {
-        editTaskForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const taskId = document.getElementById('edit-task-id').value;
-            const newDescription = document.getElementById('edit-task-description').value;
-            const newCategory = document.getElementById('edit-task-category').value;
-
-            if (taskId && newDescription) {
-                try {
-                    await updateDoc(doc(db, "tasks", taskId), {
-                        description: newDescription,
-                        category: newCategory
-                    });
-                    closeEditTaskModal();
-                } catch (error) {
-                    console.error("Error updating task:", error);
-                    alert("Could not update task.");
-                }
-            }
-        });
+    if (tasksByCategory['Nails Supply'].length > 0) {
+        tasksByCategory['Nails Supply'].forEach(task => supplyContainer.appendChild(createTaskElement(task)));
+    } else {
+        supplyContainer.innerHTML = '<p class="text-xs text-center text-gray-400 py-2">No supply tasks.</p>';
     }
-    
-    onSnapshot(query(collection(db, "tasks"), orderBy("createdAt", "desc")), (snapshot) => {
-        allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        renderTasks();
+
+    if (tasksByCategory['Maintenance'].length > 0) {
+        tasksByCategory['Maintenance'].forEach(task => maintenanceContainer.appendChild(createTaskElement(task)));
+    } else {
+        maintenanceContainer.innerHTML = '<p class="text-xs text-center text-gray-400 py-2">No maintenance tasks.</p>';
+    }
+
+    if (tasksByCategory['Other'].length > 0) {
+        tasksByCategory['Other'].forEach(task => otherContainer.appendChild(createTaskElement(task)));
+    } else {
+        otherContainer.innerHTML = '<p class="text-xs text-center text-gray-400 py-2">No other tasks.</p>';
+    }
+};
+
+if (addTaskForm) {
+    addTaskForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const descriptionInput = document.getElementById('task-description');
+        const category = document.getElementById('task-category').value;
+        const description = descriptionInput.value.trim();
+
+        if (description) {
+            try {
+                await addDoc(collection(db, "tasks"), { description, category, completed: false, createdAt: serverTimestamp() });
+                descriptionInput.value = '';
+            } catch (error) {
+                console.error("Error adding task:", error);
+                alert("Could not add the task.");
+            }
+        }
     });
+}
+
+if (taskListContainer) {
+    taskListContainer.addEventListener('click', async (e) => {
+        const completeBtn = e.target.closest('.complete-task-btn');
+        const deleteBtn = e.target.closest('.delete-task-btn');
+        const editBtn = e.target.closest('.edit-task-btn');
+
+        if (editBtn) {
+            const taskId = editBtn.dataset.id;
+            const task = allTasks.find(t => t.id === taskId);
+            if (task) {
+                openEditTaskModal(task);
+            }
+        } else if (completeBtn) {
+            const taskId = completeBtn.dataset.id;
+            const task = allTasks.find(t => t.id === taskId);
+            if (task) {
+                await updateDoc(doc(db, "tasks", taskId), { completed: !task.completed });
+            }
+        } else if (deleteBtn) {
+            const taskId = deleteBtn.dataset.id;
+            showConfirmModal("Are you sure you want to delete this task?", async () => {
+                await deleteDoc(doc(db, "tasks", taskId));
+            });
+        }
+    });
+}
+
+const openEditTaskModal = (task) => {
+    editTaskForm.reset();
+    document.getElementById('edit-task-id').value = task.id;
+    document.getElementById('edit-task-description').value = task.description;
+    document.getElementById('edit-task-category').value = task.category;
+    editTaskModal.classList.remove('hidden');
+};
+
+const closeEditTaskModal = () => {
+    editTaskModal.classList.add('hidden');
+};
+
+if(closeEditTaskBtn) {
+    closeEditTaskBtn.addEventListener('click', closeEditTaskModal);
+}
+if(editTaskModal) {
+    editTaskModal.querySelector('.modal-overlay').addEventListener('click', closeEditTaskModal);
+}
+
+if (editTaskForm) {
+    editTaskForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const taskId = document.getElementById('edit-task-id').value;
+        const newDescription = document.getElementById('edit-task-description').value;
+        const newCategory = document.getElementById('edit-task-category').value;
+
+        if (taskId && newDescription) {
+            try {
+                await updateDoc(doc(db, "tasks", taskId), {
+                    description: newDescription,
+                    category: newCategory
+                });
+                closeEditTaskModal();
+            } catch (error) {
+                console.error("Error updating task:", error);
+                alert("Could not update task.");
+            }
+        }
+    });
+}
+
+onSnapshot(query(collection(db, "tasks"), orderBy("createdAt", "desc")), (snapshot) => {
+    allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    renderTasks();
+});
 
   // --- END TASK MANAGER LOGIC ---  
 

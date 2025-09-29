@@ -5504,6 +5504,8 @@ if (exportExpensesBtn) {
 
 // --- Located inside initMainApp() ---
 
+// --- Located inside initMainApp() ---
+
     const printExpensesBtn = document.getElementById('print-expenses-btn');
     if (printExpensesBtn) {
         printExpensesBtn.addEventListener('click', () => {
@@ -5513,24 +5515,34 @@ if (exportExpensesBtn) {
                 const now = new Date();
                 const datePrinted = `Printed on: ${now.toLocaleDateString()} at ${now.toLocaleTimeString()}`;
                 
-                // Get the outerHTML of the table to include the table tags, headers, and footers
+                // --- This is the new line for your logo URL ---
+                const logoUrl = "https://placehold.co/100x100/d63384/FFFFFF?text=NE"; 
+                
                 const tableHTML = expenseTable.outerHTML;
 
                 const printWindow = window.open('', '_blank', 'height=800,width=1000');
-                printWindow.document.write('<html><head><title>Nails Express-Print Expenses</title>');
-                // Add Tailwind CSS for styling and some basic print styles
+                printWindow.document.write('<html><head><title>Print Expenses</title>');
                 printWindow.document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
                 printWindow.document.write('<style> body { padding: 20px; font-family: sans-serif; } @media print { body { -webkit-print-color-adjust: exact; } .no-print { display: none; } } </style>');
                 printWindow.document.write('</head><body>');
-                printWindow.document.write(`<h1 class="text-2xl font-bold mb-2">${reportTitle}</h1>`);
-                printWindow.document.write(`<p class="text-sm text-gray-500 mb-4">${datePrinted}</p>`);
+                
+                // --- This block is updated to include the logo ---
+                printWindow.document.write(`
+                    <div class="flex justify-between items-center mb-4 border-b pb-4">
+                        <div>
+                            <h1 class="text-2xl font-bold mb-2">${reportTitle}</h1>
+                            <p class="text-sm text-gray-500">${datePrinted}</p>
+                        </div>
+                        <img src="${logoUrl}" alt="Salon Logo" class="h-16 w-16 rounded-full">
+                    </div>
+                `);
+
                 printWindow.document.write(tableHTML);
                 printWindow.document.write('</body></html>');
                 
                 printWindow.document.close();
                 printWindow.focus();
 
-                // Use a timeout to ensure all content and styles are loaded before printing
                 setTimeout(() => {
                     printWindow.print();
                     printWindow.close();
@@ -5538,6 +5550,9 @@ if (exportExpensesBtn) {
             }
         });
     }
+
+
+
     addExpenseForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const expenseId = document.getElementById('edit-expense-id').value;

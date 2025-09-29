@@ -70,10 +70,10 @@ const lightboxDescription = document.getElementById('lightbox-description');
 let currentLightboxIndex = 0;
 
 const giftCardBackgrounds = {
-    'General': [ 'https://img.freepik.com/premium-photo/women-s-legs-with-bright-pedicure-pink-background-chamomile-flower-decoration-spa-pedicure-skincare-concept_256259-166.jpg', 'https://png.pngtree.com/thumb_back/fh260/background/20250205/pngtree-soft-pastel-floral-design-light-blue-background-image_16896113.jpg', 'https://files.123freevectors.com/wp-content/original/119522-abstract-pastel-pink-background-image.jpg' ],
-    'Holidays': [ 'https://media.istockphoto.com/id/1281966270/vector/christmas-background-with-snowflakes.jpg?s=612x612&w=0&k=20&c=3t2mJbipFc4aln2M8qDbd3kJvUwtjl1md1F3Rj0xVI4=', 'https://media.istockphoto.com/id/1180986336/vector/red-bokeh-snowflakes-background.jpg?s=612x612&w=0&k=20&c=NR_Hf8C2owuvtCxtjk789Ckynqdm6l2oDWLHwI7uqlE=', 'https://png.pngtree.com/background/20210710/original/pngtree-red-christmas-snow-winter-cartoon-show-board-background-picture-image_979028.jpg' ],
-    'Valentines': [ 'https://slidescorner.com/wp-content/uploads/2023/02/01-Cute-Pink-Hearts-Valentines-Day-Background-Aesthetic-FREE-by-SlidesCorner.com_.jpg', 'https://images.rawpixel.com/image_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDIzLTExL2xhdXJhc3RlZmFubzI2Nl9waW5rX3ZhbGVudGluZXNfZGF5X2JhY2tncm91bmRfd2l0aF9oZWFydHNfYm9rZV9kZTAzMWNjMy05MmJmLTQ2NzAtYjliZC0wN2Y2ZDkzYTM1ZDBfMS5qcGc.jpg', 'https://cms-artifacts.artlist.io/content/motion_array/1390934/Valentines_Day_Romantic_Background_high_resolution_preview_1390934.jpg?Expires=2037527646045&Key-Pair-Id=K2ZDLYDZI2R1DF&Signature=fCbOC95RTvVc0Ld-pyxhFN5gzuS-VqGG1UYsxvu48kx8A6rdAPf~gjuv0sVBrV~0p0~2u99BYafKT5oRUsRbluBt9c8eH4k~YXVcT2KdNrQUjVD-wKS2qTcgdp8aVDYCCILMkFT4hrWRWzKlsjjgoBe7mAIaHV3cc2iqMErb-qGWlk8jX0J8vLfCvXH~daNNPMqO7tssbeYiHVrD7y89fbJ0YRVfR6wwb1AoBLseF8-7IsAZe8Hh2bn-kUEp8KocRZ4X7DBTFD~9Ho-E0HeRym4oZ37u3BdLAqY-y0a1HdIf3dOXXkF6X~UQpMlPtxTvWj4857QSez20b1mhnBhpsQ__' ],
-    'Birthday': [ 'https://marketplace.canva.com/EAGhbM7XcuY/1/0/1600w/canva-white-and-blue-birthday-background-card-yqLk4e5MQjY.jpg', 'https://images.rawpixel.com/image_800/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvam9iNTE2LW51bm9vbi0xMC5qcGc.jpg', 'https://www.creativefabrica.com/wp-content/uploads/2021/08/30/Happy-birthday-background-design-Graphics-16518598-1-1-580x430.jpg' ]
+    'General': ['https://img.freepik.com/premium-photo/women-s-legs-with-bright-pedicure-pink-background-chamomile-flower-decoration-spa-pedicure-skincare-concept_256259-166.jpg', 'https://png.pngtree.com/thumb_back/fh260/background/20250205/pngtree-soft-pastel-floral-design-light-blue-background-image_16896113.jpg', 'https://files.123freevectors.com/wp-content/original/119522-abstract-pastel-pink-background-image.jpg'],
+    'Holidays': ['https://media.istockphoto.com/id/1281966270/vector/christmas-background-with-snowflakes.jpg?s=612x612&w=0&k=20&c=3t2mJbipFc4aln2M8qDbd3kJvUwtjl1md1F3Rj0xVI4=', 'https://media.istockphoto.com/id/1180986336/vector/red-bokeh-snowflakes-background.jpg?s=612x612&w=0&k=20&c=NR_Hf8C2owuvtCxtjk789Ckynqdm6l2oDWLHwI7uqlE=', 'https://png.pngtree.com/background/20210710/original/pngtree-red-christmas-snow-winter-cartoon-show-board-background-picture-image_979028.jpg'],
+    'Valentines': ['https://slidescorner.com/wp-content/uploads/2023/02/01-Cute-Pink-Hearts-Valentines-Day-Background-Aesthetic-FREE-by-SlidesCorner.com_.jpg', 'https://images.rawpixel.com/image_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDIzLTExL2xhdXJhc3RlZmFubzI2Nl9waW5rX3ZhbGVudGluZXNfZGF5X2JhY2tncm91bmRfd2l0aF9oZWFydHNfYm9rZV9kZTAzMWNjMy05MmJmLTQ2NzAtYjliZC0wN2Y2ZDkzYTM1ZDBfMS5qcGc.jpg', 'https://cms-artifacts.artlist.io/content/motion_array/1390934/Valentines_Day_Romantic_Background_high_resolution_preview_1390934.jpg?Expires=2037527646045&Key-Pair-Id=K2ZDLYDZI2R1DF&Signature=fCbOC95RTvVc0Ld-pyxhFN5gzuS-VqGG1UYsxvu48kx8A6rdAPf~gjuv0sVBrV~0p0~2u99BYafKT5oRUsRbluBt9c8eH4k~YXVcT2KdNrQUjVD-wKS2qTcgdp8aVDYCCILMkFT4hrWRWzKlsjjgoBe7mAIaHV3cc2iqMErb-qGWlk8jX0J8vLfCvXH~daNNPMqO7tssbeYiHVrD7y89fbJ0YRVfR6wwb1AoBLseF8-7IsAZe8Hh2bn-kUEp8KocRZ4X7DBTFD~9Ho-E0HeRym4oZ37u3BdLAqY-y0a1HdIf3dOXXkF6X~UQpMlPtxTvWj4857QSez20b1mhnBhpsQ__'],
+    'Birthday': ['https://marketplace.canva.com/EAGhbM7XcuY/1/0/1600w/canva-white-and-blue-birthday-background-card-yqLk4e5MQjY.jpg', 'https://images.rawpixel.com/image_800/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvam9iNTE2LW51bm9vbi0xMC5qcGc.jpg', 'https://www.creativefabrica.com/wp-content/uploads/2021/08/30/Happy-birthday-background-design-Graphics-16518598-1-1-580x430.jpg']
 };
 
 // ---
@@ -178,7 +178,7 @@ onAuthStateChanged(auth, async (user) => {
                                 return;
                             }
                         }
-                        
+
                         loadingScreen.style.display = 'none';
                         landingPageContent.style.display = 'none';
                         appContent.style.display = 'none';
@@ -446,7 +446,7 @@ const openCardForPrint = (card) => {
             <div class="card rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" style="background-image: url('${card.backgroundUrl}');">
                 <div class="flex justify-between items-start"><img src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white" /><div class="text-right"><p class="font-parisienne text-3xl">Gift Card</p><p class="text-xs font-semibold tracking-wider">Nails Express</p></div></div>
                 <div class="text-center"><p class="text-5xl font-bold">$${card.balance.toFixed(2)}</p></div>
-                <div class="text-xs"><div class="flex justify-between font-semibold"><span style="display:${card.recipientName?'inline':'none'}">FOR: <span class="font-normal">${card.recipientName}</span></span><span style="display:${card.senderName?'inline':'none'}">FROM: <span class="font-normal">${card.senderName}</span></span></div><p class="mt-2 text-center font-mono tracking-widest text-sm">${card.code}</p><p class="mt-1 text-center text-[10px] opacity-80" style="display:${expiryText?'block':'none'}">${expiryText}</p></div>
+                <div class="text-xs"><div class="flex justify-between font-semibold"><span style="display:${card.recipientName ? 'inline' : 'none'}">FOR: <span class="font-normal">${card.recipientName}</span></span><span style="display:${card.senderName ? 'inline' : 'none'}">FROM: <span class="font-normal">${card.senderName}</span></span></div><p class="mt-2 text-center font-mono tracking-widest text-sm">${card.code}</p><p class="mt-1 text-center text-[10px] opacity-80" style="display:${expiryText ? 'block' : 'none'}">${expiryText}</p></div>
             </div>
             <!-- Back of Card -->
             <div class="card rounded-lg p-4 flex flex-col justify-between bg-white text-gray-800" style="text-shadow: none;">
@@ -580,10 +580,10 @@ async function sendGiftCardConfirmationEmail(details) {
         let body = templates.giftCardBody || 'Thank you, {clientName}, for your gift card purchase of {amount}.';
 
         body = body.replace(/{clientName}/g, details.buyerName)
-                   .replace(/{amount}/g, `$${(details.amount * details.quantity).toFixed(2)}`)
-                   .replace(/{recipientName}/g, details.recipientName)
-                   .replace(/{senderName}/g, details.senderName)
-                   .replace(/\n/g, '<br>');
+            .replace(/{amount}/g, `$${(details.amount * details.quantity).toFixed(2)}`)
+            .replace(/{recipientName}/g, details.recipientName)
+            .replace(/{senderName}/g, details.senderName)
+            .replace(/\n/g, '<br>');
 
         await addDoc(collection(db, "mail"), {
             to: details.buyerEmail,
@@ -605,8 +605,8 @@ async function sendMembershipConfirmationEmail(details) {
         let body = templates.membershipBody || 'Hi {clientName}, thank you for joining our {tierName} membership. Your request is pending payment confirmation.';
 
         body = body.replace(/{clientName}/g, details.name)
-                   .replace(/{tierName}/g, details.tierName)
-                   .replace(/\n/g, '<br>');
+            .replace(/{tierName}/g, details.tierName)
+            .replace(/\n/g, '<br>');
 
         await addDoc(collection(db, "mail"), {
             to: details.email,
@@ -1112,7 +1112,7 @@ const renderClientMembership = (clientData, clientId) => {
                 </div>
             `;
         } else {
-             container.innerHTML = '<p class="text-gray-500 text-center col-span-full">Your membership tier could not be found. Please contact the salon.</p>';
+            container.innerHTML = '<p class="text-gray-500 text-center col-span-full">Your membership tier could not be found. Please contact the salon.</p>';
         }
     } else {
         container.innerHTML = `
@@ -1136,10 +1136,10 @@ async function initClientDashboard(clientId, clientData) {
 
     const featuresDoc = await getDoc(doc(db, "settings", "features"));
     // THIS IS THE FIX: Changed 'docSnap' to 'featuresDoc'
-    const features = featuresDoc.exists() ? featuresDoc.data() : { 
-        showGiftCards: true, 
-        showMemberships: true, 
-        showRoyaltyCard: true 
+    const features = featuresDoc.exists() ? featuresDoc.data() : {
+        showGiftCards: true,
+        showMemberships: true,
+        showRoyaltyCard: true
     };
 
     document.getElementById('client-welcome-name').textContent = `Welcome back, ${clientData.name}!`;
@@ -1181,7 +1181,7 @@ async function initClientDashboard(clientId, clientData) {
     };
 
     renderClientMembership(clientData, clientId);
-    
+
     const renderClientRoyaltyCard = (clientData) => {
         const container = document.getElementById('royalty-card-content');
         if (!container) return;
@@ -1194,11 +1194,11 @@ async function initClientDashboard(clientId, clientData) {
                 </div>`;
             return;
         }
-        
+
         const visits = clientData.royaltyCard.visits || 0;
         const visitsNeeded = royaltySettings.visitsNeeded;
         const rewardText = royaltySettings.rewardDescription;
-        
+
         let stampsHTML = '';
         for (let i = 1; i <= visitsNeeded; i++) {
             const isStamped = i <= visits;
@@ -1230,7 +1230,7 @@ async function initClientDashboard(clientId, clientData) {
     const setupClientNav = (featureSettings) => {
         const navContainer = document.getElementById('client-top-nav');
         const contentSections = document.querySelectorAll('.client-tab-content');
-        
+
         let navItems = [
             { id: 'appointments', text: 'Appointments' },
             { id: 'favorites', text: 'My Favorites' }
@@ -1245,13 +1245,13 @@ async function initClientDashboard(clientId, clientData) {
         if (featureSettings.showRoyaltyCard) {
             navItems.push({ id: 'royalty-card', text: 'Royalty Card' });
         }
-        
+
         contentSections.forEach(content => content.classList.add('hidden'));
 
-        navContainer.innerHTML = navItems.map(item => 
+        navContainer.innerHTML = navItems.map(item =>
             `<button class="top-nav-btn" data-target="${item.id}-content">${item.text}</button>`
         ).join('');
-        
+
         const navButtons = navContainer.querySelectorAll('.top-nav-btn');
 
         navContainer.addEventListener('click', (e) => {
@@ -1314,7 +1314,7 @@ async function initClientDashboard(clientId, clientData) {
             return acc;
         }, {});
         const colorCounts = history.reduce((acc, visit) => {
-            if(visit.colorCode) acc[visit.colorCode] = (acc[visit.colorCode] || 0) + 1;
+            if (visit.colorCode) acc[visit.colorCode] = (acc[visit.colorCode] || 0) + 1;
             return acc;
         }, {});
         const favTech = Object.keys(techCounts).length > 0 ? Object.keys(techCounts).reduce((a, b) => techCounts[a] > techCounts[b] ? a : b) : 'N/A';
@@ -1322,38 +1322,38 @@ async function initClientDashboard(clientId, clientData) {
         document.getElementById('favorite-technician').textContent = favTech;
         document.getElementById('favorite-color').textContent = favColor;
     };
-    
+
     onSnapshot(query(collection(db, "appointments"), where("name", "==", clientData.name)), (snapshot) => {
-        const appointments = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
+        const appointments = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
         renderClientAppointments(appointments);
     });
 
-// REPLACE the old onSnapshot for finished_clients with this new one:
-onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientData.name)), (snapshot) => {
-    // Sort the results in JavaScript, which is more reliable
-    const history = snapshot.docs.map(doc => {
-        const data = doc.data();
-        const servicesRaw = data.services;
-        const servicesString = Array.isArray(servicesRaw) ? servicesRaw.join(', ') : (servicesRaw || '');
-        
-        return {
-            id: doc.id,
-            ...data,
-            services: servicesString
-        };
-    }).sort((a, b) => b.checkOutTimestamp.seconds - a.checkOutTimestamp.seconds); // Sorting happens here
+    // REPLACE the old onSnapshot for finished_clients with this new one:
+    onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientData.name)), (snapshot) => {
+        // Sort the results in JavaScript, which is more reliable
+        const history = snapshot.docs.map(doc => {
+            const data = doc.data();
+            const servicesRaw = data.services;
+            const servicesString = Array.isArray(servicesRaw) ? servicesRaw.join(', ') : (servicesRaw || '');
 
-    allFinishedClients = history;
-    renderClientHistory(history);
-    calculateAndRenderFavorites(history);
-}, (error) => {
-    // This will help us see any new errors directly
-    console.error("Error fetching client history:", error);
-    const container = document.getElementById('client-appointment-history');
-    if (container) {
-        container.innerHTML = '<p class="text-red-500">Could not load appointment history due to a permission issue.</p>';
-    }
-});
+            return {
+                id: doc.id,
+                ...data,
+                services: servicesString
+            };
+        }).sort((a, b) => b.checkOutTimestamp.seconds - a.checkOutTimestamp.seconds); // Sorting happens here
+
+        allFinishedClients = history;
+        renderClientHistory(history);
+        calculateAndRenderFavorites(history);
+    }, (error) => {
+        // This will help us see any new errors directly
+        console.error("Error fetching client history:", error);
+        const container = document.getElementById('client-appointment-history');
+        if (container) {
+            container.innerHTML = '<p class="text-red-500">Could not load appointment history due to a permission issue.</p>';
+        }
+    });
 
 
     let allClientGiftCards = [];
@@ -1425,7 +1425,7 @@ onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientD
     document.getElementById('client-buy-gift-card-btn').addEventListener('click', () => {
         openPurchaseModalForClient(clientData);
     });
-    
+
     getDoc(doc(db, "settings", "royaltyProgram")).then(docSnap => {
         if (docSnap.exists() && docSnap.data().visitsNeeded) {
             royaltySettings = docSnap.data();
@@ -1507,43 +1507,43 @@ document.getElementById('landing-membership-form').addEventListener('submit', as
 // --- LANDING PAGE SCRIPT ---
 function initLandingPage() {
     // PASTE THIS AT THE START OF initLandingPage()
-const royaltyModal = document.getElementById('royalty-card-modal');
-const openRoyaltyBtn = document.getElementById('join-royalty-btn');
-const closeRoyaltyBtn = document.getElementById('close-royalty-card-modal-btn');
-const royaltyForm = document.getElementById('royalty-card-form');
+    const royaltyModal = document.getElementById('royalty-card-modal');
+    const openRoyaltyBtn = document.getElementById('join-royalty-btn');
+    const closeRoyaltyBtn = document.getElementById('close-royalty-card-modal-btn');
+    const royaltyForm = document.getElementById('royalty-card-form');
 
-const openRoyaltyModal = () => royaltyModal.classList.remove('hidden');
-const closeRoyaltyModal = () => royaltyModal.classList.add('hidden');
+    const openRoyaltyModal = () => royaltyModal.classList.remove('hidden');
+    const closeRoyaltyModal = () => royaltyModal.classList.add('hidden');
 
-openRoyaltyBtn.addEventListener('click', openRoyaltyModal);
-closeRoyaltyBtn.addEventListener('click', closeRoyaltyModal);
-royaltyModal.querySelector('.modal-overlay').addEventListener('click', closeRoyaltyModal);
+    openRoyaltyBtn.addEventListener('click', openRoyaltyModal);
+    closeRoyaltyBtn.addEventListener('click', closeRoyaltyModal);
+    royaltyModal.querySelector('.modal-overlay').addEventListener('click', closeRoyaltyModal);
 
-royaltyForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = document.getElementById('rc-buyer-name').value;
-    const phone = document.getElementById('rc-buyer-phone').value;
-    const email = document.getElementById('rc-buyer-email').value;
+    royaltyForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('rc-buyer-name').value;
+        const phone = document.getElementById('rc-buyer-phone').value;
+        const email = document.getElementById('rc-buyer-email').value;
 
-    if (!name || !phone || !email) {
-        alert("Please fill out all fields.");
-        return;
-    }
-
-    sessionStorage.setItem('pendingRoyaltyCard', JSON.stringify({ name, phone, email }));
-
-    try {
-        await createUserWithEmailAndPassword(auth, email, phone); // Using phone as temp password
-        closeRoyaltyModal();
-    } catch (error) {
-        if (error.code === 'auth/email-already-in-use') {
-            alert("An account with this email already exists. Please log in to your dashboard to manage your royalty card.");
-        } else {
-            alert(`Could not create account. Error: ${error.message}`);
+        if (!name || !phone || !email) {
+            alert("Please fill out all fields.");
+            return;
         }
-        sessionStorage.removeItem('pendingRoyaltyCard');
-    }
-});
+
+        sessionStorage.setItem('pendingRoyaltyCard', JSON.stringify({ name, phone, email }));
+
+        try {
+            await createUserWithEmailAndPassword(auth, email, phone); // Using phone as temp password
+            closeRoyaltyModal();
+        } catch (error) {
+            if (error.code === 'auth/email-already-in-use') {
+                alert("An account with this email already exists. Please log in to your dashboard to manage your royalty card.");
+            } else {
+                alert(`Could not create account. Error: ${error.message}`);
+            }
+            sessionStorage.removeItem('pendingRoyaltyCard');
+        }
+    });
     // PASTE THIS INSIDE initLandingPage()
     // ADD THIS LINE inside initLandingPage()
     document.getElementById('nails-idea-landing').addEventListener('click', galleryClickHandler);
@@ -1966,40 +1966,40 @@ royaltyForm.addEventListener('submit', async (e) => {
         }
     });
 
-// REPLACE this function inside initLandingPage
-const updateFeatureVisibility = (settings) => {
-    const showClientRegistration = settings.showClientLogin !== false;
-    const showPromos = settings.showPromotions !== false;
-    const showGiftCards = settings.showGiftCards !== false;
-    const showNailArt = settings.showNailArt !== false;
-    const showMemberships = settings.showMemberships !== false;
-    const showRoyaltyCard = settings.showRoyaltyCard !== false; // This line was missing
+    // REPLACE this function inside initLandingPage
+    const updateFeatureVisibility = (settings) => {
+        const showClientRegistration = settings.showClientLogin !== false;
+        const showPromos = settings.showPromotions !== false;
+        const showGiftCards = settings.showGiftCards !== false;
+        const showNailArt = settings.showNailArt !== false;
+        const showMemberships = settings.showMemberships !== false;
+        const showRoyaltyCard = settings.showRoyaltyCard !== false; // This line was missing
 
-    const signupTab = document.getElementById('signup-tab-btn').parentElement;
-    if (signupTab) {
-        signupTab.style.display = showClientRegistration ? 'block' : 'none';
-    }
+        const signupTab = document.getElementById('signup-tab-btn').parentElement;
+        if (signupTab) {
+            signupTab.style.display = showClientRegistration ? 'block' : 'none';
+        }
 
-    document.getElementById('promotions-landing').style.display = showPromos ? '' : 'none';
-    document.querySelector('.nav-item-promotions').style.display = showPromos ? '' : 'none';
+        document.getElementById('promotions-landing').style.display = showPromos ? '' : 'none';
+        document.querySelector('.nav-item-promotions').style.display = showPromos ? '' : 'none';
 
-    document.getElementById('gift-card-landing').style.display = showGiftCards ? '' : 'none';
-    document.querySelector('.nav-item-gift-card').style.display = showGiftCards ? '' : 'none';
+        document.getElementById('gift-card-landing').style.display = showGiftCards ? '' : 'none';
+        document.querySelector('.nav-item-gift-card').style.display = showGiftCards ? '' : 'none';
 
-    document.getElementById('nails-idea-landing').style.display = showNailArt ? '' : 'none';
-    document.querySelector('.nav-item-nails-idea').style.display = showNailArt ? '' : 'none';
+        document.getElementById('nails-idea-landing').style.display = showNailArt ? '' : 'none';
+        document.querySelector('.nav-item-nails-idea').style.display = showNailArt ? '' : 'none';
 
-    const membershipSection = document.getElementById('memberships-landing');
-    const membershipNavLink = document.querySelector('a[href="#memberships-landing"]');
-    if (membershipSection) membershipSection.style.display = showMemberships ? '' : 'none';
-    if (membershipNavLink) membershipNavLink.style.display = showMemberships ? '' : 'none';
+        const membershipSection = document.getElementById('memberships-landing');
+        const membershipNavLink = document.querySelector('a[href="#memberships-landing"]');
+        if (membershipSection) membershipSection.style.display = showMemberships ? '' : 'none';
+        if (membershipNavLink) membershipNavLink.style.display = showMemberships ? '' : 'none';
 
-    // This block was missing
-    const royaltySection = document.getElementById('royalty-card-landing');
-    const royaltyNavLink = document.querySelector('a[href="#royalty-card-landing"]');
-    if (royaltySection) royaltySection.style.display = showRoyaltyCard ? '' : 'none';
-    if (royaltyNavLink) royaltyNavLink.style.display = showRoyaltyCard ? '' : 'none';
-};
+        // This block was missing
+        const royaltySection = document.getElementById('royalty-card-landing');
+        const royaltyNavLink = document.querySelector('a[href="#royalty-card-landing"]');
+        if (royaltySection) royaltySection.style.display = showRoyaltyCard ? '' : 'none';
+        if (royaltyNavLink) royaltyNavLink.style.display = showRoyaltyCard ? '' : 'none';
+    };
     // Located at the end of initLandingPage()
     onSnapshot(doc(db, "settings", "features"), (docSnap) => {
         if (docSnap.exists()) {
@@ -2295,165 +2295,165 @@ function initMainApp(userRole, userName) {
     const logUsageForm = document.getElementById('log-usage-form');
     const shareModal = document.getElementById('share-modal');
     // PASTE THIS CODE BLOCK
-const emailTemplatesForm = document.getElementById('email-templates-form');
-if (emailTemplatesForm) {
-    getDoc(doc(db, "settings", "emailTemplates")).then(docSnap => {
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            document.getElementById('gift-card-subject').value = data.giftCardSubject || '';
-            document.getElementById('gift-card-body').value = data.giftCardBody || '';
-            document.getElementById('membership-subject').value = data.membershipSubject || '';
-            document.getElementById('membership-body').value = data.membershipBody || '';
-        }
-    });
-
-    emailTemplatesForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const templateData = {
-            giftCardSubject: document.getElementById('gift-card-subject').value,
-            giftCardBody: document.getElementById('gift-card-body').value,
-            membershipSubject: document.getElementById('membership-subject').value,
-            membershipBody: document.getElementById('membership-body').value,
-        };
-        try {
-            await setDoc(doc(db, "settings", "emailTemplates"), templateData);
-            alert("Email templates saved successfully!");
-        } catch (error) {
-            console.error("Error saving email templates:", error);
-            alert("Could not save email templates.");
-        }
-    });
-}
-// PASTE THIS ENTIRE BLOCK inside your initMainApp function
-
-const royaltySettingsForm = document.getElementById('royalty-settings-form');
-if (royaltySettingsForm) {
-    // Load existing settings when the form is displayed
-    getDoc(doc(db, "settings", "royaltyProgram")).then(docSnap => {
-        if (docSnap.exists() && docSnap.data().visitsNeeded) {
-            const data = docSnap.data();
-            document.getElementById('royalty-visits-needed').value = data.visitsNeeded;
-            document.getElementById('royalty-reward-description').value = data.rewardDescription;
-            // Update the global settings variable as well
-            royaltySettings = data;
-        }
-    });
-
-    // Save settings when the form is submitted
-    royaltySettingsForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const visitsNeeded = parseInt(document.getElementById('royalty-visits-needed').value, 10);
-        const rewardDescription = document.getElementById('royalty-reward-description').value;
-
-        if (isNaN(visitsNeeded) || visitsNeeded < 1) {
-            alert("Please enter a valid number of visits.");
-            return;
-        }
-
-        const newSettings = {
-            visitsNeeded: visitsNeeded,
-            rewardDescription: rewardDescription
-        };
-
-        try {
-            await setDoc(doc(db, "settings", "royaltyProgram"), newSettings);
-            // Update the global settings variable so the changes are reflected immediately
-            royaltySettings = newSettings;
-            alert("Royalty program settings saved successfully!");
-            // Also re-initialize the designer to reflect new settings
-            initializeRoyaltyCardDesigner(); 
-        } catch (error) {
-            console.error("Error saving royalty settings:", error);
-            alert("Could not save settings.");
-        }
-    });
-
-    // PASTE THIS ENTIRE NEW BLOCK OF CODE
-
-// --- ROYALTY CARD ADMIN REPORT LOGIC ---
-const royaltyCardsTableBody = document.querySelector('#royalty-cards-table tbody');
-const searchRoyaltyCardsInput = document.getElementById('search-royalty-cards');
-// PASTE THIS NEW CODE BLOCK
-const addRoyaltyCardModal = document.getElementById('add-royalty-card-modal');
-const addRoyaltyCardBtn = document.getElementById('add-royalty-card-btn');
-const closeAddRoyaltyCardBtn = document.getElementById('close-add-royalty-card-modal-btn');
-const addRoyaltyCardForm = document.getElementById('add-royalty-card-form');
-const addRcClientList = document.getElementById('add-rc-client-list');
-
-const openAddRoyaltyCardModal = () => {
-    addRcClientList.innerHTML = '';
-    const clientsWithoutRoyalty = allClients.filter(c => !c.royaltyCard);
-    clientsWithoutRoyalty.forEach(client => {
-        addRcClientList.innerHTML += `<option value="${client.name}"></option>`;
-    });
-    addRoyaltyCardModal.classList.remove('hidden');
-};
-
-const closeAddRoyaltyCardModal = () => {
-    addRoyaltyCardForm.reset();
-    addRoyaltyCardModal.classList.add('hidden');
-};
-
-addRoyaltyCardBtn.addEventListener('click', openAddRoyaltyCardModal);
-closeAddRoyaltyCardBtn.addEventListener('click', closeAddRoyaltyCardModal);
-addRoyaltyCardModal.querySelector('.modal-overlay').addEventListener('click', closeAddRoyaltyCardModal);
-
-addRoyaltyCardForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const clientName = document.getElementById('add-rc-client-name').value;
-    const selectedClient = allClients.find(c => c.name === clientName);
-
-    if (!selectedClient) {
-        alert("Please select a valid client from the list.");
-        return;
-    }
-
-    if (selectedClient.royaltyCard) {
-        alert(`${selectedClient.name} already has a royalty card.`);
-        return;
-    }
-
-    try {
-        const clientDocRef = doc(db, "clients", selectedClient.id);
-        await updateDoc(clientDocRef, {
-            royaltyCard: {
-                visits: 0,
-                lastVisit: null
+    const emailTemplatesForm = document.getElementById('email-templates-form');
+    if (emailTemplatesForm) {
+        getDoc(doc(db, "settings", "emailTemplates")).then(docSnap => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                document.getElementById('gift-card-subject').value = data.giftCardSubject || '';
+                document.getElementById('gift-card-body').value = data.giftCardBody || '';
+                document.getElementById('membership-subject').value = data.membershipSubject || '';
+                document.getElementById('membership-body').value = data.membershipBody || '';
             }
         });
-        alert(`Royalty card created for ${selectedClient.name}!`);
-        closeAddRoyaltyCardModal();
-    } catch (error) {
-        console.error("Error adding royalty card:", error);
-        alert("Could not create royalty card for this client.");
+
+        emailTemplatesForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const templateData = {
+                giftCardSubject: document.getElementById('gift-card-subject').value,
+                giftCardBody: document.getElementById('gift-card-body').value,
+                membershipSubject: document.getElementById('membership-subject').value,
+                membershipBody: document.getElementById('membership-body').value,
+            };
+            try {
+                await setDoc(doc(db, "settings", "emailTemplates"), templateData);
+                alert("Email templates saved successfully!");
+            } catch (error) {
+                console.error("Error saving email templates:", error);
+                alert("Could not save email templates.");
+            }
+        });
     }
-});
+    // PASTE THIS ENTIRE BLOCK inside your initMainApp function
 
-const renderRoyaltyCardsAdminTable = () => {
-    if (!royaltyCardsTableBody) return;
-    
-    const searchTerm = searchRoyaltyCardsInput.value.toLowerCase();
-    const filteredCards = allRoyaltyCards.filter(client => 
-        client.name.toLowerCase().includes(searchTerm) || 
-        (client.phone && client.phone.toLowerCase().includes(searchTerm))
-    );
+    const royaltySettingsForm = document.getElementById('royalty-settings-form');
+    if (royaltySettingsForm) {
+        // Load existing settings when the form is displayed
+        getDoc(doc(db, "settings", "royaltyProgram")).then(docSnap => {
+            if (docSnap.exists() && docSnap.data().visitsNeeded) {
+                const data = docSnap.data();
+                document.getElementById('royalty-visits-needed').value = data.visitsNeeded;
+                document.getElementById('royalty-reward-description').value = data.rewardDescription;
+                // Update the global settings variable as well
+                royaltySettings = data;
+            }
+        });
 
-    royaltyCardsTableBody.innerHTML = '';
-    if (filteredCards.length === 0) {
-        royaltyCardsTableBody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-gray-400">No royalty card clients found.</td></tr>`;
-        return;
-    }
+        // Save settings when the form is submitted
+        royaltySettingsForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const visitsNeeded = parseInt(document.getElementById('royalty-visits-needed').value, 10);
+            const rewardDescription = document.getElementById('royalty-reward-description').value;
 
-    filteredCards.forEach(client => {
-        const visits = client.royaltyCard.visits || 0;
-        const visitsNeeded = royaltySettings.visitsNeeded;
-        const isRewardReady = visits >= visitsNeeded;
-        
-        const statusText = isRewardReady ? 'Reward Ready' : `${visits} / ${visitsNeeded}`;
-        const statusColor = isRewardReady ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800';
+            if (isNaN(visitsNeeded) || visitsNeeded < 1) {
+                alert("Please enter a valid number of visits.");
+                return;
+            }
 
-        const row = royaltyCardsTableBody.insertRow();
-        row.innerHTML = `
+            const newSettings = {
+                visitsNeeded: visitsNeeded,
+                rewardDescription: rewardDescription
+            };
+
+            try {
+                await setDoc(doc(db, "settings", "royaltyProgram"), newSettings);
+                // Update the global settings variable so the changes are reflected immediately
+                royaltySettings = newSettings;
+                alert("Royalty program settings saved successfully!");
+                // Also re-initialize the designer to reflect new settings
+                initializeRoyaltyCardDesigner();
+            } catch (error) {
+                console.error("Error saving royalty settings:", error);
+                alert("Could not save settings.");
+            }
+        });
+
+        // PASTE THIS ENTIRE NEW BLOCK OF CODE
+
+        // --- ROYALTY CARD ADMIN REPORT LOGIC ---
+        const royaltyCardsTableBody = document.querySelector('#royalty-cards-table tbody');
+        const searchRoyaltyCardsInput = document.getElementById('search-royalty-cards');
+        // PASTE THIS NEW CODE BLOCK
+        const addRoyaltyCardModal = document.getElementById('add-royalty-card-modal');
+        const addRoyaltyCardBtn = document.getElementById('add-royalty-card-btn');
+        const closeAddRoyaltyCardBtn = document.getElementById('close-add-royalty-card-modal-btn');
+        const addRoyaltyCardForm = document.getElementById('add-royalty-card-form');
+        const addRcClientList = document.getElementById('add-rc-client-list');
+
+        const openAddRoyaltyCardModal = () => {
+            addRcClientList.innerHTML = '';
+            const clientsWithoutRoyalty = allClients.filter(c => !c.royaltyCard);
+            clientsWithoutRoyalty.forEach(client => {
+                addRcClientList.innerHTML += `<option value="${client.name}"></option>`;
+            });
+            addRoyaltyCardModal.classList.remove('hidden');
+        };
+
+        const closeAddRoyaltyCardModal = () => {
+            addRoyaltyCardForm.reset();
+            addRoyaltyCardModal.classList.add('hidden');
+        };
+
+        addRoyaltyCardBtn.addEventListener('click', openAddRoyaltyCardModal);
+        closeAddRoyaltyCardBtn.addEventListener('click', closeAddRoyaltyCardModal);
+        addRoyaltyCardModal.querySelector('.modal-overlay').addEventListener('click', closeAddRoyaltyCardModal);
+
+        addRoyaltyCardForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const clientName = document.getElementById('add-rc-client-name').value;
+            const selectedClient = allClients.find(c => c.name === clientName);
+
+            if (!selectedClient) {
+                alert("Please select a valid client from the list.");
+                return;
+            }
+
+            if (selectedClient.royaltyCard) {
+                alert(`${selectedClient.name} already has a royalty card.`);
+                return;
+            }
+
+            try {
+                const clientDocRef = doc(db, "clients", selectedClient.id);
+                await updateDoc(clientDocRef, {
+                    royaltyCard: {
+                        visits: 0,
+                        lastVisit: null
+                    }
+                });
+                alert(`Royalty card created for ${selectedClient.name}!`);
+                closeAddRoyaltyCardModal();
+            } catch (error) {
+                console.error("Error adding royalty card:", error);
+                alert("Could not create royalty card for this client.");
+            }
+        });
+
+        const renderRoyaltyCardsAdminTable = () => {
+            if (!royaltyCardsTableBody) return;
+
+            const searchTerm = searchRoyaltyCardsInput.value.toLowerCase();
+            const filteredCards = allRoyaltyCards.filter(client =>
+                client.name.toLowerCase().includes(searchTerm) ||
+                (client.phone && client.phone.toLowerCase().includes(searchTerm))
+            );
+
+            royaltyCardsTableBody.innerHTML = '';
+            if (filteredCards.length === 0) {
+                royaltyCardsTableBody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-gray-400">No royalty card clients found.</td></tr>`;
+                return;
+            }
+
+            filteredCards.forEach(client => {
+                const visits = client.royaltyCard.visits || 0;
+                const visitsNeeded = royaltySettings.visitsNeeded;
+                const isRewardReady = visits >= visitsNeeded;
+
+                const statusText = isRewardReady ? 'Reward Ready' : `${visits} / ${visitsNeeded}`;
+                const statusColor = isRewardReady ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800';
+
+                const row = royaltyCardsTableBody.insertRow();
+                row.innerHTML = `
             <td class="px-6 py-4 font-medium">${client.name}</td>
             <td class="px-6 py-4">${client.phone || 'N/A'}</td>
             <td class="px-6 py-4 text-center font-bold">${visits}</td>
@@ -2464,266 +2464,266 @@ const renderRoyaltyCardsAdminTable = () => {
                 <button data-id="${client.id}" class="delete-royalty-card-btn text-red-500 hover:text-red-700" title="Remove Royalty Card"><i class="fas fa-trash"></i></button>
             </td>
         `;
-    });
-};
+            });
+        };
 
-// Listen for all clients that have a royalty card
-onSnapshot(query(collection(db, "clients"), where("royaltyCard", "!=", null)), (snapshot) => {
-    allRoyaltyCards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    renderRoyaltyCardsAdminTable();
-});
-
-searchRoyaltyCardsInput.addEventListener('input', renderRoyaltyCardsAdminTable);
-
-royaltyCardsTableBody.addEventListener('click', async (e) => {
-    const stampBtn = e.target.closest('.stamp-royalty-card-btn');
-    const resetBtn = e.target.closest('.reset-royalty-card-btn');
-    const deleteBtn = e.target.closest('.delete-royalty-card-btn');
-    const clientRef = (stampBtn || resetBtn || deleteBtn)?.dataset.id;
-    if (!clientRef) return;
-
-    const clientDocRef = doc(db, "clients", clientRef);
-
-    if (stampBtn) {
-        const client = allRoyaltyCards.find(c => c.id === clientRef);
-        const currentVisits = client.royaltyCard.visits || 0;
-        await updateDoc(clientDocRef, { 
-            "royaltyCard.visits": currentVisits + 1,
-            "royaltyCard.lastVisit": serverTimestamp()
+        // Listen for all clients that have a royalty card
+        onSnapshot(query(collection(db, "clients"), where("royaltyCard", "!=", null)), (snapshot) => {
+            allRoyaltyCards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderRoyaltyCardsAdminTable();
         });
-    } else if (resetBtn) {
-        showConfirmModal("Are you sure you want to reset this card's visits to 0? This is usually done after a client redeems their reward.", async () => {
-            await updateDoc(clientDocRef, { "royaltyCard.visits": 0 });
-        }, "Reset Card");
-    } else if (deleteBtn) {
-        showConfirmModal("Are you sure you want to remove the royalty card from this client? Their visit history will be lost.", async () => {
-            await updateDoc(clientDocRef, { royaltyCard: null });
-        }, "Remove Card");
-    }
-});
 
-// PASTE THIS ENTIRE NEW BLOCK OF CODE
+        searchRoyaltyCardsInput.addEventListener('input', renderRoyaltyCardsAdminTable);
 
-// --- BACKUP & RESTORE LOGIC ---
-const backupDataBtn = document.getElementById('backup-data-btn');
-const restoreDataInput = document.getElementById('restore-data-input');
-const autoBackupSelect = document.getElementById('auto-backup-frequency');
-const lastBackupStatusEl = document.getElementById('last-backup-status');
+        royaltyCardsTableBody.addEventListener('click', async (e) => {
+            const stampBtn = e.target.closest('.stamp-royalty-card-btn');
+            const resetBtn = e.target.closest('.reset-royalty-card-btn');
+            const deleteBtn = e.target.closest('.delete-royalty-card-btn');
+            const clientRef = (stampBtn || resetBtn || deleteBtn)?.dataset.id;
+            if (!clientRef) return;
 
-const collectionsToBackup = [
-    'users', 'clients', 'appointments', 'finished_clients', 'earnings', 'salon_earnings',
-    'expenses', 'inventory', 'promotions', 'services', 'nail_ideas', 'gift_cards',
-    'memberships', 'suppliers', 'color_brands', 'expense_categories', 'payment_accounts'
-];
+            const clientDocRef = doc(db, "clients", clientRef);
 
-// Helper to convert Firestore Timestamps to strings
-const processDataForBackup = (data) => {
-    if (data instanceof Timestamp) {
-        return { __fsTimestamp: true, value: data.toDate().toISOString() };
-    }
-    if (Array.isArray(data)) {
-        return data.map(processDataForBackup);
-    }
-    if (data !== null && typeof data === 'object') {
-        const newData = {};
-        for (const key in data) {
-            newData[key] = processDataForBackup(data[key]);
-        }
-        return newData;
-    }
-    return data;
-};
+            if (stampBtn) {
+                const client = allRoyaltyCards.find(c => c.id === clientRef);
+                const currentVisits = client.royaltyCard.visits || 0;
+                await updateDoc(clientDocRef, {
+                    "royaltyCard.visits": currentVisits + 1,
+                    "royaltyCard.lastVisit": serverTimestamp()
+                });
+            } else if (resetBtn) {
+                showConfirmModal("Are you sure you want to reset this card's visits to 0? This is usually done after a client redeems their reward.", async () => {
+                    await updateDoc(clientDocRef, { "royaltyCard.visits": 0 });
+                }, "Reset Card");
+            } else if (deleteBtn) {
+                showConfirmModal("Are you sure you want to remove the royalty card from this client? Their visit history will be lost.", async () => {
+                    await updateDoc(clientDocRef, { royaltyCard: null });
+                }, "Remove Card");
+            }
+        });
 
-// Helper to convert strings back to Firestore Timestamps
-const processDataForRestore = (data) => {
-    if (data && data.__fsTimestamp) {
-        return Timestamp.fromDate(new Date(data.value));
-    }
-    if (Array.isArray(data)) {
-        return data.map(processDataForRestore);
-    }
-    if (data !== null && typeof data === 'object') {
-        const newData = {};
-        for (const key in data) {
-            newData[key] = processDataForRestore(data[key]);
-        }
-        return newData;
-    }
-    return data;
-};
+        // PASTE THIS ENTIRE NEW BLOCK OF CODE
 
-const backupAllData = async () => {
-    alert("Starting backup process. This may take a moment. Your download will begin automatically.");
-    backupDataBtn.disabled = true;
-    backupDataBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Backing up...';
+        // --- BACKUP & RESTORE LOGIC ---
+        const backupDataBtn = document.getElementById('backup-data-btn');
+        const restoreDataInput = document.getElementById('restore-data-input');
+        const autoBackupSelect = document.getElementById('auto-backup-frequency');
+        const lastBackupStatusEl = document.getElementById('last-backup-status');
 
-    const backupObject = {};
-    try {
-        for (const collectionName of collectionsToBackup) {
-            const querySnapshot = await getDocs(collection(db, collectionName));
-            backupObject[collectionName] = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...processDataForBackup(doc.data())
-            }));
-        }
+        const collectionsToBackup = [
+            'users', 'clients', 'appointments', 'finished_clients', 'earnings', 'salon_earnings',
+            'expenses', 'inventory', 'promotions', 'services', 'nail_ideas', 'gift_cards',
+            'memberships', 'suppliers', 'color_brands', 'expense_categories', 'payment_accounts'
+        ];
 
-        const jsonString = JSON.stringify(backupObject, null, 2);
-        const blob = new Blob([jsonString], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `nailexpress_backup_${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        // Helper to convert Firestore Timestamps to strings
+        const processDataForBackup = (data) => {
+            if (data instanceof Timestamp) {
+                return { __fsTimestamp: true, value: data.toDate().toISOString() };
+            }
+            if (Array.isArray(data)) {
+                return data.map(processDataForBackup);
+            }
+            if (data !== null && typeof data === 'object') {
+                const newData = {};
+                for (const key in data) {
+                    newData[key] = processDataForBackup(data[key]);
+                }
+                return newData;
+            }
+            return data;
+        };
 
-        // Update last backup timestamp
-        const now = Timestamp.now();
-        await setDoc(doc(db, "settings", "backup"), { ...backupSettings, lastBackup: now }, { merge: true });
+        // Helper to convert strings back to Firestore Timestamps
+        const processDataForRestore = (data) => {
+            if (data && data.__fsTimestamp) {
+                return Timestamp.fromDate(new Date(data.value));
+            }
+            if (Array.isArray(data)) {
+                return data.map(processDataForRestore);
+            }
+            if (data !== null && typeof data === 'object') {
+                const newData = {};
+                for (const key in data) {
+                    newData[key] = processDataForRestore(data[key]);
+                }
+                return newData;
+            }
+            return data;
+        };
 
-    } catch (error) {
-        console.error("Backup failed:", error);
-        alert("Backup failed. Please check the console for details.");
-    } finally {
-        backupDataBtn.disabled = false;
-        backupDataBtn.innerHTML = '<i class="fas fa-download mr-2"></i> Backup All Data';
-    }
-};
+        const backupAllData = async () => {
+            alert("Starting backup process. This may take a moment. Your download will begin automatically.");
+            backupDataBtn.disabled = true;
+            backupDataBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Backing up...';
 
-const handleRestore = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+            const backupObject = {};
+            try {
+                for (const collectionName of collectionsToBackup) {
+                    const querySnapshot = await getDocs(collection(db, collectionName));
+                    backupObject[collectionName] = querySnapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...processDataForBackup(doc.data())
+                    }));
+                }
 
-    const confirmation = prompt('This is a highly destructive action that will overwrite ALL existing data. To confirm, please type "RESTORE" in the box below.');
-    if (confirmation !== "RESTORE") {
-        alert("Restore cancelled.");
-        restoreDataInput.value = ''; // Clear the input
-        return;
-    }
+                const jsonString = JSON.stringify(backupObject, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `nailexpress_backup_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
 
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        try {
-            const data = JSON.parse(e.target.result);
-            alert("Restore process starting. The app will be unresponsive until it is complete. You will be alerted upon completion.");
+                // Update last backup timestamp
+                const now = Timestamp.now();
+                await setDoc(doc(db, "settings", "backup"), { ...backupSettings, lastBackup: now }, { merge: true });
 
-            for (const collectionName in data) {
-                if (data.hasOwnProperty(collectionName)) {
-                    const collectionData = data[collectionName];
-                    const batch = writeBatch(db);
-                    for (const docData of collectionData) {
-                        const { id, ...restOfData } = docData;
-                        const processedData = processDataForRestore(restOfData);
-                        const docRef = doc(db, collectionName, id);
-                        batch.set(docRef, processedData);
+            } catch (error) {
+                console.error("Backup failed:", error);
+                alert("Backup failed. Please check the console for details.");
+            } finally {
+                backupDataBtn.disabled = false;
+                backupDataBtn.innerHTML = '<i class="fas fa-download mr-2"></i> Backup All Data';
+            }
+        };
+
+        const handleRestore = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const confirmation = prompt('This is a highly destructive action that will overwrite ALL existing data. To confirm, please type "RESTORE" in the box below.');
+            if (confirmation !== "RESTORE") {
+                alert("Restore cancelled.");
+                restoreDataInput.value = ''; // Clear the input
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    alert("Restore process starting. The app will be unresponsive until it is complete. You will be alerted upon completion.");
+
+                    for (const collectionName in data) {
+                        if (data.hasOwnProperty(collectionName)) {
+                            const collectionData = data[collectionName];
+                            const batch = writeBatch(db);
+                            for (const docData of collectionData) {
+                                const { id, ...restOfData } = docData;
+                                const processedData = processDataForRestore(restOfData);
+                                const docRef = doc(db, collectionName, id);
+                                batch.set(docRef, processedData);
+                            }
+                            await batch.commit();
+                        }
                     }
-                    await batch.commit();
+                    alert("Data restore completed successfully! The page will now reload.");
+                    window.location.reload();
+                } catch (error) {
+                    console.error("Restore failed:", error);
+                    alert("Restore failed. The backup file may be corrupt. Please check the console for details.");
+                } finally {
+                    restoreDataInput.value = '';
+                }
+            };
+            reader.readAsText(file);
+        };
+
+        const checkAutoBackup = () => {
+            if (backupSettings.frequency === 'off' || !backupSettings.lastBackup) {
+                return;
+            }
+            const lastBackupDate = backupSettings.lastBackup.toDate();
+            const now = new Date();
+            let daysSinceLastBackup = (now - lastBackupDate) / (1000 * 60 * 60 * 24);
+
+            let shouldBackup = false;
+            if (backupSettings.frequency === 'daily' && daysSinceLastBackup >= 1) {
+                shouldBackup = true;
+            } else if (backupSettings.frequency === 'weekly' && daysSinceLastBackup >= 7) {
+                shouldBackup = true;
+            } else if (backupSettings.frequency === 'monthly' && daysSinceLastBackup >= 30) {
+                shouldBackup = true;
+            }
+
+            if (shouldBackup) {
+                if (confirm("It's time for your scheduled backup. Do you want to download the backup file now?")) {
+                    backupAllData();
                 }
             }
-            alert("Data restore completed successfully! The page will now reload.");
-            window.location.reload();
-        } catch (error) {
-            console.error("Restore failed:", error);
-            alert("Restore failed. The backup file may be corrupt. Please check the console for details.");
-        } finally {
-            restoreDataInput.value = '';
-        }
-    };
-    reader.readAsText(file);
-};
-
-const checkAutoBackup = () => {
-    if (backupSettings.frequency === 'off' || !backupSettings.lastBackup) {
-        return;
-    }
-    const lastBackupDate = backupSettings.lastBackup.toDate();
-    const now = new Date();
-    let daysSinceLastBackup = (now - lastBackupDate) / (1000 * 60 * 60 * 24);
-    
-    let shouldBackup = false;
-    if (backupSettings.frequency === 'daily' && daysSinceLastBackup >= 1) {
-        shouldBackup = true;
-    } else if (backupSettings.frequency === 'weekly' && daysSinceLastBackup >= 7) {
-        shouldBackup = true;
-    } else if (backupSettings.frequency === 'monthly' && daysSinceLastBackup >= 30) {
-        shouldBackup = true;
-    }
-
-    if (shouldBackup) {
-        if (confirm("It's time for your scheduled backup. Do you want to download the backup file now?")) {
-            backupAllData();
-        }
-    }
-};
-
-backupDataBtn.addEventListener('click', backupAllData);
-restoreDataInput.addEventListener('change', handleRestore);
-
-autoBackupSelect.addEventListener('change', async (e) => {
-    const newFrequency = e.target.value;
-    try {
-        await setDoc(doc(db, "settings", "backup"), { frequency: newFrequency }, { merge: true });
-        backupSettings.frequency = newFrequency;
-    } catch (error) {
-        console.error("Failed to save backup frequency:", error);
-    }
-});
-
-onSnapshot(doc(db, "settings", "backup"), (docSnap) => {
-    if (docSnap.exists()) {
-        const data = docSnap.data();
-        backupSettings = data;
-        autoBackupSelect.value = data.frequency || 'weekly';
-        if (data.lastBackup) {
-            lastBackupStatusEl.textContent = `Last backup: ${data.lastBackup.toDate().toLocaleString()}`;
-        } else {
-            lastBackupStatusEl.textContent = 'No backup recorded.';
-        }
-        // Run check on first load for admin
-        if (currentUserRole === 'admin') {
-           checkAutoBackup();
-        }
-    }
-});
-
-
-// PASTE THIS ENTIRE NEW BLOCK OF CODE
-// --- TASK MANAGER LOGIC ---
-const addTaskForm = document.getElementById('add-task-form');
-const taskListContainer = document.getElementById('task-list-container');
-const editTaskModal = document.getElementById('edit-task-modal');
-const editTaskForm = document.getElementById('edit-task-form');
-const closeEditTaskBtn = document.getElementById('close-edit-task-modal-btn');
-
-const renderTasks = () => {
-    const supplyContainer = document.getElementById('task-list-supply');
-    const maintenanceContainer = document.getElementById('task-list-maintenance');
-    const otherContainer = document.getElementById('task-list-other');
-
-    if (!supplyContainer || !maintenanceContainer || !otherContainer) return;
-
-    supplyContainer.innerHTML = '';
-    maintenanceContainer.innerHTML = '';
-    otherContainer.innerHTML = '';
-
-    const tasksByCategory = {
-        'Nails Supply': allTasks.filter(t => t.category === 'Nails Supply').sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0)),
-        'Maintenance': allTasks.filter(t => t.category === 'Maintenance').sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0)),
-        'Other': allTasks.filter(t => t.category === 'Other').sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0))
-    };
-
-    const createTaskElement = (task) => {
-        const categoryStyles = {
-            'Nails Supply': { border: 'border-blue-500', bg: 'bg-blue-50', icon: 'fa-shopping-cart' },
-            'Maintenance': { border: 'border-yellow-500', bg: 'bg-yellow-50', icon: 'fa-tools' },
-            'Other': { border: 'border-gray-400', bg: 'bg-gray-50', icon: 'fa-clipboard-list' }
         };
-        const styles = categoryStyles[task.category] || categoryStyles['Other'];
 
-        const taskEl = document.createElement('div');
-        taskEl.className = `task-item flex items-center justify-between p-3 rounded-lg border-l-4 ${styles.border} ${styles.bg}`;
-        taskEl.innerHTML = `
+        backupDataBtn.addEventListener('click', backupAllData);
+        restoreDataInput.addEventListener('change', handleRestore);
+
+        autoBackupSelect.addEventListener('change', async (e) => {
+            const newFrequency = e.target.value;
+            try {
+                await setDoc(doc(db, "settings", "backup"), { frequency: newFrequency }, { merge: true });
+                backupSettings.frequency = newFrequency;
+            } catch (error) {
+                console.error("Failed to save backup frequency:", error);
+            }
+        });
+
+        onSnapshot(doc(db, "settings", "backup"), (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                backupSettings = data;
+                autoBackupSelect.value = data.frequency || 'weekly';
+                if (data.lastBackup) {
+                    lastBackupStatusEl.textContent = `Last backup: ${data.lastBackup.toDate().toLocaleString()}`;
+                } else {
+                    lastBackupStatusEl.textContent = 'No backup recorded.';
+                }
+                // Run check on first load for admin
+                if (currentUserRole === 'admin') {
+                    checkAutoBackup();
+                }
+            }
+        });
+
+
+        // PASTE THIS ENTIRE NEW BLOCK OF CODE
+        // --- TASK MANAGER LOGIC ---
+        const addTaskForm = document.getElementById('add-task-form');
+        const taskListContainer = document.getElementById('task-list-container');
+        const editTaskModal = document.getElementById('edit-task-modal');
+        const editTaskForm = document.getElementById('edit-task-form');
+        const closeEditTaskBtn = document.getElementById('close-edit-task-modal-btn');
+
+        const renderTasks = () => {
+            const supplyContainer = document.getElementById('task-list-supply');
+            const maintenanceContainer = document.getElementById('task-list-maintenance');
+            const otherContainer = document.getElementById('task-list-other');
+
+            if (!supplyContainer || !maintenanceContainer || !otherContainer) return;
+
+            supplyContainer.innerHTML = '';
+            maintenanceContainer.innerHTML = '';
+            otherContainer.innerHTML = '';
+
+            const tasksByCategory = {
+                'Nails Supply': allTasks.filter(t => t.category === 'Nails Supply').sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0)),
+                'Maintenance': allTasks.filter(t => t.category === 'Maintenance').sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0)),
+                'Other': allTasks.filter(t => t.category === 'Other').sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0))
+            };
+
+            const createTaskElement = (task) => {
+                const categoryStyles = {
+                    'Nails Supply': { border: 'border-blue-500', bg: 'bg-blue-50', icon: 'fa-shopping-cart' },
+                    'Maintenance': { border: 'border-yellow-500', bg: 'bg-yellow-50', icon: 'fa-tools' },
+                    'Other': { border: 'border-gray-400', bg: 'bg-gray-50', icon: 'fa-clipboard-list' }
+                };
+                const styles = categoryStyles[task.category] || categoryStyles['Other'];
+
+                const taskEl = document.createElement('div');
+                taskEl.className = `task-item flex items-center justify-between p-3 rounded-lg border-l-4 ${styles.border} ${styles.bg}`;
+                taskEl.innerHTML = `
             <div class="flex items-center flex-grow min-w-0">
                 <i class="fas ${styles.icon} mr-3 text-gray-500"></i>
                 <span class="task-description flex-grow ${task.completed ? 'completed' : ''} truncate">${task.description}</span>
@@ -2734,142 +2734,142 @@ const renderTasks = () => {
                 <button data-id="${task.id}" class="delete-task-btn text-red-500 hover:text-red-700" title="Delete Task"><i class="fas fa-trash"></i></button>
             </div>
         `;
-        return taskEl;
-    };
-    
-    if (tasksByCategory['Nails Supply'].length > 0) {
-        tasksByCategory['Nails Supply'].forEach(task => supplyContainer.appendChild(createTaskElement(task)));
-    } else {
-        supplyContainer.innerHTML = '<p class="text-xs text-center text-gray-400 py-2">No supply tasks.</p>';
-    }
+                return taskEl;
+            };
 
-    if (tasksByCategory['Maintenance'].length > 0) {
-        tasksByCategory['Maintenance'].forEach(task => maintenanceContainer.appendChild(createTaskElement(task)));
-    } else {
-        maintenanceContainer.innerHTML = '<p class="text-xs text-center text-gray-400 py-2">No maintenance tasks.</p>';
-    }
-
-    if (tasksByCategory['Other'].length > 0) {
-        tasksByCategory['Other'].forEach(task => otherContainer.appendChild(createTaskElement(task)));
-    } else {
-        otherContainer.innerHTML = '<p class="text-xs text-center text-gray-400 py-2">No other tasks.</p>';
-    }
-};
-
-if (addTaskForm) {
-    addTaskForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const descriptionInput = document.getElementById('task-description');
-        const category = document.getElementById('task-category').value;
-        const description = descriptionInput.value.trim();
-
-        if (description) {
-            try {
-                await addDoc(collection(db, "tasks"), { description, category, completed: false, createdAt: serverTimestamp() });
-                descriptionInput.value = '';
-            } catch (error) {
-                console.error("Error adding task:", error);
-                alert("Could not add the task.");
+            if (tasksByCategory['Nails Supply'].length > 0) {
+                tasksByCategory['Nails Supply'].forEach(task => supplyContainer.appendChild(createTaskElement(task)));
+            } else {
+                supplyContainer.innerHTML = '<p class="text-xs text-center text-gray-400 py-2">No supply tasks.</p>';
             }
-        }
-    });
-}
 
-if (taskListContainer) {
-    taskListContainer.addEventListener('click', async (e) => {
-        const completeBtn = e.target.closest('.complete-task-btn');
-        const deleteBtn = e.target.closest('.delete-task-btn');
-        const editBtn = e.target.closest('.edit-task-btn');
+            if (tasksByCategory['Maintenance'].length > 0) {
+                tasksByCategory['Maintenance'].forEach(task => maintenanceContainer.appendChild(createTaskElement(task)));
+            } else {
+                maintenanceContainer.innerHTML = '<p class="text-xs text-center text-gray-400 py-2">No maintenance tasks.</p>';
+            }
 
-        if (editBtn) {
-            const taskId = editBtn.dataset.id;
-            const task = allTasks.find(t => t.id === taskId);
-            if (task) {
-                openEditTaskModal(task);
+            if (tasksByCategory['Other'].length > 0) {
+                tasksByCategory['Other'].forEach(task => otherContainer.appendChild(createTaskElement(task)));
+            } else {
+                otherContainer.innerHTML = '<p class="text-xs text-center text-gray-400 py-2">No other tasks.</p>';
             }
-        } else if (completeBtn) {
-            const taskId = completeBtn.dataset.id;
-            const task = allTasks.find(t => t.id === taskId);
-            if (task) {
-                await updateDoc(doc(db, "tasks", taskId), { completed: !task.completed });
-            }
-        } else if (deleteBtn) {
-            const taskId = deleteBtn.dataset.id;
-            showConfirmModal("Are you sure you want to delete this task?", async () => {
-                await deleteDoc(doc(db, "tasks", taskId));
+        };
+
+        if (addTaskForm) {
+            addTaskForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const descriptionInput = document.getElementById('task-description');
+                const category = document.getElementById('task-category').value;
+                const description = descriptionInput.value.trim();
+
+                if (description) {
+                    try {
+                        await addDoc(collection(db, "tasks"), { description, category, completed: false, createdAt: serverTimestamp() });
+                        descriptionInput.value = '';
+                    } catch (error) {
+                        console.error("Error adding task:", error);
+                        alert("Could not add the task.");
+                    }
+                }
             });
         }
-    });
-}
 
-const openEditTaskModal = (task) => {
-    editTaskForm.reset();
-    document.getElementById('edit-task-id').value = task.id;
-    document.getElementById('edit-task-description').value = task.description;
-    document.getElementById('edit-task-category').value = task.category;
-    editTaskModal.classList.remove('hidden');
-};
+        if (taskListContainer) {
+            taskListContainer.addEventListener('click', async (e) => {
+                const completeBtn = e.target.closest('.complete-task-btn');
+                const deleteBtn = e.target.closest('.delete-task-btn');
+                const editBtn = e.target.closest('.edit-task-btn');
 
-const closeEditTaskModal = () => {
-    editTaskModal.classList.add('hidden');
-};
-
-if(closeEditTaskBtn) {
-    closeEditTaskBtn.addEventListener('click', closeEditTaskModal);
-}
-if(editTaskModal) {
-    editTaskModal.querySelector('.modal-overlay').addEventListener('click', closeEditTaskModal);
-}
-
-if (editTaskForm) {
-    editTaskForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const taskId = document.getElementById('edit-task-id').value;
-        const newDescription = document.getElementById('edit-task-description').value;
-        const newCategory = document.getElementById('edit-task-category').value;
-
-        if (taskId && newDescription) {
-            try {
-                await updateDoc(doc(db, "tasks", taskId), {
-                    description: newDescription,
-                    category: newCategory
-                });
-                closeEditTaskModal();
-            } catch (error) {
-                console.error("Error updating task:", error);
-                alert("Could not update task.");
-            }
+                if (editBtn) {
+                    const taskId = editBtn.dataset.id;
+                    const task = allTasks.find(t => t.id === taskId);
+                    if (task) {
+                        openEditTaskModal(task);
+                    }
+                } else if (completeBtn) {
+                    const taskId = completeBtn.dataset.id;
+                    const task = allTasks.find(t => t.id === taskId);
+                    if (task) {
+                        await updateDoc(doc(db, "tasks", taskId), { completed: !task.completed });
+                    }
+                } else if (deleteBtn) {
+                    const taskId = deleteBtn.dataset.id;
+                    showConfirmModal("Are you sure you want to delete this task?", async () => {
+                        await deleteDoc(doc(db, "tasks", taskId));
+                    });
+                }
+            });
         }
-    });
-}
 
-onSnapshot(query(collection(db, "tasks"), orderBy("createdAt", "desc")), (snapshot) => {
-    allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    renderTasks();
-});
+        const openEditTaskModal = (task) => {
+            editTaskForm.reset();
+            document.getElementById('edit-task-id').value = task.id;
+            document.getElementById('edit-task-description').value = task.description;
+            document.getElementById('edit-task-category').value = task.category;
+            editTaskModal.classList.remove('hidden');
+        };
 
-  // --- END TASK MANAGER LOGIC ---  
+        const closeEditTaskModal = () => {
+            editTaskModal.classList.add('hidden');
+        };
 
-// END OF initMainApp }
-}
-// PASTE THESE NEW FUNCTIONS inside initMainApp, after the royalty settings form listener
+        if (closeEditTaskBtn) {
+            closeEditTaskBtn.addEventListener('click', closeEditTaskModal);
+        }
+        if (editTaskModal) {
+            editTaskModal.querySelector('.modal-overlay').addEventListener('click', closeEditTaskModal);
+        }
 
-const royaltyCardDesignerForm = document.getElementById('royalty-card-designer-form');
-const printRoyaltyCardsBtn = document.getElementById('print-royalty-cards-btn');
+        if (editTaskForm) {
+            editTaskForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const taskId = document.getElementById('edit-task-id').value;
+                const newDescription = document.getElementById('edit-task-description').value;
+                const newCategory = document.getElementById('edit-task-category').value;
 
-const initializeRoyaltyCardDesigner = () => {
-    const visitsNeeded = royaltySettings.visitsNeeded || 10;
-    const rewardText = royaltySettings.rewardDescription || 'Free Service';
+                if (taskId && newDescription) {
+                    try {
+                        await updateDoc(doc(db, "tasks", taskId), {
+                            description: newDescription,
+                            category: newCategory
+                        });
+                        closeEditTaskModal();
+                    } catch (error) {
+                        console.error("Error updating task:", error);
+                        alert("Could not update task.");
+                    }
+                }
+            });
+        }
 
-    // --- Generate Preview Stamps ---
-    let previewStampsHTML = '';
-    for (let i = 1; i <= visitsNeeded; i++) {
-        previewStampsHTML += `<div class="stamp-outline">${i}</div>`;
+        onSnapshot(query(collection(db, "tasks"), orderBy("createdAt", "desc")), (snapshot) => {
+            allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderTasks();
+        });
+
+        // --- END TASK MANAGER LOGIC ---  
+
+        // END OF initMainApp }
     }
+    // PASTE THESE NEW FUNCTIONS inside initMainApp, after the royalty settings form listener
 
-    // --- Populate Front Preview ---
-    const frontPreview = document.getElementById('royalty-card-preview-front');
-    frontPreview.innerHTML = `
+    const royaltyCardDesignerForm = document.getElementById('royalty-card-designer-form');
+    const printRoyaltyCardsBtn = document.getElementById('print-royalty-cards-btn');
+
+    const initializeRoyaltyCardDesigner = () => {
+        const visitsNeeded = royaltySettings.visitsNeeded || 10;
+        const rewardText = royaltySettings.rewardDescription || 'Free Service';
+
+        // --- Generate Preview Stamps ---
+        let previewStampsHTML = '';
+        for (let i = 1; i <= visitsNeeded; i++) {
+            previewStampsHTML += `<div class="stamp-outline">${i}</div>`;
+        }
+
+        // --- Populate Front Preview ---
+        const frontPreview = document.getElementById('royalty-card-preview-front');
+        frontPreview.innerHTML = `
         <div class="royalty-card-header">
             <p class="font-parisienne text-3xl">Nails Express</p>
             <p class="text-xs font-semibold tracking-wider">ROYALTY CARD</p>
@@ -2882,9 +2882,9 @@ const initializeRoyaltyCardDesigner = () => {
         </div>
     `;
 
-    // --- Populate Back Preview ---
-    const backPreview = document.getElementById('royalty-card-preview-back');
-    backPreview.innerHTML = `
+        // --- Populate Back Preview ---
+        const backPreview = document.getElementById('royalty-card-preview-back');
+        backPreview.innerHTML = `
         <div class="text-center pt-4">
              <p class="font-bold">Royalty Program Rules</p>
         </div>
@@ -2896,25 +2896,25 @@ const initializeRoyaltyCardDesigner = () => {
             <p>1560 Hustonville Rd #345, Danville, KY 40422</p>
         </div>
     `;
-};
+    };
 
-// REPLACE your old handlePrintRoyaltyCards function with this new one:
-const handlePrintRoyaltyCards = () => {
-    const quantity = parseInt(document.getElementById('designer-royalty-quantity').value, 10);
-    if (isNaN(quantity) || quantity < 1) {
-        alert("Please enter a valid quantity.");
-        return;
-    }
+    // REPLACE your old handlePrintRoyaltyCards function with this new one:
+    const handlePrintRoyaltyCards = () => {
+        const quantity = parseInt(document.getElementById('designer-royalty-quantity').value, 10);
+        if (isNaN(quantity) || quantity < 1) {
+            alert("Please enter a valid quantity.");
+            return;
+        }
 
-    const visitsNeeded = royaltySettings.visitsNeeded || 10;
-    const rewardText = royaltySettings.rewardDescription || 'Free Service';
+        const visitsNeeded = royaltySettings.visitsNeeded || 10;
+        const rewardText = royaltySettings.rewardDescription || 'Free Service';
 
-    let stampsHTML = '';
-    for (let i = 1; i <= visitsNeeded; i++) {
-        stampsHTML += `<div class="stamp-outline">${i}</div>`;
-    }
+        let stampsHTML = '';
+        for (let i = 1; i <= visitsNeeded; i++) {
+            stampsHTML += `<div class="stamp-outline">${i}</div>`;
+        }
 
-    let printHTML = `
+        let printHTML = `
         <html><head><title>Print Royalty Cards</title><script src="https://cdn.tailwindcss.com"><\/script><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&family=Parisienne&display=swap" rel="stylesheet">
         <style>
             body{font-family:'Poppins',sans-serif;margin:0;background-color:#f0f0f0;}
@@ -2932,8 +2932,8 @@ const handlePrintRoyaltyCards = () => {
         </style></head><body><div class="print-page">
     `;
 
-    for (let i = 0; i < quantity; i++) {
-        printHTML += `
+        for (let i = 0; i < quantity; i++) {
+            printHTML += `
             <div class="card-container">
                 <!-- Front of Card -->
                 <div class="card rounded-lg p-4 flex flex-col justify-between bg-gradient-to-br from-pink-50 to-pink-200 text-pink-900">
@@ -2955,20 +2955,20 @@ const handlePrintRoyaltyCards = () => {
                 </div>
             </div>
         `;
-    }
+        }
 
-    printHTML += '</div></body></html>';
-    
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(printHTML);
-    printWindow.document.close();
-    printWindow.focus();
-};
+        printHTML += '</div></body></html>';
 
-printRoyaltyCardsBtn.addEventListener('click', handlePrintRoyaltyCards);
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(printHTML);
+        printWindow.document.close();
+        printWindow.focus();
+    };
 
-// Call the initializer to draw the preview when the page loads
-initializeRoyaltyCardDesigner();
+    printRoyaltyCardsBtn.addEventListener('click', handlePrintRoyaltyCards);
+
+    // Call the initializer to draw the preview when the page loads
+    initializeRoyaltyCardDesigner();
     const editGiftCardModal = document.getElementById('edit-gift-card-modal');
     const clientProfileModal = document.getElementById('client-profile-modal');
 
@@ -3032,50 +3032,50 @@ initializeRoyaltyCardDesigner();
         return chartInstance;
     };
 
-// REPLACE your old getDateRange function with this corrected one:
-const getDateRange = (filter, specificDate = null) => {
-    const now = new Date();
-    let startDate, endDate = new Date(now);
+    // REPLACE your old getDateRange function with this corrected one:
+    const getDateRange = (filter, specificDate = null) => {
+        const now = new Date();
+        let startDate, endDate = new Date(now);
 
-    if (filter === 'daily' || filter === 'today') {
-        const dateToUse = specificDate ? new Date(specificDate + 'T00:00:00') : now;
-        startDate = new Date(dateToUse.getFullYear(), dateToUse.getMonth(), dateToUse.getDate());
-        endDate = new Date(dateToUse.getFullYear(), dateToUse.getMonth(), dateToUse.getDate(), 23, 59, 59, 999);
+        if (filter === 'daily' || filter === 'today') {
+            const dateToUse = specificDate ? new Date(specificDate + 'T00:00:00') : now;
+            startDate = new Date(dateToUse.getFullYear(), dateToUse.getMonth(), dateToUse.getDate());
+            endDate = new Date(dateToUse.getFullYear(), dateToUse.getMonth(), dateToUse.getDate(), 23, 59, 59, 999);
+            return { startDate, endDate };
+        }
+
+        switch (filter) {
+            case 'this_week':
+                const firstDayOfWeek = now.getDate() - now.getDay();
+                startDate = new Date(now.setDate(firstDayOfWeek));
+                startDate.setHours(0, 0, 0, 0);
+                endDate = new Date(startDate);
+                endDate.setDate(startDate.getDate() + 6);
+                endDate.setHours(23, 59, 59, 999);
+                break;
+            case 'this_month':
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+                break;
+            case 'this_year':
+                startDate = new Date(now.getFullYear(), 0, 1);
+                endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+                break; // <-- This was missing
+            case 'last-year':
+                const lastYear = now.getFullYear() - 1;
+                startDate = new Date(lastYear, 0, 1);
+                endDate = new Date(lastYear, 11, 31, 23, 59, 59, 999);
+                break; // <-- This was also missing
+            default: // Monthly filter
+                if (!isNaN(parseInt(filter))) {
+                    const month = parseInt(filter, 10);
+                    startDate = new Date(now.getFullYear(), month, 1);
+                    endDate = new Date(now.getFullYear(), month + 1, 0, 23, 59, 59, 999);
+                }
+                break;
+        }
         return { startDate, endDate };
-    }
-
-    switch (filter) {
-        case 'this_week':
-            const firstDayOfWeek = now.getDate() - now.getDay();
-            startDate = new Date(now.setDate(firstDayOfWeek));
-            startDate.setHours(0, 0, 0, 0);
-            endDate = new Date(startDate);
-            endDate.setDate(startDate.getDate() + 6);
-            endDate.setHours(23, 59, 59, 999);
-            break;
-        case 'this_month':
-            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-            endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-            break;
-        case 'this_year':
-            startDate = new Date(now.getFullYear(), 0, 1);
-            endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
-            break; // <-- This was missing
-         case 'last-year':
-            const lastYear = now.getFullYear() - 1;
-            startDate = new Date(lastYear, 0, 1);
-            endDate = new Date(lastYear, 11, 31, 23, 59, 59, 999);
-            break; // <-- This was also missing
-        default: // Monthly filter
-            if (!isNaN(parseInt(filter))) {
-                const month = parseInt(filter, 10);
-                startDate = new Date(now.getFullYear(), month, 1);
-                endDate = new Date(now.getFullYear(), month + 1, 0, 23, 59, 59, 999);
-            }
-            break;
-    }
-    return { startDate, endDate };
-};
+    };
     // --- NEW DASHBOARD LOGIC ---
     const updateDashboard = () => {
         if (currentUserRole === 'admin') {
@@ -3096,44 +3096,44 @@ const getDateRange = (filter, specificDate = null) => {
         { card: 'bg-orange-100', text: 'text-orange-800', bg: 'rgba(255, 159, 64, 0.5)', border: 'rgba(255, 159, 64, 1)' }
     ];
 
-const updateStaffEarningsReport = (filteredSalonData) => {
-    const staffContainer = document.getElementById('staff-earning-cards-container');
-    const ctx = document.getElementById('staff-earnings-chart')?.getContext('2d');
-    if (!staffContainer || !ctx) return;
+    const updateStaffEarningsReport = (filteredSalonData) => {
+        const staffContainer = document.getElementById('staff-earning-cards-container');
+        const ctx = document.getElementById('staff-earnings-chart')?.getContext('2d');
+        if (!staffContainer || !ctx) return;
 
-    const staffTotals = {};
-    const staffExcludingAdmins = techniciansAndStaff.filter(user => user.role !== 'admin');
-    staffExcludingAdmins.forEach(staff => { staffTotals[staff.name] = 0; });
-    filteredSalonData.forEach(earning => {
-        staffExcludingAdmins.forEach(staff => {
-            if (earning[staff.name.toLowerCase()]) {
-                staffTotals[staff.name] += earning[staff.name.toLowerCase()];
-            }
-        });
-    });
-
-    staffContainer.innerHTML = '';
-    staffExcludingAdmins.forEach((staff, index) => {
-        const payoutType = staff.payoutType || 'standard';
-        const totalEarning = staffTotals[staff.name] || 0;
-        let totalPayout;
-
-        if (payoutType === 'commission_plus_tips') {
-            const { startDate, endDate } = getDateRange(currentDashboardRangeFilter, currentDashboardDateFilter);
-            const staffPeriodEarnings = allEarnings.filter(e => {
-                const earnDate = e.date.toDate();
-                return e.staffName === staff.name && earnDate >= startDate && earnDate <= endDate;
+        const staffTotals = {};
+        const staffExcludingAdmins = techniciansAndStaff.filter(user => user.role !== 'admin');
+        staffExcludingAdmins.forEach(staff => { staffTotals[staff.name] = 0; });
+        filteredSalonData.forEach(earning => {
+            staffExcludingAdmins.forEach(staff => {
+                if (earning[staff.name.toLowerCase()]) {
+                    staffTotals[staff.name] += earning[staff.name.toLowerCase()];
+                }
             });
-            const totalTip = staffPeriodEarnings.reduce((sum, e) => sum + (e.tip || 0), 0);
-            totalPayout = (totalEarning * 0.70) + totalTip;
-        } else {
-            totalPayout = totalEarning * 0.70;
-        }
+        });
 
-        const checkPayout = totalPayout * 0.70;
-        const cashPayout = totalPayout - checkPayout;
-        const colorTheme = colorPalette[index % colorPalette.length];
-        const cardHTML = `
+        staffContainer.innerHTML = '';
+        staffExcludingAdmins.forEach((staff, index) => {
+            const payoutType = staff.payoutType || 'standard';
+            const totalEarning = staffTotals[staff.name] || 0;
+            let totalPayout;
+
+            if (payoutType === 'commission_plus_tips') {
+                const { startDate, endDate } = getDateRange(currentDashboardRangeFilter, currentDashboardDateFilter);
+                const staffPeriodEarnings = allEarnings.filter(e => {
+                    const earnDate = e.date.toDate();
+                    return e.staffName === staff.name && earnDate >= startDate && earnDate <= endDate;
+                });
+                const totalTip = staffPeriodEarnings.reduce((sum, e) => sum + (e.tip || 0), 0);
+                totalPayout = (totalEarning * 0.70) + totalTip;
+            } else {
+                totalPayout = totalEarning * 0.70;
+            }
+
+            const checkPayout = totalPayout * 0.70;
+            const cashPayout = totalPayout - checkPayout;
+            const colorTheme = colorPalette[index % colorPalette.length];
+            const cardHTML = `
             <div class="dashboard-card ${colorTheme.card} p-4 flex flex-col">
                 <div><h4 class="font-bold ${colorTheme.text} truncate">${staff.name}</h4><p class="text-2xl font-bold text-gray-700 mb-2">$${totalEarning.toFixed(2)}</p></div>
                 <div class="mt-auto space-y-1 text-xs text-gray-600 border-t border-gray-400/20 pt-2">
@@ -3142,15 +3142,15 @@ const updateStaffEarningsReport = (filteredSalonData) => {
                     <div class="flex justify-between"><span>Cash Payout:</span><span class="font-semibold text-gray-800">$${cashPayout.toFixed(2)}</span></div>
                 </div>
             </div>`;
-        staffContainer.innerHTML += cardHTML;
-    });
-    // Chart rendering logic remains the same
-    const labels = Object.keys(staffTotals);
-    const data = Object.values(staffTotals);
-    const backgroundColors = labels.map((_, index) => colorPalette[index % colorPalette.length].bg);
-    const borderColors = labels.map((_, index) => colorPalette[index % colorPalette.length].border);
-    staffEarningsChart = initializeChart(staffEarningsChart, ctx, 'bar', { labels, datasets: [{ label: 'Total Earnings', data, backgroundColor: backgroundColors, borderColor: borderColors, borderWidth: 1 }] }, { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } });
-};
+            staffContainer.innerHTML += cardHTML;
+        });
+        // Chart rendering logic remains the same
+        const labels = Object.keys(staffTotals);
+        const data = Object.values(staffTotals);
+        const backgroundColors = labels.map((_, index) => colorPalette[index % colorPalette.length].bg);
+        const borderColors = labels.map((_, index) => colorPalette[index % colorPalette.length].border);
+        staffEarningsChart = initializeChart(staffEarningsChart, ctx, 'bar', { labels, datasets: [{ label: 'Total Earnings', data, backgroundColor: backgroundColors, borderColor: borderColors, borderWidth: 1 }] }, { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } });
+    };
 
     // REPLACE the old updateAdminDashboard function with this one
     const updateAdminDashboard = () => {
@@ -3230,53 +3230,53 @@ const updateStaffEarningsReport = (filteredSalonData) => {
 
 
     // REPLACE the old updateStaffDashboard function with this one
-const updateStaffDashboard = () => {
-    const { startDate, endDate } = getDateRange(currentStaffDashboardRangeFilter, currentStaffDashboardDateFilter);
-    if (!startDate) return;
+    const updateStaffDashboard = () => {
+        const { startDate, endDate } = getDateRange(currentStaffDashboardRangeFilter, currentStaffDashboardDateFilter);
+        if (!startDate) return;
 
-    const mySalonEarnings = allSalonEarnings.filter(e => e.date.toDate() >= startDate && e.date.toDate() <= endDate);
-    const myFilteredEarnings = allEarnings.filter(e => e.staffName === currentUserName && e.date.toDate() >= startDate && e.date.toDate() <= endDate);
+        const mySalonEarnings = allSalonEarnings.filter(e => e.date.toDate() >= startDate && e.date.toDate() <= endDate);
+        const myFilteredEarnings = allEarnings.filter(e => e.staffName === currentUserName && e.date.toDate() >= startDate && e.date.toDate() <= endDate);
 
-    const staffNameLower = currentUserName.toLowerCase();
-    const myTotalEarning = mySalonEarnings.reduce((sum, e) => sum + (e[staffNameLower] || 0), 0);
-    const myTotalTips = myFilteredEarnings.reduce((sum, e) => sum + (e.tip || 0), 0);
+        const staffNameLower = currentUserName.toLowerCase();
+        const myTotalEarning = mySalonEarnings.reduce((sum, e) => sum + (e[staffNameLower] || 0), 0);
+        const myTotalTips = myFilteredEarnings.reduce((sum, e) => sum + (e.tip || 0), 0);
 
-    const staffMember = techniciansAndStaff.find(s => s.name === currentUserName);
-    const payoutType = staffMember ? staffMember.payoutType : 'standard';
-    let myTotalPayout;
-    if (payoutType === 'commission_plus_tips') {
-        myTotalPayout = (myTotalEarning * 0.70) + myTotalTips;
-    } else {
-        myTotalPayout = myTotalEarning * 0.70;
-    }
-    const myCheckPayout = myTotalPayout * 0.70;
-    const myCashPayout = myTotalPayout - myCheckPayout;
+        const staffMember = techniciansAndStaff.find(s => s.name === currentUserName);
+        const payoutType = staffMember ? staffMember.payoutType : 'standard';
+        let myTotalPayout;
+        if (payoutType === 'commission_plus_tips') {
+            myTotalPayout = (myTotalEarning * 0.70) + myTotalTips;
+        } else {
+            myTotalPayout = myTotalEarning * 0.70;
+        }
+        const myCheckPayout = myTotalPayout * 0.70;
+        const myCashPayout = myTotalPayout - myCheckPayout;
 
-    document.getElementById('my-earning-card').textContent = `$${myTotalEarning.toFixed(2)}`;
-    document.getElementById('my-total-payout-card').textContent = `$${myTotalPayout.toFixed(2)}`;
-    document.getElementById('my-cash-payout-card').textContent = `$${myCashPayout.toFixed(2)}`;
-    document.getElementById('my-check-payout-card').textContent = `$${myCheckPayout.toFixed(2)}`;
-    document.getElementById('my-tips-card').textContent = `$${myTotalTips.toFixed(2)}`;
+        document.getElementById('my-earning-card').textContent = `$${myTotalEarning.toFixed(2)}`;
+        document.getElementById('my-total-payout-card').textContent = `$${myTotalPayout.toFixed(2)}`;
+        document.getElementById('my-cash-payout-card').textContent = `$${myCashPayout.toFixed(2)}`;
+        document.getElementById('my-check-payout-card').textContent = `$${myCheckPayout.toFixed(2)}`;
+        document.getElementById('my-tips-card').textContent = `$${myTotalTips.toFixed(2)}`;
 
-    const myUpcomingAppointments = allAppointments.filter(appt => appt.technician === currentUserName && appt.appointmentTimestamp.toDate() > new Date());
-    const myClientNames = new Set(allFinishedClients.filter(client => client.technician === currentUserName).map(client => client.name));
-    document.getElementById('my-appointments-card').textContent = myUpcomingAppointments.length;
-    document.getElementById('my-clients-card').textContent = myClientNames.size;
+        const myUpcomingAppointments = allAppointments.filter(appt => appt.technician === currentUserName && appt.appointmentTimestamp.toDate() > new Date());
+        const myClientNames = new Set(allFinishedClients.filter(client => client.technician === currentUserName).map(client => client.name));
+        document.getElementById('my-appointments-card').textContent = myUpcomingAppointments.length;
+        document.getElementById('my-clients-card').textContent = myClientNames.size;
 
-    updateMyEarningsChart(mySalonEarnings, currentStaffDashboardRangeFilter, currentUserName);
+        updateMyEarningsChart(mySalonEarnings, currentStaffDashboardRangeFilter, currentUserName);
 
-    const detailsDateFilter = document.getElementById('staff-details-date-filter').value;
-    let myPayoutDetails = allEarnings.filter(e => e.staffName === currentUserName);
-    if (detailsDateFilter) {
-        const specificDate = new Date(detailsDateFilter + 'T00:00:00');
-        myPayoutDetails = myPayoutDetails.filter(e => e.date.toDate() >= specificDate && e.date.toDate() < new Date(specificDate.getTime() + 24 * 60 * 60 * 1000));
-    }
-    document.getElementById('staff-details-title').textContent = `My Earning Details (${myPayoutDetails.length} Client${myPayoutDetails.length === 1 ? '' : 's'})`;
-    const { totalEarning, totalTip } = renderStaffEarningsTable(myPayoutDetails, 'staff-dashboard-earning-table', 'staff-dashboard-total-earning', 'staff-dashboard-total-tip');
-    document.getElementById('staff-dashboard-filtered-earning-total-main').textContent = `Total ($${totalEarning.toFixed(2)})`;
-    document.getElementById('staff-dashboard-filtered-earning-total-tip').textContent = `Tip ($${totalTip.toFixed(2)})`;
-    renderDetailedAppointmentsList('staff-upcoming-appointments-list', allAppointments, currentUserName);
-};
+        const detailsDateFilter = document.getElementById('staff-details-date-filter').value;
+        let myPayoutDetails = allEarnings.filter(e => e.staffName === currentUserName);
+        if (detailsDateFilter) {
+            const specificDate = new Date(detailsDateFilter + 'T00:00:00');
+            myPayoutDetails = myPayoutDetails.filter(e => e.date.toDate() >= specificDate && e.date.toDate() < new Date(specificDate.getTime() + 24 * 60 * 60 * 1000));
+        }
+        document.getElementById('staff-details-title').textContent = `My Earning Details (${myPayoutDetails.length} Client${myPayoutDetails.length === 1 ? '' : 's'})`;
+        const { totalEarning, totalTip } = renderStaffEarningsTable(myPayoutDetails, 'staff-dashboard-earning-table', 'staff-dashboard-total-earning', 'staff-dashboard-total-tip');
+        document.getElementById('staff-dashboard-filtered-earning-total-main').textContent = `Total ($${totalEarning.toFixed(2)})`;
+        document.getElementById('staff-dashboard-filtered-earning-total-tip').textContent = `Tip ($${totalTip.toFixed(2)})`;
+        renderDetailedAppointmentsList('staff-upcoming-appointments-list', allAppointments, currentUserName);
+    };
     // ADD THIS ENTIRE NEW FUNCTION
     const renderDetailedAppointmentsList = (containerId, appointments, techFilter = 'All') => {
         const container = document.getElementById(containerId);
@@ -3725,63 +3725,63 @@ const updateStaffDashboard = () => {
         return filtered;
     };
 
-// REPLACE your old, broken renderSalonEarnings function with this complete one:
-const renderSalonEarnings = (earnings) => {
-    const tbody = document.querySelector('#salon-earning-table tbody');
-    const tfoot = document.querySelector('#salon-earning-table-foot');
-    if (!tbody || !tfoot) return;
+    // REPLACE your old, broken renderSalonEarnings function with this complete one:
+    const renderSalonEarnings = (earnings) => {
+        const tbody = document.querySelector('#salon-earning-table tbody');
+        const tfoot = document.querySelector('#salon-earning-table-foot');
+        if (!tbody || !tfoot) return;
 
-    tbody.innerHTML = '';
-    const staffAndTechNames = techniciansAndStaff.map(t => t.name.toLowerCase());
+        tbody.innerHTML = '';
+        const staffAndTechNames = techniciansAndStaff.map(t => t.name.toLowerCase());
 
-    // Clear footer totals before doing anything else
-    const allFooterIds = [...staffAndTechNames, 'sell-gc', 'return-gc', 'check', 'no-credit', 'total-credit', 'venmo', 'square', 'total', 'cash'];
-    allFooterIds.forEach(id => {
-        const el = document.getElementById(`total-${id.replace(/_/g, '-')}`);
-        if (el) el.textContent = id === 'no-credit' ? '0' : '$0.00';
-    });
-    staffAndTechNames.forEach(name => {
-        document.getElementById(`commission-${name}`).textContent = '$0.00';
-        document.getElementById(`check70-${name}`).textContent = '$0.00';
-        document.getElementById(`cash30-${name}`).textContent = '$0.00';
-    });
-
-
-    if (earnings.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="${staffAndTechNames.length + 10}" class="py-6 text-center text-gray-400">No salon earnings found for this period.</td></tr>`;
-        return;
-    }
-
-    let grandTotals = {};
-    staffAndTechNames.forEach(name => grandTotals[name] = 0); // Initialize all staff totals
-    grandTotals.sellGiftCard = 0;
-    grandTotals.returnGiftCard = 0;
-    grandTotals.check = 0;
-    grandTotals.noOfCredit = 0;
-    grandTotals.totalCredit = 0;
-    grandTotals.venmo = 0;
-    grandTotals.square = 0;
-    grandTotals.total = 0;
-    grandTotals.cash = 0;
-
-    // This is the main loop that was missing the row rendering part. It's now fixed.
-    earnings.sort((a, b) => b.date.seconds - a.date.seconds).forEach(earning => {
-        const row = tbody.insertRow();
-        row.className = 'bg-white border-b';
-        let rowHTML = `<td class="px-6 py-4">${new Date(earning.date.seconds * 1000).toLocaleDateString()}</td>`;
-        
-        let rowStaffTotal = 0;
+        // Clear footer totals before doing anything else
+        const allFooterIds = [...staffAndTechNames, 'sell-gc', 'return-gc', 'check', 'no-credit', 'total-credit', 'venmo', 'square', 'total', 'cash'];
+        allFooterIds.forEach(id => {
+            const el = document.getElementById(`total-${id.replace(/_/g, '-')}`);
+            if (el) el.textContent = id === 'no-credit' ? '0' : '$0.00';
+        });
         staffAndTechNames.forEach(name => {
-            const techEarning = earning[name] || 0;
-            rowHTML += `<td class="px-6 py-4">$${techEarning.toFixed(2)}</td>`;
-            rowStaffTotal += techEarning;
-            grandTotals[name] += techEarning;
+            document.getElementById(`commission-${name}`).textContent = '$0.00';
+            document.getElementById(`check70-${name}`).textContent = '$0.00';
+            document.getElementById(`cash30-${name}`).textContent = '$0.00';
         });
 
-        const rowTotal = rowStaffTotal + (earning.sellGiftCard || 0);
-        const cash = rowTotal - ((earning.totalCredit || 0) + (earning.check || 0) + (earning.returnGiftCard || 0) + (earning.venmo || 0) + (earning.square || 0));
-        
-        rowHTML += `
+
+        if (earnings.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="${staffAndTechNames.length + 10}" class="py-6 text-center text-gray-400">No salon earnings found for this period.</td></tr>`;
+            return;
+        }
+
+        let grandTotals = {};
+        staffAndTechNames.forEach(name => grandTotals[name] = 0); // Initialize all staff totals
+        grandTotals.sellGiftCard = 0;
+        grandTotals.returnGiftCard = 0;
+        grandTotals.check = 0;
+        grandTotals.noOfCredit = 0;
+        grandTotals.totalCredit = 0;
+        grandTotals.venmo = 0;
+        grandTotals.square = 0;
+        grandTotals.total = 0;
+        grandTotals.cash = 0;
+
+        // This is the main loop that was missing the row rendering part. It's now fixed.
+        earnings.sort((a, b) => b.date.seconds - a.date.seconds).forEach(earning => {
+            const row = tbody.insertRow();
+            row.className = 'bg-white border-b';
+            let rowHTML = `<td class="px-6 py-4">${new Date(earning.date.seconds * 1000).toLocaleDateString()}</td>`;
+
+            let rowStaffTotal = 0;
+            staffAndTechNames.forEach(name => {
+                const techEarning = earning[name] || 0;
+                rowHTML += `<td class="px-6 py-4">$${techEarning.toFixed(2)}</td>`;
+                rowStaffTotal += techEarning;
+                grandTotals[name] += techEarning;
+            });
+
+            const rowTotal = rowStaffTotal + (earning.sellGiftCard || 0);
+            const cash = rowTotal - ((earning.totalCredit || 0) + (earning.check || 0) + (earning.returnGiftCard || 0) + (earning.venmo || 0) + (earning.square || 0));
+
+            rowHTML += `
             <td class="px-6 py-4">$${(earning.sellGiftCard || 0).toFixed(2)}</td>
             <td class="px-6 py-4">$${(earning.returnGiftCard || 0).toFixed(2)}</td>
             <td class="px-6 py-4">$${(earning.check || 0).toFixed(2)}</td>
@@ -3795,58 +3795,58 @@ const renderSalonEarnings = (earnings) => {
                 <button data-id="${earning.id}" class="edit-salon-earning-btn text-blue-500 hover:text-blue-700" title="Edit Salon Earning"><i class="fas fa-edit text-lg"></i></button>
                 <button data-id="${earning.id}" class="delete-salon-earning-btn text-red-500 hover:text-red-700" title="Delete Salon Earning"><i class="fas fa-trash-alt text-lg"></i></button>
             </td>`;
-        row.innerHTML = rowHTML;
+            row.innerHTML = rowHTML;
 
-        // Accumulate grand totals
-        grandTotals.sellGiftCard += earning.sellGiftCard || 0;
-        grandTotals.returnGiftCard += earning.returnGiftCard || 0;
-        grandTotals.check += earning.check || 0;
-        grandTotals.noOfCredit += earning.noOfCredit || 0;
-        grandTotals.totalCredit += earning.totalCredit || 0;
-        grandTotals.venmo += earning.venmo || 0;
-        grandTotals.square += earning.square || 0;
-        grandTotals.total += rowTotal;
-        grandTotals.cash += cash;
-    });
+            // Accumulate grand totals
+            grandTotals.sellGiftCard += earning.sellGiftCard || 0;
+            grandTotals.returnGiftCard += earning.returnGiftCard || 0;
+            grandTotals.check += earning.check || 0;
+            grandTotals.noOfCredit += earning.noOfCredit || 0;
+            grandTotals.totalCredit += earning.totalCredit || 0;
+            grandTotals.venmo += earning.venmo || 0;
+            grandTotals.square += earning.square || 0;
+            grandTotals.total += rowTotal;
+            grandTotals.cash += cash;
+        });
 
-    // Update the main footer totals
-    document.getElementById('total-sell-gc').textContent = `$${grandTotals.sellGiftCard.toFixed(2)}`;
-    document.getElementById('total-return-gc').textContent = `$${grandTotals.returnGiftCard.toFixed(2)}`;
-    document.getElementById('total-check').textContent = `$${grandTotals.check.toFixed(2)}`;
-    document.getElementById('total-no-credit').textContent = grandTotals.noOfCredit;
-    document.getElementById('total-total-credit').textContent = `$${grandTotals.totalCredit.toFixed(2)}`;
-    document.getElementById('total-venmo').textContent = `$${grandTotals.venmo.toFixed(2)}`;
-    document.getElementById('total-square').textContent = `$${grandTotals.square.toFixed(2)}`;
-    document.getElementById('total-total').textContent = `$${grandTotals.total.toFixed(2)}`;
-    document.getElementById('total-cash').textContent = `$${grandTotals.cash.toFixed(2)}`;
-    staffAndTechNames.forEach(name => {
-        document.getElementById(`total-${name}`).textContent = `$${(grandTotals[name] || 0).toFixed(2)}`;
-    });
+        // Update the main footer totals
+        document.getElementById('total-sell-gc').textContent = `$${grandTotals.sellGiftCard.toFixed(2)}`;
+        document.getElementById('total-return-gc').textContent = `$${grandTotals.returnGiftCard.toFixed(2)}`;
+        document.getElementById('total-check').textContent = `$${grandTotals.check.toFixed(2)}`;
+        document.getElementById('total-no-credit').textContent = grandTotals.noOfCredit;
+        document.getElementById('total-total-credit').textContent = `$${grandTotals.totalCredit.toFixed(2)}`;
+        document.getElementById('total-venmo').textContent = `$${grandTotals.venmo.toFixed(2)}`;
+        document.getElementById('total-square').textContent = `$${grandTotals.square.toFixed(2)}`;
+        document.getElementById('total-total').textContent = `$${grandTotals.total.toFixed(2)}`;
+        document.getElementById('total-cash').textContent = `$${grandTotals.cash.toFixed(2)}`;
+        staffAndTechNames.forEach(name => {
+            document.getElementById(`total-${name}`).textContent = `$${(grandTotals[name] || 0).toFixed(2)}`;
+        });
 
-    // Update the payout footer totals with the new logic
-    staffAndTechNames.forEach(name => {
-        const staffMember = techniciansAndStaff.find(s => s.name.toLowerCase() === name);
-        const payoutType = staffMember ? staffMember.payoutType : 'standard';
-        const totalEarningForStaff = grandTotals[name] || 0;
-        let totalPayout;
+        // Update the payout footer totals with the new logic
+        staffAndTechNames.forEach(name => {
+            const staffMember = techniciansAndStaff.find(s => s.name.toLowerCase() === name);
+            const payoutType = staffMember ? staffMember.payoutType : 'standard';
+            const totalEarningForStaff = grandTotals[name] || 0;
+            let totalPayout;
 
-        if (payoutType === 'commission_plus_tips') {
-            const { startDate, endDate } = getDateRange(currentSalonEarningRangeFilter, currentSalonEarningDateFilter);
-            const staffPeriodEarnings = allEarnings.filter(e => e.staffName.toLowerCase() === name && e.date.toDate() >= startDate && e.date.toDate() <= endDate);
-            const totalTipForStaff = staffPeriodEarnings.reduce((sum, e) => sum + (e.tip || 0), 0);
-            totalPayout = (totalEarningForStaff * 0.70) + totalTipForStaff;
-        } else {
-            totalPayout = totalEarningForStaff * 0.70;
-        }
-        
-        const check70 = totalPayout * 0.70;
-        const cash30 = totalPayout - check70;
-        
-        document.getElementById(`commission-${name}`).textContent = `$${totalPayout.toFixed(2)}`;
-        document.getElementById(`check70-${name}`).textContent = `$${check70.toFixed(2)}`;
-        document.getElementById(`cash30-${name}`).textContent = `$${cash30.toFixed(2)}`;
-    });
-};
+            if (payoutType === 'commission_plus_tips') {
+                const { startDate, endDate } = getDateRange(currentSalonEarningRangeFilter, currentSalonEarningDateFilter);
+                const staffPeriodEarnings = allEarnings.filter(e => e.staffName.toLowerCase() === name && e.date.toDate() >= startDate && e.date.toDate() <= endDate);
+                const totalTipForStaff = staffPeriodEarnings.reduce((sum, e) => sum + (e.tip || 0), 0);
+                totalPayout = (totalEarningForStaff * 0.70) + totalTipForStaff;
+            } else {
+                totalPayout = totalEarningForStaff * 0.70;
+            }
+
+            const check70 = totalPayout * 0.70;
+            const cash30 = totalPayout - check70;
+
+            document.getElementById(`commission-${name}`).textContent = `$${totalPayout.toFixed(2)}`;
+            document.getElementById(`check70-${name}`).textContent = `$${check70.toFixed(2)}`;
+            document.getElementById(`cash30-${name}`).textContent = `$${cash30.toFixed(2)}`;
+        });
+    };
 
     for (let i = 1; i <= 20; i++) peopleCountSelect.appendChild(new Option(i, i));
     for (let i = 1; i <= 20; i++) document.getElementById('appointment-people').appendChild(new Option(i, i));
@@ -3860,7 +3860,7 @@ const renderSalonEarnings = (earnings) => {
         });
     };
 
-const openServiceModal = (category) => {
+    const openServiceModal = (category) => {
         modalTitle.textContent = category;
         modalContent.innerHTML = '';
         servicesData[category].forEach(service => {
@@ -3875,10 +3875,10 @@ const openServiceModal = (category) => {
         serviceModal.classList.add('flex'); serviceModal.classList.remove('hidden');
     };
 
-// REPLACE the old closeServiceModal function with this one:
-const closeServiceModal = () => {
+    // REPLACE the old closeServiceModal function with this one:
+    const closeServiceModal = () => {
         const firstCheckbox = modalContent.querySelector('.modal-checkbox');
-        
+
         // FIX: Gracefully exit if the modal is empty to prevent errors.
         if (!firstCheckbox) {
             serviceModal.classList.add('hidden');
@@ -4012,64 +4012,64 @@ const closeServiceModal = () => {
         }
     });
 
-// REPLACE your old openClientProfileModal function with this new one:
-const openClientProfileModal = async (client) => {
-    const clientData = aggregatedClients.find(c => c.id === client.id);
-    if (!clientData) {
-        console.error("Could not find aggregated data for client:", client);
-        alert("Could not load client profile.");
-        return;
-    }
-    const clientHistory = allFinishedClients.filter(c => c.name === clientData.name);
-    const clientAppointments = allAppointments.filter(c => c.name === clientData.name && c.appointmentTimestamp.toDate() > new Date());
-
-    // --- NEW: Comprehensive Total Spent Calculation ---
-    // 1. Calculate spending from services
-    let serviceSpent = clientHistory.reduce((sum, visit) => {
-        const servicesString = Array.isArray(visit.services) ? visit.services.join(', ') : visit.services;
-        const prices = (servicesString.match(/\$\d+/g) || []).map(p => Number(p.slice(1)));
-        return sum + prices.reduce((a, b) => a + b, 0);
-    }, 0);
-
-    // 2. Calculate spending from gift cards purchased
-    const giftCardsPurchased = allGiftCards.filter(gc => gc.createdBy === client.id);
-    let giftCardSpent = giftCardsPurchased.reduce((sum, gc) => sum + gc.amount, 0);
-
-    // 3. Calculate spending from membership
-    let membershipSpent = 0;
-    if (clientData.membership && clientData.membership.tierId) {
-        const tier = allMembershipTiers.find(t => t.id === clientData.membership.tierId);
-        if (tier) {
-            membershipSpent = tier.price;
+    // REPLACE your old openClientProfileModal function with this new one:
+    const openClientProfileModal = async (client) => {
+        const clientData = aggregatedClients.find(c => c.id === client.id);
+        if (!clientData) {
+            console.error("Could not find aggregated data for client:", client);
+            alert("Could not load client profile.");
+            return;
         }
-    }
-    
-    const totalSpent = serviceSpent + giftCardSpent + membershipSpent;
-    // --- END of new calculation ---
+        const clientHistory = allFinishedClients.filter(c => c.name === clientData.name);
+        const clientAppointments = allAppointments.filter(c => c.name === clientData.name && c.appointmentTimestamp.toDate() > new Date());
 
-    document.getElementById('profile-client-name').textContent = clientData.name;
-    document.getElementById('profile-client-phone').textContent = clientData.phone || 'No phone number';
-    document.getElementById('profile-total-visits').textContent = clientHistory.length;
-    document.getElementById('profile-total-spent').textContent = `$${totalSpent.toFixed(2)}`;
-    document.getElementById('profile-fav-tech').textContent = clientData.favoriteTech;
-    document.getElementById('profile-fav-color').textContent = clientData.favoriteColor;
+        // --- NEW: Comprehensive Total Spent Calculation ---
+        // 1. Calculate spending from services
+        let serviceSpent = clientHistory.reduce((sum, visit) => {
+            const servicesString = Array.isArray(visit.services) ? visit.services.join(', ') : visit.services;
+            const prices = (servicesString.match(/\$\d+/g) || []).map(p => Number(p.slice(1)));
+            return sum + prices.reduce((a, b) => a + b, 0);
+        }, 0);
 
-    const historyBody = document.getElementById('profile-history-table-body');
-    historyBody.innerHTML = clientHistory.length > 0 ? clientHistory.map(v =>
-        `<tr>
+        // 2. Calculate spending from gift cards purchased
+        const giftCardsPurchased = allGiftCards.filter(gc => gc.createdBy === client.id);
+        let giftCardSpent = giftCardsPurchased.reduce((sum, gc) => sum + gc.amount, 0);
+
+        // 3. Calculate spending from membership
+        let membershipSpent = 0;
+        if (clientData.membership && clientData.membership.tierId) {
+            const tier = allMembershipTiers.find(t => t.id === clientData.membership.tierId);
+            if (tier) {
+                membershipSpent = tier.price;
+            }
+        }
+
+        const totalSpent = serviceSpent + giftCardSpent + membershipSpent;
+        // --- END of new calculation ---
+
+        document.getElementById('profile-client-name').textContent = clientData.name;
+        document.getElementById('profile-client-phone').textContent = clientData.phone || 'No phone number';
+        document.getElementById('profile-total-visits').textContent = clientHistory.length;
+        document.getElementById('profile-total-spent').textContent = `$${totalSpent.toFixed(2)}`;
+        document.getElementById('profile-fav-tech').textContent = clientData.favoriteTech;
+        document.getElementById('profile-fav-color').textContent = clientData.favoriteColor;
+
+        const historyBody = document.getElementById('profile-history-table-body');
+        historyBody.innerHTML = clientHistory.length > 0 ? clientHistory.map(v =>
+            `<tr>
             <td class="px-4 py-2">${v.checkOutTimestamp.toDate().toLocaleDateString()}</td>
             <td class="px-4 py-2">${Array.isArray(v.services) ? v.services.join(', ') : v.services}</td>
             <td class="px-4 py-2">${v.technician}</td>
         </tr>`
-    ).join('') : '<tr><td colspan="3" class="text-center p-4 text-gray-500">No visit history found.</td></tr>';
+        ).join('') : '<tr><td colspan="3" class="text-center p-4 text-gray-500">No visit history found.</td></tr>';
 
-    const apptsContainer = document.getElementById('profile-upcoming-appts');
-    apptsContainer.innerHTML = clientAppointments.length > 0
-        ? clientAppointments.map(a => `<div class="bg-blue-50 p-2 rounded-md"><p class="font-semibold">${a.appointmentTimestamp.toDate().toLocaleString()}</p><p class="text-sm">${a.services.join(', ')}</p></div>`).join('')
-        : '<p class="text-sm text-gray-500">No upcoming appointments.</p>';
+        const apptsContainer = document.getElementById('profile-upcoming-appts');
+        apptsContainer.innerHTML = clientAppointments.length > 0
+            ? clientAppointments.map(a => `<div class="bg-blue-50 p-2 rounded-md"><p class="font-semibold">${a.appointmentTimestamp.toDate().toLocaleString()}</p><p class="text-sm">${a.services.join(', ')}</p></div>`).join('')
+            : '<p class="text-sm text-gray-500">No upcoming appointments.</p>';
 
-    clientProfileModal.classList.remove('hidden');
-};
+        clientProfileModal.classList.remove('hidden');
+    };
     document.getElementById('finished-content').addEventListener('click', async (e) => {
         const deleteBtn = e.target.closest('.delete-btn-finished');
         const feedbackBtn = e.target.closest('.view-feedback-btn');
@@ -4324,65 +4324,65 @@ const openClientProfileModal = async (client) => {
     setupSubTabs('admin-sub-tabs', 'sub-tab-content');
 
 
-// REPLACE your old renderCalendar function with this new one:
-function renderCalendar(year, month, technicianFilter = 'All') {
-    monthYearDisplay.textContent = `${new Date(year, month).toLocaleString('default', { month: 'long' })} ${year}`;
-    calendarGrid.innerHTML = '';
-    const today = new Date(); // Get today's date for comparison
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    // REPLACE your old renderCalendar function with this new one:
+    function renderCalendar(year, month, technicianFilter = 'All') {
+        monthYearDisplay.textContent = `${new Date(year, month).toLocaleString('default', { month: 'long' })} ${year}`;
+        calendarGrid.innerHTML = '';
+        const today = new Date(); // Get today's date for comparison
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-    for (let i = 0; i < firstDay; i++) { calendarGrid.insertAdjacentHTML('beforeend', '<div></div>'); }
-    
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dayCell = document.createElement('div');
-        dayCell.className = 'calendar-day border p-2';
+        for (let i = 0; i < firstDay; i++) { calendarGrid.insertAdjacentHTML('beforeend', '<div></div>'); }
 
-        // ADDED: Check if the current cell is today's date
-        if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
-            dayCell.classList.add('is-today');
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dayCell = document.createElement('div');
+            dayCell.className = 'calendar-day border p-2';
+
+            // ADDED: Check if the current cell is today's date
+            if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+                dayCell.classList.add('is-today');
+            }
+
+            dayCell.dataset.date = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            dayCell.innerHTML = `<div class="font-bold">${day}</div><div id="day-${day}" class="appointments"></div>`;
+            calendarGrid.appendChild(dayCell);
         }
 
-        dayCell.dataset.date = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        dayCell.innerHTML = `<div class="font-bold">${day}</div><div id="day-${day}" class="appointments"></div>`;
-        calendarGrid.appendChild(dayCell);
-    }
+        let filteredAppointments = allAppointments;
+        if (technicianFilter !== 'All' && technicianFilter !== 'Any Technician') {
+            filteredAppointments = allAppointments.filter(appt => appt.technician === technicianFilter);
+        } else if (technicianFilter === 'Any Technician') {
+            filteredAppointments = allAppointments.filter(appt => appt.technician === 'Any Technician');
+        }
 
-    let filteredAppointments = allAppointments;
-    if (technicianFilter !== 'All' && technicianFilter !== 'Any Technician') {
-        filteredAppointments = allAppointments.filter(appt => appt.technician === technicianFilter);
-    } else if (technicianFilter === 'Any Technician') {
-        filteredAppointments = allAppointments.filter(appt => appt.technician === 'Any Technician');
-    }
+        filteredAppointments.sort((a, b) => a.appointmentTimestamp.seconds - b.appointmentTimestamp.seconds);
 
-    filteredAppointments.sort((a, b) => a.appointmentTimestamp.seconds - b.appointmentTimestamp.seconds);
-
-    filteredAppointments.forEach(appt => {
-        const apptDate = new Date(appt.appointmentTimestamp.seconds * 1000);
-        if (apptDate.getFullYear() === year && apptDate.getMonth() === month) {
-            const dayCell = document.getElementById(`day-${apptDate.getDate()}`);
-            if (dayCell) {
-                const timeString = apptDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-                const serviceString = Array.isArray(appt.services) ? appt.services[0] : appt.services;
-                const technicianName = appt.technician;
-                let colorTheme = { card: 'bg-gray-100', text: 'text-gray-800' };
-                if (technicianName && technicianColorMap[technicianName]) {
-                    colorTheme = technicianColorMap[technicianName];
-                }
-                const entryHTML = `
+        filteredAppointments.forEach(appt => {
+            const apptDate = new Date(appt.appointmentTimestamp.seconds * 1000);
+            if (apptDate.getFullYear() === year && apptDate.getMonth() === month) {
+                const dayCell = document.getElementById(`day-${apptDate.getDate()}`);
+                if (dayCell) {
+                    const timeString = apptDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+                    const serviceString = Array.isArray(appt.services) ? appt.services[0] : appt.services;
+                    const technicianName = appt.technician;
+                    let colorTheme = { card: 'bg-gray-100', text: 'text-gray-800' };
+                    if (technicianName && technicianColorMap[technicianName]) {
+                        colorTheme = technicianColorMap[technicianName];
+                    }
+                    const entryHTML = `
                     <div class="appointment-entry ${colorTheme.card} p-1" data-id="${appt.id}" data-type="appointment">
                         <p class="font-semibold text-xs ${colorTheme.text} truncate">${timeString} - ${appt.name}</p>
                         <p class="text-xs text-gray-600 truncate">${serviceString || 'Service not specified'}</p>
                     </div>`;
-                dayCell.insertAdjacentHTML('beforeend', entryHTML);
+                    dayCell.insertAdjacentHTML('beforeend', entryHTML);
+                }
             }
-        }
-    });
+        });
 
-    if(calendarCountSpan) {
-        calendarCountSpan.textContent = calendarGrid.querySelectorAll('.appointment-entry').length;
+        if (calendarCountSpan) {
+            calendarCountSpan.textContent = calendarGrid.querySelectorAll('.appointment-entry').length;
+        }
     }
-}
     document.getElementById('prev-month-btn').addEventListener('click', () => { currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(currentYear, currentMonth, currentTechFilterCalendar); });
     document.getElementById('next-month-btn').addEventListener('click', () => { currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; } renderCalendar(currentYear, currentMonth, currentTechFilterCalendar); });
     calendarGrid.addEventListener('click', (e) => {
@@ -4698,23 +4698,23 @@ function renderCalendar(year, month, technicianFilter = 'All') {
         };
         reader.readAsArrayBuffer(file);
     });
-// --- Located inside initMainApp() ---
+    // --- Located inside initMainApp() ---
 
-// --- Located inside initMainApp() ---
+    // --- Located inside initMainApp() ---
 
     document.getElementById('print-salon-earnings-btn').addEventListener('click', () => {
         const originalTable = document.getElementById('salon-earning-table');
         if (!originalTable) return;
 
         const printTable = document.createElement('table');
-        printTable.className = originalTable.className; 
+        printTable.className = originalTable.className;
 
         const staffAndTechNames = techniciansAndStaff.map(t => t.name);
 
         const originalThead = originalTable.querySelector('thead');
         const newThead = originalThead.cloneNode(true);
         const headerRow = newThead.querySelector('tr');
-        headerRow.innerHTML = ''; 
+        headerRow.innerHTML = '';
         headerRow.insertAdjacentHTML('beforeend', '<th scope="col" class="px-2 py-1">Date</th>');
         staffAndTechNames.forEach(name => {
             headerRow.insertAdjacentHTML('beforeend', `<th scope="col" class="px-2 py-1">${name}</th>`);
@@ -4734,18 +4734,18 @@ function renderCalendar(year, month, technicianFilter = 'All') {
             });
         });
         printTable.appendChild(newTbody);
-        
+
         const originalTfoot = originalTable.querySelector('tfoot');
         const newTfoot = originalTfoot.cloneNode(true);
         newTfoot.querySelectorAll('tr').forEach((row, rowIndex) => {
-            if (rowIndex > 0) { 
+            if (rowIndex > 0) {
                 const firstCell = row.querySelector('td');
                 firstCell.colSpan = 1;
-                while(row.cells.length > staffAndTechNames.length + 1) {
+                while (row.cells.length > staffAndTechNames.length + 1) {
                     row.deleteCell(-1);
                 }
-            } else { 
-                 while(row.cells.length > staffAndTechNames.length + 1) {
+            } else {
+                while (row.cells.length > staffAndTechNames.length + 1) {
                     row.deleteCell(-1);
                 }
             }
@@ -4756,11 +4756,11 @@ function renderCalendar(year, month, technicianFilter = 'All') {
         const now = new Date();
         const datePrinted = `Printed on: ${now.toLocaleDateString()} at ${now.toLocaleTimeString()}`;
         const logoUrl = "https://placehold.co/100x100/d63384/FFFFFF?text=NE";
-        
+
         const printWindow = window.open('', '_blank', 'height=800,width=1000');
         printWindow.document.write('<html><head><title>Print Staff Earnings</title>');
         printWindow.document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
-        
+
         // --- THIS STYLE BLOCK IS UPDATED ---
         printWindow.document.write(`
             <style> 
@@ -4789,7 +4789,7 @@ function renderCalendar(year, month, technicianFilter = 'All') {
         `);
         printWindow.document.write(printTable.outerHTML);
         printWindow.document.write('</body></html>');
-        
+
         printWindow.document.close();
         printWindow.focus();
 
@@ -4967,15 +4967,15 @@ function renderCalendar(year, month, technicianFilter = 'All') {
 
     const addUserForm = document.getElementById('add-user-form');
     const usersTableBody = document.querySelector('#users-table tbody');
-// Replace the entire renderUsers function
-const renderUsers = (users) => {
-    usersTableBody.innerHTML = '';
-    users.forEach(user => {
-        const row = usersTableBody.insertRow();
-        const payoutText = (user.payoutType === 'commission_plus_tips') ? 'Comm. + Tips' : 'Standard';
-        row.innerHTML = `<td class="px-6 py-4">${user.name}</td><td class="px-6 py-4">${user.email}</td><td class="px-6 py-4">${user.phone}</td><td class="px-6 py-4">${user.role}</td><td class="px-6 py-4">${payoutText}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${user.id}" class="edit-user-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${user.id}" class="delete-user-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
-    });
-};
+    // Replace the entire renderUsers function
+    const renderUsers = (users) => {
+        usersTableBody.innerHTML = '';
+        users.forEach(user => {
+            const row = usersTableBody.insertRow();
+            const payoutText = (user.payoutType === 'commission_plus_tips') ? 'Comm. + Tips' : 'Standard';
+            row.innerHTML = `<td class="px-6 py-4">${user.name}</td><td class="px-6 py-4">${user.email}</td><td class="px-6 py-4">${user.phone}</td><td class="px-6 py-4">${user.role}</td><td class="px-6 py-4">${payoutText}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${user.id}" class="edit-user-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${user.id}" class="delete-user-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
+        });
+    };
     // REPLACE the old populateTechnicianFilters function with this one
     const populateTechnicianFilters = () => {
         const techSelects = document.querySelectorAll('#appointment-technician-select, #technician-name-select, #staff-name, #edit-staff-name, #checkin-technician-select, #dashboard-staff-name-full');
@@ -5081,10 +5081,10 @@ const renderUsers = (users) => {
         const userId = document.getElementById('edit-user-id').value;
         const name = document.getElementById('new-user-name').value, phone = document.getElementById('new-user-phone').value, email = document.getElementById('new-user-email').value, password = document.getElementById('new-user-password').value, role = document.getElementById('user-role').value;
         const payoutType = document.getElementById('payout-type').value; // Add this line
-        if (userId) { 
-    await setDoc(doc(db, "users", userId), { name, phone, email, role, payoutType }); // Add payoutType here
-    alert("User updated."); 
-} else {
+        if (userId) {
+            await setDoc(doc(db, "users", userId), { name, phone, email, role, payoutType }); // Add payoutType here
+            alert("User updated.");
+        } else {
             if (!password || password.length < 6) { return alert("Password must be at least 6 characters."); }
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -5316,41 +5316,41 @@ const renderUsers = (users) => {
         catch (error) { console.error("Error saving salon hours:", error); alert("Could not save salon hours."); }
     });
 
-// REPLACE this function inside initMainApp
-const loadFeatureToggles = async () => {
-    const settingsDoc = await getDoc(doc(db, "settings", "features"));
-    if (settingsDoc.exists()) {
-        const settings = settingsDoc.data();
-        document.getElementById('toggle-client-login').checked = settings.showClientLogin !== false;
-        document.getElementById('toggle-promotions').checked = settings.showPromotions !== false;
-        document.getElementById('toggle-gift-card').checked = settings.showGiftCards !== false;
-        document.getElementById('toggle-nails-idea').checked = settings.showNailArt !== false;
-        document.getElementById('toggle-memberships').checked = settings.showMemberships !== false;
-        document.getElementById('toggle-royalty-card').checked = settings.showRoyaltyCard !== false; // This line was missing
-    } else {
-        // Default all to true if no settings exist yet
-        document.getElementById('toggle-client-login').checked = true;
-        document.getElementById('toggle-promotions').checked = true;
-        document.getElementById('toggle-gift-card').checked = true;
-        document.getElementById('toggle-nails-idea').checked = true;
-        document.getElementById('toggle-memberships').checked = true;
-        document.getElementById('toggle-royalty-card').checked = true; // This line was missing
-    }
-};
-// REPLACE this event listener inside initMainApp
-featureTogglesForm.addEventListener('change', async (e) => {
-    if (e.target.type === 'checkbox') {
-        const settings = {
-            showClientLogin: document.getElementById('toggle-client-login').checked,
-            showPromotions: document.getElementById('toggle-promotions').checked,
-            showGiftCards: document.getElementById('toggle-gift-card').checked,
-            showNailArt: document.getElementById('toggle-nails-idea').checked,
-            showMemberships: document.getElementById('toggle-memberships').checked,
-            showRoyaltyCard: document.getElementById('toggle-royalty-card').checked // This line was missing
-        };
-        await setDoc(doc(db, "settings", "features"), settings, { merge: true });
-    }
-});
+    // REPLACE this function inside initMainApp
+    const loadFeatureToggles = async () => {
+        const settingsDoc = await getDoc(doc(db, "settings", "features"));
+        if (settingsDoc.exists()) {
+            const settings = settingsDoc.data();
+            document.getElementById('toggle-client-login').checked = settings.showClientLogin !== false;
+            document.getElementById('toggle-promotions').checked = settings.showPromotions !== false;
+            document.getElementById('toggle-gift-card').checked = settings.showGiftCards !== false;
+            document.getElementById('toggle-nails-idea').checked = settings.showNailArt !== false;
+            document.getElementById('toggle-memberships').checked = settings.showMemberships !== false;
+            document.getElementById('toggle-royalty-card').checked = settings.showRoyaltyCard !== false; // This line was missing
+        } else {
+            // Default all to true if no settings exist yet
+            document.getElementById('toggle-client-login').checked = true;
+            document.getElementById('toggle-promotions').checked = true;
+            document.getElementById('toggle-gift-card').checked = true;
+            document.getElementById('toggle-nails-idea').checked = true;
+            document.getElementById('toggle-memberships').checked = true;
+            document.getElementById('toggle-royalty-card').checked = true; // This line was missing
+        }
+    };
+    // REPLACE this event listener inside initMainApp
+    featureTogglesForm.addEventListener('change', async (e) => {
+        if (e.target.type === 'checkbox') {
+            const settings = {
+                showClientLogin: document.getElementById('toggle-client-login').checked,
+                showPromotions: document.getElementById('toggle-promotions').checked,
+                showGiftCards: document.getElementById('toggle-gift-card').checked,
+                showNailArt: document.getElementById('toggle-nails-idea').checked,
+                showMemberships: document.getElementById('toggle-memberships').checked,
+                showRoyaltyCard: document.getElementById('toggle-royalty-card').checked // This line was missing
+            };
+            await setDoc(doc(db, "settings", "features"), settings, { merge: true });
+        }
+    });
 
     const loadSettings = async () => {
         const bookingSnap = await getDoc(doc(db, "settings", "booking"));
@@ -5448,33 +5448,33 @@ featureTogglesForm.addEventListener('change', async (e) => {
     const expenseTableBody = document.querySelector('#expense-table tbody');
     const totalExpenseEl = document.getElementById('total-expense');
 
-// REPLACE your old populateExpenseDropdowns function with this one:
-const populateExpenseDropdowns = () => {
-    const categorySelect = document.getElementById('expense-category');
-    const supplierSelect = document.getElementById('expense-supplier');
-    const paymentSelect = document.getElementById('expense-payment-account');
+    // REPLACE your old populateExpenseDropdowns function with this one:
+    const populateExpenseDropdowns = () => {
+        const categorySelect = document.getElementById('expense-category');
+        const supplierSelect = document.getElementById('expense-supplier');
+        const paymentSelect = document.getElementById('expense-payment-account');
 
-    // New filter dropdowns
-    const categoryFilterSelect = document.getElementById('expense-category-filter');
-    const supplierFilterSelect = document.getElementById('expense-supplier-filter');
+        // New filter dropdowns
+        const categoryFilterSelect = document.getElementById('expense-category-filter');
+        const supplierFilterSelect = document.getElementById('expense-supplier-filter');
 
-    const populate = (select, data, defaultOptionText) => {
-        if (!select) return;
-        const first = select.options[0] || document.createElement('option');
-        first.value = defaultOptionText === "All" ? "all" : "";
-        first.textContent = defaultOptionText === "All" ? `All ${select.id.includes('category') ? 'Categories' : 'Suppliers'}` : `Select ${defaultOptionText}`;
-        select.innerHTML = '';
-        select.appendChild(first);
-        data.forEach(item => select.appendChild(new Option(item.name, item.name)));
+        const populate = (select, data, defaultOptionText) => {
+            if (!select) return;
+            const first = select.options[0] || document.createElement('option');
+            first.value = defaultOptionText === "All" ? "all" : "";
+            first.textContent = defaultOptionText === "All" ? `All ${select.id.includes('category') ? 'Categories' : 'Suppliers'}` : `Select ${defaultOptionText}`;
+            select.innerHTML = '';
+            select.appendChild(first);
+            data.forEach(item => select.appendChild(new Option(item.name, item.name)));
+        };
+
+        populate(categorySelect, allExpenseCategories, 'Category');
+        populate(supplierSelect, allSuppliers, 'Supplier');
+        populate(paymentSelect, allPaymentAccounts, 'Account');
+
+        populate(categoryFilterSelect, allExpenseCategories, 'All');
+        populate(supplierFilterSelect, allSuppliers, 'All');
     };
-
-    populate(categorySelect, allExpenseCategories, 'Category');
-    populate(supplierSelect, allSuppliers, 'Supplier');
-    populate(paymentSelect, allPaymentAccounts, 'Account');
-
-    populate(categoryFilterSelect, allExpenseCategories, 'All');
-    populate(supplierFilterSelect, allSuppliers, 'All');
-};
 
     const populateExpenseMonthFilter = () => {
         const months = [...new Set(allExpenses.map(exp => { const d = new Date(exp.date.seconds * 1000); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }))].sort().reverse();
@@ -5483,119 +5483,119 @@ const populateExpenseDropdowns = () => {
         expenseMonthFilter.value = currentExpenseMonthFilter || 'all';
     };
 
-// REPLACE your old renderExpenses function with this one:
-const renderExpenses = () => {
-    let filtered = allExpenses;
+    // REPLACE your old renderExpenses function with this one:
+    const renderExpenses = () => {
+        let filtered = allExpenses;
 
-    // Filter by Month
-    if (currentExpenseMonthFilter && currentExpenseMonthFilter !== 'all') {
-        const [year, month] = currentExpenseMonthFilter.split('-').map(Number);
-        filtered = filtered.filter(exp => { const d = new Date(exp.date.seconds * 1000); return d.getFullYear() === year && d.getMonth() + 1 === month; });
-    }
-
-    // Filter by Category
-    if (currentExpenseCategoryFilter && currentExpenseCategoryFilter !== 'all') {
-        filtered = filtered.filter(exp => exp.category === currentExpenseCategoryFilter);
-    }
-
-    // Filter by Supplier
-    if (currentExpenseSupplierFilter && currentExpenseSupplierFilter !== 'all') {
-        filtered = filtered.filter(exp => exp.supplier === currentExpenseSupplierFilter);
-    }
-
-    expenseTableBody.innerHTML = filtered.length === 0 ? `<tr><td colspan="8" class="py-6 text-center text-gray-400">No expenses found for the selected filters.</td></tr>` : '';
-    filtered.forEach(exp => {
-        const row = expenseTableBody.insertRow();
-        row.className = 'bg-white border-b';
-        row.innerHTML = `<td class="px-6 py-4">${new Date(exp.date.seconds * 1000).toLocaleDateString()}</td><td class="px-6 py-4">${exp.name}</td><td class="px-6 py-4">${exp.category || ''}</td><td class="px-6 py-4">${exp.supplier || ''}</td><td class="px-6 py-4">${exp.paymentAccount || ''}</td><td class="px-6 py-4">${exp.attachmentURL ? `<a href="${exp.attachmentURL}" target="_blank" class="text-blue-500 hover:underline">View</a>` : 'N/A'}</td><td class="px-6 py-4 text-right">$${exp.amount.toFixed(2)}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${exp.id}" class="edit-expense-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${exp.id}" class="delete-expense-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
-    });
-    totalExpenseEl.textContent = `$${filtered.reduce((sum, exp) => sum + exp.amount, 0).toFixed(2)}`;
-};
-
-    expenseMonthFilter.addEventListener('change', (e) => { currentExpenseMonthFilter = e.target.value; renderExpenses(); });
-// Add these two new event listeners
-document.getElementById('expense-category-filter').addEventListener('change', (e) => {
-    currentExpenseCategoryFilter = e.target.value;
-    renderExpenses();
-});
-document.getElementById('expense-supplier-filter').addEventListener('change', (e) => {
-    currentExpenseSupplierFilter = e.target.value;
-    renderExpenses();
-});
-
-// PASTE THIS ENTIRE NEW BLOCK inside the if (userRole === 'admin') block
-
-const exportExpensesBtn = document.getElementById('export-expenses-btn');
-if (exportExpensesBtn) {
-    exportExpensesBtn.addEventListener('click', () => {
-        // 1. Get the currently filtered data
-        let filteredExpenses = [...allExpenses];
+        // Filter by Month
         if (currentExpenseMonthFilter && currentExpenseMonthFilter !== 'all') {
             const [year, month] = currentExpenseMonthFilter.split('-').map(Number);
-            filteredExpenses = filteredExpenses.filter(exp => {
-                const d = new Date(exp.date.seconds * 1000);
-                return d.getFullYear() === year && d.getMonth() + 1 === month;
-            });
+            filtered = filtered.filter(exp => { const d = new Date(exp.date.seconds * 1000); return d.getFullYear() === year && d.getMonth() + 1 === month; });
         }
+
+        // Filter by Category
         if (currentExpenseCategoryFilter && currentExpenseCategoryFilter !== 'all') {
-            filteredExpenses = filteredExpenses.filter(exp => exp.category === currentExpenseCategoryFilter);
+            filtered = filtered.filter(exp => exp.category === currentExpenseCategoryFilter);
         }
+
+        // Filter by Supplier
         if (currentExpenseSupplierFilter && currentExpenseSupplierFilter !== 'all') {
-            filteredExpenses = filteredExpenses.filter(exp => exp.supplier === currentExpenseSupplierFilter);
+            filtered = filtered.filter(exp => exp.supplier === currentExpenseSupplierFilter);
         }
 
-        if (filteredExpenses.length === 0) {
-            alert("There is no data to export for the current filters.");
-            return;
-        }
-
-        // 2. Prepare the data for the worksheet
-        const dataToExport = filteredExpenses.map(exp => ({
-            'Date': new Date(exp.date.seconds * 1000).toLocaleDateString(),
-            'Expense Name': exp.name,
-            'Category': exp.category || '',
-            'Supplier': exp.supplier || '',
-            'Paid Via': exp.paymentAccount || '',
-            'Amount': exp.amount
-        }));
-
-        // 3. Add a total row at the bottom
-        const totalAmount = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-        dataToExport.push({}); // Add a blank row for spacing
-        dataToExport.push({
-            'Date': 'Total:',
-            'Amount': totalAmount
+        expenseTableBody.innerHTML = filtered.length === 0 ? `<tr><td colspan="8" class="py-6 text-center text-gray-400">No expenses found for the selected filters.</td></tr>` : '';
+        filtered.forEach(exp => {
+            const row = expenseTableBody.insertRow();
+            row.className = 'bg-white border-b';
+            row.innerHTML = `<td class="px-6 py-4">${new Date(exp.date.seconds * 1000).toLocaleDateString()}</td><td class="px-6 py-4">${exp.name}</td><td class="px-6 py-4">${exp.category || ''}</td><td class="px-6 py-4">${exp.supplier || ''}</td><td class="px-6 py-4">${exp.paymentAccount || ''}</td><td class="px-6 py-4">${exp.attachmentURL ? `<a href="${exp.attachmentURL}" target="_blank" class="text-blue-500 hover:underline">View</a>` : 'N/A'}</td><td class="px-6 py-4 text-right">$${exp.amount.toFixed(2)}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${exp.id}" class="edit-expense-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${exp.id}" class="delete-expense-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
         });
+        totalExpenseEl.textContent = `$${filtered.reduce((sum, exp) => sum + exp.amount, 0).toFixed(2)}`;
+    };
 
-        // 4. Create the worksheet and workbook
-        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-        
-        // Optional: Set column widths for better readability
-        worksheet['!cols'] = [
-            { wch: 12 }, { wch: 30 }, { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 12 }
-        ];
-
-        // Format the 'Amount' column as currency
-        const amountColumnIndex = 'F';
-        for (let i = 2; i <= dataToExport.length + 1; i++) {
-            const cellRef = `${amountColumnIndex}${i}`;
-            if (worksheet[cellRef] && typeof worksheet[cellRef].v === 'number') {
-                worksheet[cellRef].t = 'n'; // Set type to number
-                worksheet[cellRef].z = '$#,##0.00'; // Set format to currency
-            }
-        }
-        
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Expenses Report");
-
-        // 5. Trigger the download
-        XLSX.writeFile(workbook, `NailsExpress_Expenses_${new Date().toISOString().split('T')[0]}.xlsx`);
+    expenseMonthFilter.addEventListener('change', (e) => { currentExpenseMonthFilter = e.target.value; renderExpenses(); });
+    // Add these two new event listeners
+    document.getElementById('expense-category-filter').addEventListener('change', (e) => {
+        currentExpenseCategoryFilter = e.target.value;
+        renderExpenses();
     });
-}
+    document.getElementById('expense-supplier-filter').addEventListener('change', (e) => {
+        currentExpenseSupplierFilter = e.target.value;
+        renderExpenses();
+    });
 
-// --- Located inside initMainApp() ---
+    // PASTE THIS ENTIRE NEW BLOCK inside the if (userRole === 'admin') block
 
-// --- Located inside initMainApp() ---
+    const exportExpensesBtn = document.getElementById('export-expenses-btn');
+    if (exportExpensesBtn) {
+        exportExpensesBtn.addEventListener('click', () => {
+            // 1. Get the currently filtered data
+            let filteredExpenses = [...allExpenses];
+            if (currentExpenseMonthFilter && currentExpenseMonthFilter !== 'all') {
+                const [year, month] = currentExpenseMonthFilter.split('-').map(Number);
+                filteredExpenses = filteredExpenses.filter(exp => {
+                    const d = new Date(exp.date.seconds * 1000);
+                    return d.getFullYear() === year && d.getMonth() + 1 === month;
+                });
+            }
+            if (currentExpenseCategoryFilter && currentExpenseCategoryFilter !== 'all') {
+                filteredExpenses = filteredExpenses.filter(exp => exp.category === currentExpenseCategoryFilter);
+            }
+            if (currentExpenseSupplierFilter && currentExpenseSupplierFilter !== 'all') {
+                filteredExpenses = filteredExpenses.filter(exp => exp.supplier === currentExpenseSupplierFilter);
+            }
+
+            if (filteredExpenses.length === 0) {
+                alert("There is no data to export for the current filters.");
+                return;
+            }
+
+            // 2. Prepare the data for the worksheet
+            const dataToExport = filteredExpenses.map(exp => ({
+                'Date': new Date(exp.date.seconds * 1000).toLocaleDateString(),
+                'Expense Name': exp.name,
+                'Category': exp.category || '',
+                'Supplier': exp.supplier || '',
+                'Paid Via': exp.paymentAccount || '',
+                'Amount': exp.amount
+            }));
+
+            // 3. Add a total row at the bottom
+            const totalAmount = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+            dataToExport.push({}); // Add a blank row for spacing
+            dataToExport.push({
+                'Date': 'Total:',
+                'Amount': totalAmount
+            });
+
+            // 4. Create the worksheet and workbook
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+
+            // Optional: Set column widths for better readability
+            worksheet['!cols'] = [
+                { wch: 12 }, { wch: 30 }, { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 12 }
+            ];
+
+            // Format the 'Amount' column as currency
+            const amountColumnIndex = 'F';
+            for (let i = 2; i <= dataToExport.length + 1; i++) {
+                const cellRef = `${amountColumnIndex}${i}`;
+                if (worksheet[cellRef] && typeof worksheet[cellRef].v === 'number') {
+                    worksheet[cellRef].t = 'n'; // Set type to number
+                    worksheet[cellRef].z = '$#,##0.00'; // Set format to currency
+                }
+            }
+
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Expenses Report");
+
+            // 5. Trigger the download
+            XLSX.writeFile(workbook, `NailsExpress_Expenses_${new Date().toISOString().split('T')[0]}.xlsx`);
+        });
+    }
+
+    // --- Located inside initMainApp() ---
+
+    // --- Located inside initMainApp() ---
 
     const printExpensesBtn = document.getElementById('print-expenses-btn');
     if (printExpensesBtn) {
@@ -5605,10 +5605,10 @@ if (exportExpensesBtn) {
                 const reportTitle = "Expense Report";
                 const now = new Date();
                 const datePrinted = `Printed on: ${now.toLocaleDateString()} at ${now.toLocaleTimeString()}`;
-                
+
                 // --- This is the new line for your logo URL ---
-                const logoUrl = "https://placehold.co/100x100/d63384/FFFFFF?text=NE"; 
-                
+                const logoUrl = "https://placehold.co/100x100/d63384/FFFFFF?text=NE";
+
                 const tableHTML = expenseTable.outerHTML;
 
                 const printWindow = window.open('', '_blank', 'height=800,width=1000');
@@ -5616,7 +5616,7 @@ if (exportExpensesBtn) {
                 printWindow.document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
                 printWindow.document.write('<style> body { padding: 20px; font-family: sans-serif; } @media print { body { -webkit-print-color-adjust: exact; } .no-print { display: none; } } </style>');
                 printWindow.document.write('</head><body>');
-                
+
                 // --- This block is updated to include the logo ---
                 printWindow.document.write(`
                     <div class="flex justify-between items-center mb-4 border-b pb-4">
@@ -5630,7 +5630,7 @@ if (exportExpensesBtn) {
 
                 printWindow.document.write(tableHTML);
                 printWindow.document.write('</body></html>');
-                
+
                 printWindow.document.close();
                 printWindow.focus();
 
@@ -6375,30 +6375,30 @@ if (exportExpensesBtn) {
     const initColorChart = async () => {
         if (colorChartInitialized) return;
 
-    // ADD THIS NEW CODE BLOCK
-const nailShapes = {
-    'Almond': '<svg viewBox="0 0 100 150"><path class="nail" d="M50,0 C10,0 0,60 0,130 L100,130 C100,60 90,0 50,0 Z"/></svg>',
-    'Square': '<svg viewBox="0 0 100 150"><path class="nail" d="M5,0 L95,0 C98,0 100,2 100,5 L100,150 L0,150 L0,5 C0,2 2,0 5,0 Z"/></svg>',
-    'Squoval': '<svg viewBox="0 0 100 150"><path class="nail" d="M20,0 L80,0 C91,0 100,9 100,20 L100,150 L0,150 L0,20 C0,9 9,0 20,0 Z"/></svg>',
-    'Round': '<svg viewBox="0 0 100 150"><path class="nail" d="M100,150 L0,150 L0,50 C0,22.4 22.4,0 50,0 C77.6,0 100,22.4 100,50 Z"/></svg>',
-    'Stiletto': '<svg viewBox="0 0 100 150"><path class="nail" d="M50,0 C50,0 100,130 100,130 L100,150 L0,150 L0,130 C0,130 50,0 50,0 Z"/></svg>',
-    'Coffin': '<svg viewBox="0 0 100 150"><path class="nail" d="M30,0 L70,0 L100,150 L0,150 Z"/></svg>'
-};
+        // ADD THIS NEW CODE BLOCK
+        const nailShapes = {
+            'Almond': '<svg viewBox="0 0 100 150"><path class="nail" d="M50,0 C10,0 0,60 0,130 L100,130 C100,60 90,0 50,0 Z"/></svg>',
+            'Square': '<svg viewBox="0 0 100 150"><path class="nail" d="M5,0 L95,0 C98,0 100,2 100,5 L100,150 L0,150 L0,5 C0,2 2,0 5,0 Z"/></svg>',
+            'Squoval': '<svg viewBox="0 0 100 150"><path class="nail" d="M20,0 L80,0 C91,0 100,9 100,20 L100,150 L0,150 L0,20 C0,9 9,0 20,0 Z"/></svg>',
+            'Round': '<svg viewBox="0 0 100 150"><path class="nail" d="M100,150 L0,150 L0,50 C0,22.4 22.4,0 50,0 C77.6,0 100,22.4 100,50 Z"/></svg>',
+            'Stiletto': '<svg viewBox="0 0 100 150"><path class="nail" d="M50,0 C50,0 100,130 100,130 L100,150 L0,150 L0,130 C0,130 50,0 50,0 Z"/></svg>',
+            'Coffin': '<svg viewBox="0 0 100 150"><path class="nail" d="M30,0 L70,0 L100,150 L0,150 Z"/></svg>'
+        };
 
-const shapeContainer = document.getElementById('nail-shape-preview-container');
-shapeContainer.innerHTML = '';
+        const shapeContainer = document.getElementById('nail-shape-preview-container');
+        shapeContainer.innerHTML = '';
 
-let shapeHTML = '<div class="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-6">';
-for (const shapeName in nailShapes) {
-    shapeHTML += `
+        let shapeHTML = '<div class="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-6">';
+        for (const shapeName in nailShapes) {
+            shapeHTML += `
         <div class="text-center">
             <div class="nail-shape-svg-wrapper">${nailShapes[shapeName]}</div>
             <p class="text-xs font-semibold text-gray-600 mt-1">${shapeName}</p>
         </div>
     `;
-}
-shapeHTML += '</div>';
-shapeContainer.innerHTML = shapeHTML;
+        }
+        shapeHTML += '</div>';
+        shapeContainer.innerHTML = shapeHTML;
         const tabsContainer = document.getElementById('color-brands-tabs');
         tabsContainer.innerHTML = '';
         allColorBrands.forEach((brand, index) => {
@@ -6439,16 +6439,16 @@ shapeContainer.innerHTML = shapeHTML;
         document.getElementById('color-group-filter').addEventListener('change', reapplyFilters);
         document.getElementById('color-search-input').addEventListener('input', reapplyFilters);
 
-// ... and CHANGE it to this:
-document.getElementById('color-swatches-container').addEventListener('click', (e) => {
-    const swatch = e.target.closest('.color-swatch');
-    if (swatch) {
-        const color = swatch.dataset.color;
-        document.querySelectorAll('#nail-shape-preview-container .nail').forEach(nailPath => {
-            nailPath.style.fill = color;
+        // ... and CHANGE it to this:
+        document.getElementById('color-swatches-container').addEventListener('click', (e) => {
+            const swatch = e.target.closest('.color-swatch');
+            if (swatch) {
+                const color = swatch.dataset.color;
+                document.querySelectorAll('#nail-shape-preview-container .nail').forEach(nailPath => {
+                    nailPath.style.fill = color;
+                });
+            }
         });
-    }
-});
 
         colorChartInitialized = true;
     };
@@ -6746,56 +6746,56 @@ document.getElementById('color-swatches-container').addEventListener('click', (e
         document.getElementById('cancel-edit-promotion-btn').classList.add('hidden');
     });
 
-// REPLACE your old openClientModal function with this new one:
-const openClientModal = (client = null) => {
-    clientForm.reset();
-    const modalTitle = document.getElementById('client-form-title');
-    if (client) {
-        modalTitle.textContent = 'Edit Client Information';
-        document.getElementById('edit-client-id').value = client.id;
-        document.getElementById('client-form-name').value = client.name;
-        document.getElementById('client-form-phone').value = client.phone || '';
-        document.getElementById('client-form-email').value = client.email || ''; // <-- ADD THIS LINE
-        document.getElementById('client-form-dob').value = client.dob || '';
-    } else {
-        modalTitle.textContent = 'Create New Client';
-        document.getElementById('edit-client-id').value = '';
-    }
-    clientFormModal.classList.remove('hidden');
-    clientFormModal.classList.add('flex');
-};
+    // REPLACE your old openClientModal function with this new one:
+    const openClientModal = (client = null) => {
+        clientForm.reset();
+        const modalTitle = document.getElementById('client-form-title');
+        if (client) {
+            modalTitle.textContent = 'Edit Client Information';
+            document.getElementById('edit-client-id').value = client.id;
+            document.getElementById('client-form-name').value = client.name;
+            document.getElementById('client-form-phone').value = client.phone || '';
+            document.getElementById('client-form-email').value = client.email || ''; // <-- ADD THIS LINE
+            document.getElementById('client-form-dob').value = client.dob || '';
+        } else {
+            modalTitle.textContent = 'Create New Client';
+            document.getElementById('edit-client-id').value = '';
+        }
+        clientFormModal.classList.remove('hidden');
+        clientFormModal.classList.add('flex');
+    };
 
     const closeClientModal = () => { clientFormModal.classList.add('hidden'); clientFormModal.classList.remove('flex'); };
     document.getElementById('create-new-client-btn').addEventListener('click', () => openClientModal());
     document.getElementById('client-form-cancel-btn').addEventListener('click', closeClientModal);
     document.querySelector('.client-form-modal-overlay').addEventListener('click', closeClientModal);
 
-// REPLACE your old clientForm event listener with this new one:
-clientForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const clientId = document.getElementById('edit-client-id').value;
-    const clientData = {
-        name: document.getElementById('client-form-name').value,
-        phone: document.getElementById('client-form-phone').value,
-        email: document.getElementById('client-form-email').value || '', // <-- ADD THIS LINE
-        dob: document.getElementById('client-form-dob').value,
-    };
-    if (!clientData.name) {
-        alert('Client name is required.');
-        return;
-    }
-    try {
-        if (clientId) {
-            await updateDoc(doc(db, "clients", clientId), clientData);
-        } else {
-            await addDoc(collection(db, "clients"), clientData);
+    // REPLACE your old clientForm event listener with this new one:
+    clientForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const clientId = document.getElementById('edit-client-id').value;
+        const clientData = {
+            name: document.getElementById('client-form-name').value,
+            phone: document.getElementById('client-form-phone').value,
+            email: document.getElementById('client-form-email').value || '', // <-- ADD THIS LINE
+            dob: document.getElementById('client-form-dob').value,
+        };
+        if (!clientData.name) {
+            alert('Client name is required.');
+            return;
         }
-        closeClientModal();
-    } catch (error) {
-        console.error("Error saving client:", error);
-        alert("Could not save client data.");
-    }
-});
+        try {
+            if (clientId) {
+                await updateDoc(doc(db, "clients", clientId), clientData);
+            } else {
+                await addDoc(collection(db, "clients"), clientData);
+            }
+            closeClientModal();
+        } catch (error) {
+            console.error("Error saving client:", error);
+            alert("Could not save client data.");
+        }
+    });
 
     const importClientsBtn = document.getElementById('import-clients-btn');
     const importClientsInput = document.getElementById('import-clients-input');
@@ -6827,103 +6827,103 @@ clientForm.addEventListener('submit', async (e) => {
     const printableCard = document.getElementById('printable-gift-card');
     const saveAndPrintBtn = document.getElementById('save-and-print-btn');
     const editGiftCardForm = document.getElementById('edit-gift-card-form');
-// PASTE THIS ENTIRE NEW EVENT LISTENER BLOCK
+    // PASTE THIS ENTIRE NEW EVENT LISTENER BLOCK
 
-// REPLACE your old editGiftCardForm event listener with this new one:
-editGiftCardForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const cardId = document.getElementById('edit-gift-card-id').value;
-    const card = allGiftCards.find(c => c.id === cardId);
-    if (!card) {
-        alert("Could not find the gift card to update.");
-        return;
-    }
-
-    const transactionType = document.getElementById('edit-gc-transaction-type').value;
-    const amount = parseFloat(document.getElementById('edit-gc-transaction-amount').value);
-    const notes = document.getElementById('edit-gc-transaction-notes').value.trim();
-
-    if (isNaN(amount) || amount <= 0) {
-        alert("Please enter a valid, positive amount for the transaction.");
-        return;
-    }
-
-    let newBalance = card.balance;
-    if (transactionType === 'redeem') {
-        if (amount > card.balance) {
-            alert("Cannot redeem an amount greater than the current balance.");
+    // REPLACE your old editGiftCardForm event listener with this new one:
+    editGiftCardForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const cardId = document.getElementById('edit-gift-card-id').value;
+        const card = allGiftCards.find(c => c.id === cardId);
+        if (!card) {
+            alert("Could not find the gift card to update.");
             return;
         }
-        newBalance -= amount;
-    } else { // 'add'
-        newBalance += amount;
-    }
 
-    const newTransaction = {
-        type: transactionType,
-        amount: amount,
-        notes: notes,
-        timestamp: Timestamp.now() // <-- THIS IS THE FIX (changed from serverTimestamp())
-    };
+        const transactionType = document.getElementById('edit-gc-transaction-type').value;
+        const amount = parseFloat(document.getElementById('edit-gc-transaction-amount').value);
+        const notes = document.getElementById('edit-gc-transaction-notes').value.trim();
 
-    let newStatus = newBalance <= 0 ? 'Depleted' : 'Active';
-
-    try {
-        const cardDocRef = doc(db, "gift_cards", cardId);
-        await updateDoc(cardDocRef, {
-            balance: newBalance,
-            status: newStatus,
-            history: arrayUnion(newTransaction)
-        });
-        alert("Transaction applied successfully!");
-        editGiftCardModal.classList.add('hidden');
-    } catch (error) {
-        console.error("Error applying transaction:", error);
-        alert("Could not apply the transaction. Please try again.");
-    }
-});
-
-// REPLACE the entire updateDesignerPreview function with this one:
-const updateDesignerPreview = () => {
-    const showTo = document.getElementById('designer-show-to').checked;
-    const showFrom = document.getElementById('designer-show-from').checked;
-    const setExpiry = document.getElementById('designer-set-expiry').checked;
-    const noExpiry = document.getElementById('designer-no-expiry').checked;
-
-    document.getElementById('preview-to').parentElement.style.display = showTo ? '' : 'none';
-    document.getElementById('preview-from').parentElement.style.display = showFrom ? '' : 'none';
-    document.getElementById('designer-to-wrapper').style.display = showTo ? '' : 'none';
-    document.getElementById('designer-from-wrapper').style.display = showFrom ? '' : 'none';
-
-    document.getElementById('preview-to').textContent = document.getElementById('designer-to').value || 'Recipient';
-    document.getElementById('preview-from').textContent = document.getElementById('designer-from').value || 'Sender';
-
-    const amount = parseFloat(document.getElementById('designer-amount').value) || 0;
-    document.getElementById('preview-amount').textContent = `$${amount.toFixed(2)}`;
-
-    const expiryPreview = document.getElementById('preview-expiry');
-    if (noExpiry) {
-        expiryPreview.textContent = 'Expires: ____/____/____';
-        expiryPreview.style.display = 'block';
-    } else if (setExpiry) {
-        const value = parseInt(document.getElementById('designer-expiry-value').value, 10);
-        const unit = document.getElementById('designer-expiry-unit').value;
-        if (value > 0) {
-            const expiryDate = new Date();
-            if (unit === 'months') {
-                expiryDate.setMonth(expiryDate.getMonth() + value);
-            } else {
-                expiryDate.setFullYear(expiryDate.getFullYear() + value);
-            }
-            expiryPreview.textContent = `Expires: ${expiryDate.toLocaleDateString()}`;
-            expiryPreview.style.display = 'block';
-        } else {
-             expiryPreview.style.display = 'none';
+        if (isNaN(amount) || amount <= 0) {
+            alert("Please enter a valid, positive amount for the transaction.");
+            return;
         }
-    } else {
-        expiryPreview.style.display = 'none';
-    }
-};
+
+        let newBalance = card.balance;
+        if (transactionType === 'redeem') {
+            if (amount > card.balance) {
+                alert("Cannot redeem an amount greater than the current balance.");
+                return;
+            }
+            newBalance -= amount;
+        } else { // 'add'
+            newBalance += amount;
+        }
+
+        const newTransaction = {
+            type: transactionType,
+            amount: amount,
+            notes: notes,
+            timestamp: Timestamp.now() // <-- THIS IS THE FIX (changed from serverTimestamp())
+        };
+
+        let newStatus = newBalance <= 0 ? 'Depleted' : 'Active';
+
+        try {
+            const cardDocRef = doc(db, "gift_cards", cardId);
+            await updateDoc(cardDocRef, {
+                balance: newBalance,
+                status: newStatus,
+                history: arrayUnion(newTransaction)
+            });
+            alert("Transaction applied successfully!");
+            editGiftCardModal.classList.add('hidden');
+        } catch (error) {
+            console.error("Error applying transaction:", error);
+            alert("Could not apply the transaction. Please try again.");
+        }
+    });
+
+    // REPLACE the entire updateDesignerPreview function with this one:
+    const updateDesignerPreview = () => {
+        const showTo = document.getElementById('designer-show-to').checked;
+        const showFrom = document.getElementById('designer-show-from').checked;
+        const setExpiry = document.getElementById('designer-set-expiry').checked;
+        const noExpiry = document.getElementById('designer-no-expiry').checked;
+
+        document.getElementById('preview-to').parentElement.style.display = showTo ? '' : 'none';
+        document.getElementById('preview-from').parentElement.style.display = showFrom ? '' : 'none';
+        document.getElementById('designer-to-wrapper').style.display = showTo ? '' : 'none';
+        document.getElementById('designer-from-wrapper').style.display = showFrom ? '' : 'none';
+
+        document.getElementById('preview-to').textContent = document.getElementById('designer-to').value || 'Recipient';
+        document.getElementById('preview-from').textContent = document.getElementById('designer-from').value || 'Sender';
+
+        const amount = parseFloat(document.getElementById('designer-amount').value) || 0;
+        document.getElementById('preview-amount').textContent = `$${amount.toFixed(2)}`;
+
+        const expiryPreview = document.getElementById('preview-expiry');
+        if (noExpiry) {
+            expiryPreview.textContent = 'Expires: ____/____/____';
+            expiryPreview.style.display = 'block';
+        } else if (setExpiry) {
+            const value = parseInt(document.getElementById('designer-expiry-value').value, 10);
+            const unit = document.getElementById('designer-expiry-unit').value;
+            if (value > 0) {
+                const expiryDate = new Date();
+                if (unit === 'months') {
+                    expiryDate.setMonth(expiryDate.getMonth() + value);
+                } else {
+                    expiryDate.setFullYear(expiryDate.getFullYear() + value);
+                }
+                expiryPreview.textContent = `Expires: ${expiryDate.toLocaleDateString()}`;
+                expiryPreview.style.display = 'block';
+            } else {
+                expiryPreview.style.display = 'none';
+            }
+        } else {
+            expiryPreview.style.display = 'none';
+        }
+    };
     const populateBackgrounds = (category) => {
         designerBackgroundOptions.innerHTML = giftCardBackgrounds[category].map(url =>
             `<button type="button" data-bg="${url}" class="w-full h-16 bg-cover bg-center rounded-md border-2 border-transparent hover:border-pink-400" style="background-image: url('${url}')"></button>`
@@ -6935,43 +6935,43 @@ const updateDesignerPreview = () => {
         }
     };
 
-const initializeGiftCardDesigner = () => {
-    designerForm.reset();
-    document.getElementById('designer-quantity').value = 1;
-    document.getElementById('preview-code').textContent = `GC-${Date.now()}${[...Array(4)].map(() => Math.floor(Math.random() * 10)).join('')}`;
+    const initializeGiftCardDesigner = () => {
+        designerForm.reset();
+        document.getElementById('designer-quantity').value = 1;
+        document.getElementById('preview-code').textContent = `GC-${Date.now()}${[...Array(4)].map(() => Math.floor(Math.random() * 10)).join('')}`;
 
-    designerBackgroundTabs.innerHTML = Object.keys(giftCardBackgrounds).map(cat =>
-        `<button type="button" data-category="${cat}" class="px-3 py-1 text-sm font-medium rounded-t-lg">${cat}</button>`
-    ).join('');
+        designerBackgroundTabs.innerHTML = Object.keys(giftCardBackgrounds).map(cat =>
+            `<button type="button" data-category="${cat}" class="px-3 py-1 text-sm font-medium rounded-t-lg">${cat}</button>`
+        ).join('');
 
-    const firstTab = designerBackgroundTabs.querySelector('button');
-    if (firstTab) {
-        firstTab.classList.add('bg-gray-200', 'border-gray-300', 'border-b-0');
-        populateBackgrounds(firstTab.dataset.category);
-    }
-
-    const setExpiryCheck = document.getElementById('designer-set-expiry');
-    const noExpiryCheck = document.getElementById('designer-no-expiry');
-    const expiryInputs = document.getElementById('designer-expiry-inputs');
-
-    setExpiryCheck.addEventListener('change', (e) => {
-        if (e.target.checked) {
-            noExpiryCheck.checked = false;
+        const firstTab = designerBackgroundTabs.querySelector('button');
+        if (firstTab) {
+            firstTab.classList.add('bg-gray-200', 'border-gray-300', 'border-b-0');
+            populateBackgrounds(firstTab.dataset.category);
         }
-        expiryInputs.classList.toggle('hidden', !e.target.checked);
-        updateDesignerPreview();
-    });
 
-    noExpiryCheck.addEventListener('change', (e) => {
-        if (e.target.checked) {
-            setExpiryCheck.checked = false;
-            expiryInputs.classList.add('hidden');
-        }
-        updateDesignerPreview();
-    });
+        const setExpiryCheck = document.getElementById('designer-set-expiry');
+        const noExpiryCheck = document.getElementById('designer-no-expiry');
+        const expiryInputs = document.getElementById('designer-expiry-inputs');
 
-    updateDesignerPreview();
-};
+        setExpiryCheck.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                noExpiryCheck.checked = false;
+            }
+            expiryInputs.classList.toggle('hidden', !e.target.checked);
+            updateDesignerPreview();
+        });
+
+        noExpiryCheck.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                setExpiryCheck.checked = false;
+                expiryInputs.classList.add('hidden');
+            }
+            updateDesignerPreview();
+        });
+
+        updateDesignerPreview();
+    };
     designerBackgroundTabs.addEventListener('click', e => {
         const tab = e.target.closest('button');
         if (tab) {
@@ -6990,57 +6990,57 @@ const initializeGiftCardDesigner = () => {
         }
     });
 
-// REPLACE your old handleSaveAndPrint function with this new one:
-const handleSaveAndPrint = async () => {
-    const quantity = parseInt(document.getElementById('designer-quantity').value, 10);
-    if (isNaN(quantity) || quantity < 1) {
-        alert("Please enter a valid quantity.");
-        return;
-    }
-
-    const amount = parseFloat(document.getElementById('designer-amount').value);
-    if (isNaN(amount) || amount <= 0) {
-        alert("Please enter a valid amount.");
-        return;
-    }
-
-    const batch = writeBatch(db);
-    const cardsToPrint = [];
-    const setExpiry = document.getElementById('designer-set-expiry').checked;
-    const noExpiry = document.getElementById('designer-no-expiry').checked;
-
-    for (let i = 0; i < quantity; i++) {
-        const cardData = {
-            amount: amount,
-            balance: amount,
-            history: [],
-            recipientName: document.getElementById('designer-show-to').checked ? document.getElementById('designer-to').value : '',
-            senderName: document.getElementById('designer-show-from').checked ? document.getElementById('designer-from').value : '',
-            code: `GC-${Date.now()}-${i}`,
-            status: 'Active',
-            type: 'Physical',
-            createdAt: serverTimestamp(),
-            backgroundUrl: printableCard.style.backgroundImage.slice(5, -2).replace(/"/g, "")
-        };
-
-        if (setExpiry) {
-            const value = parseInt(document.getElementById('designer-expiry-value').value, 10);
-            const unit = document.getElementById('designer-expiry-unit').value;
-            const expiryDate = new Date();
-            if (unit === 'months') expiryDate.setMonth(expiryDate.getMonth() + value);
-            else expiryDate.setFullYear(expiryDate.getFullYear() + value);
-            cardData.expiresAt = Timestamp.fromDate(expiryDate);
+    // REPLACE your old handleSaveAndPrint function with this new one:
+    const handleSaveAndPrint = async () => {
+        const quantity = parseInt(document.getElementById('designer-quantity').value, 10);
+        if (isNaN(quantity) || quantity < 1) {
+            alert("Please enter a valid quantity.");
+            return;
         }
 
-        const newCardRef = doc(collection(db, "gift_cards"));
-        batch.set(newCardRef, cardData);
-        cardsToPrint.push(cardData);
-    }
+        const amount = parseFloat(document.getElementById('designer-amount').value);
+        if (isNaN(amount) || amount <= 0) {
+            alert("Please enter a valid amount.");
+            return;
+        }
 
-    try {
-        await batch.commit();
+        const batch = writeBatch(db);
+        const cardsToPrint = [];
+        const setExpiry = document.getElementById('designer-set-expiry').checked;
+        const noExpiry = document.getElementById('designer-no-expiry').checked;
 
-        let printHTML = `
+        for (let i = 0; i < quantity; i++) {
+            const cardData = {
+                amount: amount,
+                balance: amount,
+                history: [],
+                recipientName: document.getElementById('designer-show-to').checked ? document.getElementById('designer-to').value : '',
+                senderName: document.getElementById('designer-show-from').checked ? document.getElementById('designer-from').value : '',
+                code: `GC-${Date.now()}-${i}`,
+                status: 'Active',
+                type: 'Physical',
+                createdAt: serverTimestamp(),
+                backgroundUrl: printableCard.style.backgroundImage.slice(5, -2).replace(/"/g, "")
+            };
+
+            if (setExpiry) {
+                const value = parseInt(document.getElementById('designer-expiry-value').value, 10);
+                const unit = document.getElementById('designer-expiry-unit').value;
+                const expiryDate = new Date();
+                if (unit === 'months') expiryDate.setMonth(expiryDate.getMonth() + value);
+                else expiryDate.setFullYear(expiryDate.getFullYear() + value);
+                cardData.expiresAt = Timestamp.fromDate(expiryDate);
+            }
+
+            const newCardRef = doc(collection(db, "gift_cards"));
+            batch.set(newCardRef, cardData);
+            cardsToPrint.push(cardData);
+        }
+
+        try {
+            await batch.commit();
+
+            let printHTML = `
             <html><head><title>Print Gift Cards</title><script src="https://cdn.tailwindcss.com"><\/script><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&family=Parisienne&display=swap" rel="stylesheet">
             <style>
                 body{font-family:'Poppins',sans-serif;margin:0;background-color:#f0f0f0;}
@@ -7055,19 +7055,19 @@ const handleSaveAndPrint = async () => {
             </style></head><body><div class="print-page">
         `;
 
-        cardsToPrint.forEach(card => {
-            let expiryText = '';
-            let expiryDisplay = 'none';
+            cardsToPrint.forEach(card => {
+                let expiryText = '';
+                let expiryDisplay = 'none';
 
-            if (noExpiry) {
-                expiryText = 'Expires: ____/____/____';
-                expiryDisplay = 'block';
-            } else if (card.expiresAt) {
-                expiryText = `Expires: ${card.expiresAt.toDate().toLocaleDateString()}`;
-                expiryDisplay = 'block';
-            }
+                if (noExpiry) {
+                    expiryText = 'Expires: ____/____/____';
+                    expiryDisplay = 'block';
+                } else if (card.expiresAt) {
+                    expiryText = `Expires: ${card.expiresAt.toDate().toLocaleDateString()}`;
+                    expiryDisplay = 'block';
+                }
 
-            printHTML += `
+                printHTML += `
                 <div class="card-container">
                     <div class="card rounded-lg p-4 flex flex-col justify-between bg-cover bg-center text-white" style="background-image: url('${card.backgroundUrl}');">
                         <div class="flex justify-between items-start"><img src="https://placehold.co/100x100/d63384/FFFFFF?text=NE" class="w-12 h-12 rounded-full border-2 border-white" /><div class="text-right"><p class="font-parisienne text-3xl">Gift Card</p><p class="text-xs font-semibold tracking-wider">Nails Express</p></div></div>
@@ -7087,20 +7087,20 @@ const handleSaveAndPrint = async () => {
                     </div>
                 </div>
             `;
-        });
+            });
 
-        printHTML += '</div></body></html>';
-        
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(printHTML);
-        printWindow.document.close();
-        printWindow.focus();
+            printHTML += '</div></body></html>';
 
-    } catch (error) {
-        console.error("Error saving physical gift cards:", error);
-        alert("Could not save the gift cards. Please try again.");
-    }
-};
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(printHTML);
+            printWindow.document.close();
+            printWindow.focus();
+
+        } catch (error) {
+            console.error("Error saving physical gift cards:", error);
+            alert("Could not save the gift cards. Please try again.");
+        }
+    };
 
     document.getElementById('designer-show-to').addEventListener('change', updateDesignerPreview);
     document.getElementById('designer-show-from').addEventListener('change', updateDesignerPreview);
@@ -7234,18 +7234,18 @@ const handleSaveAndPrint = async () => {
     document.querySelector('#client-memberships-table tbody').addEventListener('click', async (e) => {
         const activateBtn = e.target.closest('.activate-membership-btn');
         // Add the new code here:
-    const printBtn = e.target.closest('.print-membership-card-btn'); // <-- ADD THIS
+        const printBtn = e.target.closest('.print-membership-card-btn'); // <-- ADD THIS
 
-    if (printBtn) { // <-- ADD THIS BLOCK
-        const clientId = printBtn.dataset.id;
-        const client = allClientMemberships.find(m => m.id === clientId);
-        if (client && client.membership) {
-            const tier = allMembershipTiers.find(t => t.id === client.membership.tierId);
-            if (tier) {
-                openMembershipCardForPrint(client, tier);
+        if (printBtn) { // <-- ADD THIS BLOCK
+            const clientId = printBtn.dataset.id;
+            const client = allClientMemberships.find(m => m.id === clientId);
+            if (client && client.membership) {
+                const tier = allMembershipTiers.find(t => t.id === client.membership.tierId);
+                if (tier) {
+                    openMembershipCardForPrint(client, tier);
+                }
             }
         }
-    } 
         if (activateBtn) {
             const clientId = activateBtn.dataset.id;
             showConfirmModal("Activate this membership?", async () => {

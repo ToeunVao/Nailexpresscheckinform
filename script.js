@@ -4698,14 +4698,99 @@ function renderCalendar(year, month, technicianFilter = 'All') {
         };
         reader.readAsArrayBuffer(file);
     });
+// --- Located inside initMainApp() ---
+
     document.getElementById('print-salon-earnings-btn').addEventListener('click', () => {
-        const printWindow = window.open('', '_blank', 'height=600,width=800');
-        printWindow.document.write('<html><head><title>Salon Earning Report</title><script src="https://cdn.tailwindcss.com"><\/script><style>body{padding:20px;font-family:"Poppins",sans-serif}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background-color:#f2f2f2}</style></head><body><h1>Salon Earning Report</h1>');
-        printWindow.document.write(document.getElementById('salon-earning-table').outerHTML);
+        const originalTable = document.getElementById('salon-earning-table');
+        if (!originalTable) return;
+
+        // --- Create a new table structure specifically for printing ---
+        const printTable = document.createElement('table');
+        printTable.className = originalTable.className; // Copy classes for styling
+
+        const staffAndTechNames = techniciansAndStaff.map(t => t.name);
+
+        // 1. Clone and Filter the Header
+        const originalThead = originalTable.querySelector('thead');
+        const newThead = originalThead.cloneNode(true);
+        const headerRow = newThead.querySelector('tr');
+        // Remove all headers first, then add back only the ones we need
+        headerRow.innerHTML = ''; 
+        headerRow.insertAdjacentHTML('beforeend', '<th scope="col" class="px-6 py-3">Date</th>');
+        staffAndTechNames.forEach(name => {
+            headerRow.insertAdjacentHTML('beforeend', `<th scope="col" class="px-6 py-3">${name}</th>`);
+        });
+        printTable.appendChild(newThead);
+
+        // 2. Clone and Filter the Body Rows
+        const originalTbody = originalTable.querySelector('tbody');
+        const newTbody = document.createElement('tbody');
+        originalTbody.querySelectorAll('tr').forEach(row => {
+            const newRow = newTbody.insertRow();
+            // Copy the Date cell (first cell)
+            newRow.appendChild(row.cells[0].cloneNode(true));
+            // Find and copy only the staff cells
+            staffAndTechNames.forEach(name => {
+                // Find the original header index for this staff member
+                const originalHeaderIndex = Array.from(originalThead.querySelectorAll('th')).findIndex(th => th.textContent === name);
+                if (originalHeaderIndex > -1) {
+                    newRow.appendChild(row.cells[originalHeaderIndex].cloneNode(true));
+                }
+            });
+        });
+        printTable.appendChild(newTbody);
+        
+        // 3. Clone and Filter the Footer
+        const originalTfoot = originalTable.querySelector('tfoot');
+        const newTfoot = originalTfoot.cloneNode(true);
+        // Adjust the colspan on payout rows to match the new number of columns
+        newTfoot.querySelectorAll('tr').forEach((row, rowIndex) => {
+            if (rowIndex > 0) { // Target the payout rows
+                const firstCell = row.querySelector('td');
+                firstCell.colSpan = 1; // The "Total Payout:" cell
+                // Remove all other cells in the payout rows
+                while(row.cells.length > staffAndTechNames.length + 1) {
+                    row.deleteCell(-1);
+                }
+            } else { // This is the main "Total:" row
+                 while(row.cells.length > staffAndTechNames.length + 1) {
+                    row.deleteCell(-1);
+                }
+            }
+        });
+        printTable.appendChild(newTfoot);
+
+
+        // --- Open Print Window with the new, filtered table ---
+        const reportTitle = "Staff Earning Report";
+        const now = new Date();
+        const datePrinted = `Printed on: ${now.toLocaleDateString()} at ${now.toLocaleTimeString()}`;
+        const logoUrl = "https://placehold.co/100x100/d63384/FFFFFF?text=NE";
+        
+        const printWindow = window.open('', '_blank', 'height=800,width=1000');
+        printWindow.document.write('<html><head><title>Print Staff Earnings</title>');
+        printWindow.document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
+        printWindow.document.write('<style> body { padding: 20px; font-family: sans-serif; } table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid #ddd; padding: 8px; text-align: left; } thead { background-color: #f2f2f2; } @media print { body { -webkit-print-color-adjust: exact; } } </style>');
+        printWindow.document.write('</head><body>');
+        printWindow.document.write(`
+            <div class="flex justify-between items-center mb-4 border-b pb-4">
+                <div>
+                    <h1 class="text-2xl font-bold mb-2">${reportTitle}</h1>
+                    <p class="text-sm text-gray-500">${datePrinted}</p>
+                </div>
+                <img src="${logoUrl}" alt="Salon Logo" class="h-16 w-16 rounded-full">
+            </div>
+        `);
+        printWindow.document.write(printTable.outerHTML);
         printWindow.document.write('</body></html>');
+        
         printWindow.document.close();
         printWindow.focus();
-        setTimeout(() => { printWindow.print(); printWindow.close(); }, 250);
+
+        setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+        }, 500);
     });
 
     // REPLACE the old openEditEarningModal function with this one

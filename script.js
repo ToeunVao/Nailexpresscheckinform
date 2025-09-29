@@ -505,10 +505,13 @@ const openMembershipCardForPrint = (client, tier) => {
                 <p class="text-xs text-center text-gray-600 px-4 leading-relaxed mt-4">
                     Welcome, VIP! This card must be presented to receive benefits. Membership is non-transferable and benefits apply only to the registered member.
                 </p>
-                <div class="px-4 pb-2">
-                    <div class="w-full border-t border-dashed border-gray-400 pt-4"></div>
-                    <p class="text-center text-xs text-gray-500">Member Signature</p>
+                
+                <div class="px-4 pb-2 text-center">
+                    <p class="font-parisienne text-2xl text-gray-700">${client.name}</p>
+                    <div class="w-full border-t border-dashed border-gray-400 pt-1 mt-1"></div>
+                    <p class="text-xs text-gray-500">Member Signature</p>
                 </div>
+
                 <div class="text-center text-xs pb-2">
                     <p class="font-bold">Nails Express</p>
                     <p>1560 Hustonville Rd #345, Danville, KY 40422</p>

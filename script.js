@@ -4700,38 +4700,33 @@ function renderCalendar(year, month, technicianFilter = 'All') {
     });
 // --- Located inside initMainApp() ---
 
+// --- Located inside initMainApp() ---
+
     document.getElementById('print-salon-earnings-btn').addEventListener('click', () => {
         const originalTable = document.getElementById('salon-earning-table');
         if (!originalTable) return;
 
-        // --- Create a new table structure specifically for printing ---
         const printTable = document.createElement('table');
-        printTable.className = originalTable.className; // Copy classes for styling
+        printTable.className = originalTable.className; 
 
         const staffAndTechNames = techniciansAndStaff.map(t => t.name);
 
-        // 1. Clone and Filter the Header
         const originalThead = originalTable.querySelector('thead');
         const newThead = originalThead.cloneNode(true);
         const headerRow = newThead.querySelector('tr');
-        // Remove all headers first, then add back only the ones we need
         headerRow.innerHTML = ''; 
-        headerRow.insertAdjacentHTML('beforeend', '<th scope="col" class="px-6 py-3">Date</th>');
+        headerRow.insertAdjacentHTML('beforeend', '<th scope="col" class="px-2 py-1">Date</th>');
         staffAndTechNames.forEach(name => {
-            headerRow.insertAdjacentHTML('beforeend', `<th scope="col" class="px-6 py-3">${name}</th>`);
+            headerRow.insertAdjacentHTML('beforeend', `<th scope="col" class="px-2 py-1">${name}</th>`);
         });
         printTable.appendChild(newThead);
 
-        // 2. Clone and Filter the Body Rows
         const originalTbody = originalTable.querySelector('tbody');
         const newTbody = document.createElement('tbody');
         originalTbody.querySelectorAll('tr').forEach(row => {
             const newRow = newTbody.insertRow();
-            // Copy the Date cell (first cell)
             newRow.appendChild(row.cells[0].cloneNode(true));
-            // Find and copy only the staff cells
             staffAndTechNames.forEach(name => {
-                // Find the original header index for this staff member
                 const originalHeaderIndex = Array.from(originalThead.querySelectorAll('th')).findIndex(th => th.textContent === name);
                 if (originalHeaderIndex > -1) {
                     newRow.appendChild(row.cells[originalHeaderIndex].cloneNode(true));
@@ -4740,19 +4735,16 @@ function renderCalendar(year, month, technicianFilter = 'All') {
         });
         printTable.appendChild(newTbody);
         
-        // 3. Clone and Filter the Footer
         const originalTfoot = originalTable.querySelector('tfoot');
         const newTfoot = originalTfoot.cloneNode(true);
-        // Adjust the colspan on payout rows to match the new number of columns
         newTfoot.querySelectorAll('tr').forEach((row, rowIndex) => {
-            if (rowIndex > 0) { // Target the payout rows
+            if (rowIndex > 0) { 
                 const firstCell = row.querySelector('td');
-                firstCell.colSpan = 1; // The "Total Payout:" cell
-                // Remove all other cells in the payout rows
+                firstCell.colSpan = 1;
                 while(row.cells.length > staffAndTechNames.length + 1) {
                     row.deleteCell(-1);
                 }
-            } else { // This is the main "Total:" row
+            } else { 
                  while(row.cells.length > staffAndTechNames.length + 1) {
                     row.deleteCell(-1);
                 }
@@ -4760,8 +4752,6 @@ function renderCalendar(year, month, technicianFilter = 'All') {
         });
         printTable.appendChild(newTfoot);
 
-
-        // --- Open Print Window with the new, filtered table ---
         const reportTitle = "Staff Earning Report";
         const now = new Date();
         const datePrinted = `Printed on: ${now.toLocaleDateString()} at ${now.toLocaleTimeString()}`;
@@ -4770,15 +4760,31 @@ function renderCalendar(year, month, technicianFilter = 'All') {
         const printWindow = window.open('', '_blank', 'height=800,width=1000');
         printWindow.document.write('<html><head><title>Print Staff Earnings</title>');
         printWindow.document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
-        printWindow.document.write('<style> body { padding: 20px; font-family: sans-serif; } table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid #ddd; padding: 8px; text-align: left; } thead { background-color: #f2f2f2; } @media print { body { -webkit-print-color-adjust: exact; } } </style>');
+        
+        // --- THIS STYLE BLOCK IS UPDATED ---
+        printWindow.document.write(`
+            <style> 
+                body { padding: 15px; font-family: sans-serif; } 
+                table { width: 100%; border-collapse: collapse; font-size: 10px; } 
+                th, td { border: 1px solid #ddd; padding: 2px 4px; text-align: left; } 
+                thead { background-color: #f2f2f2; } 
+                tfoot { font-weight: bold; }
+                @media print { 
+                    body { -webkit-print-color-adjust: exact; padding: 10px; } 
+                    h1 { font-size: 1.25rem; }
+                    p { font-size: 0.75rem; }
+                } 
+            </style>
+        `);
+
         printWindow.document.write('</head><body>');
         printWindow.document.write(`
-            <div class="flex justify-between items-center mb-4 border-b pb-4">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
                 <div>
-                    <h1 class="text-2xl font-bold mb-2">${reportTitle}</h1>
-                    <p class="text-sm text-gray-500">${datePrinted}</p>
+                    <h1 class="text-xl font-bold mb-1">${reportTitle}</h1>
+                    <p class="text-xs text-gray-500">${datePrinted}</p>
                 </div>
-                <img src="${logoUrl}" alt="Salon Logo" class="h-16 w-16 rounded-full">
+                <img src="${logoUrl}" alt="Salon Logo" class="h-12 w-12 rounded-full">
             </div>
         `);
         printWindow.document.write(printTable.outerHTML);

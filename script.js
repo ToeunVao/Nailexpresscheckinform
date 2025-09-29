@@ -5517,7 +5517,7 @@ if (exportExpensesBtn) {
                 const tableHTML = expenseTable.outerHTML;
 
                 const printWindow = window.open('', '_blank', 'height=800,width=1000');
-                printWindow.document.write('<html><head><title>Print Expenses</title>');
+                printWindow.document.write('<html><head><title>Nails Express-Print Expenses</title>');
                 // Add Tailwind CSS for styling and some basic print styles
                 printWindow.document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
                 printWindow.document.write('<style> body { padding: 20px; font-family: sans-serif; } @media print { body { -webkit-print-color-adjust: exact; } .no-print { display: none; } } </style>');

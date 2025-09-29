@@ -109,18 +109,19 @@
             </div>
         </section>
         <!-- PASTE THIS NEW SECTION -->
-<section id="royalty-card-landing" class="py-20 bg-white">
-    <div class="container mx-auto px-6 text-center">
-        <h2 class="text-3xl font-bold mb-4 text-pink-700">Join Our Royalty Program</h2>
-        <p class="text-gray-600 max-w-3xl mx-auto leading-relaxed mb-8">
-            We love our loyal clients! Sign up for our free Royalty Card and earn rewards with every visit. Get closer to a complimentary service with each stamp.
-        </p>
-        <button id="join-royalty-btn"
-            class="bg-pink-600 text-white font-semibold py-3 px-8 rounded-lg hover:bg-pink-700 transition-colors">
-            Get Your Royalty Card
-        </button>
-    </div>
-</section>
+        <section id="royalty-card-landing" class="py-20 bg-white">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="text-3xl font-bold mb-4 text-pink-700">Join Our Royalty Program</h2>
+                <p class="text-gray-600 max-w-3xl mx-auto leading-relaxed mb-8">
+                    We love our loyal clients! Sign up for our free Royalty Card and earn rewards with every visit. Get
+                    closer to a complimentary service with each stamp.
+                </p>
+                <button id="join-royalty-btn"
+                    class="bg-pink-600 text-white font-semibold py-3 px-8 rounded-lg hover:bg-pink-700 transition-colors">
+                    Get Your Royalty Card
+                </button>
+            </div>
+        </section>
         <section id="gift-card-landing" class="py-20 bg-pink-50">
             <div class="container mx-auto px-6 text-center">
                 <h2 class="text-3xl font-bold mb-4 text-pink-700">Give the Gift of Glamour</h2>
@@ -293,31 +294,32 @@
 
         <main class="container mx-auto max-w-5xl p-4 sm:p-6 lg:p-8">
             <div id="appointments-content" class="client-tab-content">
-    <!-- Top Action Bar -->
-    <div class="flex justify-end items-center mb-4">
-        <button id="client-book-new-btn" class="bg-pink-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-pink-700">
-            Book New Appointment
-        </button>
-    </div>
+                <!-- Top Action Bar -->
+                <div class="flex justify-end items-center mb-4">
+                    <button id="client-book-new-btn"
+                        class="bg-pink-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-pink-700">
+                        Book New Appointment
+                    </button>
+                </div>
 
-    <!-- Two-Column Layout -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <!-- Left Column: Upcoming -->
-        <div>
-            <h3 class="text-xl font-semibold text-gray-700 mb-4">Upcoming Appointments</h3>
-            <div id="client-upcoming-appointments" class="space-y-4">
-                <!-- JS will render upcoming appointments here -->
+                <!-- Two-Column Layout -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Left Column: Upcoming -->
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-700 mb-4">Upcoming Appointments</h3>
+                        <div id="client-upcoming-appointments" class="space-y-4">
+                            <!-- JS will render upcoming appointments here -->
+                        </div>
+                    </div>
+                    <!-- Right Column: History -->
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-700 mb-4">Appointment History</h3>
+                        <div id="client-appointment-history" class="space-y-4">
+                            <!-- JS will render history here -->
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-        <!-- Right Column: History -->
-        <div>
-            <h3 class="text-xl font-semibold text-gray-700 mb-4">Appointment History</h3>
-            <div id="client-appointment-history" class="space-y-4">
-                <!-- JS will render history here -->
-            </div>
-        </div>
-    </div>
-</div>
 
             <div id="favorites-content" class="client-tab-content hidden">
                 <h3 class="text-xl font-semibold text-gray-700 mb-4">My Favorites</h3>
@@ -350,7 +352,7 @@
                 </div>
             </div>
             <div id="royalty-card-content" class="client-tab-content hidden">
-            <!-- Royalty card will be rendered here by JavaScript -->
+                <!-- Royalty card will be rendered here by JavaScript -->
             </div>
         </main>
     </div>
@@ -582,55 +584,59 @@
                     </div>
 
                     <!-- PASTE THIS ENTIRE NEW SECTION -->
-<div class="mt-8 bg-white p-6 rounded-2xl shadow-lg">
-    <h3 class="text-xl font-bold text-gray-700 border-b pb-3 mb-6">Salon Task Manager</h3>
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <!-- Add Task Form -->
-        <div class="md:col-span-1">
-            <form id="add-task-form" class="space-y-4">
-                <div>
-                    <label for="task-description" class="block text-sm font-medium text-gray-600">New Task</label>
-                    <input type="text" id="task-description" class="form-input w-full mt-1" placeholder="e.g., Order more DND #401" required>
-                </div>
-                <div>
-    <label for="task-category" class="block text-sm font-medium text-gray-600">Category</label>
-    <select id="task-category" class="form-select w-full mt-1">
-        <option value="Nails Supply">Nails Supply</option>
-        <option value="Maintenance">Maintenance</option>
-        <option value="Other">Other</option>
-    </select>
-</div>
-                <button type="submit" class="w-full bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">
-                    <i class="fas fa-plus mr-2"></i>Add Task
-                </button>
-            </form>
-        </div>
-        <!-- Task List -->
-<div id="task-list-container" class="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
-    <!-- Nails Supply Column -->
-    <div>
-        <h4 class="font-semibold text-gray-700 mb-2 pb-2 border-b">Nails Supply</h4>
-        <div id="task-list-supply" class="space-y-2 max-h-64 overflow-y-auto pr-2">
-            <!-- Supply tasks go here -->
-        </div>
-    </div>
-    <!-- Maintenance Column -->
-    <div>
-        <h4 class="font-semibold text-gray-700 mb-2 pb-2 border-b">Maintenance</h4>
-        <div id="task-list-maintenance" class="space-y-2 max-h-64 overflow-y-auto pr-2">
-            <!-- Maintenance tasks go here -->
-        </div>
-    </div>
-    <!-- Other Column -->
-    <div>
-        <h4 class="font-semibold text-gray-700 mb-2 pb-2 border-b">Other</h4>
-        <div id="task-list-other" class="space-y-2 max-h-64 overflow-y-auto pr-2">
-            <!-- Other tasks go here -->
-        </div>
-    </div>
-</div>
-    </div>
-</div>
+                    <div class="mt-8 bg-white p-6 rounded-2xl shadow-lg">
+                        <h3 class="text-xl font-bold text-gray-700 border-b pb-3 mb-6">Salon Task Manager</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <!-- Add Task Form -->
+                            <div class="md:col-span-1">
+                                <form id="add-task-form" class="space-y-4">
+                                    <div>
+                                        <label for="task-description"
+                                            class="block text-sm font-medium text-gray-600">New Task</label>
+                                        <input type="text" id="task-description" class="form-input w-full mt-1"
+                                            placeholder="e.g., Order more DND #401" required>
+                                    </div>
+                                    <div>
+                                        <label for="task-category"
+                                            class="block text-sm font-medium text-gray-600">Category</label>
+                                        <select id="task-category" class="form-select w-full mt-1">
+                                            <option value="Nails Supply">Nails Supply</option>
+                                            <option value="Maintenance">Maintenance</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                    <button type="submit"
+                                        class="w-full bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">
+                                        <i class="fas fa-plus mr-2"></i>Add Task
+                                    </button>
+                                </form>
+                            </div>
+                            <!-- Task List -->
+                            <div id="task-list-container" class="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <!-- Nails Supply Column -->
+                                <div>
+                                    <h4 class="font-semibold text-gray-700 mb-2 pb-2 border-b">Nails Supply</h4>
+                                    <div id="task-list-supply" class="space-y-2 max-h-64 overflow-y-auto pr-2">
+                                        <!-- Supply tasks go here -->
+                                    </div>
+                                </div>
+                                <!-- Maintenance Column -->
+                                <div>
+                                    <h4 class="font-semibold text-gray-700 mb-2 pb-2 border-b">Maintenance</h4>
+                                    <div id="task-list-maintenance" class="space-y-2 max-h-64 overflow-y-auto pr-2">
+                                        <!-- Maintenance tasks go here -->
+                                    </div>
+                                </div>
+                                <!-- Other Column -->
+                                <div>
+                                    <h4 class="font-semibold text-gray-700 mb-2 pb-2 border-b">Other</h4>
+                                    <div id="task-list-other" class="space-y-2 max-h-64 overflow-y-auto pr-2">
+                                        <!-- Other tasks go here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
 
                 </div>
@@ -975,6 +981,9 @@
                         <div class="flex flex-wrap gap-4 mb-8">
                             <input type="text" id="nail-idea-search" placeholder="Search by name or category..."
                                 class="form-input p-2 border border-gray-300 rounded-lg flex-grow">
+                            <div id="nail-idea-tag-filter-container" class="flex flex-wrap gap-2 items-center">
+        <span class="text-sm font-semibold text-gray-600 mr-2">Tags:</span>
+        </div>
                             <select id="nail-idea-shape-filter"
                                 class="form-select p-2 border border-gray-300 rounded-lg">
                                 <option value="">All Shapes</option>
@@ -1034,8 +1043,8 @@
                                 <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg"
                                         id="clients-list-report-tab" type="button">Clients List</button></li>
                                 <!-- ADD THIS NEW LIST ITEM -->
-<li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg" 
-        id="royalty-card-report-tab" type="button">Royalty Cards</button></li>
+                                <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg"
+                                        id="royalty-card-report-tab" type="button">Royalty Cards</button></li>
                                 <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg"
                                         id="gift-card-report-tab" type="button">Gift Cards</button></li>
                                 <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg"
@@ -1252,27 +1261,35 @@
                                 </div>
                             </form>
 
-<div class="flex justify-end items-center mb-4 gap-4">
-    <div>
-        <label for="expense-category-filter" class="text-sm font-medium text-gray-700 mr-2">Category:</label>
-        <select id="expense-category-filter" class="form-select p-2 border border-gray-300 rounded-lg"></select>
-    </div>
-    <div>
-        <label for="expense-supplier-filter" class="text-sm font-medium text-gray-700 mr-2">Supplier:</label>
-        <select id="expense-supplier-filter" class="form-select p-2 border border-gray-300 rounded-lg"></select>
-    </div>
-    <div>
-        <label for="expense-month-filter" class="text-sm font-medium text-gray-700 mr-2">Month:</label>
-        <select id="expense-month-filter" class="form-select p-2 border border-gray-300 rounded-lg"></select>
-    </div>
-    <button id="print-expenses-btn" class="bg-indigo-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-600 transition-colors self-end">
-        <i class="fas fa-print mr-2"></i>Print
-    </button>
-    <!-- ADD THE NEW BUTTON HERE -->
-    <button id="export-expenses-btn" class="bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors self-end">
-        <i class="fas fa-file-excel mr-2"></i>Export
-    </button>
-</div>
+                            <div class="flex justify-end items-center mb-4 gap-4">
+                                <div>
+                                    <label for="expense-category-filter"
+                                        class="text-sm font-medium text-gray-700 mr-2">Category:</label>
+                                    <select id="expense-category-filter"
+                                        class="form-select p-2 border border-gray-300 rounded-lg"></select>
+                                </div>
+                                <div>
+                                    <label for="expense-supplier-filter"
+                                        class="text-sm font-medium text-gray-700 mr-2">Supplier:</label>
+                                    <select id="expense-supplier-filter"
+                                        class="form-select p-2 border border-gray-300 rounded-lg"></select>
+                                </div>
+                                <div>
+                                    <label for="expense-month-filter"
+                                        class="text-sm font-medium text-gray-700 mr-2">Month:</label>
+                                    <select id="expense-month-filter"
+                                        class="form-select p-2 border border-gray-300 rounded-lg"></select>
+                                </div>
+                                <button id="print-expenses-btn"
+                                    class="bg-indigo-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-600 transition-colors self-end">
+                                    <i class="fas fa-print mr-2"></i>Print
+                                </button>
+                                <!-- ADD THE NEW BUTTON HERE -->
+                                <button id="export-expenses-btn"
+                                    class="bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors self-end">
+                                    <i class="fas fa-file-excel mr-2"></i>Export
+                                </button>
+                            </div>
                             <div class="overflow-x-auto">
                                 <table id="expense-table" class="w-full text-sm text-left text-gray-600">
                                     <thead class="text-xs text-gray-700 uppercase bg-gray-50">
@@ -1381,30 +1398,34 @@
                             </div>
                         </div>
                         <!-- PASTE THIS NEW DIV -->
-<div id="royalty-card-report-content" class="sub-tab-content hidden">
-<!-- ...WITH this new div that includes the button: -->
-<div class="flex justify-between items-center mb-4">
-    <h3 class="text-xl font-semibold text-gray-700">Royalty Cards</h3>
-    <div class="flex items-center gap-2">
-        <input type="text" id="search-royalty-cards" class="form-input w-64 p-2 border border-gray-300 rounded-lg" placeholder="Search by name or phone...">
-        <button id="add-royalty-card-btn" class="bg-pink-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-pink-700 whitespace-nowrap"><i class="fas fa-plus mr-2"></i>Add for Client</button>
-    </div>
-</div>
-    <div class="overflow-x-auto">
-        <table id="royalty-cards-table" class="w-full text-sm text-left text-gray-600">
-            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                <tr>
-                    <th class="px-6 py-3">Client Name</th>
-                    <th class="px-6 py-3">Phone</th>
-                    <th class="px-6 py-3 text-center">Visits</th>
-                    <th class="px-6 py-3 text-center">Status</th>
-                    <th class="px-6 py-3 text-center">Action</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
-</div>
+                        <div id="royalty-card-report-content" class="sub-tab-content hidden">
+                            <!-- ...WITH this new div that includes the button: -->
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-xl font-semibold text-gray-700">Royalty Cards</h3>
+                                <div class="flex items-center gap-2">
+                                    <input type="text" id="search-royalty-cards"
+                                        class="form-input w-64 p-2 border border-gray-300 rounded-lg"
+                                        placeholder="Search by name or phone...">
+                                    <button id="add-royalty-card-btn"
+                                        class="bg-pink-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-pink-700 whitespace-nowrap"><i
+                                            class="fas fa-plus mr-2"></i>Add for Client</button>
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table id="royalty-cards-table" class="w-full text-sm text-left text-gray-600">
+                                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                        <tr>
+                                            <th class="px-6 py-3">Client Name</th>
+                                            <th class="px-6 py-3">Phone</th>
+                                            <th class="px-6 py-3 text-center">Visits</th>
+                                            <th class="px-6 py-3 text-center">Status</th>
+                                            <th class="px-6 py-3 text-center">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
 
                     <div id="admin-content" class="main-section hidden">
@@ -1424,8 +1445,8 @@
                                 <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg"
                                         id="nail-ideas-management-tab" type="button">Nail Ideas Management</button></li>
                                 <!-- ADD THIS NEW LIST ITEM -->
-<li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg" 
-        id="royalty-management-tab" type="button">Royalty Program</button></li>
+                                <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg"
+                                        id="royalty-management-tab" type="button">Royalty Program</button></li>
                                 <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg"
                                         id="gift-card-management-tab" type="button">Gift Card Management</button></li>
                                 <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg"
@@ -1434,15 +1455,16 @@
                                         id="membership-management-tab" type="button">Memberships</button></li>
                                 <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg"
                                         id="settings-management-tab" type="button">Settings</button></li>
-                                        <!-- ADD THIS NEW LIST ITEM -->
-<li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg" 
-        id="backup-management-tab" type="button">Backup & Restore</button></li>
+                                <!-- ADD THIS NEW LIST ITEM -->
+                                <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg"
+                                        id="backup-management-tab" type="button">Backup & Restore</button></li>
                             </ul>
                         </div>
 
                         <div id="user-management-content" class="sub-tab-content">
                             <h3 class="text-xl font-semibold text-gray-700 mb-4">Manage Users</h3>
-                            <form id="add-user-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 border rounded-lg bg-gray-50 items-end">
+                            <form id="add-user-form"
+                                class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 border rounded-lg bg-gray-50 items-end">
                                 <input type="hidden" id="edit-user-id">
                                 <div><label for="new-user-name"
                                         class="block text-sm font-medium text-gray-600">Name</label><input type="text"
@@ -1464,15 +1486,16 @@
                                         <option value="staff">Staff</option>
                                         <option value="admin">Admin</option>
                                     </select></div>
-                                    <!-- PASTE THIS NEW DIV HERE -->
-<div>
-    <label for="payout-type" class="block text-sm font-medium text-gray-600">Payout Type</label>
-    <select id="payout-type" class="form-select w-full mt-1">
-        <option value="standard">Standard (Commission Only)</option>
-        <option value="commission_plus_tips">Commission + Tips</option>
-    </select>
-    <p class="text-xs text-gray-500 mt-1">Determines how staff payout is calculated.</p>
-</div>
+                                <!-- PASTE THIS NEW DIV HERE -->
+                                <div>
+                                    <label for="payout-type" class="block text-sm font-medium text-gray-600">Payout
+                                        Type</label>
+                                    <select id="payout-type" class="form-select w-full mt-1">
+                                        <option value="standard">Standard (Commission Only)</option>
+                                        <option value="commission_plus_tips">Commission + Tips</option>
+                                    </select>
+                                    <p class="text-xs text-gray-500 mt-1">Determines how staff payout is calculated.</p>
+                                </div>
                                 <div class="self-end"><button type="submit"
                                         class="w-full bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">Add/Update
                                         User</button></div>
@@ -1890,55 +1913,75 @@
                             </div>
                         </div>
                         <!-- PASTE THIS NEW DIV -->
-<div id="royalty-management-content" class="sub-tab-content hidden">
-    <h3 class="text-xl font-semibold text-gray-700 mb-4">Royalty Program Settings</h3>
-    <form id="royalty-settings-form" class="p-4 border rounded-lg bg-gray-50 space-y-4 max-w-lg">
-        <div>
-            <label for="royalty-visits-needed" class="block text-sm font-medium text-gray-600">Visits Required for Reward</label>
-            <input type="number" id="royalty-visits-needed" class="form-input w-full mt-1" min="1" value="10">
-        </div>
-        <div>
-            <label for="royalty-reward-description" class="block text-sm font-medium text-gray-600">Reward Description</label>
-            <input type="text" id="royalty-reward-description" class="form-input w-full mt-1" placeholder="e.g., One Free Classic Manicure">
-        </div>
-        <div class="text-right">
-            <button type="submit" class="bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">Save Settings</button>
-        </div>
-    </form>
-    <!-- PASTE THIS NEW DESIGNER SECTION -->
-<div class="mt-8">
-    <h3 class="text-xl font-semibold text-gray-700 mb-4">Printable Royalty Card Designer</h3>
-    <div class="bg-gray-50 p-6 rounded-2xl border grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-        <!-- Designer Controls -->
-        <div class="space-y-4">
-            <form id="royalty-card-designer-form" class="space-y-4">
-                <div>
-                    <label for="designer-royalty-quantity" class="block text-sm font-medium text-gray-600">Quantity to Generate & Print</label>
-                    <input type="number" id="designer-royalty-quantity" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg" min="1" value="4">
-                </div>
-            </form>
-            <div class="mt-6 text-center">
-                <button id="print-royalty-cards-btn" class="w-full bg-green-500 text-white font-bold py-3 px-12 rounded-full hover:bg-green-600">
-                    <i class="fas fa-print mr-2"></i>Generate & Print Cards
-                </button>
-            </div>
-             <p class="text-xs text-center text-gray-500 mt-2">The number of stamps on the card is based on the "Visits Required" setting above.</p>
-        </div>
+                        <div id="royalty-management-content" class="sub-tab-content hidden">
+                            <h3 class="text-xl font-semibold text-gray-700 mb-4">Royalty Program Settings</h3>
+                            <form id="royalty-settings-form"
+                                class="p-4 border rounded-lg bg-gray-50 space-y-4 max-w-lg">
+                                <div>
+                                    <label for="royalty-visits-needed"
+                                        class="block text-sm font-medium text-gray-600">Visits Required for
+                                        Reward</label>
+                                    <input type="number" id="royalty-visits-needed" class="form-input w-full mt-1"
+                                        min="1" value="10">
+                                </div>
+                                <div>
+                                    <label for="royalty-reward-description"
+                                        class="block text-sm font-medium text-gray-600">Reward Description</label>
+                                    <input type="text" id="royalty-reward-description" class="form-input w-full mt-1"
+                                        placeholder="e.g., One Free Classic Manicure">
+                                </div>
+                                <div class="text-right">
+                                    <button type="submit"
+                                        class="bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">Save
+                                        Settings</button>
+                                </div>
+                            </form>
+                            <!-- PASTE THIS NEW DESIGNER SECTION -->
+                            <div class="mt-8">
+                                <h3 class="text-xl font-semibold text-gray-700 mb-4">Printable Royalty Card Designer
+                                </h3>
+                                <div
+                                    class="bg-gray-50 p-6 rounded-2xl border grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                                    <!-- Designer Controls -->
+                                    <div class="space-y-4">
+                                        <form id="royalty-card-designer-form" class="space-y-4">
+                                            <div>
+                                                <label for="designer-royalty-quantity"
+                                                    class="block text-sm font-medium text-gray-600">Quantity to Generate
+                                                    & Print</label>
+                                                <input type="number" id="designer-royalty-quantity"
+                                                    class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg"
+                                                    min="1" value="4">
+                                            </div>
+                                        </form>
+                                        <div class="mt-6 text-center">
+                                            <button id="print-royalty-cards-btn"
+                                                class="w-full bg-green-500 text-white font-bold py-3 px-12 rounded-full hover:bg-green-600">
+                                                <i class="fas fa-print mr-2"></i>Generate & Print Cards
+                                            </button>
+                                        </div>
+                                        <p class="text-xs text-center text-gray-500 mt-2">The number of stamps on the
+                                            card is based on the "Visits Required" setting above.</p>
+                                    </div>
 
-        <!-- Designer Preview -->
-        <div class="flex items-center justify-center">
-            <div id="printable-royalty-card-area" class="space-y-4 transform scale-90">
-                <!-- Front Preview -->
-                <div id="royalty-card-preview-front" class="card rounded-lg p-4 flex flex-col justify-between bg-gradient-to-br from-pink-50 to-pink-200 text-pink-900" style="width:400px; height:228px; text-shadow: none;">
-                </div>
-                <!-- Back Preview -->
-                <div id="royalty-card-preview-back" class="card rounded-lg p-4 flex flex-col justify-between bg-white text-gray-800" style="width:400px; height:228px; text-shadow: none;">
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-</div>
+                                    <!-- Designer Preview -->
+                                    <div class="flex items-center justify-center">
+                                        <div id="printable-royalty-card-area" class="space-y-4 transform scale-90">
+                                            <!-- Front Preview -->
+                                            <div id="royalty-card-preview-front"
+                                                class="card rounded-lg p-4 flex flex-col justify-between bg-gradient-to-br from-pink-50 to-pink-200 text-pink-900"
+                                                style="width:400px; height:228px; text-shadow: none;">
+                                            </div>
+                                            <!-- Back Preview -->
+                                            <div id="royalty-card-preview-back"
+                                                class="card rounded-lg p-4 flex flex-col justify-between bg-white text-gray-800"
+                                                style="width:400px; height:228px; text-shadow: none;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         <div id="settings-management-content" class="sub-tab-content hidden">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div>
@@ -2046,14 +2089,17 @@
                                             </label>
                                         </div>
                                         <!-- PASTE THIS NEW TOGGLE SWITCH BLOCK -->
-<div class="flex items-center justify-between">
-    <span class="text-sm font-medium text-gray-900">Show Royalty Card Section</span>
-    <label for="toggle-royalty-card" class="relative inline-flex items-center cursor-pointer">
-        <input type="checkbox" id="toggle-royalty-card" class="sr-only peer">
-        <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-pink-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-600">
-        </div>
-    </label>
-</div>
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-sm font-medium text-gray-900">Show Royalty Card
+                                                Section</span>
+                                            <label for="toggle-royalty-card"
+                                                class="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" id="toggle-royalty-card" class="sr-only peer">
+                                                <div
+                                                    class="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-pink-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-600">
+                                                </div>
+                                            </label>
+                                        </div>
                                         <div class="flex items-center justify-between">
                                             <span class="text-sm font-medium text-gray-900">Show Memberships
                                                 Section</span>
@@ -2160,7 +2206,8 @@
                                             class="form-input w-full mt-1"></textarea>
                                         <p class="text-xs text-gray-500 mt-1">Variables: <code>{clientName}</code>,
                                             <code>{amount}</code>, <code>{recipientName}</code>,
-                                            <code>{senderName}</code></p>
+                                            <code>{senderName}</code>
+                                        </p>
                                     </div>
                                     <div class="border-t pt-6">
                                         <h4 class="font-semibold text-gray-800 mb-2">Membership Sign-up Confirmation
@@ -2173,7 +2220,8 @@
                                         <textarea id="membership-body" rows="6"
                                             class="form-input w-full mt-1"></textarea>
                                         <p class="text-xs text-gray-500 mt-1">Variables: <code>{clientName}</code>,
-                                            <code>{tierName}</code></p>
+                                            <code>{tierName}</code>
+                                        </p>
                                     </div>
                                     <div class="text-right">
                                         <button type="submit"
@@ -2184,45 +2232,54 @@
                             </div>
                         </div>
                         <!-- PASTE THIS ENTIRE NEW SECTION -->
-<div id="backup-management-content" class="sub-tab-content hidden">
-    <h3 class="text-xl font-semibold text-gray-700 mb-4">Data Management</h3>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <!-- Manual Backup & Restore -->
-        <div class="p-6 border rounded-lg bg-gray-50 space-y-4">
-            <h4 class="font-semibold text-gray-800">Manual Backup & Restore</h4>
-            <p class="text-sm text-gray-600">Download a complete backup of all salon data to a single JSON file. You can restore from this file at any time.</p>
-            <div>
-                <button id="backup-data-btn" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center justify-center">
-                    <i class="fas fa-download mr-2"></i> Backup All Data
-                </button>
-            </div>
-            <div class="border-t pt-4">
-                <label for="restore-data-input" class="block text-sm font-medium text-gray-600">Restore from Backup File</label>
-                <input type="file" id="restore-data-input" class="form-input w-full mt-1 text-sm" accept=".json">
-                <p class="text-xs text-red-600 mt-1 font-semibold">Warning: Restoring will overwrite all current data. This action cannot be undone.</p>
-            </div>
-        </div>
+                        <div id="backup-management-content" class="sub-tab-content hidden">
+                            <h3 class="text-xl font-semibold text-gray-700 mb-4">Data Management</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <!-- Manual Backup & Restore -->
+                                <div class="p-6 border rounded-lg bg-gray-50 space-y-4">
+                                    <h4 class="font-semibold text-gray-800">Manual Backup & Restore</h4>
+                                    <p class="text-sm text-gray-600">Download a complete backup of all salon data to a
+                                        single JSON file. You can restore from this file at any time.</p>
+                                    <div>
+                                        <button id="backup-data-btn"
+                                            class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center justify-center">
+                                            <i class="fas fa-download mr-2"></i> Backup All Data
+                                        </button>
+                                    </div>
+                                    <div class="border-t pt-4">
+                                        <label for="restore-data-input"
+                                            class="block text-sm font-medium text-gray-600">Restore from Backup
+                                            File</label>
+                                        <input type="file" id="restore-data-input"
+                                            class="form-input w-full mt-1 text-sm" accept=".json">
+                                        <p class="text-xs text-red-600 mt-1 font-semibold">Warning: Restoring will
+                                            overwrite all current data. This action cannot be undone.</p>
+                                    </div>
+                                </div>
 
-        <!-- Automatic Backup Settings -->
-        <div class="p-6 border rounded-lg bg-gray-50 space-y-4">
-            <h4 class="font-semibold text-gray-800">Automatic Backup</h4>
-            <p class="text-sm text-gray-600">The application can automatically prompt you to download a backup file if one hasn't been created recently.</p>
-            <div>
-                <label for="auto-backup-frequency" class="block text-sm font-medium text-gray-600">Backup Frequency</label>
-                <select id="auto-backup-frequency" class="form-select w-full mt-1">
-                    <option value="weekly">Weekly (Default)</option>
-                    <option value="daily">Daily</option>
-                    <option value="monthly">Monthly</option>
-                    <option value="off">Off</option>
-                </select>
-            </div>
-            <div class="border-t pt-4">
-                 <p class="text-sm font-medium text-gray-600">Last Backup Status</p>
-                 <p id="last-backup-status" class="text-sm text-gray-800 font-semibold mt-1">No backup recorded.</p>
-            </div>
-        </div>
-    </div>
-</div>
+                                <!-- Automatic Backup Settings -->
+                                <div class="p-6 border rounded-lg bg-gray-50 space-y-4">
+                                    <h4 class="font-semibold text-gray-800">Automatic Backup</h4>
+                                    <p class="text-sm text-gray-600">The application can automatically prompt you to
+                                        download a backup file if one hasn't been created recently.</p>
+                                    <div>
+                                        <label for="auto-backup-frequency"
+                                            class="block text-sm font-medium text-gray-600">Backup Frequency</label>
+                                        <select id="auto-backup-frequency" class="form-select w-full mt-1">
+                                            <option value="weekly">Weekly (Default)</option>
+                                            <option value="daily">Daily</option>
+                                            <option value="monthly">Monthly</option>
+                                            <option value="off">Off</option>
+                                        </select>
+                                    </div>
+                                    <div class="border-t pt-4">
+                                        <p class="text-sm font-medium text-gray-600">Last Backup Status</p>
+                                        <p id="last-backup-status" class="text-sm text-gray-800 font-semibold mt-1">No
+                                            backup recorded.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         <div id="service-management-content" class="sub-tab-content hidden">
                             <h3 class="text-xl font-semibold text-gray-700 mb-4">Manage Services</h3>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -2415,11 +2472,13 @@
                         <option value="Phone">Phone</option>
                         <option value="Online">Online</option>
                     </select></div>
-               <div>
-    <label for="appointment-services" class="block text-sm font-medium text-gray-600">Services</label>
-    <input type="text" id="appointment-services" list="main-services-list" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" placeholder="Select or type a service...">
-    <datalist id="main-services-list"></datalist>
-</div>
+                <div>
+                    <label for="appointment-services" class="block text-sm font-medium text-gray-600">Services</label>
+                    <input type="text" id="appointment-services" list="main-services-list"
+                        class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg"
+                        placeholder="Select or type a service...">
+                    <datalist id="main-services-list"></datalist>
+                </div>
                 <div><label for="appointment-technician-select"
                         class="block text-sm font-medium text-gray-600">Technician Request</label><select
                         id="appointment-technician-select"
@@ -2554,9 +2613,11 @@
                         class="form-input w-full p-3 border border-gray-300 rounded-lg">
                 </div>
                 <div>
-    <label for="client-form-email" class="block text-sm font-medium text-gray-600 mb-1">Email Address (Optional)</label>
-    <input type="email" id="client-form-email" class="form-input w-full p-3 border border-gray-300 rounded-lg">
-</div>
+                    <label for="client-form-email" class="block text-sm font-medium text-gray-600 mb-1">Email Address
+                        (Optional)</label>
+                    <input type="email" id="client-form-email"
+                        class="form-input w-full p-3 border border-gray-300 rounded-lg">
+                </div>
                 <div>
                     <label for="client-form-dob" class="block text-sm font-medium text-gray-600 mb-1">Date of
                         Birth</label>
@@ -3158,83 +3219,100 @@
         </div>
     </div>
     <!-- PASTE THIS NEW MODAL -->
-<div id="royalty-card-modal" class="modal hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
-    <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
-    <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
-        <button id="close-royalty-card-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times fa-lg"></i></button>
-        <h2 class="text-2xl font-bold text-center text-pink-700 mb-6">Join the Royalty Program</h2>
-        <form id="royalty-card-form" class="space-y-4">
-            <p class="text-sm text-center text-gray-600">Provide your details below to receive your digital royalty card and start earning rewards!</p>
-            <div>
-                <label for="rc-buyer-name" class="block text-sm font-medium text-gray-600">Full Name</label>
-                <input type="text" id="rc-buyer-name" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" required>
-            </div>
-            <div>
-                <label for="rc-buyer-phone" class="block text-sm font-medium text-gray-600">Phone Number</label>
-                <input type="tel" id="rc-buyer-phone" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" required>
-            </div>
-            <div>
-                <label for="rc-buyer-email" class="block text-sm font-medium text-gray-600">Email Address</label>
-                <input type="email" id="rc-buyer-email" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" required>
-                <p class="text-xs text-gray-500 mt-1">An account will be created for you to track your rewards online.</p>
-            </div>
-            <div class="pt-4">
-                <button type="submit" id="royalty-card-submit-btn" class="w-full bg-pink-600 text-white font-bold py-3 px-12 rounded-full hover:bg-pink-700">
-                    Sign Up & Get My Card
-                </button>
-            </div>
-        </form>
+    <div id="royalty-card-modal" class="modal hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
+        <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
+            <button id="close-royalty-card-modal-btn"
+                class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i
+                    class="fas fa-times fa-lg"></i></button>
+            <h2 class="text-2xl font-bold text-center text-pink-700 mb-6">Join the Royalty Program</h2>
+            <form id="royalty-card-form" class="space-y-4">
+                <p class="text-sm text-center text-gray-600">Provide your details below to receive your digital royalty
+                    card and start earning rewards!</p>
+                <div>
+                    <label for="rc-buyer-name" class="block text-sm font-medium text-gray-600">Full Name</label>
+                    <input type="text" id="rc-buyer-name"
+                        class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" required>
+                </div>
+                <div>
+                    <label for="rc-buyer-phone" class="block text-sm font-medium text-gray-600">Phone Number</label>
+                    <input type="tel" id="rc-buyer-phone"
+                        class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" required>
+                </div>
+                <div>
+                    <label for="rc-buyer-email" class="block text-sm font-medium text-gray-600">Email Address</label>
+                    <input type="email" id="rc-buyer-email"
+                        class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" required>
+                    <p class="text-xs text-gray-500 mt-1">An account will be created for you to track your rewards
+                        online.</p>
+                </div>
+                <div class="pt-4">
+                    <button type="submit" id="royalty-card-submit-btn"
+                        class="w-full bg-pink-600 text-white font-bold py-3 px-12 rounded-full hover:bg-pink-700">
+                        Sign Up & Get My Card
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
-<!-- PASTE THIS NEW MODAL AT THE END -->
-<div id="add-royalty-card-modal" class="modal hidden fixed inset-0 z-[70] flex items-center justify-center p-4">
-    <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
-    <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
-        <button id="close-add-royalty-card-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times fa-lg"></i></button>
-        <h2 class="text-2xl font-bold text-center text-pink-700 mb-6">Create Royalty Card for Existing Client</h2>
-        <form id="add-royalty-card-form" class="space-y-4">
-            <div>
-                <label for="add-rc-client-name" class="block text-sm font-medium text-gray-600">Client Name</label>
-                <input type="text" id="add-rc-client-name" list="add-rc-client-list" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" required placeholder="Start typing to search for a client...">
-                <datalist id="add-rc-client-list"></datalist>
-            </div>
-            <p class="text-xs text-center text-gray-500">Select an existing client to add a new royalty card to their account. Their visit count will be set to zero.</p>
-            <div class="pt-4">
-                <button type="submit" id="add-royalty-card-submit-btn" class="w-full bg-pink-600 text-white font-bold py-3 px-12 rounded-full hover:bg-pink-700">
-                    Create Card
-                </button>
-            </div>
-        </form>
+    <!-- PASTE THIS NEW MODAL AT THE END -->
+    <div id="add-royalty-card-modal" class="modal hidden fixed inset-0 z-[70] flex items-center justify-center p-4">
+        <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
+        <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
+            <button id="close-add-royalty-card-modal-btn"
+                class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i
+                    class="fas fa-times fa-lg"></i></button>
+            <h2 class="text-2xl font-bold text-center text-pink-700 mb-6">Create Royalty Card for Existing Client</h2>
+            <form id="add-royalty-card-form" class="space-y-4">
+                <div>
+                    <label for="add-rc-client-name" class="block text-sm font-medium text-gray-600">Client Name</label>
+                    <input type="text" id="add-rc-client-name" list="add-rc-client-list"
+                        class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" required
+                        placeholder="Start typing to search for a client...">
+                    <datalist id="add-rc-client-list"></datalist>
+                </div>
+                <p class="text-xs text-center text-gray-500">Select an existing client to add a new royalty card to
+                    their account. Their visit count will be set to zero.</p>
+                <div class="pt-4">
+                    <button type="submit" id="add-royalty-card-submit-btn"
+                        class="w-full bg-pink-600 text-white font-bold py-3 px-12 rounded-full hover:bg-pink-700">
+                        Create Card
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
-<!-- PASTE THIS NEW MODAL AT THE END OF THE FILE -->
-<div id="edit-task-modal" class="modal hidden fixed inset-0 z-[70] flex items-center justify-center p-4">
-    <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
-    <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
-        <button id="close-edit-task-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times fa-lg"></i></button>
-        <h2 class="text-2xl font-bold text-center text-pink-700 mb-6">Edit Task</h2>
-        <form id="edit-task-form" class="space-y-4">
-            <input type="hidden" id="edit-task-id">
-            <div>
-                <label for="edit-task-description" class="block text-sm font-medium text-gray-600">Task Description</label>
-                <input type="text" id="edit-task-description" class="form-input w-full mt-1" required>
-            </div>
-            <div>
-    <label for="edit-task-category" class="block text-sm font-medium text-gray-600">Category</label>
-    <select id="edit-task-category" class="form-select w-full mt-1">
-        <option value="Nails Supply">Nails Supply</option>
-        <option value="Maintenance">Maintenance</option>
-        <option value="Other">Other</option>
-    </select>
-</div>
-            <div class="pt-4">
-                <button type="submit" class="w-full bg-pink-600 text-white font-bold py-3 px-12 rounded-full hover:bg-pink-700">
-                    Save Changes
-                </button>
-            </div>
-        </form>
+    <!-- PASTE THIS NEW MODAL AT THE END OF THE FILE -->
+    <div id="edit-task-modal" class="modal hidden fixed inset-0 z-[70] flex items-center justify-center p-4">
+        <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
+        <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">
+            <button id="close-edit-task-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i
+                    class="fas fa-times fa-lg"></i></button>
+            <h2 class="text-2xl font-bold text-center text-pink-700 mb-6">Edit Task</h2>
+            <form id="edit-task-form" class="space-y-4">
+                <input type="hidden" id="edit-task-id">
+                <div>
+                    <label for="edit-task-description" class="block text-sm font-medium text-gray-600">Task
+                        Description</label>
+                    <input type="text" id="edit-task-description" class="form-input w-full mt-1" required>
+                </div>
+                <div>
+                    <label for="edit-task-category" class="block text-sm font-medium text-gray-600">Category</label>
+                    <select id="edit-task-category" class="form-select w-full mt-1">
+                        <option value="Nails Supply">Nails Supply</option>
+                        <option value="Maintenance">Maintenance</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="pt-4">
+                    <button type="submit"
+                        class="w-full bg-pink-600 text-white font-bold py-3 px-12 rounded-full hover:bg-pink-700">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
     <script type="module" src="script.js"></script>
 </body>
 

@@ -5833,7 +5833,6 @@ function initMainApp(userRole, userName) {
 
     document.getElementById('nail-idea-search').addEventListener('input', applyNailIdeaFilters);
     document.getElementById('nail-idea-shape-filter').addEventListener('change', applyNailIdeaFilters);
-    document.getElementById('nail-idea-category-filter').addEventListener('change', applyNailIdeaFilters);
 
     // REPLACE the old addNailIdeaForm listener with this one
     addNailIdeaForm.addEventListener('submit', async (e) => {

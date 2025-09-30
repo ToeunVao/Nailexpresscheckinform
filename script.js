@@ -3186,6 +3186,26 @@ function initMainApp(userRole, userName) {
 
     
     // --- NEW DASHBOARD LOGIC ---
+
+    const setupReportDateFilters = (selectId, dateInputId, callback) => {
+        const select = document.getElementById(selectId);
+        const dateInput = document.getElementById(dateInputId);
+        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        select.innerHTML = `<option value="daily">Daily</option>`;
+        months.forEach((month, index) => { select.innerHTML += `<option value="${index}">${month}</option>`; });
+        select.innerHTML += `<option value="this-year">This Year</option><option value="last-year">Last Year</option>`;
+
+        select.addEventListener('change', (e) => {
+            const range = e.target.value;
+            dateInput.style.display = range === 'daily' ? 'block' : 'none';
+            callback(dateInput.value, range);
+        });
+        dateInput.addEventListener('input', (e) => {
+            callback(e.target.value, select.value);
+        });
+    };
+
+    
     const updateDashboard = () => {
         if (currentUserRole === 'admin') {
             updateAdminDashboard();
@@ -4557,23 +4577,6 @@ function initMainApp(userRole, userName) {
     setupTechFilter('tech-filter-container-dashboard-appointments', (tech) => { currentDashboardApptTechFilter = tech; updateAdminDashboard(); });
 
 
-    const setupReportDateFilters = (selectId, dateInputId, callback) => {
-        const select = document.getElementById(selectId);
-        const dateInput = document.getElementById(dateInputId);
-        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-        select.innerHTML = `<option value="daily">Daily</option>`;
-        months.forEach((month, index) => { select.innerHTML += `<option value="${index}">${month}</option>`; });
-        select.innerHTML += `<option value="this-year">This Year</option><option value="last-year">Last Year</option>`;
-
-        select.addEventListener('change', (e) => {
-            const range = e.target.value;
-            dateInput.style.display = range === 'daily' ? 'block' : 'none';
-            callback(dateInput.value, range);
-        });
-        dateInput.addEventListener('input', (e) => {
-            callback(e.target.value, select.value);
-        });
-    };
 
     setupReportDateFilters('earning-range-filter', 'earning-date-filter', (date, range) => { currentEarningDateFilter = date; currentEarningRangeFilter = range; renderAllStaffEarnings(); });
     setupReportDateFilters('dashboard-earning-range-filter', 'dashboard-earning-date-filter', (date, range) => { currentDashboardEarningDateFilter = date; currentDashboardEarningRangeFilter = range; renderAllStaffEarnings(); });

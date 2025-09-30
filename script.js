@@ -57,6 +57,7 @@ let currentRotation = 0;
 let royaltySettings = { visitsNeeded: 10, rewardDescription: 'One Free Classic Manicure' };
 let allRoyaltyCards = [];
 let globalListenersAttached = false;
+let holidaySettings = { dates: [], message: 'The salon is closed on the selected date.' };
 
 const nailIdeaLightbox = document.getElementById('nail-idea-lightbox');
 const lightboxCloseBtn = document.getElementById('lightbox-close-btn');
@@ -621,7 +622,15 @@ async function sendMembershipConfirmationEmail(details) {
     }
 }
 // --- Booking Validation Logic ---
+// REPLACE the old isBookingTimeValid function with this one
 function isBookingTimeValid(bookingDate) {
+    // --- New Holiday Check ---
+    const dateString = `${bookingDate.getFullYear()}-${String(bookingDate.getMonth() + 1).padStart(2, '0')}-${String(bookingDate.getDate()).padStart(2, '0')}`;
+    if (holidaySettings.dates.includes(dateString)) {
+        return { valid: false, message: holidaySettings.message || 'The salon is closed on the selected date.' };
+    }
+    // --- End Holiday Check ---
+
     const dayOfWeek = bookingDate.getDay();
     const dayName = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][dayOfWeek];
 
@@ -2917,6 +2926,144 @@ function initMainApp(userRole, userName) {
 
         // --- END TASK MANAGER LOGIC ---  
 
+// PASTE THIS inside initMainApp()
+
+onSnapshot(doc(db, "settings", "holidays"), (docSnap) => {
+    if (docSnap.exists()) {
+        holidaySettings = docSnap.data();
+    } else {
+        // If it doesn't exist, create it with defaults
+        setDoc(doc(db, "settings", "holidays"), holidaySettings);
+    }
+    // Re-render calendars if they are visible
+    if (currentUserRole === 'admin') {
+        renderHolidayCalendar();
+        renderHolidayList();
+    }
+    renderCalendar(currentYear, currentMonth, currentTechFilterCalendar);
+});
+
+// PASTE THIS ENTIRE BLOCK inside initMainApp()
+
+if (userRole === 'admin') {
+    let holidayCalYear = new Date().getFullYear();
+    let holidayCalMonth = new Date().getMonth();
+
+    const renderHolidayCalendar = () => {
+        const grid = document.getElementById('holiday-calendar-grid');
+        const monthYearEl = document.getElementById('holiday-month-year');
+        if (!grid || !monthYearEl) return;
+
+        monthYearEl.textContent = new Date(holidayCalYear, holidayCalMonth).toLocaleString('default', { month: 'long', year: 'numeric' });
+        grid.innerHTML = '<div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>'; // Headers
+
+        const firstDay = new Date(holidayCalYear, holidayCalMonth, 1).getDay();
+        const daysInMonth = new Date(holidayCalYear, holidayCalMonth + 1, 0).getDate();
+
+        for (let i = 0; i < firstDay; i++) { grid.insertAdjacentHTML('beforeend', '<div></div>'); }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${holidayCalYear}-${String(holidayCalMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const isHoliday = holidaySettings.dates.includes(dateStr);
+            const isToday = new Date().toDateString() === new Date(holidayCalYear, holidayCalMonth, day).toDateString();
+            
+            const cell = document.createElement('div');
+            cell.textContent = day;
+            cell.dataset.date = dateStr;
+            cell.className = `day-cell ${isHoliday ? 'is-holiday' : ''} ${isToday ? 'is-today' : ''}`;
+            grid.appendChild(cell);
+        }
+    };
+
+    const renderHolidayList = () => {
+        const listEl = document.getElementById('holiday-list-admin');
+        if (!listEl) return;
+        const upcoming = holidaySettings.dates
+            .filter(d => new Date(d) >= new Date().setHours(0,0,0,0))
+            .sort();
+        
+        if (upcoming.length > 0) {
+            listEl.innerHTML = upcoming.map(d => `<div>${new Date(d+'T00:00:00').toLocaleDateString([], {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})}</div>`).join('');
+        } else {
+            listEl.innerHTML = '<p class="text-gray-500">No upcoming closures scheduled.</p>';
+        }
+    };
+
+    document.getElementById('prev-holiday-month-btn')?.addEventListener('click', () => {
+        holidayCalMonth--;
+        if (holidayCalMonth < 0) { holidayCalMonth = 11; holidayCalYear--; }
+        renderHolidayCalendar();
+    });
+
+    document.getElementById('next-holiday-month-btn')?.addEventListener('click', () => {
+        holidayCalMonth++;
+        if (holidayCalMonth > 11) { holidayCalMonth = 0; holidayCalYear++; }
+        renderHolidayCalendar();
+    });
+
+    document.getElementById('holiday-calendar-grid')?.addEventListener('click', async (e) => {
+        const cell = e.target.closest('.day-cell');
+        if (cell && cell.dataset.date) {
+            const dateStr = cell.dataset.date;
+            let updatedDates = [...holidaySettings.dates];
+            if (updatedDates.includes(dateStr)) {
+                updatedDates = updatedDates.filter(d => d !== dateStr); // Remove date
+            } else {
+                updatedDates.push(dateStr); // Add date
+            }
+            try {
+                await setDoc(doc(db, "settings", "holidays"), { ...holidaySettings, dates: updatedDates });
+            } catch (error) {
+                console.error("Error updating holidays:", error);
+                alert("Could not update holiday dates.");
+            }
+        }
+    });
+
+    document.getElementById('save-holiday-message-btn')?.addEventListener('click', async () => {
+        const newMessage = document.getElementById('holiday-message').value;
+        try {
+            await setDoc(doc(db, "settings", "holidays"), { ...holidaySettings, message: newMessage });
+            alert("Closure message saved!");
+        } catch (error) {
+            console.error("Error saving holiday message:", error);
+            alert("Could not save message.");
+        }
+    });
+
+    const holidayMessageTextarea = document.getElementById('holiday-message');
+    if (holidayMessageTextarea) holidayMessageTextarea.value = holidaySettings.message;
+
+    renderHolidayCalendar();
+    renderHolidayList();
+}
+
+// PASTE THIS NEW BLOCK inside initMainApp()
+const checkDateForHoliday = (e) => {
+    const input = e.target;
+    const warningElId = input.id.includes('landing') ? 'holiday-warning-landing' : 'holiday-warning-modal';
+    const warningEl = document.getElementById(warningElId);
+
+    if (input.value) {
+        const selectedDate = new Date(input.value);
+        const validation = isBookingTimeValid(selectedDate);
+        if (!validation.valid && validation.message.includes('closed')) {
+            warningEl.textContent = validation.message;
+            warningEl.classList.remove('hidden');
+        } else {
+            warningEl.classList.add('hidden');
+        }
+    } else {
+        warningEl.classList.add('hidden');
+    }
+};
+
+document.getElementById('appointment-datetime-landing')?.addEventListener('input', checkDateForHoliday);
+document.getElementById('appointment-datetime')?.addEventListener('input', checkDateForHoliday);
+
+
+
+
         // END OF initMainApp }
     }
     // PASTE THESE NEW FUNCTIONS inside initMainApp, after the royalty settings form listener
@@ -4520,82 +4667,90 @@ function initMainApp(userRole, userName) {
 
 
     // REPLACE your old renderCalendar function with this new one:
-    function renderCalendar(year, month, technicianFilter = 'All') {
-        monthYearDisplay.textContent = `${new Date(year, month).toLocaleString('default', { month: 'long' })} ${year}`;
-        calendarGrid.innerHTML = '';
-        const today = new Date(); // Get today's date for comparison
-        const firstDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
+// REPLACE your old renderCalendar function with this new one
+function renderCalendar(year, month, technicianFilter = 'All') {
+    monthYearDisplay.textContent = `${new Date(year, month).toLocaleString('default', { month: 'long' })} ${year}`;
+    calendarGrid.innerHTML = '';
+    const today = new Date(); 
 
-        for (let i = 0; i < firstDay; i++) { calendarGrid.insertAdjacentHTML('beforeend', '<div></div>'); }
+    for (let i = 0; i < new Date(year, month, 1).getDay(); i++) { calendarGrid.insertAdjacentHTML('beforeend', '<div></div>'); }
 
-        for (let day = 1; day <= daysInMonth; day++) {
-            const dayCell = document.createElement('div');
-            dayCell.className = 'calendar-day border p-2';
-
-            // ADDED: Check if the current cell is today's date
-            if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
-                dayCell.classList.add('is-today');
-            }
-
-            dayCell.dataset.date = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            dayCell.innerHTML = `<div class="font-bold">${day}</div><div id="day-${day}" class="appointments"></div>`;
-            calendarGrid.appendChild(dayCell);
+    for (let day = 1; day <= new Date(year, month + 1, 0).getDate(); day++) {
+        const dayCell = document.createElement('div');
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        
+        dayCell.className = 'calendar-day border p-2';
+        if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+            dayCell.classList.add('is-today');
         }
-
-        let filteredAppointments = allAppointments;
-        if (technicianFilter !== 'All' && technicianFilter !== 'Any Technician') {
-            filteredAppointments = allAppointments.filter(appt => appt.technician === technicianFilter);
-        } else if (technicianFilter === 'Any Technician') {
-            filteredAppointments = allAppointments.filter(appt => appt.technician === 'Any Technician');
+        // New holiday check
+        if (holidaySettings.dates.includes(dateStr)) {
+            dayCell.classList.add('is-holiday');
         }
-
-        filteredAppointments.sort((a, b) => a.appointmentTimestamp.seconds - b.appointmentTimestamp.seconds);
-
-        filteredAppointments.forEach(appt => {
-            const apptDate = new Date(appt.appointmentTimestamp.seconds * 1000);
-            if (apptDate.getFullYear() === year && apptDate.getMonth() === month) {
-                const dayCell = document.getElementById(`day-${apptDate.getDate()}`);
-                if (dayCell) {
-                    const timeString = apptDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-                    const serviceString = Array.isArray(appt.services) ? appt.services[0] : appt.services;
-                    const technicianName = appt.technician;
-                    let colorTheme = { card: 'bg-gray-100', text: 'text-gray-800' };
-                    if (technicianName && technicianColorMap[technicianName]) {
-                        colorTheme = technicianColorMap[technicianName];
-                    }
-                    const entryHTML = `
-                    <div class="appointment-entry ${colorTheme.card} p-1" data-id="${appt.id}" data-type="appointment">
-                        <p class="font-semibold text-xs ${colorTheme.text} truncate">${timeString} - ${appt.name}</p>
-                        <p class="text-xs text-gray-600 truncate">${serviceString || 'Service not specified'}</p>
-                    </div>`;
-                    dayCell.insertAdjacentHTML('beforeend', entryHTML);
-                }
-            }
-        });
-
-        if (calendarCountSpan) {
-            calendarCountSpan.textContent = calendarGrid.querySelectorAll('.appointment-entry').length;
-        }
+        
+        dayCell.dataset.date = dateStr;
+        dayCell.innerHTML = `<div class="font-bold">${day}</div><div id="day-${day}" class="appointments"></div>`;
+        calendarGrid.appendChild(dayCell);
     }
-    document.getElementById('prev-month-btn').addEventListener('click', () => { currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(currentYear, currentMonth, currentTechFilterCalendar); });
-    document.getElementById('next-month-btn').addEventListener('click', () => { currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; } renderCalendar(currentYear, currentMonth, currentTechFilterCalendar); });
-    calendarGrid.addEventListener('click', (e) => {
-        const appointmentEntry = e.target.closest('.appointment-entry');
-        const dayCell = e.target.closest('.calendar-day');
 
-        // First, check if the click was inside an appointment entry
-        if (appointmentEntry) {
-            const client = allAppointments.find(a => a.id === appointmentEntry.dataset.id);
-            if (client) {
-                openViewDetailModal(client, "Booking Detail");
-            }
-        }
-        // If not, then check if the click was on an empty part of a day cell
-        else if (dayCell) {
-            openAddAppointmentModal(dayCell.dataset.date);
+    let filteredAppointments = allAppointments.filter(appt => {
+        const apptDate = appt.appointmentTimestamp.toDate();
+        return apptDate.getFullYear() === year && apptDate.getMonth() === month;
+    });
+
+    if (technicianFilter !== 'All' && technicianFilter !== 'Any Technician') {
+        filteredAppointments = filteredAppointments.filter(appt => appt.technician === technicianFilter);
+    } else if (technicianFilter === 'Any Technician') {
+        filteredAppointments = filteredAppointments.filter(appt => appt.technician === 'Any Technician');
+    }
+
+    filteredAppointments.sort((a, b) => a.appointmentTimestamp.seconds - b.appointmentTimestamp.seconds);
+
+    filteredAppointments.forEach(appt => {
+        const apptDate = appt.appointmentTimestamp.toDate();
+        const dayCell = document.getElementById(`day-${apptDate.getDate()}`);
+        if (dayCell) {
+            const timeString = apptDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+            const serviceString = Array.isArray(appt.services) ? appt.services[0] : appt.services;
+            const technicianName = appt.technician;
+            let colorTheme = technicianColorMap[technicianName] || { card: 'bg-gray-100', text: 'text-gray-800' };
+            
+            const entryHTML = `
+            <div class="appointment-entry ${colorTheme.card} p-1" data-id="${appt.id}" data-type="appointment">
+                <p class="font-semibold text-xs ${colorTheme.text} truncate">${timeString} - ${appt.name}</p>
+                <p class="text-xs text-gray-600 truncate">${serviceString || 'Service not specified'}</p>
+            </div>`;
+            dayCell.insertAdjacentHTML('beforeend', entryHTML);
         }
     });
+
+    if (calendarCountSpan) {
+        calendarCountSpan.textContent = calendarGrid.querySelectorAll('.appointment-entry').length;
+    }
+}
+    document.getElementById('prev-month-btn').addEventListener('click', () => { currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(currentYear, currentMonth, currentTechFilterCalendar); });
+    document.getElementById('next-month-btn').addEventListener('click', () => { currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; } renderCalendar(currentYear, currentMonth, currentTechFilterCalendar); });
+    
+    // REPLACE the calendarGrid click listener with this one
+
+calendarGrid.addEventListener('click', (e) => {
+    const appointmentEntry = e.target.closest('.appointment-entry');
+    const dayCell = e.target.closest('.calendar-day');
+
+    if (appointmentEntry) {
+        const client = allAppointments.find(a => a.id === appointmentEntry.dataset.id);
+        if (client) {
+            openViewDetailModal(client, "Booking Detail");
+        }
+    } else if (dayCell) {
+        // New check for holiday class
+        if (dayCell.classList.contains('is-holiday')) {
+            alert(holidaySettings.message || "The salon is closed on this date and cannot be booked.");
+            return;
+        }
+        openAddAppointmentModal(dayCell.dataset.date);
+    }
+});
 
     const setupTechFilter = (containerId, callback) => {
         document.getElementById(containerId).addEventListener('click', (e) => {

@@ -1,5 +1,28 @@
 body { font-family: 'Poppins', sans-serif; background-color: #FEFBF9; }
         h1, h2, h3, .clock { font-family: 'Playfair Display', serif; }
+/* Add this to the end of your style.css file */
+.calendar-day.is-holiday, #holiday-calendar-grid .is-holiday {
+    background-color: #fee2e2; /* red-100 */
+    text-decoration: line-through;
+    color: #9ca3af; /* gray-400 */
+    cursor: not-allowed;
+}
+
+#holiday-calendar-grid .day-cell {
+    padding: 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#holiday-calendar-grid .day-cell:hover {
+    background-color: #fbcfe8; /* pink-200 */
+}
+
+#holiday-calendar-grid .is-today {
+    font-weight: bold;
+    border: 1px solid #db2777; /* pink-600 */
+}
 /* Style for the Task Manager Category Icon */
 .task-item .fa-shopping-cart,
 .task-item .fa-tools,

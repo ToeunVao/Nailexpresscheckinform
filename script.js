@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, signInAnonymously, updateEmail, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, query, doc, getDoc, deleteDoc, serverTimestamp, where, getDocs, orderBy, Timestamp, updateDoc, writeBatch, setDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
@@ -1139,11 +1139,10 @@ async function initClientDashboard(clientId, clientData) {
     });
 
     const featuresDoc = await getDoc(doc(db, "settings", "features"));
-    // THIS IS THE FIX: Changed 'docSnap' to 'featuresDoc'
-    const features = featuresDoc.exists() ? featuresDoc.data() : {
-        showGiftCards: true,
-        showMemberships: true,
-        showRoyaltyCard: true
+    const features = featuresDoc.exists() ? featuresDoc.data() : { 
+        showGiftCards: true, 
+        showMemberships: true, 
+        showRoyaltyCard: true 
     };
 
     document.getElementById('client-welcome-name').textContent = `Welcome back, ${clientData.name}!`;
@@ -1185,7 +1184,7 @@ async function initClientDashboard(clientId, clientData) {
     };
 
     renderClientMembership(clientData, clientId);
-
+    
     const renderClientRoyaltyCard = (clientData) => {
         const container = document.getElementById('royalty-card-content');
         if (!container) return;
@@ -1198,11 +1197,11 @@ async function initClientDashboard(clientId, clientData) {
                 </div>`;
             return;
         }
-
+        
         const visits = clientData.royaltyCard.visits || 0;
         const visitsNeeded = royaltySettings.visitsNeeded;
         const rewardText = royaltySettings.rewardDescription;
-
+        
         let stampsHTML = '';
         for (let i = 1; i <= visitsNeeded; i++) {
             const isStamped = i <= visits;
@@ -1234,7 +1233,7 @@ async function initClientDashboard(clientId, clientData) {
     const setupClientNav = (featureSettings) => {
         const navContainer = document.getElementById('client-top-nav');
         const contentSections = document.querySelectorAll('.client-tab-content');
-
+        
         let navItems = [
             { id: 'appointments', text: 'Appointments' },
             { id: 'favorites', text: 'My Favorites' }
@@ -1249,13 +1248,15 @@ async function initClientDashboard(clientId, clientData) {
         if (featureSettings.showRoyaltyCard) {
             navItems.push({ id: 'royalty-card', text: 'Royalty Card' });
         }
-
+        // --- ADD THE NEW "ACCOUNT SETTINGS" NAV ITEM ---
+        navItems.push({ id: 'account-settings', text: 'Account Settings' });
+        
         contentSections.forEach(content => content.classList.add('hidden'));
 
-        navContainer.innerHTML = navItems.map(item =>
+        navContainer.innerHTML = navItems.map(item => 
             `<button class="top-nav-btn" data-target="${item.id}-content">${item.text}</button>`
         ).join('');
-
+        
         const navButtons = navContainer.querySelectorAll('.top-nav-btn');
 
         navContainer.addEventListener('click', (e) => {
@@ -1318,7 +1319,7 @@ async function initClientDashboard(clientId, clientData) {
             return acc;
         }, {});
         const colorCounts = history.reduce((acc, visit) => {
-            if (visit.colorCode) acc[visit.colorCode] = (acc[visit.colorCode] || 0) + 1;
+            if(visit.colorCode) acc[visit.colorCode] = (acc[visit.colorCode] || 0) + 1;
             return acc;
         }, {});
         const favTech = Object.keys(techCounts).length > 0 ? Object.keys(techCounts).reduce((a, b) => techCounts[a] > techCounts[b] ? a : b) : 'N/A';
@@ -1326,39 +1327,35 @@ async function initClientDashboard(clientId, clientData) {
         document.getElementById('favorite-technician').textContent = favTech;
         document.getElementById('favorite-color').textContent = favColor;
     };
-
+    
     onSnapshot(query(collection(db, "appointments"), where("name", "==", clientData.name)), (snapshot) => {
-        const appointments = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+        const appointments = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
         renderClientAppointments(appointments);
     });
 
-    // REPLACE the old onSnapshot for finished_clients with this new one:
     onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientData.name)), (snapshot) => {
-        // Sort the results in JavaScript, which is more reliable
         const history = snapshot.docs.map(doc => {
             const data = doc.data();
             const servicesRaw = data.services;
             const servicesString = Array.isArray(servicesRaw) ? servicesRaw.join(', ') : (servicesRaw || '');
-
+            
             return {
                 id: doc.id,
                 ...data,
                 services: servicesString
             };
-        }).sort((a, b) => b.checkOutTimestamp.seconds - a.checkOutTimestamp.seconds); // Sorting happens here
+        }).sort((a, b) => b.checkOutTimestamp.seconds - a.checkOutTimestamp.seconds);
 
         allFinishedClients = history;
         renderClientHistory(history);
         calculateAndRenderFavorites(history);
     }, (error) => {
-        // This will help us see any new errors directly
         console.error("Error fetching client history:", error);
         const container = document.getElementById('client-appointment-history');
         if (container) {
             container.innerHTML = '<p class="text-red-500">Could not load appointment history due to a permission issue.</p>';
         }
     });
-
 
     let allClientGiftCards = [];
     onSnapshot(query(collection(db, "gift_cards"), where("createdBy", "==", clientId), orderBy("createdAt", "desc")), (snapshot) => {
@@ -1429,13 +1426,61 @@ async function initClientDashboard(clientId, clientData) {
     document.getElementById('client-buy-gift-card-btn').addEventListener('click', () => {
         openPurchaseModalForClient(clientData);
     });
-
+    
     getDoc(doc(db, "settings", "royaltyProgram")).then(docSnap => {
         if (docSnap.exists() && docSnap.data().visitsNeeded) {
             royaltySettings = docSnap.data();
         }
         renderClientRoyaltyCard(clientData);
     });
+    
+    // --- NEW EVENT LISTENERS FOR ACCOUNT SETTINGS ---
+    const changeEmailForm = document.getElementById('client-change-email-form');
+    if (changeEmailForm) {
+        changeEmailForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newEmail = document.getElementById('client-new-email').value;
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const password = prompt("For your security, please enter your current password to change your email.");
+            if (!password) return;
+
+            try {
+                const credential = EmailAuthProvider.credential(user.email, password);
+                await reauthenticateWithCredential(user, credential);
+                await updateEmail(user, newEmail);
+                await updateDoc(doc(db, "clients", user.uid), { email: newEmail });
+                alert("Your email has been updated successfully!");
+                changeEmailForm.reset();
+            } catch (error) {
+                console.error("Error updating email:", error);
+                alert(`Could not update email. Error: ${error.message}`);
+            }
+        });
+    }
+
+    const changePasswordForm = document.getElementById('client-change-password-form');
+    if (changePasswordForm) {
+        changePasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const currentPassword = document.getElementById('client-current-password').value;
+            const newPassword = document.getElementById('client-new-password').value;
+            const user = auth.currentUser;
+            if (!user) return;
+
+            try {
+                const credential = EmailAuthProvider.credential(user.email, currentPassword);
+                await reauthenticateWithCredential(user, credential);
+                await updatePassword(user, newPassword);
+                alert("Your password has been updated successfully!");
+                changePasswordForm.reset();
+            } catch (error) {
+                console.error("Error updating password:", error);
+                alert(`Could not update password. Error: ${error.message}`);
+            }
+        });
+    }
 
     setupClientNav(features);
 }

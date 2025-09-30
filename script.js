@@ -3197,6 +3197,10 @@ function initMainApp(userRole, userName) {
         profitChart = initializeChart(profitChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
     };
 
+    // --- Setup the filter for the new dashboard ---
+    setupReportDateFilters('profit-dashboard-range-filter', 'profit-dashboard-date-filter', renderProfitDashboard);
+    document.getElementById('profit-dashboard-range-filter').value = String(new Date().getMonth());
+
     
     // --- NEW DASHBOARD LOGIC ---
 
@@ -3275,23 +3279,33 @@ function initMainApp(userRole, userName) {
         staffEarningsChart = initializeChart(staffEarningsChart, ctx, 'bar', { labels, datasets: [{ label: 'Total Earnings', data, backgroundColor: backgroundColors, borderColor: borderColors, borderWidth: 1 }] }, { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } });
     };
 
-const updateAdminDashboard = () => {
-        const { startDate, endDate } = getDateRange(
-            document.getElementById('dashboard-range-filter').value, 
-            document.getElementById('dashboard-date-filter').value
-        );
+    // REPLACE the old updateAdminDashboard function with this one
+    const updateAdminDashboard = () => {
+        const filter = document.getElementById('dashboard-date-filter').value;
+        const { startDate, endDate } = getDateRange(currentDashboardRangeFilter, currentDashboardDateFilter);
         if (!startDate) return;
 
-        // 1. Filter all necessary data for the selected date range
-        const filteredExpenses = allExpenses.filter(ex => ex.date.toDate() >= startDate && ex.date.toDate() <= endDate);
-        const filteredSalonEarnings = allSalonEarnings.filter(e => e.date.toDate() >= startDate && e.date.toDate() <= endDate);
-        const filteredAppointments = allAppointments.filter(a => a.appointmentTimestamp.toDate() >= startDate && a.appointmentTimestamp.toDate() <= endDate);
-        const filteredGiftCards = allGiftCards.filter(gc => gc.createdAt.toDate() >= startDate && gc.createdAt.toDate() <= endDate);
-        const filteredEarnings = allEarnings.filter(e => e.date.toDate() >= startDate && e.date.toDate() <= endDate);
-        
-        // 2. Calculate KPIs
-        const totalExpenses = filteredExpenses.reduce((sum, ex) => sum + ex.amount, 0);
-        
+        const filteredSalonEarnings = allSalonEarnings.filter(e => {
+            const earnDate = e.date.toDate();
+            return earnDate >= startDate && earnDate <= endDate;
+        });
+
+        const filteredAppointments = allAppointments.filter(a => {
+            const apptDate = a.appointmentTimestamp.toDate();
+            return apptDate >= startDate && apptDate <= endDate;
+        });
+
+        const filteredExpenses = allExpenses.filter(ex => {
+            const expDate = ex.date.toDate();
+            return expDate >= startDate && expDate <= endDate;
+        });
+
+        const filteredGiftCards = allGiftCards.filter(gc => {
+            const gcDate = gc.createdAt.toDate();
+            return gcDate >= startDate && gcDate <= endDate;
+        });
+
+        // Card Calculations
         let totalRevenue = 0;
         let totalCash = 0;
         const techEarnings = {};
@@ -3310,81 +3324,37 @@ const updateAdminDashboard = () => {
             totalCash += dailyCash;
         });
 
-        const netProfit = totalRevenue - totalExpenses;
-        const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
-        const totalGiftCardValue = filteredGiftCards.reduce((sum, gc) => sum + gc.amount, 0);
-        const totalActiveMemberships = allClientMemberships.filter(m => m.membership.status === 'Active').length;
-        
-        const techTips = filteredEarnings.reduce((acc, curr) => {
-            if (curr.staffName) {
-                acc[curr.staffName] = (acc[curr.staffName] || 0) + (curr.tip || 0);
-            }
-            return acc;
-        }, {});
-        const topTipsTechnician = Object.keys(techTips).length > 0 ? Object.keys(techTips).reduce((a, b) => techTips[a] > techTips[b] ? a : b) : '-';
+        document.getElementById('total-salon-revenue-card').textContent = `$${totalRevenue.toFixed(2)}`;
+        document.getElementById('total-salon-cash-card').textContent = `$${totalCash.toFixed(2)}`;
 
-        const topEarningTechnician = Object.keys(techEarnings).length > 0 ? Object.keys(techEarnings).reduce((a, b) => techEarnings[a] > techEarnings[b] ? a : b, '-') : '-';
+        const topEarningTechnician = Object.keys(techEarnings).reduce((a, b) => techEarnings[a] > techEarnings[b] ? a : b, '-');
+        document.getElementById('top-earning-technician-card').textContent = topEarningTechnician;
+
         const techBookings = filteredAppointments.reduce((acc, curr) => {
             if (curr.technician && curr.technician !== 'Any Technician') {
                 acc[curr.technician] = (acc[curr.technician] || 0) + 1;
             }
             return acc;
         }, {});
-        const topBookingTechnician = Object.keys(techBookings).length > 0 ? Object.keys(techBookings).reduce((a, b) => techBookings[a] > techBookings[b] ? a : b, '-') : '-';
-
-        // 3. Update KPI Card elements
-        document.getElementById('profit-total-revenue').textContent = `$${totalRevenue.toFixed(2)}`;
-        document.getElementById('profit-total-expenses').textContent = `$${totalExpenses.toFixed(2)}`;
-        document.getElementById('profit-net-profit').textContent = `$${netProfit.toFixed(2)}`;
-        document.getElementById('profit-margin').textContent = `${profitMargin.toFixed(1)}%`;
-        document.getElementById('total-salon-cash-card').textContent = `$${totalCash.toFixed(2)}`;
-        document.getElementById('total-clients-card').textContent = allClients.length;
-        document.getElementById('total-gift-card-card').textContent = `$${totalGiftCardValue.toFixed(2)}`;
-        document.getElementById('total-memberships-card').textContent = totalActiveMemberships;
-        document.getElementById('total-appointments-card').textContent = filteredAppointments.length;
-        document.getElementById('top-earning-technician-card').textContent = topEarningTechnician;
-        document.getElementById('top-tips-technician-card').textContent = topTipsTechnician;
+        const topBookingTechnician = Object.keys(techBookings).reduce((a, b) => techBookings[a] > techBookings[b] ? a : b, '-');
         document.getElementById('top-booking-technician-card').textContent = topBookingTechnician;
 
-        // 4. Render Profit Chart
-        const dataMap = new Map();
-        const addData = (date, revenue = 0, expense = 0) => {
-            const key = getLocalDateString(date);
-            if (!dataMap.has(key)) dataMap.set(key, { revenue: 0, expense: 0 });
-            const entry = dataMap.get(key);
-            entry.revenue += revenue;
-            entry.expense += expense;
-        };
-        
-        filteredSalonEarnings.forEach(earning => {
-            let dailyTotal = 0;
-            techniciansAndStaff.forEach(tech => { dailyTotal += earning[tech.name.toLowerCase()] || 0; });
-            dailyTotal += earning.sellGiftCard || 0;
-            addData(earning.date.toDate(), dailyTotal, 0);
-        });
-        filteredExpenses.forEach(expense => { addData(expense.date.toDate(), 0, expense.amount); });
+        // New Card Calculations
+        document.getElementById('total-appointments-card').textContent = allAppointments.length;
+        document.getElementById('total-clients-card').textContent = allClients.length;
 
-        const sortedData = Array.from(dataMap.entries()).sort((a, b) => new Date(a[0]) - new Date(b[0]));
-        const labels = sortedData.map(entry => new Date(entry[0] + 'T00:00:00').toLocaleDateString());
-        const revenueData = sortedData.map(entry => entry[1].revenue);
-        const expenseData = sortedData.map(entry => entry[1].expense);
+        const totalGiftCardValue = filteredGiftCards.reduce((sum, gc) => sum + gc.amount, 0);
+        document.getElementById('total-gift-card-card').textContent = `$${totalGiftCardValue.toFixed(2)}`;
 
-        const ctx = document.getElementById('profit-chart')?.getContext('2d');
-        if (!ctx) return;
-        
-        const chartConfig = {
-            labels,
-            datasets: [
-                { label: 'Total Revenue', data: revenueData, backgroundColor: 'rgba(54, 162, 235, 0.5)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 2, tension: 0.1, fill: true },
-                { label: 'Total Expenses', data: expenseData, backgroundColor: 'rgba(255, 99, 132, 0.5)', borderColor: 'rgba(255, 99, 132, 1)', borderWidth: 2, tension: 0.1, fill: true }
-            ]
-        };
-        profitChart = initializeChart(profitChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
-        
-        // 5. Render other dashboard components
-        updateStaffEarningsReport(filteredSalonEarnings);
+        const totalExpense = filteredExpenses.reduce((sum, ex) => sum + ex.amount, 0);
+        document.getElementById('total-expense-card').textContent = `$${totalExpense.toFixed(2)}`;
+
+        // Render Graph and Upcoming Appointments
+        updateSalonRevenueChart(filteredSalonEarnings, currentDashboardRangeFilter);
+        updateStaffEarningsReport(filteredSalonEarnings); // <-- ADD THIS LINE
         renderDetailedAppointmentsList('admin-upcoming-appointments-list', allAppointments, currentDashboardApptTechFilter);
     };
+
 
     // REPLACE the old updateStaffDashboard function with this one
     const updateStaffDashboard = () => {

@@ -404,108 +404,243 @@
         <main class="container mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
             <div id="dashboard-content">
 
-<div id="admin-dashboard-view" class="hidden">
-    <div id="admin-quick-nav" class="sticky top-0 bg-white/80 backdrop-blur-md z-30 p-2 mb-6 rounded-lg shadow flex justify-between items-center">
-        <div class="hidden md:flex items-center gap-2">
-            <span class="font-semibold text-sm text-gray-600">Quick Links:</span>
-            <a href="#profit-chart-container" class="quick-nav-link">Profit Trend</a>
-            <a href="#staff-earning-cards-container" class="quick-nav-link">Staff Summary</a>
-            <a href="#admin-upcoming-appointments-list-container" class="quick-nav-link">Upcoming</a>
-        </div>
-        <div class="flex items-center gap-2">
-            <label class="text-sm font-medium text-gray-700">Date Range:</label>
-            <select id="dashboard-range-filter" class="form-select p-2 border border-gray-300 rounded-lg"></select>
-            <input type="date" id="dashboard-date-filter" class="p-2 border border-gray-300 rounded-lg hidden">
-        </div>
-    </div>
+                <div id="admin-dashboard-view" class="hidden">
+                    <div id="admin-quick-nav"
+                        class="top-0 bg-white/80 backdrop-blur-md z-30 p-2 mb-6 rounded-lg shadow flex justify-between items-center">
+                        <div class="hidden md:flex items-center gap-2">
+                            <span class="font-semibold text-sm text-gray-600">Quick Links:</span>
+                            <a href="#staff-earning-cards-container" class="quick-nav-link">Staff Summary</a>
+                            <a href="#salon-revenue-chart-container" class="quick-nav-link">Revenue Trend</a>
+                            <a href="#admin-upcoming-appointments-list-container" class="quick-nav-link">Upcoming</a>
+                            <a href="#dashboard-staff-earning-report-container" class="quick-nav-link">Earning
+                                Report</a>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label class="text-sm font-medium text-gray-700">Date Range:</label>
+                            <select id="dashboard-range-filter"
+                                class="form-select p-2 border border-gray-300 rounded-lg"></select>
+                            <input type="date" id="dashboard-date-filter"
+                                class="p-2 border border-gray-300 rounded-lg hidden">
+                        </div>
+                    </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        <div class="dashboard-card bg-blue-100">
-            <h4 class="font-bold text-blue-800">Total Revenue</h4>
-            <p id="profit-total-revenue" class="text-3xl font-bold text-blue-600">$0.00</p>
-        </div>
-        <div class="dashboard-card bg-red-100">
-            <h4 class="font-bold text-red-800">Total Expenses</h4>
-            <p id="profit-total-expenses" class="text-3xl font-bold text-red-600">$0.00</p>
-        </div>
-        <div class="dashboard-card bg-green-100">
-            <h4 class="font-bold text-green-800">Net Profit</h4>
-            <p id="profit-net-profit" class="text-3xl font-bold text-green-600">$0.00</p>
-        </div>
-        <div class="dashboard-card bg-purple-100">
-            <h4 class="font-bold text-purple-800">Profit Margin</h4>
-            <p id="profit-margin" class="text-3xl font-bold text-purple-600">0%</p>
-        </div>
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        <div class="dashboard-card bg-yellow-100">
-            <h4 class="font-bold text-yellow-800">Total Cash</h4>
-            <p id="total-salon-cash-card" class="text-3xl font-bold text-yellow-600">$0</p>
-        </div>
-         <div class="dashboard-card bg-indigo-100">
-            <h4 class="font-bold text-indigo-800">Total Clients</h4>
-            <p id="total-clients-card" class="text-3xl font-bold text-indigo-600">0</p>
-        </div>
-        <div class="dashboard-card bg-orange-100">
-            <h4 class="font-bold text-orange-800">Gift Cards Sold</h4>
-            <p id="total-gift-card-card" class="text-3xl font-bold text-orange-600">$0</p>
-        </div>
-        <div class="dashboard-card bg-pink-100">
-            <h4 class="font-bold text-pink-800">Active Memberships</h4>
-            <p id="total-memberships-card" class="text-3xl font-bold text-pink-600">0</p>
-        </div>
-    </div>
-     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="dashboard-card bg-teal-100">
-            <h4 class="font-bold text-teal-800">Total Appointments</h4>
-            <p id="total-appointments-card" class="text-3xl font-bold text-teal-600">0</p>
-        </div>
-        <div class="dashboard-card bg-blue-100">
-            <h4 class="font-bold text-blue-800">Top Earning Tech</h4>
-            <p id="top-earning-technician-card" class="text-xl font-bold text-blue-600">-</p>
-        </div>
-        <div class="dashboard-card bg-green-100">
-            <h4 class="font-bold text-green-800">Top Tips Earner</h4>
-            <p id="top-tips-technician-card" class="text-xl font-bold text-green-600">-</p>
-        </div>
-        <div class="dashboard-card bg-purple-100">
-            <h4 class="font-bold text-purple-800">Top Booking Tech</h4>
-            <p id="top-booking-technician-card" class="text-xl font-bold text-purple-600">-</p>
-        </div>
-    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="dashboard-card bg-pink-100">
+                            <h4 class="font-bold text-pink-800">Total Salon Revenue</h4>
+                            <p id="total-salon-revenue-card" class="text-3xl font-bold text-pink-600">$0</p>
+                        </div>
+                        <div class="dashboard-card bg-green-100">
+                            <h4 class="font-bold text-green-800">Total Cash</h4>
+                            <p id="total-salon-cash-card" class="text-3xl font-bold text-green-600">$0</p>
+                        </div>
+                        <div class="dashboard-card bg-blue-100">
+                            <h4 class="font-bold text-blue-800">Top Earning Technician</h4>
+                            <p id="top-earning-technician-card" class="text-xl font-bold text-blue-600">-</p>
+                        </div>
+                        <div class="dashboard-card bg-purple-100">
+                            <h4 class="font-bold text-purple-800">Top Booking Technician</h4>
+                            <p id="top-booking-technician-card" class="text-xl font-bold text-purple-600">-</p>
+                        </div>
+                        <div class="dashboard-card bg-teal-100">
+                            <h4 class="font-bold text-teal-800">Total Appointments</h4>
+                            <p id="total-appointments-card" class="text-3xl font-bold text-teal-600">0</p>
+                        </div>
+                        <div class="dashboard-card bg-indigo-100">
+                            <h4 class="font-bold text-indigo-800">Total Clients</h4>
+                            <p id="total-clients-card" class="text-3xl font-bold text-indigo-600">0</p>
+                        </div>
+                        <div class="dashboard-card bg-orange-100">
+                            <h4 class="font-bold text-orange-800">Total Gift Cards Sales</h4>
+                            <p id="total-gift-card-card" class="text-3xl font-bold text-orange-600">0</p>
+                        </div>
+                        <div class="dashboard-card bg-red-100">
+                            <h4 class="font-bold text-red-800">Total Expense</h4>
+                            <p id="total-expense-card" class="text-3xl font-bold text-red-600">$0</p>
+                        </div>
+                    </div>
+                    <div class="mt-8 mb-8 bg-white p-6 rounded-2xl shadow-lg">
+                        <h3 class="text-xl font-bold text-gray-700 mb-4">Staff Earnings Summary</h3>
+                        <div id="staff-earning-cards-container"
+                            class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+                        </div>
+                        <div class="h-96">
+                            <canvas id="staff-earnings-chart"></canvas>
+                        </div>
+                    </div>
 
-    <div id="profit-chart-container" class="bg-white p-6 rounded-2xl shadow-lg h-96 mb-8">
-        <h3 class="text-xl font-bold text-gray-700 mb-4">Revenue vs. Expenses Trend</h3>
-        <canvas id="profit-chart"></canvas>
-    </div>
-    
-    <div class="mt-8 mb-8 bg-white p-6 rounded-2xl shadow-lg">
-        <h3 class="text-xl font-bold text-gray-700 mb-4">Staff Earnings Summary</h3>
-        <div id="staff-earning-cards-container" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
-        </div>
-        <div class="h-96">
-            <canvas id="staff-earnings-chart"></canvas>
-        </div>
-    </div>
-    
-    <div id="admin-upcoming-appointments-list-container" class="mt-8 mb-8 bg-white p-6 rounded-2xl shadow-lg">
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="text-xl font-bold text-gray-700">Upcoming Appointments</h3>
-            <div id="tech-filter-container-dashboard-appointments" class="tech-filter-container flex gap-2 flex-wrap">
-                <button class="tech-filter-btn px-3 py-1 rounded-full text-sm active" data-tech="All">All</button>
-                <button class="tech-filter-btn px-3 py-1 rounded-full text-sm" data-tech="Any Technician">Any Technician</button>
-            </div>
-        </div>
-        <div id="admin-upcoming-appointments-list" class="overflow-x-auto max-h-72">
-        </div>
-    </div>
+                    <div id="salon-revenue-chart-container" class="bg-white p-6 rounded-2xl shadow-lg h-96 mb-8">
+                        <h3 class="text-xl font-bold text-gray-700 mb-4">Salon Revenue Trend</h3>
+                        <canvas id="salon-revenue-chart"></canvas>
+                    </div>
 
-    <div id="dashboard-staff-earning-report-container" class="mt-8 bg-white p-6 rounded-2xl shadow-lg">
-        </div>
+                    <div id="admin-upcoming-appointments-list-container"
+                        class="mt-8 mb-8 bg-white p-6 rounded-2xl shadow-lg">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-bold text-gray-700">Upcoming Appointments</h3>
+                            <div id="tech-filter-container-dashboard-appointments"
+                                class="tech-filter-container flex gap-2 flex-wrap">
+                                <button class="tech-filter-btn px-3 py-1 rounded-full text-sm active"
+                                    data-tech="All">All</button>
+                                <button class="tech-filter-btn px-3 py-1 rounded-full text-sm"
+                                    data-tech="Any Technician">Any Technician</button>
+                            </div>
+                        </div>
+                        <div id="admin-upcoming-appointments-list" class="overflow-x-auto max-h-72">
+                        </div>
+                    </div>
 
-    <div class="mt-8 bg-white p-6 rounded-2xl shadow-lg">
-        </div>
-</div>
+
+                    <div id="dashboard-staff-earning-report-container" class="mt-8 bg-white p-6 rounded-2xl shadow-lg">
+                        <h3
+                            class="text-xl font-bold text-gray-700 border-b pb-3 mb-6 flex justify-between items-center">
+                            <span id="dashboard-staff-earning-title">Staff Earning Report</span>
+                            <div class="flex gap-4">
+                                <span id="dashboard-filtered-earning-total-main"
+                                    class="ml-2 bg-pink-100 text-pink-800 text-sm font-semibold px-2.5 py-0.5 rounded-full"></span>
+                                <span id="dashboard-filtered-earning-total-tip"
+                                    class="ml-2 bg-green-100 text-green-800 text-sm font-semibold px-2.5 py-0.5 rounded-full"></span>
+                            </div>
+                        </h3>
+                        <form id="dashboard-staff-earning-form-full"
+                            class="grid grid-cols-1 md:grid-cols-6 gap-6 mb-8 items-end p-4 border-b">
+                            <div>
+                                <label for="dashboard-staff-earning-date-full"
+                                    class="block text-sm font-medium text-gray-600 mb-1">Date</label>
+                                <input type="date" id="dashboard-staff-earning-date-full"
+                                    class="form-input w-full p-3 border border-gray-300 rounded-lg" required>
+                            </div>
+                            <div>
+                                <label for="dashboard-staff-name-full"
+                                    class="block text-sm font-medium text-gray-600 mb-1">Staff Name</label>
+                                <select id="dashboard-staff-name-full"
+                                    class="form-select w-full p-3 border border-gray-300 rounded-lg" required></select>
+                            </div>
+                            <div>
+                                <label for="dashboard-staff-earning-service"
+                                    class="block text-sm font-medium text-gray-600 mb-1">Service</label>
+                                <input type="text" id="dashboard-staff-earning-service"
+                                    list="dashboard-staff-earning-services-list"
+                                    class="form-input w-full p-3 border border-gray-300 rounded-lg"
+                                    placeholder="Type or select service">
+                                <datalist id="dashboard-staff-earning-services-list"></datalist>
+                            </div>
+                            <div>
+                                <label for="dashboard-staff-earning-full"
+                                    class="block text-sm font-medium text-gray-600 mb-1">Earning</label>
+                                <input type="number" step="0.01" id="dashboard-staff-earning-full"
+                                    class="form-input w-full p-3 border border-gray-300 rounded-lg"
+                                    placeholder="e.g., 100" required>
+                            </div>
+                            <div>
+                                <label for="dashboard-staff-tip-full"
+                                    class="block text-sm font-medium text-gray-600 mb-1">Tip</label>
+                                <input type="number" step="0.01" id="dashboard-staff-tip-full"
+                                    class="form-input w-full p-3 border border-gray-300 rounded-lg"
+                                    placeholder="e.g., 20">
+                            </div>
+                            <div>
+                                <button type="submit"
+                                    class="w-full bg-pink-600 text-white font-bold py-3 px-6 rounded-full hover:bg-pink-700">Add
+                                    Earning</button>
+                            </div>
+                        </form>
+                        <div class="flex justify-between items-center mb-4">
+                            <div id="dashboard-tech-filter-container-earning"
+                                class="tech-filter-container flex gap-2 flex-wrap"><button
+                                    class="tech-filter-btn px-3 py-1 rounded-full text-sm active"
+                                    data-tech="All">All</button></div>
+                            <div class="flex items-center gap-2">
+                                <select id="dashboard-earning-range-filter"
+                                    class="form-select p-2 border border-gray-300 rounded-lg"></select>
+                                <input type="date" id="dashboard-earning-date-filter"
+                                    class="p-2 border border-gray-300 rounded-lg">
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto max-h-96">
+                            <table id="dashboard-staff-earning-table-full"
+                                class="w-full text-sm text-left text-gray-600">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3">Date</th>
+                                        <th scope="col" class="px-6 py-3">Staff Name</th>
+                                        <th scope="col" class="px-6 py-3">Service</th>
+                                        <th scope="col" class="px-6 py-3">Earning</th>
+                                        <th scope="col" class="px-6 py-3">Tip</th>
+                                        <th scope="col" class="px-6 py-3 text-center"
+                                            id="dashboard-earning-action-header">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                                <tfoot class="bg-gray-100 sticky bottom-0 font-semibold">
+                                    <tr>
+                                        <td colspan="3" class="px-6 py-3 text-right">Total:</td>
+                                        <td id="dashboard-total-earning" class="px-6 py-3"></td>
+                                        <td id="dashboard-total-tip" class="px-6 py-3"></td>
+                                        <td class="px-6 py-3"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- PASTE THIS ENTIRE NEW SECTION -->
+                    <div class="mt-8 bg-white p-6 rounded-2xl shadow-lg">
+                        <h3 class="text-xl font-bold text-gray-700 border-b pb-3 mb-6">Salon Task Manager</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <!-- Add Task Form -->
+                            <div class="md:col-span-1">
+                                <form id="add-task-form" class="space-y-4">
+                                    <div>
+                                        <label for="task-description"
+                                            class="block text-sm font-medium text-gray-600">New Task</label>
+                                        <input type="text" id="task-description" class="form-input w-full mt-1"
+                                            placeholder="e.g., Order more DND #401" required>
+                                    </div>
+                                    <div>
+                                        <label for="task-category"
+                                            class="block text-sm font-medium text-gray-600">Category</label>
+                                        <select id="task-category" class="form-select w-full mt-1">
+                                            <option value="Nails Supply">Nails Supply</option>
+                                            <option value="Maintenance">Maintenance</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                    <button type="submit"
+                                        class="w-full bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">
+                                        <i class="fas fa-plus mr-2"></i>Add Task
+                                    </button>
+                                </form>
+                            </div>
+                            <!-- Task List -->
+                            <div id="task-list-container" class="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <!-- Nails Supply Column -->
+                                <div>
+                                    <h4 class="font-semibold text-gray-700 mb-2 pb-2 border-b">Nails Supply</h4>
+                                    <div id="task-list-supply" class="space-y-2 max-h-64 overflow-y-auto pr-2">
+                                        <!-- Supply tasks go here -->
+                                    </div>
+                                </div>
+                                <!-- Maintenance Column -->
+                                <div>
+                                    <h4 class="font-semibold text-gray-700 mb-2 pb-2 border-b">Maintenance</h4>
+                                    <div id="task-list-maintenance" class="space-y-2 max-h-64 overflow-y-auto pr-2">
+                                        <!-- Maintenance tasks go here -->
+                                    </div>
+                                </div>
+                                <!-- Other Column -->
+                                <div>
+                                    <h4 class="font-semibold text-gray-700 mb-2 pb-2 border-b">Other</h4>
+                                    <div id="task-list-other" class="space-y-2 max-h-64 overflow-y-auto pr-2">
+                                        <!-- Other tasks go here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </div>
+
                 <div id="staff-dashboard-view" class="hidden">
                     <div class="flex justify-end items-center mb-6 gap-2">
                         <label class="text-sm font-medium text-gray-700">Date Range:</label>

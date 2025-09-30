@@ -3197,10 +3197,6 @@ function initMainApp(userRole, userName) {
         profitChart = initializeChart(profitChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
     };
 
-    // --- Setup the filter for the new dashboard ---
-    setupReportDateFilters('profit-dashboard-range-filter', 'profit-dashboard-date-filter', renderProfitDashboard);
-    document.getElementById('profit-dashboard-range-filter').value = String(new Date().getMonth());
-
     
     // --- NEW DASHBOARD LOGIC ---
 

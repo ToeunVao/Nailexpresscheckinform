@@ -3277,7 +3277,7 @@ function initMainApp(userRole, userName) {
 
 const updateAdminDashboard = () => {
         const { startDate, endDate } = getDateRange(
-            document.getElementById('dashboard-range-filter').value,
+            document.getElementById('dashboard-range-filter').value, 
             document.getElementById('dashboard-date-filter').value
         );
         if (!startDate) return;
@@ -3383,10 +3383,8 @@ const updateAdminDashboard = () => {
         
         // 5. Render other dashboard components
         updateStaffEarningsReport(filteredSalonEarnings);
-        const techFilter = document.querySelector('#tech-filter-container-dashboard-appointments .active')?.dataset.tech || 'All';
-        renderDetailedAppointmentsList('admin-upcoming-appointments-list', allAppointments, techFilter);
+        renderDetailedAppointmentsList('admin-upcoming-appointments-list', allAppointments, currentDashboardApptTechFilter);
     };
-
 
     // REPLACE the old updateStaffDashboard function with this one
     const updateStaffDashboard = () => {

@@ -3197,6 +3197,10 @@ function initMainApp(userRole, userName) {
         profitChart = initializeChart(profitChart, ctx, 'line', chartConfig, { responsive: true, maintainAspectRatio: false });
     };
 
+    // --- Setup the filter for the new dashboard ---
+    setupReportDateFilters('profit-dashboard-range-filter', 'profit-dashboard-date-filter', renderProfitDashboard);
+    document.getElementById('profit-dashboard-range-filter').value = String(new Date().getMonth());
+
     
     // --- NEW DASHBOARD LOGIC ---
 
@@ -3277,7 +3281,7 @@ function initMainApp(userRole, userName) {
 
 const updateAdminDashboard = () => {
         const { startDate, endDate } = getDateRange(
-            document.getElementById('dashboard-range-filter').value, 
+            document.getElementById('dashboard-range-filter').value,
             document.getElementById('dashboard-date-filter').value
         );
         if (!startDate) return;
@@ -3383,8 +3387,10 @@ const updateAdminDashboard = () => {
         
         // 5. Render other dashboard components
         updateStaffEarningsReport(filteredSalonEarnings);
-        renderDetailedAppointmentsList('admin-upcoming-appointments-list', allAppointments, currentDashboardApptTechFilter);
+        const techFilter = document.querySelector('#tech-filter-container-dashboard-appointments .active')?.dataset.tech || 'All';
+        renderDetailedAppointmentsList('admin-upcoming-appointments-list', allAppointments, techFilter);
     };
+
 
     // REPLACE the old updateStaffDashboard function with this one
     const updateStaffDashboard = () => {

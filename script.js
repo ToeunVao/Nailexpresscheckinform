@@ -2024,23 +2024,6 @@ function initLandingPage() {
 
 // --- MAIN CHECK-IN APP SCRIPT ---
 function initMainApp(userRole, userName) {
-        const setupReportDateFilters = (selectId, dateInputId, callback) => {
-        const select = document.getElementById(selectId);
-        const dateInput = document.getElementById(dateInputId);
-        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-        select.innerHTML = `<option value="daily">Daily</option>`;
-        months.forEach((month, index) => { select.innerHTML += `<option value="${index}">${month}</option>`; });
-        select.innerHTML += `<option value="this-year">This Year</option><option value="last-year">Last Year</option>`;
-
-        select.addEventListener('change', (e) => {
-            const range = e.target.value;
-            dateInput.style.display = range === 'daily' ? 'block' : 'none';
-            callback(dateInput.value, range);
-        });
-        dateInput.addEventListener('input', (e) => {
-            callback(e.target.value, select.value);
-        });
-    };
     // --- START: MOBILE MENU LOGIC (REPLACE YOUR OLD BLOCK WITH THIS) ---
     const mobileMenuBtn = document.getElementById('mobile-menu-btn');
     const mobileSidebar = document.getElementById('mobile-sidebar');
@@ -3204,6 +3187,25 @@ function initMainApp(userRole, userName) {
     
     // --- NEW DASHBOARD LOGIC ---
 
+    const setupReportDateFilters = (selectId, dateInputId, callback) => {
+        const select = document.getElementById(selectId);
+        const dateInput = document.getElementById(dateInputId);
+        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        select.innerHTML = `<option value="daily">Daily</option>`;
+        months.forEach((month, index) => { select.innerHTML += `<option value="${index}">${month}</option>`; });
+        select.innerHTML += `<option value="this-year">This Year</option><option value="last-year">Last Year</option>`;
+
+        select.addEventListener('change', (e) => {
+            const range = e.target.value;
+            dateInput.style.display = range === 'daily' ? 'block' : 'none';
+            callback(dateInput.value, range);
+        });
+        dateInput.addEventListener('input', (e) => {
+            callback(e.target.value, select.value);
+        });
+    };
+
+    
     const updateDashboard = () => {
         if (currentUserRole === 'admin') {
             updateAdminDashboard();

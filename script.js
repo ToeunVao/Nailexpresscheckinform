@@ -3086,46 +3086,6 @@ if (userRole === 'admin') {
     let holidayCalYear = new Date().getFullYear();
     let holidayCalMonth = new Date().getMonth();
 
-    const renderHolidayCalendar = () => {
-        const grid = document.getElementById('holiday-calendar-grid');
-        const monthYearEl = document.getElementById('holiday-month-year');
-        if (!grid || !monthYearEl) return;
-
-        monthYearEl.textContent = new Date(holidayCalYear, holidayCalMonth).toLocaleString('default', { month: 'long', year: 'numeric' });
-        grid.innerHTML = '<div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>'; // Headers
-
-        const firstDay = new Date(holidayCalYear, holidayCalMonth, 1).getDay();
-        const daysInMonth = new Date(holidayCalYear, holidayCalMonth + 1, 0).getDate();
-
-        for (let i = 0; i < firstDay; i++) { grid.insertAdjacentHTML('beforeend', '<div></div>'); }
-
-        for (let day = 1; day <= daysInMonth; day++) {
-            const dateStr = `${holidayCalYear}-${String(holidayCalMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            const isHoliday = holidaySettings.dates.includes(dateStr);
-            const isToday = new Date().toDateString() === new Date(holidayCalYear, holidayCalMonth, day).toDateString();
-            
-            const cell = document.createElement('div');
-            cell.textContent = day;
-            cell.dataset.date = dateStr;
-            cell.className = `day-cell ${isHoliday ? 'is-holiday' : ''} ${isToday ? 'is-today' : ''}`;
-            grid.appendChild(cell);
-        }
-    };
-
-    const renderHolidayList = () => {
-        const listEl = document.getElementById('holiday-list-admin');
-        if (!listEl) return;
-        const upcoming = holidaySettings.dates
-            .filter(d => new Date(d) >= new Date().setHours(0,0,0,0))
-            .sort();
-        
-        if (upcoming.length > 0) {
-            listEl.innerHTML = upcoming.map(d => `<div>${new Date(d+'T00:00:00').toLocaleDateString([], {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})}</div>`).join('');
-        } else {
-            listEl.innerHTML = '<p class="text-gray-500">No upcoming closures scheduled.</p>';
-        }
-    };
-
     document.getElementById('prev-holiday-month-btn')?.addEventListener('click', () => {
         holidayCalMonth--;
         if (holidayCalMonth < 0) { holidayCalMonth = 11; holidayCalYear--; }
@@ -3390,6 +3350,45 @@ onSnapshot(doc(db, "settings", "holidays"), (docSnap) => {
     confirmCancelBtn.addEventListener('click', closeConfirmModal);
     document.querySelector('.confirm-modal-overlay').addEventListener('click', closeConfirmModal);
 
+    const renderHolidayCalendar = () => {
+        const grid = document.getElementById('holiday-calendar-grid');
+        const monthYearEl = document.getElementById('holiday-month-year');
+        if (!grid || !monthYearEl) return;
+
+        monthYearEl.textContent = new Date(holidayCalYear, holidayCalMonth).toLocaleString('default', { month: 'long', year: 'numeric' });
+        grid.innerHTML = '<div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>'; // Headers
+
+        const firstDay = new Date(holidayCalYear, holidayCalMonth, 1).getDay();
+        const daysInMonth = new Date(holidayCalYear, holidayCalMonth + 1, 0).getDate();
+
+        for (let i = 0; i < firstDay; i++) { grid.insertAdjacentHTML('beforeend', '<div></div>'); }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${holidayCalYear}-${String(holidayCalMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const isHoliday = holidaySettings.dates.includes(dateStr);
+            const isToday = new Date().toDateString() === new Date(holidayCalYear, holidayCalMonth, day).toDateString();
+            
+            const cell = document.createElement('div');
+            cell.textContent = day;
+            cell.dataset.date = dateStr;
+            cell.className = `day-cell ${isHoliday ? 'is-holiday' : ''} ${isToday ? 'is-today' : ''}`;
+            grid.appendChild(cell);
+        }
+    };
+
+    const renderHolidayList = () => {
+        const listEl = document.getElementById('holiday-list-admin');
+        if (!listEl) return;
+        const upcoming = holidaySettings.dates
+            .filter(d => new Date(d) >= new Date().setHours(0,0,0,0))
+            .sort();
+        
+        if (upcoming.length > 0) {
+            listEl.innerHTML = upcoming.map(d => `<div>${new Date(d+'T00:00:00').toLocaleDateString([], {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})}</div>`).join('');
+        } else {
+            listEl.innerHTML = '<p class="text-gray-500">No upcoming closures scheduled.</p>';
+        }
+    };
     const initializeChart = (chartInstance, ctx, type, data, options) => {
         if (chartInstance) { chartInstance.data = data; chartInstance.options = options; chartInstance.update(); }
         else { chartInstance = new Chart(ctx, { type, data, options }); }

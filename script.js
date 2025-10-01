@@ -2438,6 +2438,11 @@ function initMainApp(userRole, userName) {
         // Switch the main content view
         dashboardContent.classList.add('hidden');
         mainAppContainer.classList.remove('hidden');
+        // =======================================================
+    // FIX: Clear all previous dynamic content from the main container
+    mainAppContainer.innerHTML = ''; 
+    // =======================================================
+    
         allMainSections.forEach(section => section.classList.add('hidden'));
 
         switch (target) {

@@ -41,6 +41,7 @@ let loginSecuritySettings = { maxAttempts: 5, lockoutMinutes: 15 };
 let salonHours = {};
 //... inside initMainApp, around line 247
 let salonRevenueChart, myEarningsChart, staffEarningsChart, profitChart;
+let clientSpendingChart, clientServicesChart;
 let notifications = [];
 let currentUserRole = null;
 let currentUserName = null;
@@ -1290,54 +1291,56 @@ async function initClientDashboard(clientId, clientData) {
         `;
     };
 
-    const setupClientNav = (featureSettings) => {
-        const navContainer = document.getElementById('client-top-nav');
-        const contentSections = document.querySelectorAll('.client-tab-content');
-        
-        let navItems = [
-            { id: 'appointments', text: 'Appointments' },
-            { id: 'favorites', text: 'My Favorites' }
-        ];
+// REPLACE your old setupClientNav function with this one
+const setupClientNav = (featureSettings) => {
+    const navContainer = document.getElementById('client-top-nav');
+    const contentSections = document.querySelectorAll('.client-tab-content');
+    
+    // Add "Dashboard" to the beginning of the nav items
+    let navItems = [
+        { id: 'dashboard', text: 'Dashboard' },
+        { id: 'appointments', text: 'Appointments' },
+        { id: 'favorites', text: 'My Favorites' }
+    ];
 
-        if (featureSettings.showGiftCards) {
-            navItems.push({ id: 'gift-cards', text: 'My Gift Cards' });
-        }
-        if (featureSettings.showMemberships) {
-            navItems.push({ id: 'membership', text: 'My Membership' });
-        }
-        if (featureSettings.showRoyaltyCard) {
-            navItems.push({ id: 'royalty-card', text: 'Royalty Card' });
-        }
-        // --- ADD THE NEW "ACCOUNT SETTINGS" NAV ITEM ---
-        navItems.push({ id: 'account-settings', text: 'Account Settings' });
-        
+    if (featureSettings.showGiftCards) {
+        navItems.push({ id: 'gift-cards', text: 'My Gift Cards' });
+    }
+    if (featureSettings.showMemberships) {
+        navItems.push({ id: 'membership', text: 'My Membership' });
+    }
+    if (featureSettings.showRoyaltyCard) {
+        navItems.push({ id: 'royalty-card', text: 'Royalty Card' });
+    }
+    navItems.push({ id: 'account-settings', text: 'Account Settings' });
+    
+    contentSections.forEach(content => content.classList.add('hidden'));
+
+    navContainer.innerHTML = navItems.map(item => 
+        `<button class="top-nav-btn" data-target="${item.id}-content">${item.text}</button>`
+    ).join('');
+    
+    const navButtons = navContainer.querySelectorAll('.top-nav-btn');
+
+    navContainer.addEventListener('click', (e) => {
+        const button = e.target.closest('.top-nav-btn');
+        if (!button) return;
+
+        navButtons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+
         contentSections.forEach(content => content.classList.add('hidden'));
-
-        navContainer.innerHTML = navItems.map(item => 
-            `<button class="top-nav-btn" data-target="${item.id}-content">${item.text}</button>`
-        ).join('');
-        
-        const navButtons = navContainer.querySelectorAll('.top-nav-btn');
-
-        navContainer.addEventListener('click', (e) => {
-            const button = e.target.closest('.top-nav-btn');
-            if (!button) return;
-
-            navButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-
-            contentSections.forEach(content => content.classList.add('hidden'));
-            const targetId = button.dataset.target;
-            const targetContent = document.getElementById(targetId);
-            if (targetContent) {
-                targetContent.classList.remove('hidden');
-            }
-        });
-
-        if (navButtons.length > 0) {
-            navButtons[0].click();
+        const targetId = button.dataset.target;
+        const targetContent = document.getElementById(targetId);
+        if (targetContent) {
+            targetContent.classList.remove('hidden');
         }
-    };
+    });
+
+    if (navButtons.length > 0) {
+        navButtons[0].click(); // Click the first button (Dashboard) by default
+    }
+};
 
     const renderClientAppointments = (appointments) => {
         const container = document.getElementById('client-upcoming-appointments');
@@ -1354,6 +1357,83 @@ async function initClientDashboard(clientId, clientData) {
             container.appendChild(el);
         });
     };
+
+// PASTE these two new functions inside initClientDashboard
+
+const renderClientDashboardCharts = (history, appointments) => {
+    // 1. Calculate KPIs for the cards
+    document.getElementById('client-total-visits').textContent = history.length;
+    document.getElementById('client-last-visit').textContent = history.length > 0 ? history[0].checkOutTimestamp.toDate().toLocaleDateString() : 'N/A';
+
+    const upcomingAppointments = appointments.filter(a => a.appointmentTimestamp.toDate() > new Date()).sort((a,b) => a.appointmentTimestamp.seconds - b.appointmentTimestamp.seconds);
+    document.getElementById('client-next-appt').textContent = upcomingAppointments.length > 0 ? upcomingAppointments[0].appointmentTimestamp.toDate().toLocaleDateString() : 'None';
+
+    // 2. Process data for Spending Chart
+    const spendingByMonth = {};
+    let totalSpent = 0;
+    const serviceCounts = {};
+
+    history.forEach(visit => {
+        const visitDate = visit.checkOutTimestamp.toDate();
+        const monthKey = `${visitDate.getFullYear()}-${String(visitDate.getMonth() + 1).padStart(2, '0')}`;
+        
+        let visitTotal = 0;
+        const serviceNames = visit.services.split(', ').map(s => s.replace(/\s*\$\d+/, '').trim());
+
+        serviceNames.forEach(name => {
+            serviceCounts[name] = (serviceCounts[name] || 0) + 1;
+            const servicePrice = allServicesList.find(s => s.name === name)?.price || 0;
+            visitTotal += servicePrice;
+        });
+        
+        spendingByMonth[monthKey] = (spendingByMonth[monthKey] || 0) + visitTotal;
+        totalSpent += visitTotal;
+    });
+
+    document.getElementById('client-total-spent').textContent = `$${totalSpent.toFixed(2)}`;
+
+    const sortedMonths = Object.keys(spendingByMonth).sort();
+    const spendingLabels = sortedMonths.map(key => new Date(key + '-02').toLocaleString('default', { month: 'short', year: '2-digit' }));
+    const spendingData = sortedMonths.map(key => spendingByMonth[key]);
+
+    // 3. Render Spending Chart
+    const spendingCtx = document.getElementById('client-spending-chart')?.getContext('2d');
+    if (spendingCtx) {
+        const spendingConfig = {
+            labels: spendingLabels,
+            datasets: [{
+                label: 'Total Spent',
+                data: spendingData,
+                backgroundColor: 'rgba(219, 39, 119, 0.1)',
+                borderColor: 'rgba(219, 39, 119, 1)',
+                borderWidth: 2,
+                tension: 0.2,
+                fill: true
+            }]
+        };
+        clientSpendingChart = initializeChart(clientSpendingChart, spendingCtx, 'line', spendingConfig, { responsive: true, maintainAspectRatio: false });
+    }
+
+    // 4. Process and Render Services Chart
+    const sortedServices = Object.entries(serviceCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const serviceLabels = sortedServices.map(entry => entry[0]);
+    const serviceData = sortedServices.map(entry => entry[1]);
+
+    const servicesCtx = document.getElementById('client-services-chart')?.getContext('2d');
+    if (servicesCtx) {
+        const servicesConfig = {
+            labels: serviceLabels,
+            datasets: [{
+                label: 'Service Count',
+                data: serviceData,
+                backgroundColor: colorPalette.map(c => c.bg),
+                borderColor: colorPalette.map(c => c.border),
+                borderWidth: 1
+            }]
+        };
+        clientServicesChart = initializeChart(clientServicesChart, servicesCtx, 'doughnut', servicesConfig, { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } });
+    }
+};
 
     const renderClientHistory = (history) => {
         const container = document.getElementById('client-appointment-history');
@@ -1388,10 +1468,14 @@ async function initClientDashboard(clientId, clientData) {
         document.getElementById('favorite-color').textContent = favColor;
     };
     
-    onSnapshot(query(collection(db, "appointments"), where("name", "==", clientData.name)), (snapshot) => {
-        const appointments = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
-        renderClientAppointments(appointments);
-    });
+// Inside initClientDashboard
+onSnapshot(query(collection(db, "appointments"), where("name", "==", clientData.name)), (snapshot) => {
+    const appointments = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
+    renderClientAppointments(appointments);
+
+    // ADD THIS LINE
+    if (allFinishedClients.length > 0) renderClientDashboardCharts(allFinishedClients, appointments);
+});
 
     onSnapshot(query(collection(db, "finished_clients"), where("name", "==", clientData.name)), (snapshot) => {
         const history = snapshot.docs.map(doc => {
@@ -1409,6 +1493,10 @@ async function initClientDashboard(clientId, clientData) {
         allFinishedClients = history;
         renderClientHistory(history);
         calculateAndRenderFavorites(history);
+        // ADD THIS LINE - fetch current appointments to pass to the function
+    const currentAppointments = allAppointments.filter(a => a.name === clientData.name);
+    renderClientDashboardCharts(history, currentAppointments);
+    
     }, (error) => {
         console.error("Error fetching client history:", error);
         const container = document.getElementById('client-appointment-history');

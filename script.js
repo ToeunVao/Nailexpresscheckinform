@@ -621,6 +621,55 @@ async function sendMembershipConfirmationEmail(details) {
         console.error("Error sending membership confirmation email:", error);
     }
 }
+
+// PASTE THIS NEW FUNCTION in the Email Notification Logic section
+async function sendAppointmentReminderEmail(appointmentData, clientEmail) {
+    if (!clientEmail) {
+        console.log("No client email found for reminder for:", appointmentData.name);
+        return;
+    }
+
+    try {
+        const templateDoc = await getDoc(doc(db, "settings", "emailTemplates"));
+        if (!templateDoc.exists()) return;
+        const templates = templateDoc.data();
+
+        let subject = templates.reminderSubject || 'Your Upcoming Appointment at Nails Express';
+        let body = templates.reminderBody || 'Hi {clientName}, this is a reminder for your appointment on {appointmentDate} at {appointmentTime}. We look forward to seeing you!';
+
+        const appointmentDate = appointmentData.appointmentTimestamp.toDate();
+        
+        // Calculate reminder time (24 hours before appointment)
+        const reminderTime = new Date(appointmentDate.getTime() - (24 * 60 * 60 * 1000));
+
+        // If the reminder time is in the past, don't schedule it
+        if (reminderTime < new Date()) {
+            console.log("Skipping reminder for appointment in less than 24 hours.");
+            return;
+        }
+
+        body = body.replace(/{clientName}/g, appointmentData.name)
+            .replace(/{appointmentDate}/g, appointmentDate.toLocaleDateString())
+            .replace(/{appointmentTime}/g, appointmentDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
+            .replace(/{technician}/g, appointmentData.technician)
+            .replace(/{services}/g, Array.isArray(appointmentData.services) ? appointmentData.services.join(', ') : appointmentData.services)
+            .replace(/\n/g, '<br>');
+
+        await addDoc(collection(db, "mail"), {
+            to: clientEmail,
+            message: { subject: subject, html: body },
+            // This tells the Firebase Extension to send the email later
+            delivery: {
+                startTime: Timestamp.fromDate(reminderTime)
+            }
+        });
+        console.log(`Reminder email scheduled for ${appointmentData.name}`);
+
+    } catch (error) {
+        console.error("Error scheduling appointment reminder email:", error);
+    }
+}
+
 // --- Booking Validation Logic ---
 // REPLACE the old isBookingTimeValid function with this one
 function isBookingTimeValid(bookingDate) {
@@ -799,18 +848,20 @@ addAppointmentForm.addEventListener('submit', async (e) => {
     const appointmentId = document.getElementById('edit-appointment-id').value;
 
     try {
-        if (appointmentId) {
-            // If an ID exists, UPDATE the existing document
-            await updateDoc(doc(db, "appointments", appointmentId), appointmentData);
-            alert("Appointment updated successfully!");
-        } else {
-            // If no ID, ADD a new document
-            await addDoc(collection(db, "appointments"), appointmentData);
-            await sendBookingNotificationEmail(appointmentData);
-            alert("Appointment saved successfully!");
-        }
-        closeAddAppointmentModal();
-    } catch (err) {
+    const client = allClients.find(c => c.name === appointmentData.name); // Find client to get email
+
+    if (appointmentId) {
+        await updateDoc(doc(db, "appointments", appointmentId), appointmentData);
+        alert("Appointment updated successfully!");
+    } else {
+        const docRef = await addDoc(collection(db, "appointments"), appointmentData);
+        await sendBookingNotificationEmail(appointmentData);
+        // ADD THIS LINE for reminders
+        if (client && client.email) await sendAppointmentReminderEmail(appointmentData, client.email);
+        alert("Appointment saved successfully!");
+    }
+    closeAddAppointmentModal();
+} catch (err) {
         console.error("Error saving appointment:", err);
         alert("Could not save appointment.");
     }
@@ -2007,9 +2058,14 @@ function initLandingPage() {
         };
 
         try {
+            const client = allClients.find(c => c.name === appointmentData.name); // Find client to get email
+
             await addDoc(collection(db, "appointments"), appointmentData);
             await sendBookingNotificationEmail(appointmentData);
-
+            // ADD THIS LINE for reminders
+             if (client && client.email) await sendAppointmentReminderEmail(appointmentData, client.email);
+             // For landing page, we don't have the client's email readily, so we can't send a reminder.
+            // This functionality will primarily be for clients booked through the admin panel.
             alert('Appointment booked successfully!');
             addAppointmentFormLanding.reset();
             step2.classList.add('hidden');
@@ -2372,34 +2428,41 @@ function initMainApp(userRole, userName) {
     const shareModal = document.getElementById('share-modal');
     // PASTE THIS CODE BLOCK
     const emailTemplatesForm = document.getElementById('email-templates-form');
-    if (emailTemplatesForm) {
-        getDoc(doc(db, "settings", "emailTemplates")).then(docSnap => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                document.getElementById('gift-card-subject').value = data.giftCardSubject || '';
-                document.getElementById('gift-card-body').value = data.giftCardBody || '';
-                document.getElementById('membership-subject').value = data.membershipSubject || '';
-                document.getElementById('membership-body').value = data.membershipBody || '';
-            }
-        });
+// REPLACE your old emailTemplatesForm listener with this one
+if (emailTemplatesForm) {
+    getDoc(doc(db, "settings", "emailTemplates")).then(docSnap => {
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            document.getElementById('gift-card-subject').value = data.giftCardSubject || '';
+            document.getElementById('gift-card-body').value = data.giftCardBody || '';
+            document.getElementById('membership-subject').value = data.membershipSubject || '';
+            document.getElementById('membership-body').value = data.membershipBody || '';
+            // New lines for reminder template
+            document.getElementById('reminder-subject').value = data.reminderSubject || '';
+            document.getElementById('reminder-body').value = data.reminderBody || '';
+        }
+    });
 
-        emailTemplatesForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const templateData = {
-                giftCardSubject: document.getElementById('gift-card-subject').value,
-                giftCardBody: document.getElementById('gift-card-body').value,
-                membershipSubject: document.getElementById('membership-subject').value,
-                membershipBody: document.getElementById('membership-body').value,
-            };
-            try {
-                await setDoc(doc(db, "settings", "emailTemplates"), templateData);
-                alert("Email templates saved successfully!");
-            } catch (error) {
-                console.error("Error saving email templates:", error);
-                alert("Could not save email templates.");
-            }
-        });
-    }
+    emailTemplatesForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const templateData = {
+            giftCardSubject: document.getElementById('gift-card-subject').value,
+            giftCardBody: document.getElementById('gift-card-body').value,
+            membershipSubject: document.getElementById('membership-subject').value,
+            membershipBody: document.getElementById('membership-body').value,
+            // New lines for reminder template
+            reminderSubject: document.getElementById('reminder-subject').value,
+            reminderBody: document.getElementById('reminder-body').value,
+        };
+        try {
+            await setDoc(doc(db, "settings", "emailTemplates"), templateData);
+            alert("Email templates saved successfully!");
+        } catch (error) {
+            console.error("Error saving email templates:", error);
+            alert("Could not save email templates.");
+        }
+    });
+}
     // PASTE THIS ENTIRE BLOCK inside your initMainApp function
 
     const royaltySettingsForm = document.getElementById('royalty-settings-form');
@@ -2928,7 +2991,76 @@ function initMainApp(userRole, userName) {
 
 // PASTE THIS inside initMainApp()
 
+// PASTE THIS ENTIRE BLOCK inside initMainApp()
 
+const emailMarketingModal = document.getElementById('email-marketing-modal');
+const emailMarketingForm = document.getElementById('email-marketing-form');
+
+const openEmailMarketingModal = (promo = null) => {
+    emailMarketingForm.reset();
+    if (promo) {
+        document.getElementById('email-marketing-modal-title').textContent = `Email Campaign for "${promo.title}"`;
+        document.getElementById('email-marketing-subject').value = promo.title;
+        document.getElementById('email-marketing-body').value = promo.description;
+    } else {
+        document.getElementById('email-marketing-modal-title').textContent = 'Create Email Campaign';
+    }
+    emailMarketingModal.classList.remove('hidden');
+};
+
+const closeEmailMarketingModal = () => emailMarketingModal.classList.add('hidden');
+
+document.getElementById('open-email-marketing-btn').addEventListener('click', () => openEmailMarketingModal());
+document.getElementById('close-email-marketing-modal-btn').addEventListener('click', closeEmailMarketingModal);
+emailMarketingModal.querySelector('.modal-overlay').addEventListener('click', closeEmailMarketingModal);
+
+promotionsTableBody.addEventListener('click', (e) => {
+    const emailBtn = e.target.closest('.email-promo-btn');
+    if (emailBtn) {
+        const promo = allPromotions.find(p => p.id === emailBtn.dataset.id);
+        if (promo) openEmailMarketingModal(promo);
+    }
+});
+
+emailMarketingForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const subject = document.getElementById('email-marketing-subject').value;
+    const body = document.getElementById('email-marketing-body').value;
+
+    const clientsWithEmail = allClients.filter(c => c.email);
+
+    if (clientsWithEmail.length === 0) {
+        alert("No clients with email addresses found.");
+        return;
+    }
+
+    if (!confirm(`This will send an email to ${clientsWithEmail.length} clients. Are you sure you want to proceed?`)) {
+        return;
+    }
+
+    try {
+        const batch = writeBatch(db);
+        clientsWithEmail.forEach(client => {
+            const mailRef = doc(collection(db, "mail"));
+            const personalizedBody = body.replace(/{clientName}/g, client.name).replace(/\n/g, '<br>');
+            batch.set(mailRef, {
+                to: client.email,
+                message: {
+                    subject: subject,
+                    html: personalizedBody
+                }
+            });
+        });
+
+        await batch.commit();
+        alert(`Email campaign has been queued for ${clientsWithEmail.length} clients!`);
+        closeEmailMarketingModal();
+
+    } catch (error) {
+        console.error("Error sending email campaign:", error);
+        alert("Could not send the email campaign. Please check the console for details.");
+    }
+});
 
 // PASTE THIS ENTIRE BLOCK inside initMainApp()
 
@@ -7077,8 +7209,17 @@ calendarGrid.addEventListener('click', (e) => {
             else if (now > endDate) { status = 'Expired'; statusColor = 'text-gray-500'; }
             else { status = 'Active'; statusColor = 'text-green-600'; }
             const row = promotionsTableBody.insertRow();
-            row.innerHTML = `<td class="px-6 py-4">${promo.title}</td><td class="px-6 py-4">${promo.description}</td><td class="px-6 py-4">${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}</td><td class="px-6 py-4 font-bold ${statusColor}">${status}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${promo.id}" class="send-promo-notification-btn text-purple-500" title="Send Notification"><i class="fas fa-paper-plane"></i></button><button data-id="${promo.id}" class="edit-promotion-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${promo.id}" class="delete-promotion-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
-        });
+        // Inside renderPromotionsAdminTable, find the row.innerHTML assignment
+// and REPLACE the actionButtons part with this
+let actionButtons = `
+    <button data-id="${promo.id}" class="send-promo-notification-btn text-purple-500" title="Send In-App Notification"><i class="fas fa-bell"></i></button>
+    <button data-id="${promo.id}" class="email-promo-btn text-blue-500" title="Create Email Campaign"><i class="fas fa-paper-plane"></i></button>
+    <button data-id="${promo.id}" class="edit-promotion-btn text-yellow-500"><i class="fas fa-edit"></i></button>
+    <button data-id="${promo.id}" class="delete-promotion-btn text-red-500"><i class="fas fa-trash"></i></button>
+`;
+row.innerHTML = `<td class="px-6 py-4">${promo.title}</td><td class="px-6 py-4">${promo.description}</td><td class="px-6 py-4">${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}</td><td class="px-6 py-4 font-bold ${statusColor}">${status}</td><td class="px-6 py-4 text-center space-x-3">${actionButtons}</td>`;
+
+         });
     };
 
 

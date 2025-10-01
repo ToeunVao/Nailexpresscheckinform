@@ -59,6 +59,8 @@ let royaltySettings = { visitsNeeded: 10, rewardDescription: 'One Free Classic M
 let allRoyaltyCards = [];
 let globalListenersAttached = false;
 let holidaySettings = { dates: [], message: 'The salon is closed on the selected date.' };
+let holidayCalYear = new Date().getFullYear(); // You likely added this one
+let holidayCalMonth = new Date().getMonth(); // <--- ADD THIS LINE
 
 const nailIdeaLightbox = document.getElementById('nail-idea-lightbox');
 const lightboxCloseBtn = document.getElementById('lightbox-close-btn');
@@ -71,7 +73,6 @@ const lightboxColor = document.getElementById('lightbox-color');
 const lightboxCategories = document.getElementById('lightbox-categories');
 const lightboxDescription = document.getElementById('lightbox-description');
 let currentLightboxIndex = 0;
-let holidayCalYear = new Date().getFullYear(); 
 
 const giftCardBackgrounds = {
     'General': ['https://img.freepik.com/premium-photo/women-s-legs-with-bright-pedicure-pink-background-chamomile-flower-decoration-spa-pedicure-skincare-concept_256259-166.jpg', 'https://png.pngtree.com/thumb_back/fh260/background/20250205/pngtree-soft-pastel-floral-design-light-blue-background-image_16896113.jpg', 'https://files.123freevectors.com/wp-content/original/119522-abstract-pastel-pink-background-image.jpg'],

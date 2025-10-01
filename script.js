@@ -1496,7 +1496,7 @@ onSnapshot(query(collection(db, "appointments"), where("name", "==", clientData.
         // ADD THIS LINE - fetch current appointments to pass to the function
     const currentAppointments = allAppointments.filter(a => a.name === clientData.name);
     renderClientDashboardCharts(history, currentAppointments);
-    
+
     }, (error) => {
         console.error("Error fetching client history:", error);
         const container = document.getElementById('client-appointment-history');
@@ -3079,76 +3079,6 @@ if (emailTemplatesForm) {
 
 // PASTE THIS inside initMainApp()
 
-// PASTE THIS ENTIRE BLOCK inside initMainApp()
-
-const emailMarketingModal = document.getElementById('email-marketing-modal');
-const emailMarketingForm = document.getElementById('email-marketing-form');
-
-const openEmailMarketingModal = (promo = null) => {
-    emailMarketingForm.reset();
-    if (promo) {
-        document.getElementById('email-marketing-modal-title').textContent = `Email Campaign for "${promo.title}"`;
-        document.getElementById('email-marketing-subject').value = promo.title;
-        document.getElementById('email-marketing-body').value = promo.description;
-    } else {
-        document.getElementById('email-marketing-modal-title').textContent = 'Create Email Campaign';
-    }
-    emailMarketingModal.classList.remove('hidden');
-};
-
-const closeEmailMarketingModal = () => emailMarketingModal.classList.add('hidden');
-
-document.getElementById('open-email-marketing-btn').addEventListener('click', () => openEmailMarketingModal());
-document.getElementById('close-email-marketing-modal-btn').addEventListener('click', closeEmailMarketingModal);
-emailMarketingModal.querySelector('.modal-overlay').addEventListener('click', closeEmailMarketingModal);
-
-promotionsTableBody.addEventListener('click', (e) => {
-    const emailBtn = e.target.closest('.email-promo-btn');
-    if (emailBtn) {
-        const promo = allPromotions.find(p => p.id === emailBtn.dataset.id);
-        if (promo) openEmailMarketingModal(promo);
-    }
-});
-
-emailMarketingForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const subject = document.getElementById('email-marketing-subject').value;
-    const body = document.getElementById('email-marketing-body').value;
-
-    const clientsWithEmail = allClients.filter(c => c.email);
-
-    if (clientsWithEmail.length === 0) {
-        alert("No clients with email addresses found.");
-        return;
-    }
-
-    if (!confirm(`This will send an email to ${clientsWithEmail.length} clients. Are you sure you want to proceed?`)) {
-        return;
-    }
-
-    try {
-        const batch = writeBatch(db);
-        clientsWithEmail.forEach(client => {
-            const mailRef = doc(collection(db, "mail"));
-            const personalizedBody = body.replace(/{clientName}/g, client.name).replace(/\n/g, '<br>');
-            batch.set(mailRef, {
-                to: client.email,
-                message: {
-                    subject: subject,
-                    html: personalizedBody
-                }
-            });
-        });
-
-        await batch.commit();
-        alert(`Email campaign has been queued for ${clientsWithEmail.length} clients!`);
-        closeEmailMarketingModal();
-
-    } catch (error) {
-        console.error("Error sending email campaign:", error);
-        alert("Could not send the email campaign. Please check the console for details.");
-    }
-});
 
 // PASTE THIS ENTIRE BLOCK inside initMainApp()
 
@@ -7285,6 +7215,77 @@ calendarGrid.addEventListener('click', (e) => {
     const addPromotionForm = document.getElementById('add-promotion-form');
     const promotionsTableBody = document.querySelector('#promotions-table tbody');
     const promotionsContainerLanding = document.getElementById('promotions-container-landing');
+
+// PASTE THIS ENTIRE BLOCK inside initMainApp()
+
+const emailMarketingModal = document.getElementById('email-marketing-modal');
+const emailMarketingForm = document.getElementById('email-marketing-form');
+
+const openEmailMarketingModal = (promo = null) => {
+    emailMarketingForm.reset();
+    if (promo) {
+        document.getElementById('email-marketing-modal-title').textContent = `Email Campaign for "${promo.title}"`;
+        document.getElementById('email-marketing-subject').value = promo.title;
+        document.getElementById('email-marketing-body').value = promo.description;
+    } else {
+        document.getElementById('email-marketing-modal-title').textContent = 'Create Email Campaign';
+    }
+    emailMarketingModal.classList.remove('hidden');
+};
+
+const closeEmailMarketingModal = () => emailMarketingModal.classList.add('hidden');
+
+document.getElementById('open-email-marketing-btn').addEventListener('click', () => openEmailMarketingModal());
+document.getElementById('close-email-marketing-modal-btn').addEventListener('click', closeEmailMarketingModal);
+emailMarketingModal.querySelector('.modal-overlay').addEventListener('click', closeEmailMarketingModal);
+
+promotionsTableBody.addEventListener('click', (e) => {
+    const emailBtn = e.target.closest('.email-promo-btn');
+    if (emailBtn) {
+        const promo = allPromotions.find(p => p.id === emailBtn.dataset.id);
+        if (promo) openEmailMarketingModal(promo);
+    }
+});
+
+emailMarketingForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const subject = document.getElementById('email-marketing-subject').value;
+    const body = document.getElementById('email-marketing-body').value;
+
+    const clientsWithEmail = allClients.filter(c => c.email);
+
+    if (clientsWithEmail.length === 0) {
+        alert("No clients with email addresses found.");
+        return;
+    }
+
+    if (!confirm(`This will send an email to ${clientsWithEmail.length} clients. Are you sure you want to proceed?`)) {
+        return;
+    }
+
+    try {
+        const batch = writeBatch(db);
+        clientsWithEmail.forEach(client => {
+            const mailRef = doc(collection(db, "mail"));
+            const personalizedBody = body.replace(/{clientName}/g, client.name).replace(/\n/g, '<br>');
+            batch.set(mailRef, {
+                to: client.email,
+                message: {
+                    subject: subject,
+                    html: personalizedBody
+                }
+            });
+        });
+
+        await batch.commit();
+        alert(`Email campaign has been queued for ${clientsWithEmail.length} clients!`);
+        closeEmailMarketingModal();
+
+    } catch (error) {
+        console.error("Error sending email campaign:", error);
+        alert("Could not send the email campaign. Please check the console for details.");
+    }
+});
 
     const renderPromotionsAdminTable = (promotions) => {
         promotionsTableBody.innerHTML = '';

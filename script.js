@@ -2928,20 +2928,7 @@ function initMainApp(userRole, userName) {
 
 // PASTE THIS inside initMainApp()
 
-onSnapshot(doc(db, "settings", "holidays"), (docSnap) => {
-    if (docSnap.exists()) {
-        holidaySettings = docSnap.data();
-    } else {
-        // If it doesn't exist, create it with defaults
-        setDoc(doc(db, "settings", "holidays"), holidaySettings);
-    }
-    // Re-render calendars if they are visible
-    if (currentUserRole === 'admin') {
-        renderHolidayCalendar();
-        renderHolidayList();
-    }
-    renderCalendar(currentYear, currentMonth, currentTechFilterCalendar);
-});
+
 
 // PASTE THIS ENTIRE BLOCK inside initMainApp()
 
@@ -3062,7 +3049,20 @@ document.getElementById('appointment-datetime-landing')?.addEventListener('input
 document.getElementById('appointment-datetime')?.addEventListener('input', checkDateForHoliday);
 
 
-
+onSnapshot(doc(db, "settings", "holidays"), (docSnap) => {
+    if (docSnap.exists()) {
+        holidaySettings = docSnap.data();
+    } else {
+        // If it doesn't exist, create it with defaults
+        setDoc(doc(db, "settings", "holidays"), holidaySettings);
+    }
+    // Re-render calendars if they are visible
+    if (currentUserRole === 'admin') {
+        renderHolidayCalendar();
+        renderHolidayList();
+    }
+    renderCalendar(currentYear, currentMonth, currentTechFilterCalendar);
+});
 
         // END OF initMainApp }
     }

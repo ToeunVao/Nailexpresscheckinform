@@ -1300,7 +1300,7 @@ const setupClientNav = (featureSettings) => {
     
     // Add "Dashboard" to the beginning of the nav items
     let navItems = [
-        { id: 'dashboard', text: 'Dashboard' },
+        { id: 'client-overview', text: 'Dashboard' },
         { id: 'appointments', text: 'Appointments' },
         { id: 'favorites', text: 'My Favorites' }
     ];

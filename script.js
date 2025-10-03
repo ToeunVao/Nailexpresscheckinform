@@ -5921,7 +5921,7 @@ calendarGrid.addEventListener('click', (e) => {
         }
     });
 
-onst loadSettings = async () => {
+const loadSettings = async () => {
     const bookingSnap = await getDoc(doc(db, "settings", "booking"));
     if (bookingSnap.exists()) { 
         const data = bookingSnap.data();

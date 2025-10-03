@@ -738,6 +738,7 @@ const openAddAppointmentModal = (date, clientData = null, appointmentData = null
     const appointmentIdInput = document.getElementById('edit-appointment-id');
     const nameInput = document.getElementById('appointment-client-name');
     const phoneInput = document.getElementById('appointment-phone');
+    const emailInput = document.getElementById('appointment-email');
     const peopleSelect = document.getElementById('appointment-people');
     const technicianSelect = document.getElementById('appointment-technician-select');
 
@@ -765,6 +766,7 @@ const openAddAppointmentModal = (date, clientData = null, appointmentData = null
 
     nameInput.disabled = false;
     phoneInput.disabled = false;
+    emailInput.disabled = false;
 
     if (appointmentData) {
         // Edit Mode
@@ -780,6 +782,7 @@ const openAddAppointmentModal = (date, clientData = null, appointmentData = null
         document.getElementById('appointment-datetime').value = `${year}-${month}-${day}T${hours}:${minutes}`;
         nameInput.value = appointmentData.name || '';
         phoneInput.value = appointmentData.phone || '';
+        emailInput.value = appointmentData.email || '';
         peopleSelect.value = appointmentData.people || 1;
         document.getElementById('appointment-booking-type').value = appointmentData.bookingType || 'Booked - Calendar';
         technicianSelect.value = appointmentData.technician || 'Any Technician';
@@ -799,8 +802,10 @@ const openAddAppointmentModal = (date, clientData = null, appointmentData = null
         if (clientData) {
             nameInput.value = clientData.name || '';
             phoneInput.value = clientData.phone || '';
+            emailInput.value = clientData.email || '';
             nameInput.disabled = true;
             phoneInput.disabled = true;
+            emailInput.disabled = true;
         }
     }
     addAppointmentModal.classList.remove('hidden');
@@ -816,11 +821,17 @@ document.getElementById('add-appointment-cancel-btn').addEventListener('click', 
 document.querySelector('.add-appointment-modal-overlay').addEventListener('click', closeAddAppointmentModal);
 document.getElementById('appointment-client-name').addEventListener('input', (e) => {
     const client = allFinishedClients.find(c => c.name === e.target.value);
-    if (client) { document.getElementById('appointment-phone').value = client.phone; }
+    if (client) { 
+        document.getElementById('appointment-phone').value = client.phone;
+        document.getElementById('appointment-email').value = client.email || '';
+        }
 });
 document.getElementById('appointment-phone').addEventListener('input', (e) => {
     const client = allFinishedClients.find(c => c.phone === e.target.value);
-    if (client) { document.getElementById('appointment-client-name').value = client.name; }
+    if (client) { 
+        document.getElementById('appointment-client-name').value = client.name;
+        document.getElementById('appointment-email').value = client.email || '';
+     }
 });
 
 // This listener is in the global scope
@@ -839,6 +850,7 @@ addAppointmentForm.addEventListener('submit', async (e) => {
     const appointmentData = {
         name: document.getElementById('appointment-client-name').value,
         phone: document.getElementById('appointment-phone').value,
+        email: document.getElementById('appointment-email').value,
         people: document.getElementById('appointment-people').value,
         bookingType: document.getElementById('appointment-booking-type').value,
         // And REPLACE it with this:
@@ -860,7 +872,7 @@ addAppointmentForm.addEventListener('submit', async (e) => {
         const docRef = await addDoc(collection(db, "appointments"), appointmentData);
         await sendBookingNotificationEmail(appointmentData);
         // ADD THIS LINE for reminders
-        if (client && client.email) await sendAppointmentReminderEmail(appointmentData, client.email);
+        if (appointmentData.email) await sendAppointmentReminderEmail(appointmentData, appointmentData.email);
         alert("Appointment saved successfully!");
     }
     closeAddAppointmentModal();
@@ -2139,6 +2151,7 @@ function initLandingPage() {
         const appointmentData = {
             name: document.getElementById('appointment-client-name-landing').value,
             phone: document.getElementById('appointment-phone-landing').value,
+            email: document.getElementById('appointment-email-landing').value,
             people: document.getElementById('appointment-people-landing').value,
             technician: document.getElementById('appointment-technician-select-landing').value,
             appointmentTimestamp: Timestamp.fromDate(bookingDate),
@@ -2152,10 +2165,9 @@ function initLandingPage() {
 
             await addDoc(collection(db, "appointments"), appointmentData);
             await sendBookingNotificationEmail(appointmentData);
-            // ADD THIS LINE for reminders
-             if (client && client.email) await sendAppointmentReminderEmail(appointmentData, client.email);
-             // For landing page, we don't have the client's email readily, so we can't send a reminder.
-            // This functionality will primarily be for clients booked through the admin panel.
+            if (appointmentData.email) {
+            await sendAppointmentReminderEmail(appointmentData, appointmentData.email);
+            }
             alert('Appointment booked successfully!');
             addAppointmentFormLanding.reset();
             step2.classList.add('hidden');

@@ -2515,7 +2515,22 @@ function initMainApp(userRole, userName) {
         }
     };
 
-
+// PASTE THE BLOCK YOU CUT HERE, AND MODIFY IT
+allServicesList = []; // Reset the list
+Object.values(servicesData).forEach(categoryItems => {
+    categoryItems.forEach(service => {
+        if (service.name && service.price) {
+            const priceValue = parseFloat(String(service.price).replace(/[^0-9.]/g, ''));
+            if (!isNaN(priceValue)) {
+                allServicesList.push({
+                    name: service.name,
+                    price: priceValue,
+                    duration: service.duration || bookingSettings.defaultDuration // Add duration
+                });
+            }
+        }
+    });
+});
     const renderHolidayCalendar = () => {
         const grid = document.getElementById('holiday-calendar-grid');
         const monthYearEl = document.getElementById('holiday-month-year');
@@ -3228,6 +3243,8 @@ const checkDateForHoliday = (e) => {
     const input = e.target;
     const warningElId = input.id.includes('landing') ? 'holiday-warning-landing' : 'holiday-warning-modal';
     const warningEl = document.getElementById(warningElId);
+
+    if (!warningEl) return; // <-- ADD THIS LINE to prevent the error
 
     if (input.value) {
         const selectedDate = new Date(input.value);
@@ -4030,32 +4047,31 @@ const isTechnicianAvailable = (technicianName, proposedStartTime, newServiceDura
     document.getElementById('staff-dashboard-date-filter').addEventListener('change', updateStaffDashboard);
 
     // END NEW DASHBOARD LOGIC
+const loadAndRenderServices = async () => {
+    const servicesSnapshot = await getDocs(collection(db, "services"));
+    servicesData = {};
+    servicesSnapshot.forEach(doc => { servicesData[doc.id] = doc.data().items; });
 
-    const loadAndRenderServices = async () => {
-        const servicesSnapshot = await getDocs(collection(db, "services"));
-        servicesData = {};
-        servicesSnapshot.forEach(doc => { servicesData[doc.id] = doc.data().items; });
-
-        // --- ADD THIS NEW BLOCK ---
-        allServicesList = []; // Reset the list
-        Object.values(servicesData).forEach(categoryItems => {
-            categoryItems.forEach(service => {
-                if (service.name && service.price) {
-                    // Extract the number from a price string like "$50"
-                    const priceValue = parseFloat(service.price.replace(/[^0-9.]/g, ''));
-                    if (!isNaN(priceValue)) {
-                        allServicesList.push({
-                            name: service.name,
-                            price: priceValue
-                        });
-                    }
+    // --- THIS BLOCK IS NOW CORRECTLY PLACED AND UPDATED ---
+    allServicesList = []; // Reset the list
+    Object.values(servicesData).forEach(categoryItems => {
+        categoryItems.forEach(service => {
+            if (service.name && service.price) {
+                const priceValue = parseFloat(String(service.price).replace(/[^0-9.]/g, ''));
+                if (!isNaN(priceValue)) {
+                    allServicesList.push({
+                        name: service.name,
+                        price: priceValue,
+                        duration: service.duration || bookingSettings.defaultDuration
+                    });
                 }
-            });
+            }
         });
-        // --- END OF NEW BLOCK ---
+    });
+    // --- END OF BLOCK ---
 
-        renderCheckInServices();
-    };
+    renderCheckInServices();
+};
 
     const renderCheckInServices = () => {
         servicesContainer.innerHTML = '';

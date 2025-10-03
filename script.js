@@ -6324,7 +6324,7 @@ settingsForm.addEventListener('submit', async (e) => {
     addServiceForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const category = document.getElementById('edit-category-id').value, index = document.getElementById('edit-service-index').value;
-        const newService = { p: document.getElementById('service-prefix').value, name: document.getElementById('service-name').value, price: document.getElementById('service-price').value, duration: parseInt(document.getElementById('service-duration').value, 10) || 40 // Default to 30 mins if not set };
+        const newService = { p: document.getElementById('service-prefix').value, name: document.getElementById('service-name').value, price: document.getElementById('service-price').value, duration: parseInt(document.getElementById('service-duration').value, 10) || 40 };
         const updatedItems = [...servicesData[category]];
         if (index !== '') { updatedItems[parseInt(index, 10)] = newService; } else { updatedItems.push(newService); }
         await updateDoc(doc(db, "services", category), { items: updatedItems });

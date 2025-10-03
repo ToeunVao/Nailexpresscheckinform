@@ -36,7 +36,11 @@ let mainAppInitialized = false;
 let landingPageInitialized = false;
 let clientDashboardInitialized = false;
 let anonymousUserId = null;
-let bookingSettings = { minBookingHours: 2 };
+let bookingSettings = { 
+    minBookingHours: 2, 
+    defaultDuration: 40, 
+    bufferTime: 0 
+};
 let loginSecuritySettings = { maxAttempts: 5, lockoutMinutes: 15 };
 let salonHours = {};
 //... inside initMainApp, around line 247
@@ -847,36 +851,48 @@ addAppointmentForm.addEventListener('submit', async (e) => {
         return;
     }
 
+    const technician = document.getElementById('appointment-technician-select').value;
+    const serviceName = document.getElementById('appointment-services').value.split(' $')[0].trim();
+    const service = allServicesList.find(s => s.name === serviceName);
+    const serviceDuration = service ? service.duration : bookingSettings.defaultDuration;
+
+    // Availability Check
+    const availabilityCheck = isTechnicianAvailable(technician, bookingDate, serviceDuration);
+    if (!availabilityCheck.available) {
+        alert(availabilityCheck.message);
+        return; // Stop if not available
+    }
+
     const appointmentData = {
         name: document.getElementById('appointment-client-name').value,
         phone: document.getElementById('appointment-phone').value,
-        email: document.getElementById('appointment-email').value,
+        email: document.getElementById('appointment-email').value, // <-- Email is included here
         people: document.getElementById('appointment-people').value,
         bookingType: document.getElementById('appointment-booking-type').value,
-        // And REPLACE it with this:
         services: [document.getElementById('appointment-services').value],
-        technician: document.getElementById('appointment-technician-select').value,
+        technician: technician,
         notes: document.getElementById('appointment-notes').value,
         appointmentTimestamp: Timestamp.fromDate(bookingDate)
     };
 
     const appointmentId = document.getElementById('edit-appointment-id').value;
-
+    
     try {
-    const client = allClients.find(c => c.name === appointmentData.name); // Find client to get email
-
-    if (appointmentId) {
-        await updateDoc(doc(db, "appointments", appointmentId), appointmentData);
-        alert("Appointment updated successfully!");
-    } else {
-        const docRef = await addDoc(collection(db, "appointments"), appointmentData);
-        await sendBookingNotificationEmail(appointmentData);
-        // ADD THIS LINE for reminders
-        if (appointmentData.email) await sendAppointmentReminderEmail(appointmentData, appointmentData.email);
-        alert("Appointment saved successfully!");
-    }
-    closeAddAppointmentModal();
-} catch (err) {
+        if (appointmentId) {
+            await updateDoc(doc(db, "appointments", appointmentId), appointmentData);
+            alert("Appointment updated successfully!");
+        } else {
+            const docRef = await addDoc(collection(db, "appointments"), appointmentData);
+            await sendBookingNotificationEmail(appointmentData);
+            
+            // Send reminder if email is present
+            if (appointmentData.email) {
+                await sendAppointmentReminderEmail(appointmentData, appointmentData.email);
+            }
+            alert("Appointment saved successfully!");
+        }
+        closeAddAppointmentModal();
+    } catch (err) {
         console.error("Error saving appointment:", err);
         alert("Could not save appointment.");
     }
@@ -2133,54 +2149,71 @@ function initLandingPage() {
         });
     });
 
-    addAppointmentFormLanding.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const services = Array.from(document.querySelectorAll('input[name="service-landing"]:checked')).map(el => el.value);
-        if (services.length === 0) {
-            alert('Please select at least one service.');
-            return;
-        }
+addAppointmentFormLanding.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const services = Array.from(document.querySelectorAll('input[name="service-landing"]:checked')).map(el => el.value);
+    if (services.length === 0) {
+        alert('Please select at least one service.');
+        return;
+    }
 
-        const bookingDate = new Date(document.getElementById('appointment-datetime-landing').value);
-        const validation = isBookingTimeValid(bookingDate);
-        if (!validation.valid) {
-            alert(validation.message);
-            return;
-        }
+    const bookingDate = new Date(document.getElementById('appointment-datetime-landing').value);
+    const validation = isBookingTimeValid(bookingDate);
+    if (!validation.valid) {
+        alert(validation.message);
+        return;
+    }
 
-        const appointmentData = {
-            name: document.getElementById('appointment-client-name-landing').value,
-            phone: document.getElementById('appointment-phone-landing').value,
-            email: document.getElementById('appointment-email-landing').value,
-            people: document.getElementById('appointment-people-landing').value,
-            technician: document.getElementById('appointment-technician-select-landing').value,
-            appointmentTimestamp: Timestamp.fromDate(bookingDate),
-            notes: document.getElementById('appointment-notes-landing').value,
-            services: services,
-            bookingType: 'Online'
-        };
+    const technician = document.getElementById('appointment-technician-select-landing').value;
 
-        try {
-            const client = allClients.find(c => c.name === appointmentData.name); // Find client to get email
+    let totalDuration = 0;
+    for (const serviceValue of services) {
+        const serviceName = serviceValue.split(' $')[0].trim();
+        const service = allServicesList.find(s => s.name === serviceName);
+        totalDuration += service ? service.duration : bookingSettings.defaultDuration;
+    }
 
-            await addDoc(collection(db, "appointments"), appointmentData);
-            await sendBookingNotificationEmail(appointmentData);
-            if (appointmentData.email) {
+    // Availability Check
+    const availabilityCheck = isTechnicianAvailable(technician, bookingDate, totalDuration);
+    if (!availabilityCheck.available) {
+        alert(availabilityCheck.message);
+        return;
+    }
+
+    const appointmentData = {
+        name: document.getElementById('appointment-client-name-landing').value,
+        phone: document.getElementById('appointment-phone-landing').value,
+        email: document.getElementById('appointment-email-landing').value, // <-- Email is included here
+        people: document.getElementById('appointment-people-landing').value,
+        technician: technician,
+        appointmentTimestamp: Timestamp.fromDate(bookingDate),
+        notes: document.getElementById('appointment-notes-landing').value,
+        services: services,
+        bookingType: 'Online'
+    };
+
+    try {
+        await addDoc(collection(db, "appointments"), appointmentData);
+        await sendBookingNotificationEmail(appointmentData);
+
+        // Send reminder if email is present
+        if (appointmentData.email) {
             await sendAppointmentReminderEmail(appointmentData, appointmentData.email);
-            }
-            alert('Appointment booked successfully!');
-            addAppointmentFormLanding.reset();
-            step2.classList.add('hidden');
-            step1.classList.remove('hidden');
-
-            document.querySelectorAll('#services-container-landing .selection-count').forEach(badge => badge.classList.add('hidden'));
-            hiddenCheckboxContainerLanding.querySelectorAll('input').forEach(cb => cb.checked = false);
-
-        } catch (error) {
-            console.error("Error booking appointment:", error);
-            alert("Could not book appointment. Please try again.");
         }
-    });
+        
+        alert('Appointment booked successfully!');
+        addAppointmentFormLanding.reset();
+        step2.classList.add('hidden');
+        step1.classList.remove('hidden');
+
+        document.querySelectorAll('#services-container-landing .selection-count').forEach(badge => badge.classList.add('hidden'));
+        hiddenCheckboxContainerLanding.querySelectorAll('input').forEach(cb => cb.checked = false);
+
+    } catch (error) {
+        console.error("Error booking appointment:", error);
+        alert("Could not book appointment. Please try again.");
+    }
+});
 
     // REPLACE this function inside initLandingPage
     const updateFeatureVisibility = (settings) => {
@@ -3456,6 +3489,44 @@ onSnapshot(doc(db, "settings", "holidays"), (docSnap) => {
         return { startDate, endDate };
     };
 
+// PASTE THIS ENTIRE NEW FUNCTION
+const isTechnicianAvailable = (technicianName, proposedStartTime, newServiceDuration) => {
+    if (technicianName === 'Any Technician') {
+        // If "Any Technician" is requested, we need to find if at least one technician is free.
+        const availableTechnicians = technicians.filter(tech => {
+            return isTechnicianAvailable(tech.name, proposedStartTime, newServiceDuration).available;
+        });
+        return { available: availableTechnicians.length > 0, message: "No technicians are available at the selected time." };
+    }
+
+    const proposedEndTime = new Date(proposedStartTime.getTime() + (newServiceDuration + bookingSettings.bufferTime) * 60000);
+
+    for (const appt of allAppointments) {
+        if (appt.technician === technicianName) {
+            const existingStartTime = appt.appointmentTimestamp.toDate();
+            
+            // Find the duration of the existing appointment's service
+            const serviceName = (Array.isArray(appt.services) ? appt.services[0] : appt.services).split(' $')[0].trim();
+            const service = allServicesList.find(s => s.name === serviceName);
+            const existingDuration = service ? service.duration : bookingSettings.defaultDuration;
+            
+            const existingEndTime = new Date(existingStartTime.getTime() + (existingDuration + bookingSettings.bufferTime) * 60000);
+
+            // Check for overlap:
+            // A new appointment overlaps if its start time is before an existing end time,
+            // AND its end time is after the existing start time.
+            if (proposedStartTime < existingEndTime && proposedEndTime > existingStartTime) {
+                return { 
+                    available: false, 
+                    message: `${technicianName} is already booked from ${existingStartTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} to ${existingEndTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}.` 
+                };
+            }
+        }
+    }
+    
+    // If we get through all appointments without finding an overlap, the technician is available.
+    return { available: true };
+};
     // --- ADD THIS ENTIRE NEW BLOCK inside initMainApp() ---
     
     let profitChart;
@@ -5850,12 +5921,26 @@ calendarGrid.addEventListener('click', (e) => {
         }
     });
 
-    const loadSettings = async () => {
-        const bookingSnap = await getDoc(doc(db, "settings", "booking"));
-        if (bookingSnap.exists()) { const data = bookingSnap.data(); minBookingHoursInput.value = data.minBookingHours || 2; }
-        const securitySnap = await getDoc(doc(db, "settings", "security"));
-        if (securitySnap.exists()) { const data = securitySnap.data(); loginSecuritySettings = data; maxLoginAttemptsInput.value = data.maxAttempts || 5; loginLockoutMinutesInput.value = data.lockoutMinutes || 15; }
-    };
+onst loadSettings = async () => {
+    const bookingSnap = await getDoc(doc(db, "settings", "booking"));
+    if (bookingSnap.exists()) { 
+        const data = bookingSnap.data();
+        bookingSettings = { ...bookingSettings, ...data }; // Merge with defaults
+    }
+    // Set form values from the final settings object
+    minBookingHoursInput.value = bookingSettings.minBookingHours;
+    document.getElementById('default-service-duration').value = bookingSettings.defaultDuration;
+    document.getElementById('booking-buffer-time').value = bookingSettings.bufferTime;
+
+    const securitySnap = await getDoc(doc(db, "settings", "security"));
+    if (securitySnap.exists()) { 
+        const data = securitySnap.data(); 
+        loginSecuritySettings = data; 
+        maxLoginAttemptsInput.value = data.maxAttempts || 3; 
+        loginLockoutMinutesInput.value = data.lockoutMinutes || 120; 
+    }
+};
+
     loadSettings();
     loadFeatureToggles();
     loadAndRenderSalonHours();
@@ -5881,15 +5966,39 @@ calendarGrid.addEventListener('click', (e) => {
             alert("Could not save payment guide.");
         }
     });
-    settingsForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const hours = parseInt(minBookingHoursInput.value, 10);
-        const maxAttempts = parseInt(maxLoginAttemptsInput.value, 10);
-        const lockoutMinutes = parseInt(loginLockoutMinutesInput.value, 10);
-        if (isNaN(hours) || hours < 0 || isNaN(maxAttempts) || maxAttempts < 1 || isNaN(lockoutMinutes) || lockoutMinutes < 1) { return alert("Please enter valid, positive numbers for all settings."); }
-        try { await setDoc(doc(db, "settings", "booking"), { minBookingHours: hours }); await setDoc(doc(db, "settings", "security"), { maxAttempts: maxAttempts, lockoutMinutes: lockoutMinutes }); loginSecuritySettings = { maxAttempts, lockoutMinutes }; alert("Settings saved!"); }
-        catch (error) { console.error("Error saving settings: ", error); alert("Could not save settings."); }
-    });
+
+settingsForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const hours = parseInt(minBookingHoursInput.value, 10);
+    const defaultDuration = parseInt(document.getElementById('default-service-duration').value, 10);
+    const bufferTime = parseInt(document.getElementById('booking-buffer-time').value, 10);
+    const maxAttempts = parseInt(maxLoginAttemptsInput.value, 10);
+    const lockoutMinutes = parseInt(loginLockoutMinutesInput.value, 10);
+
+    if (isNaN(hours) || hours < 0 || isNaN(defaultDuration) || isNaN(bufferTime) || isNaN(maxAttempts) || maxAttempts < 1 || isNaN(lockoutMinutes) || lockoutMinutes < 1) {
+        return alert("Please enter valid, positive numbers for all settings.");
+    }
+    try {
+        await setDoc(doc(db, "settings", "booking"), { 
+            minBookingHours: hours,
+            defaultDuration: defaultDuration,
+            bufferTime: bufferTime
+        });
+        await setDoc(doc(db, "settings", "security"), { 
+            maxAttempts: maxAttempts, 
+            lockoutMinutes: lockoutMinutes 
+        });
+        
+        // Update global state
+        bookingSettings = { minBookingHours: hours, defaultDuration, bufferTime };
+        loginSecuritySettings = { maxAttempts, lockoutMinutes };
+
+        alert("Settings saved!");
+    } catch (error) {
+        console.error("Error saving settings: ", error);
+        alert("Could not save settings.");
+    }
+});
 
     const setupSimpleCrud = (collectionName, formId, inputId, listId) => {
         const form = document.getElementById(formId);
@@ -6198,7 +6307,7 @@ calendarGrid.addEventListener('click', (e) => {
         Object.entries(services).forEach(([categoryName, items]) => {
             const categoryDiv = document.createElement('div');
             categoryDiv.className = 'p-3 border rounded-lg';
-            categoryDiv.innerHTML = `<div class="flex justify-between items-center mb-2"><h4 class="font-bold">${categoryName}</h4><div><button class="add-service-to-category-btn text-green-500 mr-2" data-category="${categoryName}"><i class="fas fa-plus-circle"></i></button><button class="edit-category-btn text-blue-500 mr-2" data-category="${categoryName}"><i class="fas fa-edit"></i></button><button class="delete-category-btn text-red-500" data-category="${categoryName}"><i class="fas fa-trash"></i></button></div></div><ul class="service-list space-y-1 pl-4">${items.map((item, index) => `<li class="flex justify-between items-center text-sm"><span>${item.name} - ${item.price}</span><div><button class="edit-service-btn text-blue-500 mr-2" data-category="${categoryName}" data-index="${index}"><i class="fas fa-edit"></i></button><button class="delete-service-btn text-red-500" data-category="${categoryName}" data-index="${index}"><i class="fas fa-times-circle"></i></button></div></li>`).join('')}</ul>`;
+            categoryDiv.innerHTML = `<div class="flex justify-between items-center mb-2"><h4 class="font-bold">${categoryName}</h4><div><button class="add-service-to-category-btn text-green-500 mr-2" data-category="${categoryName}"><i class="fas fa-plus-circle"></i></button><button class="edit-category-btn text-blue-500 mr-2" data-category="${categoryName}"><i class="fas fa-edit"></i></button><button class="delete-category-btn text-red-500" data-category="${categoryName}"><i class="fas fa-trash"></i></button></div></div><ul class="service-list space-y-1 pl-4">${items.map((item, index) => `<li class="flex justify-between items-center text-sm"><span>${item.name} - ${item.price} (${item.duration || 'N/A'} min)</span><div><button class="edit-service-btn text-blue-500 mr-2" data-category="${categoryName}" data-index="${index}"><i class="fas fa-edit"></i></button><button class="delete-service-btn text-red-500" data-category="${categoryName}" data-index="${index}"><i class="fas fa-times-circle"></i></button></div></li>`).join('')}</ul>`;
             serviceCategoriesAdminContainer.appendChild(categoryDiv);
         });
     };
@@ -6209,13 +6318,13 @@ calendarGrid.addEventListener('click', (e) => {
         if (delCatBtn) { showConfirmModal(`Delete category "${delCatBtn.dataset.category}"?`, async () => { await deleteDoc(doc(db, "services", delCatBtn.dataset.category)); }); }
         if (editCatBtn) { const oldName = editCatBtn.dataset.category; const newName = prompt("New category name:", oldName); if (newName && newName !== oldName) { const docSnap = await getDoc(doc(db, "services", oldName)); if (docSnap.exists()) { await setDoc(doc(db, "services", newName), docSnap.data()); await deleteDoc(doc(db, "services", oldName)); } } }
         if (addSvcBtn) { addServiceForm.reset(); document.getElementById('edit-category-id').value = addSvcBtn.dataset.category; document.getElementById('edit-service-index').value = ''; document.getElementById('edit-service-title').textContent = `Add Service to ${addSvcBtn.dataset.category}`; editServiceSection.classList.remove('hidden'); }
-        if (editSvcBtn) { const category = editSvcBtn.dataset.category, index = editSvcBtn.dataset.index, service = servicesData[category][index]; addServiceForm.reset(); document.getElementById('edit-category-id').value = category; document.getElementById('edit-service-index').value = index; document.getElementById('service-prefix').value = service.p || ''; document.getElementById('service-name').value = service.name; document.getElementById('service-price').value = service.price; document.getElementById('edit-service-title').textContent = `Edit Service in ${category}`; editServiceSection.classList.remove('hidden'); }
+        if (editSvcBtn) { const category = editSvcBtn.dataset.category, index = editSvcBtn.dataset.index, service = servicesData[category][index]; addServiceForm.reset(); document.getElementById('edit-category-id').value = category; document.getElementById('edit-service-index').value = index; document.getElementById('service-prefix').value = service.p || ''; document.getElementById('service-name').value = service.name; document.getElementById('service-price').value = service.price; document.getElementById('service-duration').value = service.duration || ''; document.getElementById('edit-service-title').textContent = `Edit Service in ${category}`; editServiceSection.classList.remove('hidden'); }
         if (delSvcBtn) { const category = delSvcBtn.dataset.category, index = parseInt(delSvcBtn.dataset.index, 10); showConfirmModal('Delete this service?', async () => { const updatedItems = [...servicesData[category]]; updatedItems.splice(index, 1); await updateDoc(doc(db, "services", category), { items: updatedItems }); }); }
     });
     addServiceForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const category = document.getElementById('edit-category-id').value, index = document.getElementById('edit-service-index').value;
-        const newService = { p: document.getElementById('service-prefix').value, name: document.getElementById('service-name').value, price: document.getElementById('service-price').value };
+        const newService = { p: document.getElementById('service-prefix').value, name: document.getElementById('service-name').value, price: document.getElementById('service-price').value, duration: parseInt(document.getElementById('service-duration').value, 10) || 40 // Default to 30 mins if not set };
         const updatedItems = [...servicesData[category]];
         if (index !== '') { updatedItems[parseInt(index, 10)] = newService; } else { updatedItems.push(newService); }
         await updateDoc(doc(db, "services", category), { items: updatedItems });

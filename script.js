@@ -4537,7 +4537,7 @@ const isTechnicianAvailable = (technicianName, proposedStartTime, newServiceDura
             actions.insertAdjacentHTML('afterbegin',
                 `<button type="button" data-id="${client.id}" class="bg-yellow-500 text-white font-semibold py-2 px-4 rounded-lg booking-action-btn" data-action="edit">Edit</button>
              <button type="button" data-id="${client.id}" class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg booking-action-btn" data-action="checkin">Check In</button>
-             <button type="button" data-id="${client.id}" class="bg-red-500 text-white font-semibold py-2 px-4 rounded-lg booking-action-btn" data-action="cancel">Cancel</button>`
+             <button type="button" data-id="${client.id}" class="bg-red-500 text-white font-semibold py-2 px-4 rounded-lg booking-action-btn" data-action="cancel">No Show</button>`
             );
         }
 

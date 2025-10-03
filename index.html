@@ -2090,6 +2090,20 @@
                                             <p class="text-xs text-gray-500 mt-1">Set the minimum number of
                                                 hours in advance a client can book an appointment.</p>
                                         </div>
+                                        <div>
+                                            <label for="default-service-duration"
+                                                class="block text-sm font-medium text-gray-600">Default Service Duration (minutes)</label>
+                                            <input type="number" id="default-service-duration"
+                                                class="form-input w-full md:w-1/3 mt-1" value="30" required>
+                                            <p class="text-xs text-gray-500 mt-1">Used if a service doesn't have a specific duration set.</p>
+                                        </div>
+                                        <div>
+                                            <label for="booking-buffer-time"
+                                                class="block text-sm font-medium text-gray-600">Buffer Time Between Appointments (minutes)</label>
+                                            <input type="number" id="booking-buffer-time"
+                                                class="form-input w-full md:w-1/3 mt-1" value="0" required>
+                                            <p class="text-xs text-gray-500 mt-1">Adds extra blocked time after each appointment for cleanup.</p>
+                                        </div>
                                         <div class="border-t pt-4">
                                             <h4 class="font-semibold text-gray-800 mb-2">Login Security</h4>
                                             <div>
@@ -2456,6 +2470,9 @@
                                                 class="block text-sm font-medium text-gray-600">Price</label><input
                                                 type="text" id="service-price" class="form-input w-full mt-1"
                                                 placeholder="e.g., $50"></div>
+                                        <div><label for="service-duration" class="block text-sm font-medium text-gray-600">Duration (minutes)</label>
+                                                <input type="number" id="service-duration" class="form-input w-full mt-1" placeholder="e.g., 45" required>
+                                        </div>
                                         <div class="text-right"><button type="submit"
                                                 class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700">Save
                                                 Service</button></div>

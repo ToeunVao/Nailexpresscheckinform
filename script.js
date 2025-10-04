@@ -58,6 +58,7 @@ let allColorBrands = [];
 let allMembershipTiers = [];
 let allPromotions = [];
 let allNailIdeas = [];
+let techniciansAndStaff = [], technicians = [];
 let currentGalleryData = [];
 let currentRotation = 0;
 let royaltySettings = { visitsNeeded: 10, rewardDescription: 'One Free Classic Manicure' };
@@ -3454,7 +3455,6 @@ onSnapshot(doc(db, "settings", "holidays"), (docSnap) => {
     // ... other variables
     let aggregatedClients = [], allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [], allInventoryUsage = [], allGiftCards = [], allPromotions = [], technicianColorMap = {}, sentReminderIds = [], allMemberships = [], currentRotation = 0;
     // ... more variables
-    let techniciansAndStaff = [], technicians = [];
     let allExpenseCategories = [], allPaymentAccounts = [], allSuppliers = [];
     // Add these two new variables
     let currentExpenseCategoryFilter = 'all';

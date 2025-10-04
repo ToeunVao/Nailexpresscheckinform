@@ -2622,6 +2622,7 @@ function initMainApp(userRole, userName) {
     const servicesContainer = document.getElementById('services-container');
     const hiddenCheckboxContainer = document.getElementById('hidden-checkbox-container');
     const serviceModal = document.getElementById('service-modal');
+    const shareModal = document.getElementById('share-modal'); 
     const modalTitle = document.getElementById('modal-title');
     const modalContent = document.getElementById('modal-content');
     const modalDoneBtn = document.getElementById('modal-done-btn');

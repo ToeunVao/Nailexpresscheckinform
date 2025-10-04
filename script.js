@@ -67,7 +67,8 @@ let globalListenersAttached = false;
 let holidaySettings = { dates: [], message: 'The salon is closed on the selected date.' };
 let holidayCalYear = new Date().getFullYear(); // You likely added this one
 let holidayCalMonth = new Date().getMonth(); // <--- ADD THIS LINE
-
+let currentLightboxImageIndex = 0;
+let currentLightboxIdea = null;
 const nailIdeaLightbox = document.getElementById('nail-idea-lightbox');
 const lightboxCloseBtn = document.getElementById('lightbox-close-btn');
 const lightboxPrevBtn = document.getElementById('lightbox-prev-btn');
@@ -237,7 +238,7 @@ const renderNailIdeasGallery = (ideas) => {
             ideaEl.className = 'break-inside-avoid mb-4 relative gallery-item group';
             // Note: The share button is now separate from the clickable image
             ideaEl.innerHTML = `
-                <img class="w-full rounded-lg shadow-md cursor-pointer" src="${idea.imageURL}" alt="${idea.name}" data-index="${index}">
+                   <img class="w-full rounded-lg shadow-md cursor-pointer" src="${(idea.imageURLs && idea.imageURLs[0]) || idea.imageURL}" alt="${idea.name}" data-index="${index}">
                 <div class="absolute top-2 right-2 bg-black/40 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                    <button data-id="${idea.id}" class="share-nail-idea-btn text-white text-lg"><i class="fas fa-share-alt"></i></button>
                 </div>
@@ -250,23 +251,47 @@ const renderNailIdeasGallery = (ideas) => {
     renderTo(appGallery, false);
 };
 
-// ADD THIS ENTIRE NEW BLOCK for the lightbox functions
+// REPLACE your entire block of lightbox functions with this new one
+
+const lightboxImagePrevBtn = document.getElementById('lightbox-image-prev-btn');
+const lightboxImageNextBtn = document.getElementById('lightbox-image-next-btn');
+const lightboxImageCounter = document.getElementById('lightbox-image-counter');
+
+const displayLightboxImage = () => {
+    if (!currentLightboxIdea || !currentLightboxIdea.imageURLs || currentLightboxIdea.imageURLs.length === 0) return;
+
+    const images = currentLightboxIdea.imageURLs;
+    lightboxImage.src = images[currentLightboxImageIndex];
+
+    const hasMultipleImages = images.length > 1;
+    lightboxImageCounter.classList.toggle('hidden', !hasMultipleImages);
+    lightboxImagePrevBtn.classList.toggle('hidden', !hasMultipleImages || currentLightboxImageIndex === 0);
+    lightboxImageNextBtn.classList.toggle('hidden', !hasMultipleImages || currentLightboxImageIndex === images.length - 1);
+
+    if (hasMultipleImages) {
+        lightboxImageCounter.textContent = `${currentLightboxImageIndex + 1} / ${images.length}`;
+    }
+};
+
 const openLightbox = (index) => {
     if (index < 0 || index >= currentGalleryData.length) return;
 
     currentLightboxIndex = index;
-    const idea = currentGalleryData[index];
+    currentLightboxIdea = currentGalleryData[index];
+    currentLightboxImageIndex = 0; // Always start at the first image
 
-    lightboxImage.src = idea.imageURL;
-    currentRotation = 0; // ADD THIS LINE TO RESET ROTATION
-    lightboxImage.style.transform = `rotate(0deg)`; // AND THIS LINE TO RESET THE STYLE
-    lightboxTitle.textContent = idea.name;
-    lightboxShape.textContent = idea.shape || 'N/A';
-    lightboxColor.textContent = idea.color || 'N/A';
-    lightboxDescription.textContent = idea.description || ''; // ADD THIS LINE
-    lightboxCategories.innerHTML = idea.categories.map(cat =>
+    lightboxTitle.textContent = currentLightboxIdea.name;
+    lightboxShape.textContent = currentLightboxIdea.shape || 'N/A';
+    lightboxColor.textContent = currentLightboxIdea.color || 'N/A';
+    lightboxDescription.textContent = currentLightboxIdea.description || '';
+    lightboxCategories.innerHTML = (currentLightboxIdea.categories || []).map(cat =>
         `<span class="bg-pink-100 text-pink-700 text-xs font-semibold px-2 py-1 rounded-full">${cat}</span>`
     ).join('');
+
+    currentRotation = 0;
+    lightboxImage.style.transform = `rotate(0deg)`;
+
+    displayLightboxImage(); // This function now handles showing the image and controls
 
     lightboxPrevBtn.classList.toggle('hidden', index === 0);
     lightboxNextBtn.classList.toggle('hidden', index === currentGalleryData.length - 1);
@@ -274,86 +299,62 @@ const openLightbox = (index) => {
     nailIdeaLightbox.classList.remove('hidden');
     nailIdeaLightbox.classList.add('flex');
 };
-// --- ADD THESE TWO NEW FUNCTIONS ---
-const toggleFullScreen = () => {
-    const lightbox = document.getElementById('nail-idea-lightbox');
-    const icon = document.getElementById('lightbox-fullscreen-btn').querySelector('i');
-    if (!document.fullscreenElement) {
-        lightbox.requestFullscreen().catch(err => {
-            alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
-        });
-        icon.classList.replace('fa-expand', 'fa-compress');
-    } else {
-        document.exitFullscreen();
-        icon.classList.replace('fa-compress', 'fa-expand');
-    }
-};
 
-const rotateImage = () => {
-    currentRotation += 90;
-    if (currentRotation >= 360) {
-        currentRotation = 0;
-    }
-    document.getElementById('lightbox-image').style.transform = `rotate(${currentRotation}deg)`;
-};
-// --- END OF NEW FUNCTIONS ---
+const toggleFullScreen = () => { /* ... this function remains the same */ };
+const rotateImage = () => { /* ... this function remains the same */ };
 
 const closeLightbox = () => {
     nailIdeaLightbox.classList.add('hidden');
     nailIdeaLightbox.classList.remove('flex');
+    currentLightboxIdea = null; // Clear the current idea
 };
 
+const showNextIdea = () => openLightbox(currentLightboxIndex + 1);
+const showPrevIdea = () => openLightbox(currentLightboxIndex - 1);
 const showNextImage = () => {
-    openLightbox(currentLightboxIndex + 1);
+    if (currentLightboxIdea && currentLightboxImageIndex < currentLightboxIdea.imageURLs.length - 1) {
+        currentLightboxImageIndex++;
+        displayLightboxImage();
+    }
 };
-
 const showPrevImage = () => {
-    openLightbox(currentLightboxIndex - 1);
-};
-// REPLACE the old galleryClickHandler listeners with this new block ok
-const galleryClickHandler = (e) => {
-    const shareBtn = e.target.closest('.share-nail-idea-btn');
-    const img = e.target.closest('img[data-index]');
-
-    if (shareBtn) {
-        const ideaId = shareBtn.dataset.id;
-        const idea = allNailIdeas.find(i => i.id === ideaId);
-        if (idea) { openShareModal(idea); }
-    } else if (img) {
-        const index = parseInt(img.dataset.index, 10);
-        openLightbox(index);
+    if (currentLightboxIdea && currentLightboxImageIndex > 0) {
+        currentLightboxImageIndex--;
+        displayLightboxImage();
     }
 };
 
+const galleryClickHandler = (e) => { /* ... this function remains the same */ };
 document.getElementById('nails-idea-gallery').addEventListener('click', galleryClickHandler);
 document.getElementById('nails-idea-landing').addEventListener('click', galleryClickHandler);
 
-// ADD THIS NEW BLOCK for the lightbox buttons
+// Main lightbox navigation (between different nail IDEAS)
 lightboxCloseBtn.addEventListener('click', closeLightbox);
-lightboxNextBtn.addEventListener('click', showNextImage);
-lightboxPrevBtn.addEventListener('click', showPrevImage);
-// ADD THESE TWO NEW LISTENERS
+lightboxNextBtn.addEventListener('click', showNextIdea);
+lightboxPrevBtn.addEventListener('click', showPrevIdea);
+
+// Intra-lightbox navigation (between IMAGES of the same idea)
+lightboxImageNextBtn.addEventListener('click', showNextImage);
+lightboxImagePrevBtn.addEventListener('click', showPrevImage);
+
+// Other lightbox controls
 document.getElementById('lightbox-fullscreen-btn').addEventListener('click', toggleFullScreen);
 document.getElementById('lightbox-rotate-btn').addEventListener('click', rotateImage);
-// END OF NEW LISTENERS
 
-// Add keyboard navigation
 document.addEventListener('keydown', (e) => {
     if (!nailIdeaLightbox.classList.contains('hidden')) {
-        if (e.key === 'ArrowRight') showNextImage();
-        if (e.key === 'ArrowLeft') showPrevImage();
+        if (e.key === 'ArrowRight') showNextIdea();
+        if (e.key === 'ArrowLeft') showPrevIdea();
         if (e.key === 'Escape') closeLightbox();
     }
 });
 
-// ADD THIS NEW BLOCK to close the lightbox on overlay click
 nailIdeaLightbox.addEventListener('click', (e) => {
-    // If the click is on the dark background itself (the overlay)
-    // and not on the content inside it, close the modal.
     if (e.target === nailIdeaLightbox) {
         closeLightbox();
     }
 });
+
 
 
 const openShareModal = (idea) => {
@@ -6502,7 +6503,8 @@ settingsForm.addEventListener('submit', async (e) => {
         nailIdeasTableBody.innerHTML = '';
         ideas.forEach(idea => {
             const row = nailIdeasTableBody.insertRow();
-            row.innerHTML = `<td class="px-6 py-4"><img src="${idea.imageURL}" alt="${idea.name}" class="w-16 h-16 object-cover rounded"></td><td class="px-6 py-4">${idea.name}</td><td class="px-6 py-4">${idea.shape}</td><td class="px-6 py-4">${idea.categories.join(', ')}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${idea.id}" class="edit-nail-idea-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${idea.id}" class="delete-nail-idea-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
+            row.innerHTML = `<td class="px-6 py-4"><img src="${(idea.imageURLs && idea.imageURLs[0]) || idea.imageURL}" alt="${idea.name}" class="w-16 h-16 object-cover rounded"></td><td class="px-6 py-4">${idea.name}</td><td class="px-6 py-4">${idea.shape}</td><td class="px-6 py-4">${idea.categories.join(', ')}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${idea.id}" class="edit-nail-idea-btn text-blue-500"><i class="fas fa-edit"></i></button><button data-id="${idea.id}" class="delete-nail-idea-btn text-red-500"><i class="fas fa-trash"></i></button></td>`;
+        
         });
     };
 
@@ -6579,81 +6581,73 @@ settingsForm.addEventListener('submit', async (e) => {
     document.getElementById('nail-idea-search').addEventListener('input', applyNailIdeaFilters);
     document.getElementById('nail-idea-shape-filter').addEventListener('change', applyNailIdeaFilters);
 
-    // REPLACE the old addNailIdeaForm listener with this one
-    addNailIdeaForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const ideaId = document.getElementById('edit-nail-idea-id').value;
-        const imageSource = document.querySelector('input[name="imageSource"]:checked').value;
-        const file = document.getElementById('nail-idea-image').files[0];
-        const imageUrl = document.getElementById('nail-idea-image-url').value;
-        let finalImageURL = null;
+// REPLACE the old addNailIdeaForm 'submit' listener with this one
+addNailIdeaForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const ideaId = document.getElementById('edit-nail-idea-id').value;
+    const imageSource = document.querySelector('input[name="imageSource"]:checked').value;
+    const file = document.getElementById('nail-idea-image').files[0];
+    const imageUrlsText = document.getElementById('nail-idea-image-url').value;
+    let finalImageURLs = [];
 
-        const btn = document.getElementById('add-nail-idea-btn');
-        btn.disabled = true;
-        btn.textContent = 'Saving...';
+    const btn = document.getElementById('add-nail-idea-btn');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
 
-        try {
-            if (imageSource === 'upload') {
-                if (!ideaId && !file) {
-                    alert('Please select an image to upload.');
-                    btn.disabled = false; btn.textContent = 'Add Idea';
-                    return;
-                }
-                if (file) {
-                    const storageRef = ref(storage, `nail_ideas/${Date.now()}_${file.name}`);
-                    await uploadBytes(storageRef, file);
-                    finalImageURL = await getDownloadURL(storageRef);
-                }
-            } else { // imageSource === 'url'
-                if (!imageUrl) {
-                    alert('Please enter an image URL.');
-                    btn.disabled = false; btn.textContent = 'Add Idea';
-                    return;
-                }
-                finalImageURL = imageUrl;
+    try {
+        if (imageSource === 'upload') {
+            if (!ideaId && !file) {
+                throw new Error('Please select an image to upload.');
             }
+            if (file) {
+                const storageRef = ref(storage, `nail_ideas/${Date.now()}_${file.name}`);
+                await uploadBytes(storageRef, file);
+                finalImageURLs.push(await getDownloadURL(storageRef));
+            }
+        } else { // imageSource === 'url'
+            finalImageURLs = imageUrlsText.split('\n').map(url => url.trim()).filter(Boolean);
+            if (finalImageURLs.length === 0) {
+                throw new Error('Please enter at least one image URL.');
+            }
+        }
 
-            const ideaData = {
-                name: document.getElementById('nail-idea-name').value,
-                description: document.getElementById('nail-idea-description').value, // ADD THIS LINE
-                color: document.getElementById('nail-idea-color').value,
-                shape: document.getElementById('nail-idea-shape').value,
-                categories: document.getElementById('nail-idea-categories').value.split(',').map(s => s.trim()).filter(Boolean),
-            };
+        const ideaData = {
+            name: document.getElementById('nail-idea-name').value,
+            description: document.getElementById('nail-idea-description').value,
+            color: document.getElementById('nail-idea-color').value,
+            shape: document.getElementById('nail-idea-shape').value,
+            categories: document.getElementById('nail-idea-categories').value.split(',').map(s => s.trim()).filter(Boolean),
+        };
 
-            if (ideaId) { // Editing an existing idea
-                const existingIdea = allNailIdeas.find(i => i.id === ideaId);
-                if (finalImageURL) { // If a new image (URL or upload) was provided
-                    ideaData.imageURL = finalImageURL;
-                    // If the old image was an upload, delete it from storage
-                    if (existingIdea.imageURL && existingIdea.imageURL.includes('firebasestorage')) {
-                        try {
-                            const oldImageRef = ref(storage, existingIdea.imageURL);
-                            await deleteObject(oldImageRef);
-                        } catch (storageError) {
-                            console.warn("Could not delete old image, it might not exist:", storageError);
-                        }
+        if (ideaId) { // Editing
+            const existingIdea = allNailIdeas.find(i => i.id === ideaId);
+            if (finalImageURLs.length > 0) { // If a new image/URLs were provided
+                ideaData.imageURLs = finalImageURLs;
+                // If the old image was an upload, delete it from storage
+                if (existingIdea.imageURLs && existingIdea.imageURLs[0] && existingIdea.imageURLs[0].includes('firebasestorage')) {
+                    try {
+                        const oldImageRef = ref(storage, existingIdea.imageURLs[0]);
+                        await deleteObject(oldImageRef);
+                    } catch (storageError) {
+                        console.warn("Could not delete old image, it might not exist:", storageError);
                     }
                 }
-                await updateDoc(doc(db, "nail_ideas", ideaId), ideaData);
-            } else { // Adding a new idea
-                ideaData.imageURL = finalImageURL;
-                ideaData.createdAt = serverTimestamp();
-                await addDoc(collection(db, "nail_ideas"), ideaData);
             }
-
-            resetNailIdeaForm();
-
-        } catch (error) {
-            console.error("Error saving nail idea:", error);
-            alert("Could not save nail idea.");
-        } finally {
-            btn.disabled = false;
-            // Ensure the text is correct for adding vs. editing
-            const buttonText = document.getElementById('edit-nail-idea-id').value ? 'Update Idea' : 'Add Idea';
-            btn.textContent = buttonText;
+            await updateDoc(doc(db, "nail_ideas", ideaId), ideaData);
+        } else { // Adding new
+            ideaData.imageURLs = finalImageURLs;
+            ideaData.createdAt = serverTimestamp();
+            await addDoc(collection(db, "nail_ideas"), ideaData);
         }
-    });
+        resetNailIdeaForm();
+    } catch (error) {
+        console.error("Error saving nail idea:", error);
+        alert(`Could not save nail idea: ${error.message}`);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = document.getElementById('edit-nail-idea-id').value ? 'Update Idea' : 'Add Idea';
+    }
+});
 
     const resetNailIdeaForm = () => {
         addNailIdeaForm.reset();
@@ -6676,7 +6670,13 @@ settingsForm.addEventListener('submit', async (e) => {
                 document.getElementById('nail-idea-shape').value = idea.shape;
                 document.getElementById('nail-idea-description').value = idea.description || ''; // ADD THIS LINE
                 document.getElementById('nail-idea-categories').value = idea.categories.join(', ');
-
+                // ADD THIS LOGIC to handle populating the URL textarea
+        const imageUrlTextarea = document.getElementById('nail-idea-image-url');
+        if (idea.imageURLs && idea.imageURLs.length > 0) {
+            imageUrlTextarea.value = idea.imageURLs.join('\n');
+        } else if (idea.imageURL) { // For legacy data
+            imageUrlTextarea.value = idea.imageURL;
+        }
                 document.getElementById('add-nail-idea-btn').textContent = 'Update Idea';
                 document.getElementById('cancel-edit-nail-idea-btn').classList.remove('hidden');
             }

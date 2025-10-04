@@ -223,7 +223,7 @@ const renderPromotionsLanding = (promotions) => {
 };
 // REPLACE the old renderNailIdeasGallery function with this one
 const renderNailIdeasGallery = (ideas) => {
-    const landingGallery = document.querySelector('#nails-idea-landing .columns-2');
+    const landingGallery = document.getElementById('nails-idea-container-landing');
     const appGallery = document.getElementById('nails-idea-gallery');
     currentGalleryData = ideas; // Store the current set of ideas for the lightbox
 

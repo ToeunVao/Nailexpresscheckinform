@@ -535,6 +535,47 @@ const openMembershipCardForPrint = (client, tier) => {
     printWindow.document.close();
     printWindow.focus();
 };
+
+// PASTE THIS ENTIRE NEW FUNCTION
+const isTechnicianAvailable = (technicianName, proposedStartTime, newServiceDuration) => {
+    if (technicianName === 'Any Technician') {
+        // If "Any Technician" is requested, we need to find if at least one technician is free.
+        const availableTechnicians = technicians.filter(tech => {
+            return isTechnicianAvailable(tech.name, proposedStartTime, newServiceDuration).available;
+        });
+        return { available: availableTechnicians.length > 0, message: "No technicians are available at the selected time." };
+    }
+
+    const proposedEndTime = new Date(proposedStartTime.getTime() + (newServiceDuration + bookingSettings.bufferTime) * 60000);
+
+    for (const appt of allAppointments) {
+        if (appt.technician === technicianName) {
+            const existingStartTime = appt.appointmentTimestamp.toDate();
+            
+            // Find the duration of the existing appointment's service
+            const serviceName = (Array.isArray(appt.services) ? appt.services[0] : appt.services).split(' $')[0].trim();
+            const service = allServicesList.find(s => s.name === serviceName);
+            const existingDuration = service ? service.duration : bookingSettings.defaultDuration;
+            
+            const existingEndTime = new Date(existingStartTime.getTime() + (existingDuration + bookingSettings.bufferTime) * 60000);
+
+            // Check for overlap:
+            // A new appointment overlaps if its start time is before an existing end time,
+            // AND its end time is after the existing start time.
+            if (proposedStartTime < existingEndTime && proposedEndTime > existingStartTime) {
+                return { 
+                    available: false, 
+                    message: `${technicianName} is already booked from ${existingStartTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} to ${existingEndTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}.` 
+                };
+            }
+        }
+    }
+    
+    // If we get through all appointments without finding an overlap, the technician is available.
+    return { available: true };
+};
+
+
 // --- Email Notification Logic ---
 async function sendBookingNotificationEmail(appointmentData) {
     try {
@@ -3492,44 +3533,7 @@ onSnapshot(doc(db, "settings", "holidays"), (docSnap) => {
         return { startDate, endDate };
     };
 
-// PASTE THIS ENTIRE NEW FUNCTION
-const isTechnicianAvailable = (technicianName, proposedStartTime, newServiceDuration) => {
-    if (technicianName === 'Any Technician') {
-        // If "Any Technician" is requested, we need to find if at least one technician is free.
-        const availableTechnicians = technicians.filter(tech => {
-            return isTechnicianAvailable(tech.name, proposedStartTime, newServiceDuration).available;
-        });
-        return { available: availableTechnicians.length > 0, message: "No technicians are available at the selected time." };
-    }
 
-    const proposedEndTime = new Date(proposedStartTime.getTime() + (newServiceDuration + bookingSettings.bufferTime) * 60000);
-
-    for (const appt of allAppointments) {
-        if (appt.technician === technicianName) {
-            const existingStartTime = appt.appointmentTimestamp.toDate();
-            
-            // Find the duration of the existing appointment's service
-            const serviceName = (Array.isArray(appt.services) ? appt.services[0] : appt.services).split(' $')[0].trim();
-            const service = allServicesList.find(s => s.name === serviceName);
-            const existingDuration = service ? service.duration : bookingSettings.defaultDuration;
-            
-            const existingEndTime = new Date(existingStartTime.getTime() + (existingDuration + bookingSettings.bufferTime) * 60000);
-
-            // Check for overlap:
-            // A new appointment overlaps if its start time is before an existing end time,
-            // AND its end time is after the existing start time.
-            if (proposedStartTime < existingEndTime && proposedEndTime > existingStartTime) {
-                return { 
-                    available: false, 
-                    message: `${technicianName} is already booked from ${existingStartTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} to ${existingEndTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}.` 
-                };
-            }
-        }
-    }
-    
-    // If we get through all appointments without finding an overlap, the technician is available.
-    return { available: true };
-};
     // --- ADD THIS ENTIRE NEW BLOCK inside initMainApp() ---
     
     let profitChart;

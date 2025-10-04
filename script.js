@@ -2514,23 +2514,7 @@ function initMainApp(userRole, userName) {
                 break;
         }
     };
-
-// PASTE THE BLOCK YOU CUT HERE, AND MODIFY IT
-allServicesList = []; // Reset the list
-Object.values(servicesData).forEach(categoryItems => {
-    categoryItems.forEach(service => {
-        if (service.name && service.price) {
-            const priceValue = parseFloat(String(service.price).replace(/[^0-9.]/g, ''));
-            if (!isNaN(priceValue)) {
-                allServicesList.push({
-                    name: service.name,
-                    price: priceValue,
-                    duration: service.duration || bookingSettings.defaultDuration // Add duration
-                });
-            }
-        }
-    });
-});
+    
     const renderHolidayCalendar = () => {
         const grid = document.getElementById('holiday-calendar-grid');
         const monthYearEl = document.getElementById('holiday-month-year');
@@ -4053,7 +4037,7 @@ const loadAndRenderServices = async () => {
     servicesSnapshot.forEach(doc => { servicesData[doc.id] = doc.data().items; });
 
     // --- THIS BLOCK IS NOW CORRECTLY PLACED AND UPDATED ---
-    //allServicesList = []; // Reset the list
+    allServicesList = []; // Reset the list
     Object.values(servicesData).forEach(categoryItems => {
         categoryItems.forEach(service => {
             if (service.name && service.price) {

@@ -400,14 +400,18 @@ nailIdeaLightbox.addEventListener('click', (e) => {
 });
 
 
-
 const openShareModal = (idea) => {
     const salonUrl = "http://www.nailsxpressky.com";
-    const shareText = `Check out this amazing nail design: ${idea.name}!`;
+    const shareText = `Check out this amazing nail design from Nails Express: ${idea.name}!`;
+    
+    // **FIX**: Get the first image from the imageURLs array, with a fallback to the old imageURL property
+    const imageUrl = (idea.imageURLs && idea.imageURLs[0]) || idea.imageURL;
+
     document.getElementById('share-facebook').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(salonUrl)}`;
-    document.getElementById('share-pinterest').href = `http://pinterest.com/pin/create/button/?url=${encodeURIComponent(salonUrl)}&media=${encodeURIComponent(idea.imageURL)}&description=${encodeURIComponent(shareText)}`;
+    document.getElementById('share-pinterest').href = `http://pinterest.com/pin/create/button/?url=${encodeURIComponent(salonUrl)}&media=${encodeURIComponent(imageUrl)}&description=${encodeURIComponent(shareText)}`;
     document.getElementById('share-twitter').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(salonUrl)}`;
     document.getElementById('share-copy-link').onclick = () => { navigator.clipboard.writeText(salonUrl).then(() => alert('Link copied to clipboard!')); };
+    
     shareModal.classList.remove('hidden');
     shareModal.classList.add('flex');
 };

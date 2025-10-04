@@ -1776,6 +1776,47 @@ document.getElementById('landing-membership-form').addEventListener('submit', as
 
 // --- LANDING PAGE SCRIPT ---
 function initLandingPage() {
+    // PASTE THIS AT THE VERY TOP of the initLandingPage() function
+const announcementModal = document.getElementById('announcement-modal');
+
+const showAnnouncement = async () => {
+    // Check if the announcement has already been shown in this session
+    if (sessionStorage.getItem('announcementShown')) {
+        return;
+    }
+
+    try {
+        const docSnap = await getDoc(doc(db, "settings", "announcement"));
+        if (docSnap.exists()) {
+            const settings = docSnap.data();
+            if (settings.isEnabled) {
+                document.getElementById('announcement-title').textContent = settings.title || '';
+                document.getElementById('announcement-text').textContent = settings.text || '';
+                
+                const imgEl = document.getElementById('announcement-image');
+                if (settings.imageURL) {
+                    imgEl.src = settings.imageURL;
+                    imgEl.classList.remove('hidden');
+                } else {
+                    imgEl.classList.add('hidden');
+                }
+
+                announcementModal.classList.remove('hidden');
+                sessionStorage.setItem('announcementShown', 'true');
+            }
+        }
+    } catch (error) {
+        console.error("Error fetching announcement:", error);
+    }
+};
+
+const closeAnnouncement = () => announcementModal.classList.add('hidden');
+document.getElementById('close-announcement-modal-btn').addEventListener('click', closeAnnouncement);
+document.getElementById('announcement-modal-overlay').addEventListener('click', closeAnnouncement);
+
+showAnnouncement(); // Call the function to check on page load
+
+
     // PASTE THIS AT THE START OF initLandingPage()
     const royaltyModal = document.getElementById('royalty-card-modal');
     const openRoyaltyBtn = document.getElementById('join-royalty-btn');
@@ -2312,6 +2353,98 @@ addAppointmentFormLanding.addEventListener('submit', async (e) => {
 
 // --- MAIN CHECK-IN APP SCRIPT ---
 function initMainApp(userRole, userName) {
+    // PASTE THIS ENTIRE FUNCTION block inside initMainApp()
+
+const initAnnouncementManagement = () => {
+    const form = document.getElementById('announcement-form');
+    let currentSettings = {};
+
+    // Load current settings into the form
+    onSnapshot(doc(db, "settings", "announcement"), (docSnap) => {
+        if (docSnap.exists()) {
+            currentSettings = docSnap.data();
+            document.getElementById('toggle-announcement').checked = currentSettings.isEnabled || false;
+            document.getElementById('announcement-form-title').value = currentSettings.title || '';
+            document.getElementById('announcement-form-text').value = currentSettings.text || '';
+            
+            const imgWrapper = document.getElementById('current-announcement-image-wrapper');
+            const imgEl = document.getElementById('current-announcement-image');
+            if (currentSettings.imageURL) {
+                imgEl.src = currentSettings.imageURL;
+                imgWrapper.classList.remove('hidden');
+            } else {
+                imgWrapper.classList.add('hidden');
+            }
+        }
+    });
+
+    // Handle form submission
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const file = document.getElementById('announcement-form-image').files[0];
+        let newImageURL = currentSettings.imageURL || null;
+
+        const btn = form.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+
+        try {
+            // Upload new image if one is selected
+            if (file) {
+                // If there's an old image, delete it from storage first
+                if (currentSettings.imageURL) {
+                    try {
+                        const oldImageRef = ref(storage, currentSettings.imageURL);
+                        await deleteObject(oldImageRef);
+                    } catch (storageError) {
+                        console.warn("Could not delete old image, it may already be gone:", storageError);
+                    }
+                }
+                
+                const storageRef = ref(storage, `announcements/${Date.now()}_${file.name}`);
+                await uploadBytes(storageRef, file);
+                newImageURL = await getDownloadURL(storageRef);
+            }
+
+            const updatedData = {
+                isEnabled: document.getElementById('toggle-announcement').checked,
+                title: document.getElementById('announcement-form-title').value,
+                text: document.getElementById('announcement-form-text').value,
+                imageURL: newImageURL
+            };
+
+            await setDoc(doc(db, "settings", "announcement"), updatedData);
+            alert("Announcement saved successfully!");
+
+        } catch (error) {
+            console.error("Error saving announcement:", error);
+            alert("Could not save the announcement.");
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Save Announcement';
+            document.getElementById('announcement-form-image').value = ''; // Clear file input
+        }
+    });
+
+    // Handle image removal
+    document.getElementById('remove-announcement-image-btn').addEventListener('click', async () => {
+        if (!currentSettings.imageURL) return;
+
+        if (confirm("Are you sure you want to remove the current image?")) {
+            try {
+                const imageRef = ref(storage, currentSettings.imageURL);
+                await deleteObject(imageRef);
+                await updateDoc(doc(db, "settings", "announcement"), { imageURL: null });
+                alert("Image removed.");
+            } catch (error) {
+                console.error("Error removing image:", error);
+                alert("Could not remove the image.");
+            }
+        }
+    });
+};
+
+
      // PASTE THE FUNCTION DEFINITION RIGHT HERE
     const setupReportDateFilters = (selectId, dateInputId, callback) => {
         const select = document.getElementById(selectId);
@@ -2442,6 +2575,8 @@ function initMainApp(userRole, userName) {
     if (userRole === 'admin') {
         adminDashboardView.classList.remove('hidden');
         staffDashboardView.classList.add('hidden');
+        // ADD THIS LINE
+         initAnnouncementManagement();
     } else {
         adminDashboardView.classList.add('hidden');
         staffDashboardView.classList.remove('hidden');

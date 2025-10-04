@@ -52,7 +52,8 @@ let currentUserName = null;
 let currentUserId = null;
 let initialAppointmentsLoaded = false;
 let initialInventoryLoaded = false;
-let allFinishedClients = [], allAppointments = [], allClients = [], allActiveClients = [], servicesData = {};
+// AFTER EDITING
+let allFinishedClients = [], allAppointments = [], allClients = [], allActiveClients = [], servicesData = {}, allServicesList = [];
 let allColorBrands = [];
 let allMembershipTiers = [];
 let allPromotions = [];
@@ -3410,7 +3411,7 @@ onSnapshot(doc(db, "settings", "holidays"), (docSnap) => {
     let currentSalonEarningDateFilter = '', currentSalonEarningRangeFilter = String(new Date().getMonth()), currentExpenseMonthFilter = '', currentDashboardApptTechFilter = 'All';
 
     // ... other variables
-    let aggregatedClients = [], allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [], allInventoryUsage = [], allGiftCards = [], allPromotions = [], allServicesList = [], technicianColorMap = {}, sentReminderIds = [], allMemberships = [], currentRotation = 0;
+    let aggregatedClients = [], allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [], allInventoryUsage = [], allGiftCards = [], allPromotions = [], technicianColorMap = {}, sentReminderIds = [], allMemberships = [], currentRotation = 0;
     // ... more variables
     let techniciansAndStaff = [], technicians = [];
     let allExpenseCategories = [], allPaymentAccounts = [], allSuppliers = [];

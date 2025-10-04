@@ -2645,7 +2645,6 @@ function initMainApp(userRole, userName) {
     const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
     const logUsageModal = document.getElementById('log-usage-modal');
     const logUsageForm = document.getElementById('log-usage-form');
-    const shareModal = document.getElementById('share-modal');
     // PASTE THIS CODE BLOCK
     const emailTemplatesForm = document.getElementById('email-templates-form');
 // REPLACE your old emailTemplatesForm listener with this one

@@ -300,8 +300,30 @@ const openLightbox = (index) => {
     nailIdeaLightbox.classList.add('flex');
 };
 
-const toggleFullScreen = () => { /* ... this function remains the same */ };
-const rotateImage = () => { /* ... this function remains the same */ };
+// --- ADD THESE TWO NEW FUNCTIONS ---
+const toggleFullScreen = () => {
+    const lightbox = document.getElementById('nail-idea-lightbox');
+    const icon = document.getElementById('lightbox-fullscreen-btn').querySelector('i');
+    if (!document.fullscreenElement) {
+        lightbox.requestFullscreen().catch(err => {
+            alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+        });
+        icon.classList.replace('fa-expand', 'fa-compress');
+    } else {
+        document.exitFullscreen();
+        icon.classList.replace('fa-compress', 'fa-expand');
+    }
+};
+
+const rotateImage = () => {
+    currentRotation += 90;
+    if (currentRotation >= 360) {
+        currentRotation = 0;
+    }
+    document.getElementById('lightbox-image').style.transform = `rotate(${currentRotation}deg)`;
+};
+// --- END OF NEW FUNCTIONS ---
+
 
 const closeLightbox = () => {
     nailIdeaLightbox.classList.add('hidden');
@@ -324,7 +346,29 @@ const showPrevImage = () => {
     }
 };
 
-const galleryClickHandler = (e) => { /* ... this function remains the same */ };
+const galleryClickHandler = (e) => {
+    // Handle clicking the share button first
+    const shareBtn = e.target.closest('.share-nail-idea-btn');
+    if (shareBtn) {
+        // Find the correct nail idea using the 'data-id' from the button
+        const ideaId = shareBtn.dataset.id;
+        const ideaToShare = allNailIdeas.find(idea => idea.id === ideaId);
+        if (ideaToShare) {
+            openShareModal(ideaToShare);
+        }
+        return; // Stop further execution so the lightbox doesn't open
+    }
+
+    // If a share button wasn't clicked, handle clicking the image to open the lightbox
+    const img = e.target.closest('img');
+    if (img && img.dataset.index) {
+        const index = parseInt(img.dataset.index, 10);
+        // Check if the index is a valid number before opening
+        if (!isNaN(index)) {
+            openLightbox(index);
+        }
+    }
+};
 document.getElementById('nails-idea-gallery').addEventListener('click', galleryClickHandler);
 document.getElementById('nails-idea-landing').addEventListener('click', galleryClickHandler);
 

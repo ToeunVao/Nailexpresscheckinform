@@ -71,6 +71,8 @@ let holidayCalYear = new Date().getFullYear(); // You likely added this one
 let holidayCalMonth = new Date().getMonth(); // <--- ADD THIS LINE
 let currentLightboxImageIndex = 0;
 let currentLightboxIdea = null;
+let allShopProducts = []; 
+let shoppingCart = [];  
 const nailIdeaLightbox = document.getElementById('nail-idea-lightbox');
 const lightboxCloseBtn = document.getElementById('lightbox-close-btn');
 const lightboxPrevBtn = document.getElementById('lightbox-prev-btn');
@@ -1953,7 +1955,7 @@ const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/fi
     };
 
     onSnapshot(collection(db, "products"), (snapshot) => {
-        allShopProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+       allShopProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderShopProducts();
     });
 

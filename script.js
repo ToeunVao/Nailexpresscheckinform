@@ -1869,22 +1869,26 @@ const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/fi
             const isOutOfStock = product.stock <= 0;
             const card = document.createElement('div');
             card.className = `product-card bg-white rounded-lg shadow-md overflow-hidden relative ${isOutOfStock ? 'out-of-stock' : ''}`;
-            card.innerHTML = `
-               <img src="${(product.imageURLs && product.imageURLs[0]) || 'https://placehold.co/300x300/f8bbd0/ffffff?text=Nail+Product'}" alt="${product.name}" class="w-full h-48 object-cover">
-               <div class="p-4">
-                    <h3 class="font-bold text-lg truncate">${product.name}</h3>
-                    <p class="text-sm text-gray-500 h-10 overflow-hidden">${product.description}</p>
-                    <div class="flex justify-between items-center mt-4">
-                        <span class="text-xl font-bold text-pink-600">$${product.price.toFixed(2)}</span>
-                        <button data-id="${product.id}" class="add-to-cart-btn bg-pink-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-pink-700 disabled:bg-gray-400" ${isOutOfStock ? 'disabled' : ''}>
-                            <i class="fas fa-cart-plus mr-2"></i>Add
-                        </button>
-                    </div>
-                </div>
-                <div class="out-of-stock-overlay absolute inset-0 bg-white/70 flex items-center justify-center">
-                    <span class="font-bold text-gray-500 bg-gray-200 px-4 py-2 rounded-full">Out of Stock</span>
-                </div>
-            `;
+            const firstImage = (product.imageURLs && product.imageURLs[0]) 
+    ? product.imageURLs[0] 
+    : 'https://placehold.co/300x300/f8bbd0/ffffff?text=Nail+Product';
+
+card.innerHTML = `
+    <img src="${firstImage}" alt="${product.name}" class="w-full h-48 object-cover">
+    <div class="p-4">
+        <h3 class="font-bold text-lg truncate">${product.name}</h3>
+        <p class="text-sm text-gray-500 h-10 overflow-hidden">${product.description}</p>
+        <div class="flex justify-between items-center mt-4">
+            <span class="text-xl font-bold text-pink-600">$${product.price.toFixed(2)}</span>
+            <button data-id="${product.id}" class="add-to-cart-btn bg-pink-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-pink-700 disabled:bg-gray-400" ${isOutOfStock ? 'disabled' : ''}>
+                <i class="fas fa-cart-plus mr-2"></i>Add
+            </button>
+        </div>
+    </div>
+    <div class="out-of-stock-overlay absolute inset-0 bg-white/70 flex items-center justify-center">
+        <span class="font-bold text-gray-500 bg-gray-200 px-4 py-2 rounded-full">Out of Stock</span>
+    </div>
+`;
             shopContainer.appendChild(card);
         });
     };
@@ -2666,6 +2670,7 @@ addAppointmentFormLanding.addEventListener('submit', async (e) => {
 
     // REPLACE this function inside initLandingPage
     const updateFeatureVisibility = (settings) => {
+        const showShop = settings.showShop !== false; // Add this line
         const showClientRegistration = settings.showClientLogin !== false;
         const showPromos = settings.showPromotions !== false;
         const showGiftCards = settings.showGiftCards !== false;
@@ -2677,7 +2682,12 @@ addAppointmentFormLanding.addEventListener('submit', async (e) => {
         if (signupTab) {
             signupTab.style.display = showClientRegistration ? 'block' : 'none';
         }
-
+         // Add this new block
+            const shopSection = document.getElementById('shop-landing');
+            const shopNavLink = document.querySelector('a[href="#shop-landing"]');
+            if (shopSection) shopSection.style.display = showShop ? '' : 'none';
+            if (shopNavLink) shopNavLink.style.display = showShop ? '' : 'none';
+            
         document.getElementById('promotions-landing').style.display = showPromos ? '' : 'none';
         document.querySelector('.nav-item-promotions').style.display = showPromos ? '' : 'none';
 
@@ -6564,6 +6574,7 @@ calendarGrid.addEventListener('click', (e) => {
         const settingsDoc = await getDoc(doc(db, "settings", "features"));
         if (settingsDoc.exists()) {
             const settings = settingsDoc.data();
+            document.getElementById('toggle-shop').checked = settings.showShop !== false; // Add this line
             document.getElementById('toggle-client-login').checked = settings.showClientLogin !== false;
             document.getElementById('toggle-promotions').checked = settings.showPromotions !== false;
             document.getElementById('toggle-gift-card').checked = settings.showGiftCards !== false;
@@ -6572,6 +6583,7 @@ calendarGrid.addEventListener('click', (e) => {
             document.getElementById('toggle-royalty-card').checked = settings.showRoyaltyCard !== false; // This line was missing
         } else {
             // Default all to true if no settings exist yet
+             document.getElementById('toggle-shop').checked = true; // Add this line
             document.getElementById('toggle-client-login').checked = true;
             document.getElementById('toggle-promotions').checked = true;
             document.getElementById('toggle-gift-card').checked = true;
@@ -6583,7 +6595,8 @@ calendarGrid.addEventListener('click', (e) => {
     // REPLACE this event listener inside initMainApp
     featureTogglesForm.addEventListener('change', async (e) => {
         if (e.target.type === 'checkbox') {
-            const settings = {
+            
+                 showShop: document.getElementById('toggle-shop').checked, // Add this line
                 showClientLogin: document.getElementById('toggle-client-login').checked,
                 showPromotions: document.getElementById('toggle-promotions').checked,
                 showGiftCards: document.getElementById('toggle-gift-card').checked,

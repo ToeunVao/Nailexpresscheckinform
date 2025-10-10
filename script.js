@@ -4026,6 +4026,7 @@ onSnapshot(doc(db, "settings", "holidays"), (docSnap) => {
 
     // ... other variables
     let aggregatedClients = [], allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [], allInventoryUsage = [], allGiftCards = [], allPromotions = [], technicianColorMap = {}, sentReminderIds = [], allMemberships = [], currentRotation = 0;
+    let allEcommProducts = [], allEcommOrders = []; // <-- ADD THIS LINE
     // ... more variables
     let allExpenseCategories = [], allPaymentAccounts = [], allSuppliers = [];
     // Add these two new variables

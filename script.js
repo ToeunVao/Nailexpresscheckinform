@@ -35,6 +35,8 @@ const modalContent = document.getElementById('modal-content');
 let mainAppInitialized = false;
 let landingPageInitialized = false;
 let clientDashboardInitialized = false;
+let stripe = null; 
+let stripePublishableKey = null; 
 let anonymousUserId = null;
 let bookingSettings = { 
     minBookingHours: 2, 
@@ -991,99 +993,105 @@ addAppointmentForm.addEventListener('submit', async (e) => {
 });
 
 // Located inside initLandingPage()
-purchaseForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const amount = parseFloat(document.getElementById('gc-amount').value);
-    const quantity = parseInt(document.getElementById('gc-quantity').value, 10);
+    purchaseForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const amount = parseFloat(document.getElementById('gc-amount').value);
+        const quantity = parseInt(document.getElementById('gc-quantity').value, 10);
+        const submitBtn = document.getElementById('landing-gc-submit-btn');
 
-    if (isNaN(amount) || amount <= 0 || isNaN(quantity) || quantity <= 0) {
-        alert('Please fill out the gift card amount and quantity correctly.');
-        return;
-    }
-
-    const submitBtn = document.getElementById('landing-gc-submit-btn');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Processing...';
-
-    try {
-        // SCENARIO 1: User is already a logged-in client
-        if (currentUserId && auth.currentUser && !auth.currentUser.isAnonymous) {
-            const batch = writeBatch(db);
-            const expiryDate = new Date();
-            expiryDate.setMonth(expiryDate.getMonth() + 6);
-
-            const buyerInfo = {
-                name: document.getElementById('gc-buyer-name').value,
-                email: document.getElementById('gc-buyer-email').value,
-                phone: document.getElementById('gc-buyer-phone').value,
-            };
-
-            for (let i = 0; i < quantity; i++) {
-                const cardData = {
-                    amount: amount,
-                    balance: amount,
-                    history: [],
-                    recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerInfo.name,
-                    senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerInfo.name,
-                    backgroundUrl: document.getElementById('landing-gc-preview-card').style.backgroundImage.slice(5, -2),
-                    code: `GC-${Date.now()}-${i}`,
-                    status: 'Pending',
-                    type: 'E-Gift',
-                    createdBy: currentUserId,
-                    buyerInfo: buyerInfo,
-                    createdAt: serverTimestamp(),
-                    expiresAt: Timestamp.fromDate(expiryDate)
-                };
-                const newCardRef = doc(collection(db, "gift_cards"));
-                batch.set(newCardRef, cardData);
-            }
-            await batch.commit();
-            alert("Success! Your gift card request has been sent. It will be activated once payment is confirmed.");
-            // **** FIX FOR LOGGED-IN USER ****
-            closePurchaseModal();
-
-        } else {
-            // SCENARIO 2: New or anonymous user (original flow)
-            const buyerName = document.getElementById('gc-buyer-name').value;
-            const buyerPhone = document.getElementById('gc-buyer-phone').value;
-            const buyerEmail = document.getElementById('gc-buyer-email').value;
-
-            if (!buyerName || !buyerPhone || !buyerEmail) {
-                alert('Please fill out all your information to create an account.');
-                throw new Error("Missing buyer information.");
-            }
-
-            await createUserWithEmailAndPassword(auth, buyerEmail, buyerPhone);
-
-            const purchaseDetails = {
-                buyerName, buyerPhone, buyerEmail, amount, quantity,
-                recipientName: document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerName,
-                senderName: document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerName,
-                backgroundUrl: document.getElementById('landing-gc-preview-card').style.backgroundImage.slice(5, -2),
-            };
-            sessionStorage.setItem('pendingGiftCardPurchase', JSON.stringify(purchaseDetails));
-            // onAuthStateChanged will handle the rest
-            await sendGiftCardConfirmationEmail(purchaseDetails);
-            // **** FIX FOR NEW USER ****
-            closePurchaseModal();
-
+        if (isNaN(amount) || amount <= 0 || isNaN(quantity) || quantity <= 0) {
+            alert('Please fill out the gift card amount and quantity correctly.');
+            return;
         }
-    } catch (error) {
-        if (error.code === 'auth/email-already-in-use') {
-            alert("An account with this email already exists. Please log in to purchase a gift card.");
-        } else {
+        if (!stripe) {
+            alert("Payment system is not configured. Please contact the administrator.");
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Processing...';
+
+        const buyerName = document.getElementById('gc-buyer-name').value;
+        const buyerPhone = document.getElementById('gc-buyer-phone').value;
+        const recipientName = document.getElementById('gc-show-to').checked ? document.getElementById('gc-to').value : buyerName;
+        const senderName = document.getElementById('gc-show-from').checked ? document.getElementById('gc-from').value : buyerName;
+
+        const expiryDate = new Date();
+        expiryDate.setFullYear(expiryDate.getFullYear() + 1); // 1 year expiry
+
+        const cardData = {
+            amount: amount,
+            balance: amount,
+            history: [],
+            recipientName: recipientName,
+            senderName: senderName,
+            backgroundUrl: document.getElementById('landing-gc-preview-card').style.backgroundImage.slice(5, -2),
+            code: `GC-${Date.now()}`,
+            status: 'Active', // Activated upon successful payment
+            type: 'E-Gift',
+            buyerInfo: { name: buyerName, phone: buyerPhone },
+            createdAt: serverTimestamp(),
+            expiresAt: Timestamp.fromDate(expiryDate)
+        };
+
+        const purchaseDetails = { amount, quantity, buyerName, recipientName, cardData };
+
+        try {
+            const createCheckout = httpsCallable(functions, 'createGiftCardCheckoutSession');
+            const result = await createCheckout({ details: purchaseDetails });
+            const sessionId = result.data.id;
+
+            sessionStorage.setItem('pendingPayment', JSON.stringify({ sessionId, details: purchaseDetails }));
+
+            await stripe.redirectToCheckout({ sessionId });
+        } catch (error) {
             console.error("Error during gift card purchase:", error);
             alert(`Could not process your request. Error: ${error.message}`);
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Pay Now';
         }
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Submit Purchase Request';
-        // Re-enable form fields that might have been disabled
-        document.getElementById('gc-buyer-name').disabled = false;
-        document.getElementById('gc-buyer-phone').disabled = false;
-        document.getElementById('gc-buyer-email').disabled = false;
-    }
-});
+    });
+
+    document.getElementById('landing-membership-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const submitBtn = document.getElementById('landing-ms-submit-btn');
+        const tierId = document.getElementById('ms-tier-select').value;
+        const tier = allMembershipTiers.find(t => t.id === tierId);
+
+        if (!tier || !stripe) {
+            alert("Please select a valid tier. Payment system might be offline.");
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Processing...';
+
+        const name = document.getElementById('ms-buyer-name').value;
+        const email = document.getElementById('ms-buyer-email').value;
+        const phone = document.getElementById('ms-buyer-phone').value;
+
+        try {
+            const createCheckout = httpsCallable(functions, 'createMembershipCheckoutSession');
+            const result = await createCheckout({ tier });
+            const sessionId = result.data.id;
+
+            // We'll create/update the client on the success page
+            const membershipData = {
+                tierId: tier.id,
+                tierName: tier.name,
+                startDate: serverTimestamp(),
+                status: 'Active'
+            };
+            sessionStorage.setItem('pendingPayment', JSON.stringify({ sessionId, membershipData, clientDetails: { name, email, phone } }));
+
+            await stripe.redirectToCheckout({ sessionId });
+        } catch (error) {
+            console.error("Error during membership purchase:", error);
+            alert(`Could not process your request. Error: ${error.message}`);
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Pay Now';
+        }
+    });
 
 // --- GLOBAL MEMBERSHIP FUNCTIONS ---
 const renderMembershipTiers = (tiers, containerId, isLoggedIn) => {
@@ -1824,7 +1832,218 @@ document.getElementById('landing-membership-form').addEventListener('submit', as
 });
 
 // --- LANDING PAGE SCRIPT ---
-function initLandingPage() {
+async function initLandingPage() {
+
+const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js");
+    const functions = getFunctions(app, 'us-central1'); // Or your region
+
+    // Load Stripe Publishable Key
+    getDoc(doc(db, "settings", "stripe_keys")).then(docSnap => {
+        if (docSnap.exists() && docSnap.data().publishableKey) {
+            stripePublishableKey = docSnap.data().publishableKey;
+            stripe = Stripe(stripePublishableKey);
+        } else {
+            console.warn("Stripe Publishable Key not set in admin panel.");
+        }
+    });
+
+    // --- E-COMMERCE SHOP LOGIC (LANDING PAGE) ---
+    const shopContainer = document.getElementById('shop-products-container');
+    const cartButton = document.getElementById('cart-button');
+    const cartModal = document.getElementById('cart-modal');
+    const closeCartModalBtn = document.getElementById('close-cart-modal-btn');
+    const cartItemsContainer = document.getElementById('cart-items-container');
+    const cartBadge = document.getElementById('cart-badge');
+    const cartSubtotalEl = document.getElementById('cart-subtotal');
+    const checkoutBtn = document.getElementById('checkout-btn');
+    const confirmationModal = document.getElementById('order-confirmation-modal');
+    const closeConfirmationBtn = document.getElementById('close-confirmation-modal-btn');
+
+    const renderShopProducts = () => {
+        if (!shopContainer) return;
+        shopContainer.innerHTML = '';
+        allShopProducts.forEach(product => {
+            const isOutOfStock = product.stock <= 0;
+            const card = document.createElement('div');
+            card.className = `product-card bg-white rounded-lg shadow-md overflow-hidden relative ${isOutOfStock ? 'out-of-stock' : ''}`;
+            card.innerHTML = `
+                <img src="${product.imageURL || 'https://placehold.co/300x300/f8bbd0/ffffff?text=Nail+Product'}" alt="${product.name}" class="w-full h-48 object-cover">
+                <div class="p-4">
+                    <h3 class="font-bold text-lg truncate">${product.name}</h3>
+                    <p class="text-sm text-gray-500 h-10 overflow-hidden">${product.description}</p>
+                    <div class="flex justify-between items-center mt-4">
+                        <span class="text-xl font-bold text-pink-600">$${product.price.toFixed(2)}</span>
+                        <button data-id="${product.id}" class="add-to-cart-btn bg-pink-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-pink-700 disabled:bg-gray-400" ${isOutOfStock ? 'disabled' : ''}>
+                            <i class="fas fa-cart-plus mr-2"></i>Add
+                        </button>
+                    </div>
+                </div>
+                <div class="out-of-stock-overlay absolute inset-0 bg-white/70 flex items-center justify-center">
+                    <span class="font-bold text-gray-500 bg-gray-200 px-4 py-2 rounded-full">Out of Stock</span>
+                </div>
+            `;
+            shopContainer.appendChild(card);
+        });
+    };
+
+    const updateCartBadge = () => {
+        const totalItems = shoppingCart.reduce((sum, item) => sum + item.quantity, 0);
+        if (totalItems > 0) {
+            cartBadge.textContent = totalItems;
+            cartBadge.classList.remove('hidden');
+        } else {
+            cartBadge.classList.add('hidden');
+        }
+    };
+
+    const renderCart = () => {
+        cartItemsContainer.innerHTML = '';
+        if (shoppingCart.length === 0) {
+            cartItemsContainer.innerHTML = '<p class="text-center text-gray-500">Your cart is empty.</p>';
+            checkoutBtn.disabled = true;
+            cartSubtotalEl.textContent = '$0.00';
+            return;
+        }
+
+        let subtotal = 0;
+        shoppingCart.forEach(item => {
+            subtotal += item.price * item.quantity;
+            const itemEl = document.createElement('div');
+            itemEl.className = 'flex items-center gap-4 border-b pb-2';
+            itemEl.innerHTML = `
+                <img src="${item.imageURL || 'https://placehold.co/100x100/f8bbd0/ffffff?text=Nail+Product'}" class="w-16 h-16 object-cover rounded-lg">
+                <div class="flex-grow">
+                    <p class="font-semibold">${item.name}</p>
+                    <p class="text-sm text-gray-500">$${item.price.toFixed(2)}</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button data-id="${item.id}" class="cart-item-quantity-btn decrease-qty">-</button>
+                    <span>${item.quantity}</span>
+                    <button data-id="${item.id}" class="cart-item-quantity-btn increase-qty">+</button>
+                </div>
+                <button data-id="${item.id}" class="remove-from-cart-btn text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+            `;
+            cartItemsContainer.appendChild(itemEl);
+        });
+
+        cartSubtotalEl.textContent = `$${subtotal.toFixed(2)}`;
+        checkoutBtn.disabled = false;
+    };
+
+    const addToCart = (productId) => {
+        const product = allShopProducts.find(p => p.id === productId);
+        if (!product) return;
+
+        const existingItem = shoppingCart.find(item => item.id === productId);
+        if (existingItem) {
+            if(existingItem.quantity < product.stock) {
+                existingItem.quantity++;
+            } else {
+                alert("No more stock available for this item.");
+            }
+        } else {
+             if(product.stock > 0){
+                shoppingCart.push({ ...product, quantity: 1 });
+             } else {
+                 alert("This item is out of stock.");
+             }
+        }
+        updateCartBadge();
+        renderCart();
+    };
+
+    onSnapshot(collection(db, "products"), (snapshot) => {
+        allShopProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderShopProducts();
+    });
+
+    cartButton?.addEventListener('click', () => cartModal.classList.remove('hidden'));
+    closeCartModalBtn?.addEventListener('click', () => cartModal.classList.add('hidden'));
+    cartModal?.querySelector('.modal-overlay').addEventListener('click', () => cartModal.classList.add('hidden'));
+
+    shopContainer?.addEventListener('click', (e) => {
+        const btn = e.target.closest('.add-to-cart-btn');
+        if (btn) {
+            addToCart(btn.dataset.id);
+        }
+    });
+
+    cartItemsContainer?.addEventListener('click', e => {
+        const target = e.target.closest('button');
+        if (!target) return;
+        const id = target.dataset.id;
+        const itemIndex = shoppingCart.findIndex(item => item.id === id);
+        const productInStock = allShopProducts.find(p => p.id === id);
+
+
+        if (target.classList.contains('increase-qty')) {
+            if(shoppingCart[itemIndex].quantity < productInStock.stock){
+               shoppingCart[itemIndex].quantity++;
+            } else {
+                alert("No more stock available for this item.");
+            }
+        } else if (target.classList.contains('decrease-qty')) {
+            if (shoppingCart[itemIndex].quantity > 1) {
+                shoppingCart[itemIndex].quantity--;
+            } else {
+                shoppingCart.splice(itemIndex, 1);
+            }
+        } else if (target.classList.contains('remove-from-cart-btn')) {
+            shoppingCart.splice(itemIndex, 1);
+        }
+        renderCart();
+        updateCartBadge();
+    });
+
+    checkoutBtn?.addEventListener('click', async () => {
+        if (!stripe) {
+            alert("Payment system is not configured. Please contact the administrator.");
+            return;
+        }
+
+        const customerDetails = {
+            name: prompt("Please enter your full name:"),
+            phone: prompt("Please enter your phone number:"),
+        };
+
+        if (!customerDetails.name || !customerDetails.phone) {
+            alert("Name and phone number are required to place an order.");
+            return;
+        }
+
+        checkoutBtn.disabled = true;
+        checkoutBtn.textContent = 'Processing...';
+
+        const orderData = {
+            customer: customerDetails,
+            items: shoppingCart,
+            total: shoppingCart.reduce((sum, item) => sum + item.price * item.quantity, 0),
+            status: 'Pending',
+            createdAt: serverTimestamp(),
+        };
+
+        try {
+            const createCheckout = httpsCallable(functions, 'createECommerceCheckoutSession');
+            const result = await createCheckout({ items: shoppingCart });
+            const sessionId = result.data.id;
+
+            sessionStorage.setItem('pendingPayment', JSON.stringify({
+                sessionId: sessionId,
+                order: orderData
+            }));
+
+            await stripe.redirectToCheckout({ sessionId });
+        } catch (error) {
+            console.error("Error creating checkout session:", error);
+            alert("Could not initiate payment. Please try again.");
+            checkoutBtn.disabled = false;
+            checkoutBtn.textContent = 'Proceed to Checkout';
+        }
+    });
+
+    closeConfirmationBtn?.addEventListener('click', () => confirmationModal.classList.add('hidden'));
+
+
     // PASTE THIS AT THE VERY TOP of the initLandingPage() function
 const announcementModal = document.getElementById('announcement-modal');
 
@@ -2401,7 +2620,173 @@ addAppointmentFormLanding.addEventListener('submit', async (e) => {
 }
 
 // --- MAIN CHECK-IN APP SCRIPT ---
-function initMainApp(userRole, userName) {
+async function initMainApp(userRole, userName) {
+    // --- STRIPE API SETTINGS ---
+    const stripeSettingsForm = document.getElementById('stripe-settings-form');
+    if (stripeSettingsForm) {
+        getDoc(doc(db, "settings", "stripe_keys")).then(docSnap => {
+            if (docSnap.exists()) {
+                const keys = docSnap.data();
+                document.getElementById('stripe-publishable-key').value = keys.publishableKey || '';
+            }
+        });
+
+        stripeSettingsForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const publishableKey = document.getElementById('stripe-publishable-key').value;
+            const secretKey = document.getElementById('stripe-secret-key').value;
+
+            if (!publishableKey) {
+                alert("Publishable Key is required.");
+                return;
+            }
+
+            try {
+                // Note: Storing the secret key in Firestore is NOT recommended for production.
+                // The primary, secure method is setting it in the Cloud Function environment.
+                // This is for admin convenience.
+                const dataToSave = { publishableKey };
+                if (secretKey) {
+                    dataToSave.secretKey = secretKey;
+                }
+                await setDoc(doc(db, "settings", "stripe_keys"), dataToSave, { merge: true });
+                alert("Stripe keys saved! IMPORTANT: For the secret key to work, you MUST also set it in your Firebase environment and redeploy functions.");
+                document.getElementById('stripe-secret-key').value = '';
+            } catch (error) {
+                console.error("Error saving Stripe keys:", error);
+                alert("Could not save Stripe keys.");
+            }
+        });
+    }
+    // --- E-COMMERCE MANAGEMENT (ADMIN) ---
+    const initEcommerceManagement = () => {
+        const productForm = document.getElementById('ecomm-add-product-form');
+        const productsAdminTableBody = document.querySelector('#products-admin-table tbody');
+        const ordersAdminTableBody = document.querySelector('#orders-admin-table tbody');
+
+        const renderProductsAdminTable = () => {
+            if(!productsAdminTableBody) return;
+            productsAdminTableBody.innerHTML = '';
+            allEcommProducts.forEach(p => {
+                const row = productsAdminTableBody.insertRow();
+                row.innerHTML = `
+                    <td class="px-4 py-2"><img src="${p.imageURL || 'https://placehold.co/64x64/f8bbd0/ffffff?text=Nail+Product'}" class="w-12 h-12 object-cover rounded"></td>
+                    <td class="px-4 py-2 font-medium">${p.name}</td>
+                    <td class="px-4 py-2">$${p.price.toFixed(2)}</td>
+                    <td class="px-4 py-2">${p.stock}</td>
+                    <td class="px-4 py-2 text-center">
+                        <button data-id="${p.id}" class="ecomm-edit-product-btn text-blue-500 mr-2"><i class="fas fa-edit"></i></button>
+                        <button data-id="${p.id}" class="ecomm-delete-product-btn text-red-500"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+            });
+        };
+
+        const renderOrdersAdminTable = () => {
+            if(!ordersAdminTableBody) return;
+            ordersAdminTableBody.innerHTML = '';
+            allEcommOrders.forEach(o => {
+                const row = ordersAdminTableBody.insertRow();
+                const itemsSummary = o.items.map(i => `${i.quantity}x ${i.name}`).join('<br>');
+                row.innerHTML = `
+                    <td class="px-4 py-2">${o.createdAt.toDate().toLocaleDateString()}</td>
+                    <td class="px-4 py-2">${o.customer.name}<br><span class="text-xs text-gray-500">${o.customer.phone}</span></td>
+                    <td class="px-4 py-2 text-xs">${itemsSummary}</td>
+                    <td class="px-4 py-2 font-bold">$${o.total.toFixed(2)}</td>
+                    <td class="px-4 py-2">${o.status}</td>
+                    <td class="px-4 py-2 text-center">
+                        <select data-id="${o.id}" class="order-status-select form-select text-sm p-1">
+                            <option value="Pending" ${o.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                            <option value="Shipped" ${o.status === 'Shipped' ? 'selected' : ''}>Shipped</option>
+                            <option value="Completed" ${o.status === 'Completed' ? 'selected' : ''}>Completed</option>
+                            <option value="Cancelled" ${o.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+                        </select>
+                    </td>
+                `;
+            });
+        };
+
+        onSnapshot(query(collection(db, "products"), orderBy("name")), (snapshot) => {
+            allEcommProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderProductsAdminTable();
+        });
+
+        onSnapshot(query(collection(db, "orders"), orderBy("createdAt", "desc")), (snapshot) => {
+            allEcommOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderOrdersAdminTable();
+        });
+
+        productForm?.addEventListener('submit', async e => {
+            e.preventDefault();
+            const id = document.getElementById('ecomm-edit-product-id').value;
+            const file = document.getElementById('ecomm-product-image').files[0];
+            let imageURL = document.getElementById('ecomm-current-image-info').dataset.url || null;
+
+            if (file) {
+                const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
+                await uploadBytes(storageRef, file);
+                imageURL = await getDownloadURL(storageRef);
+            }
+
+            const data = {
+                name: document.getElementById('ecomm-product-name').value,
+                description: document.getElementById('ecomm-product-desc').value,
+                price: parseFloat(document.getElementById('ecomm-product-price').value),
+                stock: parseInt(document.getElementById('ecomm-product-stock').value, 10),
+                imageURL: imageURL
+            };
+
+            try {
+                if (id) {
+                    await updateDoc(doc(db, "products", id), data);
+                } else {
+                    await addDoc(collection(db, "products"), data);
+                }
+                resetEcommProductForm();
+            } catch (error) { console.error("Error saving product", error); }
+        });
+
+        const resetEcommProductForm = () => {
+            productForm.reset();
+            document.getElementById('ecomm-edit-product-id').value = '';
+            document.getElementById('ecomm-current-image-info').textContent = '';
+            document.getElementById('ecomm-current-image-info').dataset.url = '';
+            document.getElementById('ecomm-add-product-btn').textContent = 'Add Product';
+            document.getElementById('ecomm-cancel-edit-btn').classList.add('hidden');
+        };
+
+        document.getElementById('ecomm-cancel-edit-btn')?.addEventListener('click', resetEcommProductForm);
+
+        productsAdminTableBody?.addEventListener('click', e => {
+            const editBtn = e.target.closest('.ecomm-edit-product-btn');
+            const deleteBtn = e.target.closest('.ecomm-delete-product-btn');
+
+            if (editBtn) {
+                const product = allEcommProducts.find(p => p.id === editBtn.dataset.id);
+                document.getElementById('ecomm-edit-product-id').value = product.id;
+                document.getElementById('ecomm-product-name').value = product.name;
+                document.getElementById('ecomm-product-desc').value = product.description;
+                document.getElementById('ecomm-product-price').value = product.price;
+                document.getElementById('ecomm-product-stock').value = product.stock;
+                document.getElementById('ecomm-current-image-info').textContent = product.imageURL ? 'Image exists.' : 'No image.';
+                document.getElementById('ecomm-current-image-info').dataset.url = product.imageURL || '';
+                document.getElementById('ecomm-add-product-btn').textContent = 'Update Product';
+                document.getElementById('ecomm-cancel-edit-btn').classList.remove('hidden');
+            } else if (deleteBtn) {
+                showConfirmModal("Delete this product?", async () => {
+                    await deleteDoc(doc(db, "products", deleteBtn.dataset.id));
+                });
+            }
+        });
+
+        ordersAdminTableBody?.addEventListener('change', async e => {
+            if (e.target.classList.contains('order-status-select')) {
+                const orderId = e.target.dataset.id;
+                const newStatus = e.target.value;
+                await updateDoc(doc(db, "orders", orderId), { status: newStatus });
+            }
+        });
+    };
     // PASTE THIS ENTIRE FUNCTION block inside initMainApp()
 
 const initAnnouncementManagement = () => {
@@ -2737,8 +3122,11 @@ const initAnnouncementManagement = () => {
                 document.getElementById('admin-content').classList.remove('hidden');
                 document.getElementById('user-management-tab').click();
                 // **NEW** Add this line to pre-load memberships for the admin panel
-                if (currentUserRole === 'admin') initMembershipManagement();
-                break;
+               if (currentUserRole === 'admin') {
+                initMembershipManagement();
+                initEcommerceManagement(); // Ensure this is called
+            }
+            break;
         }
     };
 

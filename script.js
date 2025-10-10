@@ -73,6 +73,7 @@ let currentLightboxImageIndex = 0;
 let currentLightboxIdea = null;
 let allShopProducts = []; 
 let shoppingCart = [];  
+let currentProductModalImageIndex = 0;
 const nailIdeaLightbox = document.getElementById('nail-idea-lightbox');
 const lightboxCloseBtn = document.getElementById('lightbox-close-btn');
 const lightboxPrevBtn = document.getElementById('lightbox-prev-btn');
@@ -1869,8 +1870,8 @@ const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/fi
             const card = document.createElement('div');
             card.className = `product-card bg-white rounded-lg shadow-md overflow-hidden relative ${isOutOfStock ? 'out-of-stock' : ''}`;
             card.innerHTML = `
-                <img src="${product.imageURL || 'https://placehold.co/300x300/f8bbd0/ffffff?text=Nail+Product'}" alt="${product.name}" class="w-full h-48 object-cover">
-                <div class="p-4">
+               <img src="${(product.imageURLs && product.imageURLs[0]) || 'https://placehold.co/300x300/f8bbd0/ffffff?text=Nail+Product'}" alt="${product.name}" class="w-full h-48 object-cover">
+               <div class="p-4">
                     <h3 class="font-bold text-lg truncate">${product.name}</h3>
                     <p class="text-sm text-gray-500 h-10 overflow-hidden">${product.description}</p>
                     <div class="flex justify-between items-center mt-4">
@@ -2044,7 +2045,101 @@ const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/fi
     });
 
     closeConfirmationBtn?.addEventListener('click', () => confirmationModal.classList.add('hidden'));
+// --- PRODUCT DETAIL MODAL LOGIC ---
+const productDetailModal = document.getElementById('product-detail-modal');
+const closeProductDetailBtn = document.getElementById('close-product-detail-modal-btn');
 
+const openProductDetailModal = (productId) => {
+    const product = allShopProducts.find(p => p.id === productId);
+    if (!product) return;
+
+    // Populate text content
+    document.getElementById('product-modal-name').textContent = product.name;
+    document.getElementById('product-modal-price').textContent = `$${product.price.toFixed(2)}`;
+    document.getElementById('product-modal-description').textContent = product.description;
+
+    // Update stock status and Add to Cart button
+    const stockStatusEl = document.getElementById('product-modal-stock-status');
+    const addToCartBtn = document.getElementById('product-modal-add-to-cart-btn');
+    addToCartBtn.dataset.id = productId;
+
+    if (product.stock > 0) {
+        stockStatusEl.innerHTML = `<span class="text-green-600 font-semibold">In Stock (${product.stock} available)</span>`;
+        addToCartBtn.disabled = false;
+    } else {
+        stockStatusEl.innerHTML = `<span class="text-red-600 font-semibold">Out of Stock</span>`;
+        addToCartBtn.disabled = true;
+    }
+
+    // Image gallery logic
+    currentProductModalImageIndex = 0;
+    const displayImage = () => {
+        const images = product.imageURLs || [];
+        const imageEl = document.getElementById('product-modal-image');
+        const prevBtn = document.getElementById('product-modal-prev-btn');
+        const nextBtn = document.getElementById('product-modal-next-btn');
+        const counterEl = document.getElementById('product-modal-counter');
+
+        if (images.length > 0) {
+            imageEl.src = images[currentProductModalImageIndex];
+            const hasMultiple = images.length > 1;
+            prevBtn.classList.toggle('hidden', !hasMultiple || currentProductModalImageIndex === 0);
+            nextBtn.classList.toggle('hidden', !hasMultiple || currentProductModalImageIndex === images.length - 1);
+            counterEl.classList.toggle('hidden', !hasMultiple);
+            if (hasMultiple) {
+                counterEl.textContent = `${currentProductModalImageIndex + 1} / ${images.length}`;
+            }
+        } else {
+            imageEl.src = 'https://placehold.co/400x400/f8bbd0/ffffff?text=No+Image';
+            [prevBtn, nextBtn, counterEl].forEach(el => el.classList.add('hidden'));
+        }
+    };
+    displayImage();
+    productDetailModal.classList.remove('hidden');
+};
+
+// Event listeners for the new modal
+shopContainer?.addEventListener('click', (e) => {
+    const productCard = e.target.closest('.product-card');
+    const isAddToCartButton = e.target.closest('.add-to-cart-btn');
+
+    // Only open modal if the click is on the card itself, not the add button
+    if (productCard && !isAddToCartButton) {
+        const buttonInsideCard = productCard.querySelector('.add-to-cart-btn');
+        if (buttonInsideCard?.dataset.id) {
+            openProductDetailModal(buttonInsideCard.dataset.id);
+        }
+    }
+});
+
+const closeProductDetailModal = () => productDetailModal.classList.add('hidden');
+closeProductDetailBtn.addEventListener('click', closeProductDetailModal);
+productDetailModal.addEventListener('click', (e) => {
+    if (e.target.id === 'product-detail-modal') closeProductDetailModal();
+});
+
+document.getElementById('product-modal-add-to-cart-btn').addEventListener('click', (e) => {
+    addToCart(e.target.dataset.id);
+    e.target.textContent = 'Added!';
+    setTimeout(() => { e.target.textContent = 'Add to Cart'; }, 1500);
+});
+
+document.getElementById('product-modal-next-btn').addEventListener('click', () => {
+    const productId = document.getElementById('product-modal-add-to-cart-btn').dataset.id;
+    const product = allShopProducts.find(p => p.id === productId);
+    if (product && currentProductModalImageIndex < product.imageURLs.length - 1) {
+        currentProductModalImageIndex++;
+        openProductDetailModal(productId); // Re-call to refresh everything
+    }
+});
+
+document.getElementById('product-modal-prev-btn').addEventListener('click', () => {
+    if (currentProductModalImageIndex > 0) {
+        currentProductModalImageIndex--;
+        const productId = document.getElementById('product-modal-add-to-cart-btn').dataset.id;
+        openProductDetailModal(productId); // Re-call to refresh everything
+    }
+});
 
     // PASTE THIS AT THE VERY TOP of the initLandingPage() function
 const announcementModal = document.getElementById('announcement-modal');
@@ -2672,7 +2767,7 @@ async function initMainApp(userRole, userName) {
             allEcommProducts.forEach(p => {
                 const row = productsAdminTableBody.insertRow();
                 row.innerHTML = `
-                    <td class="px-4 py-2"><img src="${p.imageURL || 'https://placehold.co/64x64/f8bbd0/ffffff?text=Nail+Product'}" class="w-12 h-12 object-cover rounded"></td>
+                    <td class="px-4 py-2"><img src="${(p.imageURLs && p.imageURLs[0]) || 'https://placehold.co/64x64/f8bbd0/ffffff?text=Nail+Product'}" class="w-12 h-12 object-cover rounded"></td>
                     <td class="px-4 py-2 font-medium">${p.name}</td>
                     <td class="px-4 py-2">$${p.price.toFixed(2)}</td>
                     <td class="px-4 py-2">${p.stock}</td>
@@ -2721,21 +2816,15 @@ async function initMainApp(userRole, userName) {
         productForm?.addEventListener('submit', async e => {
             e.preventDefault();
             const id = document.getElementById('ecomm-edit-product-id').value;
-            const file = document.getElementById('ecomm-product-image').files[0];
-            let imageURL = document.getElementById('ecomm-current-image-info').dataset.url || null;
-
-            if (file) {
-                const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
-                await uploadBytes(storageRef, file);
-                imageURL = await getDownloadURL(storageRef);
-            }
+           const imageUrlsText = document.getElementById('ecomm-product-image-urls').value;
+            const imageURLs = imageUrlsText.split('\n').map(url => url.trim()).filter(Boolean);
 
             const data = {
                 name: document.getElementById('ecomm-product-name').value,
                 description: document.getElementById('ecomm-product-desc').value,
                 price: parseFloat(document.getElementById('ecomm-product-price').value),
                 stock: parseInt(document.getElementById('ecomm-product-stock').value, 10),
-                imageURL: imageURL
+                imageURLs: imageURLs // Save as an array
             };
 
             try {
@@ -2770,8 +2859,12 @@ async function initMainApp(userRole, userName) {
                 document.getElementById('ecomm-product-desc').value = product.description;
                 document.getElementById('ecomm-product-price').value = product.price;
                 document.getElementById('ecomm-product-stock').value = product.stock;
-                document.getElementById('ecomm-current-image-info').textContent = product.imageURL ? 'Image exists.' : 'No image.';
-                document.getElementById('ecomm-current-image-info').dataset.url = product.imageURL || '';
+                const imageUrlsTextarea = document.getElementById('ecomm-product-image-urls');
+                if (product.imageURLs && Array.isArray(product.imageURLs)) {
+                    imageUrlsTextarea.value = product.imageURLs.join('\n');
+                } else {
+                    imageUrlsTextarea.value = '';
+                }'';
                 document.getElementById('ecomm-add-product-btn').textContent = 'Update Product';
                 document.getElementById('ecomm-cancel-edit-btn').classList.remove('hidden');
             } else if (deleteBtn) {

@@ -1650,9 +1650,8 @@
                                             <input type="number" id="ecomm-product-stock" class="form-input w-full mt-1" required>
                                         </div>
                                         <div>
-                                            <label for="ecomm-product-image" class="block text-sm font-medium text-gray-600">Product Image</label>
-                                            <input type="file" id="ecomm-product-image" class="form-input w-full mt-1 text-sm" accept="image/*">
-                                            <div id="ecomm-current-image-info" class="text-xs text-gray-500 mt-1"></div>
+                                        <label for="ecomm-product-image-urls" class="block text-sm font-medium text-gray-600">Product Image URLs</label>
+                                        <textarea id="ecomm-product-image-urls" rows="4" class="form-input w-full mt-1" placeholder="Enter one image URL per line..."></textarea>
                                         </div>
                                         <div class="flex gap-2">
                                             <button type="submit" id="ecomm-add-product-btn" class="w-full bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">Add Product</button>
@@ -3677,6 +3676,26 @@
             <button id="close-confirmation-modal-btn" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Close</button>
         </div>
     </div>
+    <div id="product-detail-modal" class="modal hidden fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black bg-opacity-50">
+    <div class="relative bg-white w-full max-w-4xl rounded-lg shadow-xl m-4 max-h-[90vh] flex flex-col lg:flex-row overflow-hidden">
+        <button id="close-product-detail-modal-btn" class="absolute top-2 right-3 text-gray-500 hover:text-gray-800 text-3xl z-20">&times;</button>
+        <div class="w-full lg:w-1/2 bg-gray-100 flex items-center justify-center relative group">
+            <img id="product-modal-image" src="" alt="Product Image" class="max-h-full max-w-full object-contain h-[50vh] lg:h-auto">
+            <button id="product-modal-prev-btn" class="absolute left-4 top-1/2 -translate-y-1/2 bg-black/30 text-white p-2 rounded-full hover:bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity text-2xl hidden"><i class="fas fa-chevron-left"></i></button>
+            <button id="product-modal-next-btn" class="absolute right-4 top-1/2 -translate-y-1/2 bg-black/30 text-white p-2 rounded-full hover:bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity text-2xl hidden"><i class="fas fa-chevron-right"></i></button>
+            <div id="product-modal-counter" class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white text-xs px-2 py-1 rounded-full hidden"></div>
+        </div>
+        <div class="w-full lg:w-1/2 p-6 overflow-y-auto">
+            <h2 id="product-modal-name" class="text-3xl font-bold text-gray-800 mb-2"></h2>
+            <p id="product-modal-price" class="text-2xl font-bold text-pink-600 mb-4"></p>
+            <div id="product-modal-stock-status" class="mb-4"></div>
+            <p id="product-modal-description" class="text-gray-600 mb-6"></p>
+            <button id="product-modal-add-to-cart-btn" class="w-full bg-pink-600 text-white font-bold py-3 rounded-lg hover:bg-pink-700 disabled:bg-gray-400">
+                <i class="fas fa-cart-plus mr-2"></i>Add to Cart
+            </button>
+        </div>
+    </div>
+</div>
     <div id="announcement-modal" class="modal hidden fixed inset-0 z-[90] flex items-center justify-center p-4">
     <div id="announcement-modal-overlay" class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
     <div class="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl m-4">

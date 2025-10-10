@@ -1545,6 +1545,8 @@
                             <ul class="flex flex-wrap -mb-px text-sm font-medium text-center scrollable-tabs"
                                 id="admin-sub-tabs">
                                 <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg active"
+                                        id="ecommerce-management-tab" type="button">E-commerce</button></li>
+                                <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg active"
                                         id="user-management-tab" type="button">User Management</button></li>
                                 <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg"
                                         id="inventory-management-tab" type="button">Inventory Management</button></li>
@@ -1570,7 +1572,76 @@
                                         id="backup-management-tab" type="button">Backup & Restore</button></li>
                             </ul>
                         </div>
-
+                        <div id="ecommerce-management-content" class="sub-tab-content">
+                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                <div class="lg:col-span-1">
+                                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Add/Edit Product</h3>
+                                    <form id="ecomm-add-product-form" class="p-4 border rounded-lg bg-gray-50 space-y-4">
+                                        <input type="hidden" id="ecomm-edit-product-id">
+                                        <div>
+                                            <label for="ecomm-product-name" class="block text-sm font-medium text-gray-600">Product Name</label>
+                                            <input type="text" id="ecomm-product-name" class="form-input w-full mt-1" required>
+                                        </div>
+                                        <div>
+                                            <label for="ecomm-product-desc" class="block text-sm font-medium text-gray-600">Description</label>
+                                            <textarea id="ecomm-product-desc" rows="3" class="form-input w-full mt-1"></textarea>
+                                        </div>
+                                        <div>
+                                            <label for="ecomm-product-price" class="block text-sm font-medium text-gray-600">Price ($)</label>
+                                            <input type="number" id="ecomm-product-price" step="0.01" class="form-input w-full mt-1" required>
+                                        </div>
+                                        <div>
+                                            <label for="ecomm-product-stock" class="block text-sm font-medium text-gray-600">Stock Quantity</label>
+                                            <input type="number" id="ecomm-product-stock" class="form-input w-full mt-1" required>
+                                        </div>
+                                        <div>
+                                            <label for="ecomm-product-image" class="block text-sm font-medium text-gray-600">Product Image</label>
+                                            <input type="file" id="ecomm-product-image" class="form-input w-full mt-1 text-sm" accept="image/*">
+                                            <div id="ecomm-current-image-info" class="text-xs text-gray-500 mt-1"></div>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <button type="submit" id="ecomm-add-product-btn" class="w-full bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">Add Product</button>
+                                            <button type="button" id="ecomm-cancel-edit-btn" class="w-full bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hidden">Cancel</button>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="lg:col-span-2">
+                                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Product List</h3>
+                                    <div class="overflow-x-auto max-h-[50vh]">
+                                        <table id="products-admin-table" class="w-full text-sm text-left">
+                                            <thead class="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
+                                                <tr>
+                                                    <th class="px-4 py-2">Image</th>
+                                                    <th class="px-4 py-2">Name</th>
+                                                    <th class="px-4 py-2">Price</th>
+                                                    <th class="px-4 py-2">Stock</th>
+                                                    <th class="px-4 py-2 text-center">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-8">
+                                <h3 class="text-xl font-semibold text-gray-700 mb-4">Customer Orders</h3>
+                                <div class="overflow-x-auto">
+                                    <table id="orders-admin-table" class="w-full text-sm text-left">
+                                        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                            <tr>
+                                                <th class="px-4 py-2">Order Date</th>
+                                                <th class="px-4 py-2">Customer</th>
+                                                <th class="px-4 py-2">Items</th>
+                                                <th class="px-4 py-2">Total</th>
+                                                <th class="px-4 py-2">Status</th>
+                                                <th class="px-4 py-2 text-center">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                         <div id="user-management-content" class="sub-tab-content">
                             <h3 class="text-xl font-semibold text-gray-700 mb-4">Manage Users</h3>
                             <form id="add-user-form"
@@ -2244,7 +2315,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="mt-8">
+                                <div>
                                 <h3 class="text-xl font-semibold text-gray-700 mb-4">Payment Gateway (Stripe)</h3>
                                 <form id="stripe-settings-form" class="p-4 border rounded-lg bg-gray-50 space-y-4">
                                     <p class="text-sm text-gray-600">Enter your API keys from your Stripe Dashboard to enable online payments.</p>

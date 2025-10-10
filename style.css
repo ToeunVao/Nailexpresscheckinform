@@ -439,3 +439,35 @@ body { font-family: 'Poppins', sans-serif; background-color: #FEFBF9; }
 .scrollable-tabs::-webkit-scrollbar {
     display: none;  /* Safari and Chrome */
 }
+
+/* Add these styles to the end of your style.css file */
+
+/* E-commerce Product Card */
+.product-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+.product-card .out-of-stock-overlay {
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+.product-card.out-of-stock .out-of-stock-overlay {
+    opacity: 1;
+}
+.product-card.out-of-stock img {
+    filter: grayscale(80%);
+}
+
+/* Cart Modal Styles */
+.cart-item-quantity-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+.cart-item-quantity-btn:hover {
+    background-color: #f3f4f6;
+}

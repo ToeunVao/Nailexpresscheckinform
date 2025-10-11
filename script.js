@@ -6583,7 +6583,7 @@ calendarGrid.addEventListener('click', (e) => {
             document.getElementById('toggle-royalty-card').checked = settings.showRoyaltyCard !== false; // This line was missing
         } else {
             // Default all to true if no settings exist yet
-             document.getElementById('toggle-shop').checked = true; // Add this line
+            document.getElementById('toggle-shop').checked = true; // Add this line
             document.getElementById('toggle-client-login').checked = true;
             document.getElementById('toggle-promotions').checked = true;
             document.getElementById('toggle-gift-card').checked = true;
@@ -6595,19 +6595,18 @@ calendarGrid.addEventListener('click', (e) => {
     // REPLACE this event listener inside initMainApp
     featureTogglesForm.addEventListener('change', async (e) => {
         if (e.target.type === 'checkbox') {
-            
-                 showShop: document.getElementById('toggle-shop').checked, // Add this line
+            const settings = {
+                showShop: document.getElementById('toggle-shop').checked,
                 showClientLogin: document.getElementById('toggle-client-login').checked,
                 showPromotions: document.getElementById('toggle-promotions').checked,
                 showGiftCards: document.getElementById('toggle-gift-card').checked,
                 showNailArt: document.getElementById('toggle-nails-idea').checked,
                 showMemberships: document.getElementById('toggle-memberships').checked,
-                showRoyaltyCard: document.getElementById('toggle-royalty-card').checked // This line was missing
+                showRoyaltyCard: document.getElementById('toggle-royalty-card').checked,
             };
             await setDoc(doc(db, "settings", "features"), settings, { merge: true });
         }
     });
-
 const loadSettings = async () => {
     const bookingSnap = await getDoc(doc(db, "settings", "booking"));
     if (bookingSnap.exists()) { 

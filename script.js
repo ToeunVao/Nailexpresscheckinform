@@ -3072,7 +3072,25 @@ const initAnnouncementManagement = () => {
     });
 };
 
-
+// --- BIRTHDAY REWARDS SETTINGS ---
+const birthdayRewardsForm = document.getElementById('birthday-rewards-form');
+if (birthdayRewardsForm) {
+    birthdayRewardsForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const settings = {
+            enabled: document.getElementById('toggle-birthday-rewards').checked,
+            subject: document.getElementById('birthday-email-subject').value,
+            body: document.getElementById('birthday-email-body').value
+        };
+        try {
+            await setDoc(doc(db, "settings", "birthday_rewards"), settings);
+            alert("Birthday reward settings saved successfully!");
+        } catch (error) {
+            console.error("Error saving birthday settings:", error);
+            alert("Could not save birthday settings.");
+        }
+    });
+}
      // PASTE THE FUNCTION DEFINITION RIGHT HERE
     const setupReportDateFilters = (selectId, dateInputId, callback) => {
         const select = document.getElementById(selectId);
@@ -6741,6 +6759,18 @@ const loadSettings = async () => {
         maxLoginAttemptsInput.value = data.maxAttempts || 3; 
         loginLockoutMinutesInput.value = data.lockoutMinutes || 120; 
     }
+    // Inside the loadSettings function
+const birthdaySnap = await getDoc(doc(db, "settings", "birthday_rewards"));
+if (birthdaySnap.exists()) {
+    const data = birthdaySnap.data();
+    document.getElementById('toggle-birthday-rewards').checked = data.enabled || false;
+    document.getElementById('birthday-email-subject').value = data.subject || 'A Special Birthday Gift from Nails Express!';
+    document.getElementById('birthday-email-body').value = data.body || 'Hi {clientName},\n\nHappy birthday from all of us at Nails Express! To celebrate, we\'d like to offer you 15% off your next visit.\n\nWe hope to see you soon!\n\nThe Nails Express Team';
+} else {
+    // Pre-fill with default text if no settings exist yet
+     document.getElementById('birthday-email-subject').value = 'A Special Birthday Gift from Nails Express!';
+     document.getElementById('birthday-email-body').value = 'Hi {clientName},\n\nHappy birthday from all of us at Nails Express! To celebrate, we\'d like to offer you 15% off your next visit.\n\nWe hope to see you soon!\n\nThe Nails Express Team';
+}
 };
 
     loadSettings();

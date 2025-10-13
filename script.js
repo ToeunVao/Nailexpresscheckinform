@@ -73,6 +73,7 @@ let currentLightboxImageIndex = 0;
 let currentLightboxIdea = null;
 let allShopProducts = []; 
 let shoppingCart = [];  
+let allWaitlistEntries = []; 
 let currentProductModalImageIndex = 0;
 const nailIdeaLightbox = document.getElementById('nail-idea-lightbox');
 const lightboxCloseBtn = document.getElementById('lightbox-close-btn');
@@ -956,8 +957,10 @@ addAppointmentForm.addEventListener('submit', async (e) => {
     // Availability Check
     const availabilityCheck = isTechnicianAvailable(technician, bookingDate, serviceDuration);
     if (!availabilityCheck.available) {
-        alert(availabilityCheck.message);
-        return; // Stop if not available
+       document.getElementById('waitlist-message').textContent = availabilityCheck.message;
+        document.getElementById('waitlist-cta').classList.remove('hidden');
+        document.getElementById('add-appointment-submit-btn').classList.add('hidden');
+        return;
     }
 
     const appointmentData = {
@@ -3213,6 +3216,7 @@ if (birthdayRewardsForm) {
     const notificationDropdown = document.getElementById('notification-dropdown');
     const checkInNavCount = document.getElementById('check-in-nav-count');
     const bookingNavCount = document.getElementById('booking-nav-count');
+    const waitlistCountSpan = document.getElementById('waitlist-count');
     const appLoadTimestamp = Timestamp.now();
     const adminDashboardView = document.getElementById('admin-dashboard-view');
     const staffDashboardView = document.getElementById('staff-dashboard-view');
@@ -3231,6 +3235,106 @@ if (birthdayRewardsForm) {
             welcomeHeading.textContent = `My Earning Details`;
         }
     }
+
+
+    onSnapshot(query(collection(db, "waitlist"), orderBy("createdAt", "desc")), (snapshot) => {
+    allWaitlistEntries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const activeEntries = allWaitlistEntries.filter(e => e.status !== 'contacted');
+
+    if (waitlistCountSpan) {
+        if (activeEntries.length > 0) {
+            waitlistCountSpan.textContent = activeEntries.length;
+            waitlistCountSpan.classList.remove('hidden');
+        } else {
+            waitlistCountSpan.classList.add('hidden');
+        }
+    }
+    renderWaitlistAdminTable();
+});
+
+// Inside initMainApp, add the new render function for the admin table (around line 4300)
+const renderWaitlistAdminTable = () => {
+    const tbody = document.querySelector('#waitlist-table tbody');
+    if (!tbody) return;
+
+    const dateFilter = document.getElementById('waitlist-date-filter').value;
+    let filteredEntries = allWaitlistEntries;
+    if (dateFilter) {
+        filteredEntries = allWaitlistEntries.filter(e => e.date === dateFilter);
+    }
+
+    tbody.innerHTML = '';
+    if (filteredEntries.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-gray-400">No clients on the waitlist for the selected date.</td></tr>`;
+        return;
+    }
+
+    filteredEntries.forEach(entry => {
+        const row = tbody.insertRow();
+        row.className = 'bg-white border-b';
+        row.innerHTML = `
+            <td class="px-6 py-4">${new Date(entry.date + 'T00:00:00').toLocaleDateString()}</td>
+            <td class="px-6 py-4 font-medium">${entry.clientName}</td>
+            <td class="px-6 py-4">${entry.clientPhone}</td>
+            <td class="px-6 py-4 text-xs">${Array.isArray(entry.services) ? entry.services.join(', ') : entry.services}</td>
+            <td class="px-6 py-4">${entry.technician}</td>
+            <td class="px-6 py-4 text-center">
+                <button data-id="${entry.id}" class="remove-waitlist-btn text-red-500 hover:text-red-700" title="Remove from Waitlist"><i class="fas fa-trash"></i></button>
+            </td>
+        `;
+    });
+};
+
+// Inside initMainApp, add event listeners for the new waitlist table (around line 4350)
+document.getElementById('waitlist-date-filter').addEventListener('input', renderWaitlistAdminTable);
+
+document.querySelector('#waitlist-table tbody')?.addEventListener('click', (e) => {
+    const removeBtn = e.target.closest('.remove-waitlist-btn');
+    if (removeBtn) {
+        showConfirmModal("Remove this client from the waitlist?", async () => {
+            await deleteDoc(doc(db, "waitlist", removeBtn.dataset.id));
+        });
+    }
+});
+
+// Inside initMainApp, update the closeAddAppointmentModal function (around line 995)
+const closeAddAppointmentModal = () => {
+    addAppointmentModal.classList.add('hidden');
+    addAppointmentModal.classList.remove('flex');
+    // ADD THESE LINES TO RESET THE MODAL'S WAITLIST UI
+    document.getElementById('waitlist-cta').classList.add('hidden');
+    document.getElementById('add-appointment-submit-btn').classList.remove('hidden');
+};
+
+// Inside initMainApp, add the click listener for the new "Join Waitlist" button (around line 3350)
+document.getElementById('join-waitlist-btn').addEventListener('click', async () => {
+    const waitlistData = {
+        clientName: document.getElementById('appointment-client-name').value,
+        clientPhone: document.getElementById('appointment-phone').value,
+        services: [document.getElementById('appointment-services').value],
+        technician: document.getElementById('appointment-technician-select').value,
+        date: document.getElementById('appointment-datetime').value.split('T')[0], // Just the date part
+        createdAt: serverTimestamp(),
+        status: 'active'
+    };
+
+    if (!waitlistData.clientName || !waitlistData.clientPhone) {
+        alert("Please enter a name and phone number to join the waitlist.");
+        return;
+    }
+
+    try {
+        await addDoc(collection(db, "waitlist"), waitlistData);
+        alert("Success! You have been added to the waitlist. We will contact you if a spot opens up.");
+        closeAddAppointmentModal();
+    } catch (error) {
+        console.error("Error adding to waitlist:", error);
+        alert("Could not add to waitlist. Please try again.");
+    }
+});
+
+
+
 
     // Located inside initMainApp()
     const updateNavCounts = () => {

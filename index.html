@@ -2233,7 +2233,33 @@
                                                 Hours</button>
                                         </div>
                                     </form>
-
+                                    <h3 class="text-xl font-semibold text-gray-700 mt-8 mb-4">Birthday Rewards Automation</h3>
+<form id="birthday-rewards-form" class="p-4 border rounded-lg bg-gray-50 space-y-4">
+    <div class="flex items-center justify-between">
+        <div class="flex flex-col">
+            <span class="text-sm font-medium text-gray-900">Enable Automated Birthday Emails</span>
+            <p class="text-xs text-gray-500">If enabled, the system will automatically send an email 7 days before a client's birthday.</p>
+        </div>
+        <label for="toggle-birthday-rewards" class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="toggle-birthday-rewards" class="sr-only peer">
+            <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-pink-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-600"></div>
+        </label>
+    </div>
+    <div class="border-t pt-4 space-y-4">
+        <div>
+            <label for="birthday-email-subject" class="block text-sm font-medium text-gray-600">Birthday Email Subject</label>
+            <input type="text" id="birthday-email-subject" class="form-input w-full mt-1" placeholder="Happy Birthday from Nails Express!">
+        </div>
+        <div>
+            <label for="birthday-email-body" class="block text-sm font-medium text-gray-600">Birthday Email Body</label>
+            <textarea id="birthday-email-body" rows="6" class="form-input w-full mt-1"></textarea>
+            <p class="text-xs text-gray-500 mt-1">You can use <code>{clientName}</code> to personalize the email. For example: "Hi {clientName}, wishing you a happy birthday!"</p>
+        </div>
+    </div>
+    <div class="text-right">
+        <button type="submit" class="bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">Save Birthday Settings</button>
+    </div>
+</form>
                                     <h3 class="text-xl font-semibold text-gray-700 mt-8 mb-4">Gift Card Payment Guide
                                     </h3>
                                     <form id="payment-guide-form" class="p-4 border rounded-lg bg-gray-50 space-y-4">

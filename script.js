@@ -1580,10 +1580,74 @@ const renderClientDashboardCharts = (history, appointments) => {
         history.forEach(visit => {
             const el = document.createElement('div');
             el.className = 'bg-white p-4 rounded-lg shadow';
-            el.innerHTML = `<p class="font-bold">${new Date(visit.checkOutTimestamp.seconds * 1000).toLocaleDateString()}</p><p>${visit.services}</p><p class="text-sm text-gray-600">With: ${visit.technician}</p>${visit.colorCode ? `<p class="text-sm text-gray-600">Color: ${visit.colorCode}</p>` : ''}`;
+            el.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="font-bold">${new Date(visit.checkOutTimestamp.seconds * 1000).toLocaleDateString()}</p>
+                        <p>${visit.services}</p>
+                        <p class="text-sm text-gray-600">With: ${visit.technician}</p>
+                        ${visit.colorCode ? `<p class="text-sm text-gray-600">Color: ${visit.colorCode}</p>` : ''}
+                    </div>
+                    <div>
+                        ${!visit.rating ? `<button data-id="${visit.id}" class="leave-review-btn text-sm bg-pink-100 text-pink-700 font-semibold py-1 px-3 rounded-full hover:bg-pink-200">Leave Review</button>` : `<div class="text-yellow-400">${'★'.repeat(visit.rating)}${'☆'.repeat(5-visit.rating)}</div>`}
+                    </div>
+                </div>
+            `;
             container.appendChild(el);
         });
     };
+
+const reviewModal = document.getElementById('review-modal');
+    const reviewForm = document.getElementById('review-form');
+    const starRatingContainer = document.getElementById('star-rating-container');
+    
+    document.getElementById('client-appointment-history').addEventListener('click', (e) => {
+        const btn = e.target.closest('.leave-review-btn');
+        if (btn) {
+            reviewForm.reset();
+            starRatingContainer.querySelectorAll('i').forEach(s => s.classList.remove('text-yellow-400'));
+            document.getElementById('review-finished-id').value = btn.dataset.id;
+            reviewModal.classList.remove('hidden');
+        }
+    });
+    
+    document.getElementById('close-review-modal-btn').addEventListener('click', () => reviewModal.classList.add('hidden'));
+
+    starRatingContainer.addEventListener('click', e => {
+        const star = e.target.closest('.fa-star');
+        if (!star) return;
+        const rating = parseInt(star.dataset.value, 10);
+        document.getElementById('rating-value').value = rating;
+        starRatingContainer.querySelectorAll('i').forEach((s, i) => {
+            s.classList.toggle('text-yellow-400', i < rating);
+        });
+    });
+
+    reviewForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const finishedId = document.getElementById('review-finished-id').value;
+        const rating = parseInt(document.getElementById('rating-value').value, 10);
+        const reviewText = document.getElementById('review-text').value;
+
+        if (!finishedId || !rating) {
+            alert("Please provide a star rating.");
+            return;
+        }
+
+        try {
+            await updateDoc(doc(db, "finished_clients", finishedId), {
+                rating: rating,
+                review: reviewText,
+                isFeatured: false
+            });
+            reviewModal.classList.add('hidden');
+            alert("Thank you for your review!");
+        } catch (error) {
+            console.error("Error submitting review:", error);
+            alert("Could not submit your review.");
+        }
+    });
+
 
     const calculateAndRenderFavorites = (history) => {
         if (history.length === 0) return;
@@ -2144,6 +2208,31 @@ document.getElementById('product-modal-prev-btn').addEventListener('click', () =
         openProductDetailModal(productId); // Re-call to refresh everything
     }
 });
+
+
+onSnapshot(query(collection(db, "finished_clients"), where("isFeatured", "==", true)), (snapshot) => {
+        allFeaturedReviews = snapshot.docs.map(doc => doc.data());
+        const container = document.getElementById('testimonials-container');
+        if (!container) return;
+        container.innerHTML = '';
+        if (allFeaturedReviews.length === 0) {
+            container.innerHTML = '<p class="text-gray-600 col-span-full text-center">No featured reviews yet. Check back soon!</p>';
+            return;
+        }
+        allFeaturedReviews.forEach(review => {
+            const reviewEl = document.createElement('div');
+            reviewEl.className = 'bg-white p-6 rounded-lg shadow-md';
+            reviewEl.innerHTML = `
+                <div class="flex items-center mb-2">
+                    <div class="text-yellow-400">${'★'.repeat(review.rating)}${'☆'.repeat(5-review.rating)}</div>
+                </div>
+                <p class="text-gray-600 italic">"${review.review}"</p>
+                <p class="text-right font-semibold text-pink-700 mt-4">- ${review.name}</p>
+            `;
+            container.appendChild(reviewEl);
+        });
+    });
+
 
     // PASTE THIS AT THE VERY TOP of the initLandingPage() function
 const announcementModal = document.getElementById('announcement-modal');
@@ -4132,6 +4221,7 @@ onSnapshot(doc(db, "settings", "holidays"), (docSnap) => {
     // ... other variables
     let aggregatedClients = [], allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [], allInventoryUsage = [], allGiftCards = [], allPromotions = [], technicianColorMap = {}, sentReminderIds = [], allMemberships = [], currentRotation = 0;
     let allEcommProducts = [], allEcommOrders = []; // <-- ADD THIS LINE
+    let allFeaturedReviews = [];
     // ... more variables
     let allExpenseCategories = [], allPaymentAccounts = [], allSuppliers = [];
     // Add these two new variables
@@ -4803,7 +4893,17 @@ const loadAndRenderServices = async () => {
         clients.forEach((client, index) => {
             const row = tbody.insertRow();
             row.className = 'bg-white border-b';
-            row.innerHTML = `<td class="px-6 py-4 text-center font-medium text-gray-900">${index + 1}</td><td class="px-6 py-4">${client.name}</td><td class="px-6 py-4 text-center">${client.people}</td><td class="px-6 py-4">${client.services}</td><td class="px-6 py-4">${client.checkInTime}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${client.id}" class="view-feedback-btn" title="View Feedback"><i class="fas fa-comment text-lg text-green-500 hover:text-green-700"></i></button><button data-id="${client.id}" class="draft-sms-btn" title="Draft SMS with Gemini"><i class="fas fa-sms text-lg text-purple-500 hover:text-purple-700"></i></button><button data-id="${client.id}" class="delete-btn-finished" title="Delete"><i class="fas fa-trash-alt text-lg text-red-500 hover:text-red-700"></i></button></td>`;
+            row.innerHTML = `
+            <td class="px-6 py-4 text-center font-medium text-gray-900">${index + 1}</td>
+            <td class="px-6 py-4">${client.name}</td>
+            <td class="px-6 py-4">${client.services}</td>
+            <td class="px-6 py-4 text-center text-yellow-400">${client.rating ? '★'.repeat(client.rating) : 'N/A'}</td>
+            <td class="px-6 py-4 text-center space-x-2">
+                ${client.review ? `<button data-id="${client.id}" class="feature-review-btn text-lg ${client.isFeatured ? 'text-green-500' : 'text-gray-400'}" title="Feature on Homepage"><i class="fas fa-certificate"></i></button>` : ''}
+                <button data-id="${client.id}" class="view-feedback-btn" title="View Details"><i class="fas fa-info-circle text-lg text-gray-500 hover:text-gray-700"></i></button>
+                <button data-id="${client.id}" class="delete-btn-finished" title="Delete"><i class="fas fa-trash-alt text-lg text-red-500 hover:text-red-700"></i></button>
+            </td>`;
+
         });
     };
 
@@ -5336,8 +5436,24 @@ const loadAndRenderServices = async () => {
         const deleteBtn = e.target.closest('.delete-btn-finished');
         const feedbackBtn = e.target.closest('.view-feedback-btn');
         const draftSmsBtn = e.target.closest('.draft-sms-btn');
-        if (deleteBtn) { showConfirmModal("Are you sure you want to delete this client record?", async () => { try { await deleteDoc(doc(db, "finished_clients", deleteBtn.dataset.id)); } catch (err) { console.error("Error deleting finished client: ", err); alert("Could not delete finished client."); } }); }
+        const featureBtn = e.target.closest('.feature-review-btn');
+        if (featureBtn) {
+                const finishedId = featureBtn.dataset.id;
+                const client = allFinishedClients.find(c => c.id === finishedId);
+                if (client) {
+                    try {
+                        await updateDoc(doc(db, "finished_clients", finishedId), {
+                            isFeatured: !client.isFeatured
+                        });
+                    } catch (error) {
+                        console.error("Error toggling feature status:", error);
+                    }
+                }
+            }
+            
+        else if (deleteBtn) { showConfirmModal("Are you sure you want to delete this client record?", async () => { try { await deleteDoc(doc(db, "finished_clients", deleteBtn.dataset.id)); } catch (err) { console.error("Error deleting finished client: ", err); alert("Could not delete finished client."); } }); }
         else if (feedbackBtn) { const client = allFinishedClients.find(c => c.id === feedbackBtn.dataset.id); if (client) openViewDetailModal(client, `Booking Detail`); }
+        
         else if (draftSmsBtn) { const client = allFinishedClients.find(c => c.id === draftSmsBtn.dataset.id); if (client) generateSmsMessage(client); }
     });
 

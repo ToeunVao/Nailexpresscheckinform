@@ -1662,7 +1662,8 @@
                                             <th scope="col" class="px-6 py-3">Phone</th>
                                             <th scope="col" class="px-6 py-3">Role</th>
                                             <th scope="col" class="px-6 py-3">Payout Type</th>
-                                            <th scope="col" class="px-6 py-3 text-center">Action</th>
+                                            <th scope="col" class="px-6 py-3 text-center">Action</th> 
+                                            <th scope="col" class="px-6 py-3 text-center">Schedule</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>
@@ -3929,6 +3930,19 @@
         </form>
     </div>
 
+<div id="schedule-modal" class="modal hidden fixed inset-0 z-[70] flex items-center justify-center p-4">
+    <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
+    <form id="schedule-form" class="relative bg-white w-full max-w-2xl p-6 rounded-2xl shadow-xl m-4">
+        <h3 id="schedule-modal-title" class="text-2xl font-bold text-pink-700 mb-6">Manage Schedule</h3>
+        <input type="hidden" id="schedule-user-id">
+        <div id="schedule-inputs-container" class="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+            </div>
+        <div class="mt-6 flex justify-end gap-3">
+            <button type="button" id="close-schedule-modal-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Cancel</button>
+            <button type="submit" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg">Save Schedule</button>
+        </div>
+    </form>
+</div>
 
     <script type="module" src="script.js"></script>
 </body>

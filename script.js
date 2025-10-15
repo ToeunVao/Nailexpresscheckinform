@@ -2776,8 +2776,10 @@ addAppointmentFormLanding.addEventListener('submit', async (e) => {
         }
          // Add this new block
             const shopSection = document.getElementById('shop-landing');
+            const shopCart = document.getElementById('cart-button');
             const shopNavLink = document.querySelector('a[href="#shop-landing"]');
             if (shopSection) shopSection.style.display = showShop ? '' : 'none';
+            if (shopCart) shopCart.style.display = showShop ? '' : 'none';
             if (shopNavLink) shopNavLink.style.display = showShop ? '' : 'none';
             
         document.getElementById('promotions-landing').style.display = showPromos ? '' : 'none';

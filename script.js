@@ -2103,7 +2103,7 @@ checkoutBtn?.addEventListener('click', async () => {
     const order = {
         customer: clientDetails,
         items: shoppingCart,
-        total: shoppingCart.reduce((sum, item) => sum + item.price * item.quantity, 0),
+        //total: shoppingCart.reduce((sum, item) => sum + item.price * item.quantity, 0),
         // Ensure 'item.price' and 'item.quantity' match your shoppingCart item structure
     let subtotal = shoppingCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
@@ -2128,7 +2128,7 @@ checkoutBtn?.addEventListener('click', async () => {
     cartTaxRateEl.textContent = `${(globalTaxRate * 100).toFixed(2)}%`; 
     cartTaxEl.textContent = `$${taxAmount.toFixed(2)}`;
     cartGrandTotalEl.textContent = `$${grandTotal.toFixed(2)}`;
-    
+
         status: 'Pending',
         createdAt: serverTimestamp(),
     };

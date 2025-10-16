@@ -2172,7 +2172,15 @@ document.getElementById('checkout-btn')?.addEventListener('click', async () => {
     // ... update other elements ...
 
     // Gather client details (make sure 'clientDetails' is defined or gathered here)
-    const clientDetails = // ... (Get client details from your form fields here) ...
+    const clientDetails = {
+        name: prompt("Please enter your full name:"),
+        phone: prompt("Please enter your phone number:"),
+    };
+
+    if (!clientDetails.name || !clientDetails.phone) {
+        alert("Name and phone number are required to place an order.");
+        return;
+    }
 
     // -------------------------------------------------------------------------
     // 2. DEFINE AND SAVE THE ORDER OBJECT

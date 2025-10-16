@@ -2031,7 +2031,21 @@ card.innerHTML = `
         renderShopProducts();
     });
 
-    cartButton?.addEventListener('click', () => cartModal.classList.remove('hidden'));
+// Inside the initLandingPage function
+cartButton?.addEventListener('click', () => {
+    // ADD THIS BLOCK
+    getDoc(doc(db, "settings", "paymentGuide")).then(docSnap => {
+        const paymentGuideEl = document.getElementById('cart-payment-guide');
+        if (docSnap.exists() && docSnap.data().text) {
+            paymentGuideEl.innerHTML = `<p class="font-semibold mb-1">How to Pay:</p><p>${docSnap.data().text.replace(/\n/g, '<br>')}</p>`;
+            paymentGuideEl.classList.remove('hidden');
+        } else {
+            paymentGuideEl.classList.add('hidden');
+        }
+    });
+
+    cartModal.classList.remove('hidden'); // This line already exists
+});
     closeCartModalBtn?.addEventListener('click', () => cartModal.classList.add('hidden'));
     cartModal?.querySelector('.modal-overlay').addEventListener('click', () => cartModal.classList.add('hidden'));
 
@@ -2070,40 +2084,40 @@ card.innerHTML = `
     });
 
 checkoutBtn?.addEventListener('click', async () => {
-        const clientDetails = {
-            name: prompt("Please enter your full name:"),
-            phone: prompt("Please enter your phone number:"),
-        };
+    const clientDetails = {
+        name: prompt("Please enter your full name:"),
+        phone: prompt("Please enter your phone number:"),
+    };
 
-        if (!clientDetails.name || !clientDetails.phone) {
-            alert("Name and phone number are required to place an order.");
-            return;
-        }
+    if (!clientDetails.name || !clientDetails.phone) {
+        alert("Name and phone number are required to place an order.");
+        return;
+    }
 
-        const order = {
-            customer: clientDetails,
-            items: shoppingCart,
-            total: shoppingCart.reduce((sum, item) => sum + item.price * item.quantity, 0),
-            status: 'Pending',
-            createdAt: serverTimestamp(),
-        };
+    const order = {
+        customer: clientDetails,
+        items: shoppingCart,
+        total: shoppingCart.reduce((sum, item) => sum + item.price * item.quantity, 0),
+        status: 'Pending',
+        createdAt: serverTimestamp(),
+    };
 
-        try {
-            // Directly add the order to Firestore
-            await addDoc(collection(db, "orders"), order);
-            
-            // Clear the cart and show confirmation
-            shoppingCart = [];
-            renderCart();
-            updateCartBadge();
-            cartModal.classList.add('hidden');
-            confirmationModal.classList.remove('hidden');
+    try {
+        // Directly add the order to Firestore
+        await addDoc(collection(db, "orders"), order);
 
-        } catch (error) {
-            console.error("Error placing order:", error);
-            alert("Could not place your order. Please try again.");
-        }
-    });
+        // Clear the cart and show confirmation
+        shoppingCart = [];
+        renderCart();
+        updateCartBadge();
+        cartModal.classList.add('hidden');
+        confirmationModal.classList.remove('hidden');
+
+    } catch (error) {
+        console.error("Error placing order:", error);
+        alert("Could not place your order. Please try again.");
+    }
+});
 
     closeConfirmationBtn?.addEventListener('click', () => confirmationModal.classList.add('hidden'));
 // --- PRODUCT DETAIL MODAL LOGIC ---

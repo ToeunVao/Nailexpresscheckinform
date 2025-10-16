@@ -2069,27 +2069,19 @@ card.innerHTML = `
         updateCartBadge();
     });
 
-    checkoutBtn?.addEventListener('click', async () => {
-        if (!stripe) {
-            alert("Payment system is not configured. Please contact the administrator.");
-            return;
-        }
-
-        const customerDetails = {
+checkoutBtn?.addEventListener('click', async () => {
+        const clientDetails = {
             name: prompt("Please enter your full name:"),
             phone: prompt("Please enter your phone number:"),
         };
 
-        if (!customerDetails.name || !customerDetails.phone) {
+        if (!clientDetails.name || !clientDetails.phone) {
             alert("Name and phone number are required to place an order.");
             return;
         }
 
-        checkoutBtn.disabled = true;
-        checkoutBtn.textContent = 'Processing...';
-
-        const orderData = {
-            customer: customerDetails,
+        const order = {
+            customer: clientDetails,
             items: shoppingCart,
             total: shoppingCart.reduce((sum, item) => sum + item.price * item.quantity, 0),
             status: 'Pending',
@@ -2097,21 +2089,19 @@ card.innerHTML = `
         };
 
         try {
-            const createCheckout = httpsCallable(functions, 'createECommerceCheckoutSession');
-            const result = await createCheckout({ items: shoppingCart });
-            const sessionId = result.data.id;
+            // Directly add the order to Firestore
+            await addDoc(collection(db, "orders"), order);
+            
+            // Clear the cart and show confirmation
+            shoppingCart = [];
+            renderCart();
+            updateCartBadge();
+            cartModal.classList.add('hidden');
+            confirmationModal.classList.remove('hidden');
 
-            sessionStorage.setItem('pendingPayment', JSON.stringify({
-                sessionId: sessionId,
-                order: orderData
-            }));
-
-            await stripe.redirectToCheckout({ sessionId });
         } catch (error) {
-            console.error("Error creating checkout session:", error);
-            alert("Could not initiate payment. Please try again.");
-            checkoutBtn.disabled = false;
-            checkoutBtn.textContent = 'Proceed to Checkout';
+            console.error("Error placing order:", error);
+            alert("Could not place your order. Please try again.");
         }
     });
 

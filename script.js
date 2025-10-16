@@ -2117,8 +2117,9 @@ cartHtml += `
         updateCartBadge();
         renderCart();
     };
-// Add this new function in script.js
-const updateCartQuantity = (productId, newQuantity) => {
+
+// Change const to function:
+function updateCartQuantity(productId, newQuantity) {
     // 1. Ensure the new quantity is a valid number (at least 1)
     newQuantity = Math.max(1, parseInt(newQuantity)); 
 
@@ -2131,13 +2132,11 @@ const updateCartQuantity = (productId, newQuantity) => {
 
         // 4. Re-render the cart to update totals and the UI
         renderCart();
-        
-        // OPTIONAL: Update cart data in localStorage or session storage if you use it
-        // saveCartToLocalStorage(); 
     } else {
         console.error(`Product with ID ${productId} not found in cart.`);
     }
-};
+}
+
     onSnapshot(collection(db, "products"), (snapshot) => {
        allShopProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderShopProducts();

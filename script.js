@@ -73,6 +73,8 @@ let currentLightboxImageIndex = 0;
 let currentLightboxIdea = null;
 let allShopProducts = []; 
 let shoppingCart = [];  
+let globalTaxRate = 0;
+let globalShippingFee = 0; 
 let allWaitlistEntries = []; 
 let currentProductModalImageIndex = 0;
 const nailIdeaLightbox = document.getElementById('nail-idea-lightbox');
@@ -1925,6 +1927,10 @@ const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/fi
     const cartItemsContainer = document.getElementById('cart-items-container');
     const cartBadge = document.getElementById('cart-badge');
     const cartSubtotalEl = document.getElementById('cart-subtotal');
+const cartShippingFeeEl = document.getElementById('cart-shipping-fee');
+const cartTaxRateEl = document.getElementById('cart-tax-rate');
+const cartTaxEl = document.getElementById('cart-tax');
+const cartGrandTotalEl = document.getElementById('cart-grand-total');
     const checkoutBtn = document.getElementById('checkout-btn');
     const confirmationModal = document.getElementById('order-confirmation-modal');
     const closeConfirmationBtn = document.getElementById('close-confirmation-modal-btn');
@@ -2098,6 +2104,31 @@ checkoutBtn?.addEventListener('click', async () => {
         customer: clientDetails,
         items: shoppingCart,
         total: shoppingCart.reduce((sum, item) => sum + item.price * item.quantity, 0),
+        // Ensure 'item.price' and 'item.quantity' match your shoppingCart item structure
+    let subtotal = shoppingCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    // 2. Calculate Tax and Shipping
+    // Only apply shipping if there are items in the cart
+    const shippingFee = shoppingCart.length > 0 ? globalShippingFee : 0; 
+
+    // Tax is applied to the subtotal
+    const taxAmount = subtotal * globalTaxRate;
+
+    // 3. Calculate Grand Total
+    const grandTotal = subtotal + shippingFee + taxAmount;
+
+    // 4. Update the HTML elements (Display)
+
+    // Update your existing subtotal element
+    cartSubtotalEl.textContent = `$${subtotal.toFixed(2)}`;
+
+    // NEW: Update Tax and Shipping elements
+    cartShippingFeeEl.textContent = `$${shippingFee.toFixed(2)}`;
+    // Display the tax rate as a percentage with 2 decimal places
+    cartTaxRateEl.textContent = `${(globalTaxRate * 100).toFixed(2)}%`; 
+    cartTaxEl.textContent = `$${taxAmount.toFixed(2)}`;
+    cartGrandTotalEl.textContent = `$${grandTotal.toFixed(2)}`;
+    
         status: 'Pending',
         createdAt: serverTimestamp(),
     };
@@ -3939,6 +3970,35 @@ if (emailTemplatesForm) {
             }
         });
 
+// --- NEW E-COMMERCE SETTINGS LISTENER ---
+onSnapshot(doc(db, "settings", "ecommerce"), (docSnap) => {
+    if (docSnap.exists()) {
+        const data = docSnap.data();
+        // Store Tax Rate as a decimal (e.g., 0.0825 for 8.25%)
+        globalTaxRate = data.taxRate || 0; 
+        globalShippingFee = data.shippingFee || 0;
+
+        // Update Admin Panel fields if they exist (for Step 2)
+        const adminTaxRateEl = document.getElementById('admin-tax-rate');
+        const adminShippingFeeEl = document.getElementById('admin-shipping-fee');
+        
+        if (adminTaxRateEl && adminShippingFeeEl) {
+            // Convert decimal back to percentage for display in admin panel
+            adminTaxRateEl.value = (data.taxRate * 100).toFixed(2); 
+            adminShippingFeeEl.value = data.shippingFee.toFixed(2);
+        }
+
+        // Re-calculate the cart total with new settings (for Step 3)
+        if (typeof updateCartDisplay === 'function') {
+             updateCartDisplay();
+        }
+
+    } else {
+        // Initialize default settings if document doesn't exist
+        setDoc(doc(db, "settings", "ecommerce"), { taxRate: 0.00, shippingFee: 0.00 }, { merge: true });
+    }
+});
+// --- END E-COMMERCE SETTINGS LISTENER ---
 
         // PASTE THIS ENTIRE NEW BLOCK OF CODE
         // --- TASK MANAGER LOGIC ---
@@ -4103,7 +4163,38 @@ if (emailTemplatesForm) {
         // --- END TASK MANAGER LOGIC ---  
 
 // PASTE THIS inside initMainApp()
+// --- NEW FUNCTION TO SAVE E-COMMERCE SETTINGS ---
+const saveEcommerceSettings = async (e) => {
+    e.preventDefault();
+    const taxRateInput = document.getElementById('admin-tax-rate').value;
+    const shippingFeeInput = document.getElementById('admin-shipping-fee').value;
 
+    // Convert percentage input (e.g., 8.25) to a decimal (e.g., 0.0825) for storage
+    const taxRate = parseFloat(taxRateInput) / 100; 
+    const shippingFee = parseFloat(shippingFeeInput);
+
+    if (isNaN(taxRate) || isNaN(shippingFee)) {
+        alert("Please enter valid numbers for Tax Rate and Shipping Fee.");
+        return;
+    }
+
+    try {
+        const settingsRef = doc(db, "settings", "ecommerce");
+        await setDoc(settingsRef, {
+            taxRate: taxRate, // Saved as decimal
+            shippingFee: shippingFee // Saved as currency
+        }, { merge: true });
+
+        alert("E-commerce fee settings saved successfully! Cart totals will now update.");
+    } catch (error) {
+        console.error("Error saving E-commerce settings: ", error);
+        alert("Failed to save settings. Check console for details.");
+    }
+};
+
+// ATTACH THE EVENT LISTENER (e.g., at the end of initMainApp)
+document.getElementById('ecommerce-settings-form')?.addEventListener('submit', saveEcommerceSettings);
+// --- END SAVE LOGIC ---
 
 // PASTE THIS ENTIRE BLOCK inside initMainApp()
 

@@ -2155,63 +2155,40 @@ cartButton?.addEventListener('click', () => {
         updateCartBadge();
     });
 
-// Assuming this is your event listener for the checkout/place order button
 document.getElementById('checkout-btn')?.addEventListener('click', async () => {
     // -------------------------------------------------------------------------
-    // 1. CALCULATIONS AND UI UPDATES (MOVED OUTSIDE THE ORDER OBJECT)
+    // 1. RE-CALCULATE AND GATHER FINAL VALUES
     // -------------------------------------------------------------------------
 
-    // a. Calculate Subtotal
+    // a. Recalculate Subtotal, Fees, and Grand Total to ensure accuracy before saving
     let subtotal = shoppingCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
-    // b. Calculate Tax and Shipping
-    // Only apply shipping if there are items in the cart (or if you want to charge even for empty cart, remove the condition)
     const shippingFee = shoppingCart.length > 0 ? globalShippingFee : 0; 
-
-    // Tax is applied to the subtotal
     const taxAmount = subtotal * globalTaxRate;
-
-    // c. Calculate Grand Total
     const grandTotal = subtotal + shippingFee + taxAmount;
 
-    // d. Update the HTML elements (Display)
-    cartSubtotalEl.textContent = `$${subtotal.toFixed(2)}`;
-    cartShippingFeeEl.textContent = `$${shippingFee.toFixed(2)}`;
-    cartTaxRateEl.textContent = `${(globalTaxRate * 100).toFixed(2)}%`; 
-    cartTaxEl.textContent = `$${taxAmount.toFixed(2)}`;
-    cartGrandTotalEl.textContent = `$${grandTotal.toFixed(2)}`;
-    
-    // NOTE: If this function is ONLY called when placing the order, the UI update 
-    // here is redundant if you have a separate function (like renderCart()) 
-    // that already handles the display. However, it is necessary to calculate 
-    // 'grandTotal' before proceeding.
+    // Optional: Re-render the UI one last time in case the global settings changed
+    // while the modal was open (If your renderCart doesn't update UI, include the DOM updates here)
+    // cartSubtotalEl.textContent = `$${subtotal.toFixed(2)}`;
+    // ... update other elements ...
+
+    // Gather client details (make sure 'clientDetails' is defined or gathered here)
+    const clientDetails = // ... (Get client details from your form fields here) ...
 
     // -------------------------------------------------------------------------
     // 2. DEFINE AND SAVE THE ORDER OBJECT
     // -------------------------------------------------------------------------
     
-    // Gather client details (make sure 'clientDetails' is defined in this scope)
-    const clientDetails = {
-        name: prompt("Please enter your full name:"),
-        phone: prompt("Please enter your phone number:"),
-    };
-
-    if (!clientDetails.name || !clientDetails.phone) {
-        alert("Name and phone number are required to place an order.");
-        return;
-    }
-
     const order = {
         customer: clientDetails,
         items: shoppingCart,
-        // **USE THE NEWLY CALCULATED grandTotal HERE**
+        // **USE THE FINAL CALCULATED grandTotal HERE**
         total: grandTotal, 
-        // **OPTIONAL: Save the breakdown for records**
+        // **Save the breakdown for records**
         subtotal: subtotal,
         taxRate: globalTaxRate,
         taxAmount: taxAmount,
         shippingFee: shippingFee,
-        // -------------------------------------------------
+        // ------------------------------------
         status: 'Pending',
         createdAt: serverTimestamp(),
     };
@@ -2221,8 +2198,8 @@ document.getElementById('checkout-btn')?.addEventListener('click', async () => {
 
         // Clear the cart and show confirmation
         shoppingCart = [];
-        renderCart(); // Make sure this function exists and is called to update the cart UI
-        updateCartBadge(); // Make sure this function exists
+        renderCart(); 
+        updateCartBadge();
         cartModal.classList.add('hidden');
         confirmationModal.classList.remove('hidden');
 

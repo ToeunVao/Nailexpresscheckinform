@@ -2023,14 +2023,34 @@ const renderCart = () => {
         checkoutBtn.classList.add('opacity-50', 'cursor-not-allowed');
     } else {
         shoppingCart.forEach(item => {
-            cartHtml += `
+cartHtml += `
                 <div class="flex justify-between items-center py-3 border-b border-gray-100">
                     <div class="flex items-center space-x-4 flex-grow">
-                        <span class="text-pink-600 font-bold">${item.quantity}x</span>
-                        <span class="text-gray-800">${item.name}</span>
+                        <span class="text-gray-800 font-medium">${item.name}</span>
                     </div>
-                    <div class="flex items-center space-x-3">
-                        <span class="text-gray-800 font-semibold">$${(item.price * item.quantity).toFixed(2)}</span>
+                    
+                    <div class="flex items-center space-x-3 min-w-[150px]">
+                        
+                        <div class="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+                            <button onclick="updateCartQuantity('${item.id}', ${item.quantity - 1})" 
+                                class="p-2 text-pink-600 hover:bg-gray-100 disabled:opacity-50"
+                                ${item.quantity <= 1 ? 'disabled' : ''}>
+                                <i class="fas fa-minus text-xs"></i>
+                            </button>
+                            
+                            <input type="number" 
+                                value="${item.quantity}" 
+                                min="1" 
+                                onchange="updateCartQuantity('${item.id}', parseInt(this.value))" 
+                                class="w-10 text-center border-none focus:ring-0 p-0 text-sm"/>
+                            
+                            <button onclick="updateCartQuantity('${item.id}', ${item.quantity + 1})" 
+                                class="p-2 text-pink-600 hover:bg-gray-100">
+                                <i class="fas fa-plus text-xs"></i>
+                            </button>
+                        </div>
+                        <span class="text-gray-800 font-semibold w-[60px] text-right">$${(item.price * item.quantity).toFixed(2)}</span>
+                        
                         <button onclick="removeFromCart('${item.id}')" 
                                 class="text-red-500 hover:text-red-700 transition duration-150 p-1">
                             <i class="fas fa-trash-alt text-sm"></i>
@@ -2097,7 +2117,27 @@ const renderCart = () => {
         updateCartBadge();
         renderCart();
     };
+// Add this new function in script.js
+const updateCartQuantity = (productId, newQuantity) => {
+    // 1. Ensure the new quantity is a valid number (at least 1)
+    newQuantity = Math.max(1, parseInt(newQuantity)); 
 
+    // 2. Find the index of the product in the shoppingCart array
+    const itemIndex = shoppingCart.findIndex(item => item.id === productId);
+
+    if (itemIndex > -1) {
+        // 3. Update the quantity
+        shoppingCart[itemIndex].quantity = newQuantity;
+
+        // 4. Re-render the cart to update totals and the UI
+        renderCart();
+        
+        // OPTIONAL: Update cart data in localStorage or session storage if you use it
+        // saveCartToLocalStorage(); 
+    } else {
+        console.error(`Product with ID ${productId} not found in cart.`);
+    }
+};
     onSnapshot(collection(db, "products"), (snapshot) => {
        allShopProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderShopProducts();

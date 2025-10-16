@@ -72,7 +72,7 @@ let holidayCalMonth = new Date().getMonth(); // <--- ADD THIS LINE
 let currentLightboxImageIndex = 0;
 let currentLightboxIdea = null;
 let allShopProducts = []; 
-let shoppingCart = [];  
+let shoppingCart = loadCartFromLocalStorage(); 
 let globalTaxRate = 0;
 let globalShippingFee = 0; 
 let allWaitlistEntries = []; 
@@ -529,6 +529,21 @@ const getLocalDateString = (date = new Date()) => {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
 };
+// --- Cart Persistence Functions ---
+
+// 1. Function to save the current cart state
+const saveCartToLocalStorage = () => {
+    // Convert the JavaScript array to a JSON string and store it
+    localStorage.setItem('nails_express_shopping_cart', JSON.stringify(shoppingCart));
+};
+
+// 2. Function to load the cart state on page load
+const loadCartFromLocalStorage = () => {
+    const savedCart = localStorage.getItem('nails_express_shopping_cart');
+    // If a saved cart exists, parse it back into an array. Otherwise, return an empty array.
+    return savedCart ? JSON.parse(savedCart) : [];
+};
+
 // REPLACE your old openCardForPrint function with this one:
 const openCardForPrint = (card) => {
     const expiryText = card.expiresAt ? `Expires: ${card.expiresAt.toDate().toLocaleDateString()}` : '';
@@ -2116,6 +2131,7 @@ cartHtml += `
         }
         updateCartBadge();
         renderCart();
+        saveCartToLocalStorage();
     };
 
 // Change const to function:
@@ -2127,14 +2143,14 @@ window.updateCartQuantity = (productId, newQuantity) => {
     // 2. Find the index of the product in the shoppingCart array
     const itemIndex = shoppingCart.findIndex(item => item.id === productId);
 
-    if (itemIndex > -1) {
-        // 3. Update the quantity
+if (itemIndex > -1) {
         shoppingCart[itemIndex].quantity = newQuantity;
-
-        // 4. Re-render the cart to update totals and the UI
         renderCart();
+        
+        // <<< ADD THIS LINE
+        saveCartToLocalStorage(); 
     } else {
-        console.error(`Product with ID ${productId} not found in cart.`);
+       // console.error(`Product with ID ${productId} not found in cart.`);
     }
 };
 
@@ -2151,9 +2167,9 @@ window.removeFromCart = (productId) => {
         renderCart();
         
         // OPTIONAL: Update cart data in localStorage or session storage if you use it
-        // saveCartToLocalStorage();
+        saveCartToLocalStorage();
     } else {
-        console.error(`Product with ID ${productId} not found in cart.`);
+       // console.error(`Product with ID ${productId} not found in cart.`);
     }
 };
 
@@ -2517,7 +2533,7 @@ showAnnouncement(); // Call the function to check on page load
         }
     });
 
-
+renderCart();
 
     // Listeners for the new modal
     document.getElementById('close-membership-purchase-modal-btn').addEventListener('click', closeMembershipPurchaseModal);

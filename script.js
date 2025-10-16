@@ -72,10 +72,10 @@ let holidayCalMonth = new Date().getMonth(); // <--- ADD THIS LINE
 let currentLightboxImageIndex = 0;
 let currentLightboxIdea = null;
 let allShopProducts = []; 
+let shoppingCart = loadCartFromLocalStorage();
 let globalTaxRate = 0;
 let globalShippingFee = 0; 
 let allWaitlistEntries = []; 
-let shoppingCart = loadCartFromLocalStorage();
 let currentProductModalImageIndex = 0;
 const nailIdeaLightbox = document.getElementById('nail-idea-lightbox');
 const lightboxCloseBtn = document.getElementById('lightbox-close-btn');
@@ -531,18 +531,20 @@ const getLocalDateString = (date = new Date()) => {
 };
 // --- Cart Persistence Functions ---
 
-// 1. Function to save the current cart state
-const saveCartToLocalStorage = () => {
+// --- Cart Persistence Functions (Use 'function' for Hoisting) ---
+
+function saveCartToLocalStorage() {
     // Convert the JavaScript array to a JSON string and store it
     localStorage.setItem('nails_express_shopping_cart', JSON.stringify(shoppingCart));
-};
+}
 
-// 2. Function to load the cart state on page load
-const loadCartFromLocalStorage = () => {
+function loadCartFromLocalStorage() {
     const savedCart = localStorage.getItem('nails_express_shopping_cart');
     // If a saved cart exists, parse it back into an array. Otherwise, return an empty array.
     return savedCart ? JSON.parse(savedCart) : [];
-};
+}
+
+// ----------------------------------------------------------
 
 // REPLACE your old openCardForPrint function with this one:
 const openCardForPrint = (card) => {

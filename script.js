@@ -2119,7 +2119,8 @@ cartHtml += `
     };
 
 // Change const to function:
-function updateCartQuantity(productId, newQuantity) {
+// Add this function to the global window object
+window.updateCartQuantity = (productId, newQuantity) => {
     // 1. Ensure the new quantity is a valid number (at least 1)
     newQuantity = Math.max(1, parseInt(newQuantity)); 
 
@@ -2135,7 +2136,26 @@ function updateCartQuantity(productId, newQuantity) {
     } else {
         console.error(`Product with ID ${productId} not found in cart.`);
     }
-}
+};
+
+// Expose the function globally so it can be called from HTML onclick attributes
+window.removeFromCart = (productId) => {
+    // 1. Find the index of the product in the shoppingCart array
+    const itemIndex = shoppingCart.findIndex(item => item.id === productId);
+
+    if (itemIndex > -1) {
+        // 2. Remove the item from the cart array
+        shoppingCart.splice(itemIndex, 1);
+
+        // 3. Re-render the cart to update totals and the UI
+        renderCart();
+        
+        // OPTIONAL: Update cart data in localStorage or session storage if you use it
+        // saveCartToLocalStorage();
+    } else {
+        console.error(`Product with ID ${productId} not found in cart.`);
+    }
+};
 
     onSnapshot(collection(db, "products"), (snapshot) => {
        allShopProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));

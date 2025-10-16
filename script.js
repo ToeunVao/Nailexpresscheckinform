@@ -219,6 +219,38 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 
+// Add this near the other onSnapshot listeners in your script.js
+onSnapshot(doc(db, "settings", "ecommerce"), (docSnap) => {
+    // Check if the cart rendering function exists before calling it
+    const cartUpdateFn = window.renderCart || null; // Assume your function is named renderCart and globally accessible
+
+    if (docSnap.exists()) {
+        const data = docSnap.data();
+        globalTaxRate = data.taxRate || 0; 
+        globalShippingFee = data.shippingFee || 0;
+
+        // Update Admin Panel fields if they exist
+        const adminTaxRateEl = document.getElementById('admin-tax-rate');
+        const adminShippingFeeEl = document.getElementById('admin-shipping-fee');
+        
+        if (adminTaxRateEl && adminShippingFeeEl) {
+            // Convert decimal back to percentage for display
+            adminTaxRateEl.value = (data.taxRate * 100).toFixed(2); 
+            adminShippingFeeEl.value = data.shippingFee.toFixed(2);
+        }
+
+        // Re-calculate the cart total with new settings
+        if (typeof cartUpdateFn === 'function') {
+             cartUpdateFn(); 
+        }
+
+    } else {
+        // Initialize default settings if document doesn't exist
+        setDoc(doc(db, "settings", "ecommerce"), { taxRate: 0.00, shippingFee: 0.00 }, { merge: true });
+    }
+});
+
+
 const renderPromotionsLanding = (promotions) => {
     promotionsContainerLanding.innerHTML = '';
     const now = new Date();
@@ -1976,40 +2008,74 @@ card.innerHTML = `
         }
     };
 
-    const renderCart = () => {
-        cartItemsContainer.innerHTML = '';
-        if (shoppingCart.length === 0) {
-            cartItemsContainer.innerHTML = '<p class="text-center text-gray-500">Your cart is empty.</p>';
-            checkoutBtn.disabled = true;
-            cartSubtotalEl.textContent = '$0.00';
-            return;
-        }
+const renderCart = () => {
+    let cartHtml = '';
+    let totalItems = 0;
 
-        let subtotal = 0;
+    // --- 1. RENDER CART ITEMS AND CALCULATE SUB-TOTAL ---
+    
+    // Calculate subtotal from cart contents (before fees)
+    let subtotal = shoppingCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    if (shoppingCart.length === 0) {
+        cartHtml = '<p class="text-center text-gray-500 py-8">Your cart is empty.</p>';
+        checkoutBtn.disabled = true;
+        checkoutBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    } else {
         shoppingCart.forEach(item => {
-            subtotal += item.price * item.quantity;
-            const itemEl = document.createElement('div');
-            itemEl.className = 'flex items-center gap-4 border-b pb-2';
-            itemEl.innerHTML = `
-                <img src="${item.imageURL || 'https://placehold.co/100x100/f8bbd0/ffffff?text=Nail+Product'}" class="w-16 h-16 object-cover rounded-lg">
-                <div class="flex-grow">
-                    <p class="font-semibold">${item.name}</p>
-                    <p class="text-sm text-gray-500">$${item.price.toFixed(2)}</p>
+            cartHtml += `
+                <div class="flex justify-between items-center py-3 border-b border-gray-100">
+                    <div class="flex items-center space-x-4 flex-grow">
+                        <span class="text-pink-600 font-bold">${item.quantity}x</span>
+                        <span class="text-gray-800">${item.name}</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span class="text-gray-800 font-semibold">$${(item.price * item.quantity).toFixed(2)}</span>
+                        <button onclick="removeFromCart('${item.id}')" 
+                                class="text-red-500 hover:text-red-700 transition duration-150 p-1">
+                            <i class="fas fa-trash-alt text-sm"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <button data-id="${item.id}" class="cart-item-quantity-btn decrease-qty">-</button>
-                    <span>${item.quantity}</span>
-                    <button data-id="${item.id}" class="cart-item-quantity-btn increase-qty">+</button>
-                </div>
-                <button data-id="${item.id}" class="remove-from-cart-btn text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
             `;
-            cartItemsContainer.appendChild(itemEl);
+            totalItems += item.quantity;
         });
-
-        cartSubtotalEl.textContent = `$${subtotal.toFixed(2)}`;
         checkoutBtn.disabled = false;
-    };
+        checkoutBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
 
+    // Update the cart items container and badge
+    cartItemsContainer.innerHTML = cartHtml;
+    updateCartBadge(totalItems);
+    
+    // --- 2. CALCULATE AND DISPLAY FEES & TOTAL ---
+
+    // Calculate Tax and Shipping
+    // Shipping is only applied if the cart is not empty
+    const shippingFee = shoppingCart.length > 0 ? globalShippingFee : 0; 
+
+    // Tax is applied to the subtotal
+    const taxAmount = subtotal * globalTaxRate;
+
+    // Calculate Grand Total
+    const grandTotal = subtotal + shippingFee + taxAmount;
+
+    // 4. Update the HTML elements (Display)
+    
+    // Update Subtotal element (already existed)
+    cartSubtotalEl.textContent = `$${subtotal.toFixed(2)}`;
+
+    // NEW: Update Tax and Shipping elements
+    cartShippingFeeEl.textContent = `$${shippingFee.toFixed(2)}`;
+    
+    // Display the tax rate as a percentage with 2 decimal places
+    cartTaxRateEl.textContent = `${(globalTaxRate * 100).toFixed(2)}%`; 
+    
+    cartTaxEl.textContent = `$${taxAmount.toFixed(2)}`;
+    
+    // Update Grand Total element
+    cartGrandTotalEl.textContent = `$${grandTotal.toFixed(2)}`;
+};
     const addToCart = (productId) => {
         const product = allShopProducts.find(p => p.id === productId);
         if (!product) return;
@@ -3988,33 +4054,6 @@ if (emailTemplatesForm) {
         });
 
 // --- NEW E-COMMERCE SETTINGS LISTENER ---
-onSnapshot(doc(db, "settings", "ecommerce"), (docSnap) => {
-    if (docSnap.exists()) {
-        const data = docSnap.data();
-        // Store Tax Rate as a decimal (e.g., 0.0825 for 8.25%)
-        globalTaxRate = data.taxRate || 0; 
-        globalShippingFee = data.shippingFee || 0;
-
-        // Update Admin Panel fields if they exist (for Step 2)
-        const adminTaxRateEl = document.getElementById('admin-tax-rate');
-        const adminShippingFeeEl = document.getElementById('admin-shipping-fee');
-        
-        if (adminTaxRateEl && adminShippingFeeEl) {
-            // Convert decimal back to percentage for display in admin panel
-            adminTaxRateEl.value = (data.taxRate * 100).toFixed(2); 
-            adminShippingFeeEl.value = data.shippingFee.toFixed(2);
-        }
-
-        // Re-calculate the cart total with new settings (for Step 3)
-        if (typeof updateCartDisplay === 'function') {
-             updateCartDisplay();
-        }
-
-    } else {
-        // Initialize default settings if document doesn't exist
-        setDoc(doc(db, "settings", "ecommerce"), { taxRate: 0.00, shippingFee: 0.00 }, { merge: true });
-    }
-});
 // --- END E-COMMERCE SETTINGS LISTENER ---
 
         // PASTE THIS ENTIRE NEW BLOCK OF CODE

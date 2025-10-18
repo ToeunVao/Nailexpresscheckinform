@@ -167,6 +167,12 @@ const renderStars = (rating) => {
     return `<div class="text-xl mb-4">${stars}</div>`;
 };
 
+    const initializeChart = (chartInstance, ctx, type, data, options) => {
+        if (chartInstance) { chartInstance.data = data; chartInstance.options = options; chartInstance.update(); }
+        else { chartInstance = new Chart(ctx, { type, data, options }); }
+        return chartInstance;
+    };
+    
 // ---
 // --- NEW SAFE DATA LOADING FUNCTION ---
 // ---
@@ -1482,7 +1488,7 @@ async function initClientDashboard(clientId, clientData) {
         document.getElementById('gc-buyer-email').readOnly = true;
         purchaseModal.classList.remove('hidden');
     };
-    
+
 const nameInput = document.getElementById('client-settings-name');
     if (nameInput) {
         nameInput.value = clientData.name || '';
@@ -4718,11 +4724,7 @@ onSnapshot(doc(db, "settings", "holidays"), (docSnap) => {
     confirmCancelBtn.addEventListener('click', closeConfirmModal);
     document.querySelector('.confirm-modal-overlay').addEventListener('click', closeConfirmModal);
 
-    const initializeChart = (chartInstance, ctx, type, data, options) => {
-        if (chartInstance) { chartInstance.data = data; chartInstance.options = options; chartInstance.update(); }
-        else { chartInstance = new Chart(ctx, { type, data, options }); }
-        return chartInstance;
-    };
+
 
     // REPLACE your old getDateRange function with this corrected one:
     const getDateRange = (filter, specificDate = null) => {

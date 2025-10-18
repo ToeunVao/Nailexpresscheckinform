@@ -1097,7 +1097,7 @@ addAppointmentForm.addEventListener('submit', async (e) => {
 // Availability Check
 const availabilityCheck = isTechnicianAvailable(technician, bookingDate, serviceDuration);
 if (!availabilityCheck.available) {
-   alert(availabilityCheck.message); // This shows the simple pop-up alert
+   addNotification('error', availabilityCheck.message); // This shows the styled overlay notification
    return; // This stops the code from saving the appointment
 }
     // --- END OF THE NEW CHECK ---

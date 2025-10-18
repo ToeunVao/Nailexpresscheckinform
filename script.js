@@ -1094,14 +1094,12 @@ addAppointmentForm.addEventListener('submit', async (e) => {
     const service = allServicesList.find(s => s.name === serviceName);
     const serviceDuration = service ? service.duration : bookingSettings.defaultDuration;
 
-    // --- THIS IS THE NEW AVAILABILITY CHECK ---
-    const availabilityCheck = isTechnicianAvailable(technician, bookingDate, serviceDuration);
-    if (!availabilityCheck.available) {
-       document.getElementById('waitlist-message').textContent = availabilityCheck.message;
-        document.getElementById('waitlist-cta').classList.remove('hidden');
-        document.getElementById('add-appointment-submit-btn').classList.add('hidden');
-        return; // This line is crucial - it stops the function from proceeding.
-    }
+// Availability Check
+const availabilityCheck = isTechnicianAvailable(technician, bookingDate, serviceDuration);
+if (!availabilityCheck.available) {
+   alert(availabilityCheck.message); // This shows the simple pop-up alert
+   return; // This stops the code from saving the appointment
+}
     // --- END OF THE NEW CHECK ---
 
     const appointmentData = {
@@ -3048,12 +3046,7 @@ addAppointmentFormLanding.addEventListener('submit', async (e) => {
         totalDuration += service ? service.duration : bookingSettings.defaultDuration;
     }
 
-    // --- THIS IS THE NEW AVAILABILITY CHECK ---
-    const availabilityCheck = isTechnicianAvailable(technician, bookingDate, totalDuration);
-    if (!availabilityCheck.available) {
-        alert(availabilityCheck.message); // Simple alert for the landing page
-        return; // This stops the booking
-    }
+
     // --- END OF THE NEW CHECK ---
 
     const appointmentData = {

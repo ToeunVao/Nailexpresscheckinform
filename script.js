@@ -88,6 +88,8 @@ const lightboxColor = document.getElementById('lightbox-color');
 const lightboxCategories = document.getElementById('lightbox-categories');
 const lightboxDescription = document.getElementById('lightbox-description');
 let currentLightboxIndex = 0;
+let allFeaturedReviews = [];
+
 
 const giftCardBackgrounds = {
     'General': ['https://img.freepik.com/premium-photo/women-s-legs-with-bright-pedicure-pink-background-chamomile-flower-decoration-spa-pedicure-skincare-concept_256259-166.jpg', 'https://png.pngtree.com/thumb_back/fh260/background/20250205/pngtree-soft-pastel-floral-design-light-blue-background-image_16896113.jpg', 'https://files.123freevectors.com/wp-content/original/119522-abstract-pastel-pink-background-image.jpg'],
@@ -2408,12 +2410,14 @@ document.getElementById('product-modal-prev-btn').addEventListener('click', () =
 
 
 onSnapshot(query(collection(db, "finished_clients"), where("isFeatured", "==", true)), (snapshot) => {
-    allFeaturedReviews = snapshot.docs.map(doc => doc.data());
+    // This line now correctly updates the globally/modally declared variable
+    allFeaturedReviews = snapshot.docs.map(doc => doc.data()); 
+    
     const container = document.getElementById('testimonials-container');
     if (!container) return;
     container.innerHTML = '';
     
-    // Filter out any reviews that don't have a rating or a review text
+    // The rest of the logic remains the same
     const validReviews = allFeaturedReviews.filter(r => r.rating && r.review);
 
     if (validReviews.length === 0) {
@@ -2423,7 +2427,6 @@ onSnapshot(query(collection(db, "finished_clients"), where("isFeatured", "==", t
     
     validReviews.forEach(review => {
         const reviewEl = document.createElement('div');
-        // Use a nicer design for testimonials
         reviewEl.className = 'bg-white p-6 rounded-xl shadow-lg border-t-4 border-pink-500'; 
         
         reviewEl.innerHTML = `
@@ -4580,7 +4583,7 @@ onSnapshot(doc(db, "settings", "holidays"), (docSnap) => {
     // ... other variables
     let aggregatedClients = [], allEarnings = [], allSalonEarnings = [], allExpenses = [], allInventory = [], allNailIdeas = [], allInventoryUsage = [], allGiftCards = [], allPromotions = [], technicianColorMap = {}, sentReminderIds = [], allMemberships = [], currentRotation = 0;
     let allEcommProducts = [], allEcommOrders = []; // <-- ADD THIS LINE
-    let allFeaturedReviews = [];
+
     // ... more variables
     let allExpenseCategories = [], allPaymentAccounts = [], allSuppliers = [];
     // Add these two new variables

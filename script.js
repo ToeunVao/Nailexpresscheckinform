@@ -773,7 +773,6 @@ const isTechnicianAvailable = (technicianName, proposedStartTime, newServiceDura
     return { available: true };
 };
 
-
 // --- Email Notification Logic ---
 async function sendBookingNotificationEmail(appointmentData) {
     try {
@@ -1078,7 +1077,6 @@ document.getElementById('appointment-phone').addEventListener('input', (e) => {
      }
 });
 
-// This listener is in the global scope
 addAppointmentForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const datetimeString = document.getElementById('appointment-datetime').value;
@@ -1096,19 +1094,20 @@ addAppointmentForm.addEventListener('submit', async (e) => {
     const service = allServicesList.find(s => s.name === serviceName);
     const serviceDuration = service ? service.duration : bookingSettings.defaultDuration;
 
-    // Availability Check
+    // --- THIS IS THE NEW AVAILABILITY CHECK ---
     const availabilityCheck = isTechnicianAvailable(technician, bookingDate, serviceDuration);
     if (!availabilityCheck.available) {
        document.getElementById('waitlist-message').textContent = availabilityCheck.message;
         document.getElementById('waitlist-cta').classList.remove('hidden');
         document.getElementById('add-appointment-submit-btn').classList.add('hidden');
-        return;
+        return; // This line is crucial - it stops the function from proceeding.
     }
+    // --- END OF THE NEW CHECK ---
 
     const appointmentData = {
         name: document.getElementById('appointment-client-name').value,
         phone: document.getElementById('appointment-phone').value,
-        email: document.getElementById('appointment-email').value, // <-- Email is included here
+        email: document.getElementById('appointment-email').value,
         people: document.getElementById('appointment-people').value,
         bookingType: document.getElementById('appointment-booking-type').value,
         services: [document.getElementById('appointment-services').value],
@@ -1127,7 +1126,6 @@ addAppointmentForm.addEventListener('submit', async (e) => {
             const docRef = await addDoc(collection(db, "appointments"), appointmentData);
             await sendBookingNotificationEmail(appointmentData);
             
-            // Send reminder if email is present
             if (appointmentData.email) {
                 await sendAppointmentReminderEmail(appointmentData, appointmentData.email);
             }
@@ -3042,6 +3040,7 @@ addAppointmentFormLanding.addEventListener('submit', async (e) => {
 
     const technician = document.getElementById('appointment-technician-select-landing').value;
 
+    // Calculate total duration for all selected services
     let totalDuration = 0;
     for (const serviceValue of services) {
         const serviceName = serviceValue.split(' $')[0].trim();
@@ -3049,17 +3048,18 @@ addAppointmentFormLanding.addEventListener('submit', async (e) => {
         totalDuration += service ? service.duration : bookingSettings.defaultDuration;
     }
 
-    // Availability Check
+    // --- THIS IS THE NEW AVAILABILITY CHECK ---
     const availabilityCheck = isTechnicianAvailable(technician, bookingDate, totalDuration);
     if (!availabilityCheck.available) {
-        alert(availabilityCheck.message);
-        return;
+        alert(availabilityCheck.message); // Simple alert for the landing page
+        return; // This stops the booking
     }
+    // --- END OF THE NEW CHECK ---
 
     const appointmentData = {
         name: document.getElementById('appointment-client-name-landing').value,
         phone: document.getElementById('appointment-phone-landing').value,
-        email: document.getElementById('appointment-email-landing').value, // <-- Email is included here
+        email: document.getElementById('appointment-email-landing').value,
         people: document.getElementById('appointment-people-landing').value,
         technician: technician,
         appointmentTimestamp: Timestamp.fromDate(bookingDate),
@@ -3072,7 +3072,6 @@ addAppointmentFormLanding.addEventListener('submit', async (e) => {
         await addDoc(collection(db, "appointments"), appointmentData);
         await sendBookingNotificationEmail(appointmentData);
 
-        // Send reminder if email is present
         if (appointmentData.email) {
             await sendAppointmentReminderEmail(appointmentData, appointmentData.email);
         }
@@ -3083,7 +3082,7 @@ addAppointmentFormLanding.addEventListener('submit', async (e) => {
         step1.classList.remove('hidden');
 
         document.querySelectorAll('#services-container-landing .selection-count').forEach(badge => badge.classList.add('hidden'));
-        hiddenCheckboxContainerLanding.querySelectorAll('input').forEach(cb => cb.checked = false);
+        hiddenCheckboxContainer.querySelectorAll('input').forEach(cb => cb.checked = false);
 
     } catch (error) {
         console.error("Error booking appointment:", error);

@@ -98,6 +98,61 @@ const giftCardBackgrounds = {
     'Birthday': ['https://marketplace.canva.com/EAGhbM7XcuY/1/0/1600w/canva-white-and-blue-birthday-background-card-yqLk4e5MQjY.jpg', 'https://images.rawpixel.com/image_800/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvam9iNTE2LW51bm9vbi0xMC5qcGc.jpg', 'https://www.creativefabrica.com/wp-content/uploads/2021/08/30/Happy-birthday-background-design-Graphics-16518598-1-1-580x430.jpg']
 };
 
+
+// ====================================================================
+// NEW: Global Notification Function
+// ====================================================================
+
+const addNotification = (type, message) => {
+    const container = document.getElementById('notification-container');
+    if (!container) {
+        console.error(`Notification container (#notification-container) not found. Message: ${message}`);
+        return;
+    }
+
+    const colorMap = {
+        success: { bg: 'bg-green-100', text: 'text-green-800', icon: 'fa-check-circle' },
+        error: { bg: 'bg-red-100', text: 'text-red-800', icon: 'fa-times-circle' },
+        reminder: { bg: 'bg-blue-100', text: 'text-blue-800', icon: 'fa-bell' },
+        // ... include other types if needed
+    };
+
+    const colors = colorMap[type] || colorMap.reminder;
+    
+    const notificationEl = document.createElement('div');
+    notificationEl.className = `p-4 mb-3 rounded-lg shadow-md ${colors.bg} ${colors.text} flex items-center justify-between transition-all duration-500 ease-in-out transform opacity-0 translate-y-4`;
+    notificationEl.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas ${colors.icon} mr-3"></i>
+            <span>${message}</span>
+        </div>
+        <button class="ml-4 opacity-75 hover:opacity-100 close-btn">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    // Add event listener to close the notification
+    notificationEl.querySelector('.close-btn').addEventListener('click', () => {
+        notificationEl.classList.remove('opacity-100', 'translate-y-0');
+        notificationEl.classList.add('opacity-0', 'translate-y-4');
+        setTimeout(() => notificationEl.remove(), 500);
+    });
+
+    container.prepend(notificationEl);
+    
+    // Animate in
+    setTimeout(() => {
+        notificationEl.classList.remove('opacity-0', 'translate-y-4');
+        notificationEl.classList.add('opacity-100', 'translate-y-0');
+    }, 10);
+
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        notificationEl.querySelector('.close-btn').click();
+    }, 5000);
+};
+
+
 const renderStars = (rating) => {
     let stars = '';
     const fullStar = '<i class="fas fa-star text-yellow-400"></i>';

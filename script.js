@@ -98,6 +98,60 @@ const giftCardBackgrounds = {
     'Birthday': ['https://marketplace.canva.com/EAGhbM7XcuY/1/0/1600w/canva-white-and-blue-birthday-background-card-yqLk4e5MQjY.jpg', 'https://images.rawpixel.com/image_800/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvam9iNTE2LW51bm9vbi0xMC5qcGc.jpg', 'https://www.creativefabrica.com/wp-content/uploads/2021/08/30/Happy-birthday-background-design-Graphics-16518598-1-1-580x430.jpg']
 };
 
+// Global variable to store chart instances (optional, but useful)
+const chartInstances = {};
+
+// ====================================================================
+// Global Chart Initialization Function
+// ====================================================================
+
+const initializeChart = (canvasId, type, labels, data, options = {}) => {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) {
+        console.warn(`Chart canvas element with ID ${canvasId} not found.`);
+        return;
+    }
+
+    // Destroy existing chart instance if it exists
+    if (chartInstances[canvasId]) {
+        chartInstances[canvasId].destroy();
+    }
+
+    // Default configuration for the chart
+    const defaultOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: true,
+                position: 'bottom',
+            },
+            tooltip: {
+                mode: 'index',
+                intersect: false,
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    };
+
+    // Merge provided options with defaults
+    const finalOptions = { ...defaultOptions, ...options };
+    
+    // Create and store the new chart instance
+    chartInstances[canvasId] = new Chart(ctx, {
+        type: type,
+        data: {
+            labels: labels,
+            datasets: data
+        },
+        options: finalOptions
+    });
+};
+
 
 // ====================================================================
 // NEW: Global Notification Function
@@ -167,12 +221,6 @@ const renderStars = (rating) => {
     return `<div class="text-xl mb-4">${stars}</div>`;
 };
 
-    const initializeChart = (chartInstance, ctx, type, data, options) => {
-        if (chartInstance) { chartInstance.data = data; chartInstance.options = options; chartInstance.update(); }
-        else { chartInstance = new Chart(ctx, { type, data, options }); }
-        return chartInstance;
-    };
-    
 // ---
 // --- NEW SAFE DATA LOADING FUNCTION ---
 // ---
@@ -4724,7 +4772,11 @@ onSnapshot(doc(db, "settings", "holidays"), (docSnap) => {
     confirmCancelBtn.addEventListener('click', closeConfirmModal);
     document.querySelector('.confirm-modal-overlay').addEventListener('click', closeConfirmModal);
 
-
+    const initializeChart = (chartInstance, ctx, type, data, options) => {
+        if (chartInstance) { chartInstance.data = data; chartInstance.options = options; chartInstance.update(); }
+        else { chartInstance = new Chart(ctx, { type, data, options }); }
+        return chartInstance;
+    };
 
     // REPLACE your old getDateRange function with this corrected one:
     const getDateRange = (filter, specificDate = null) => {

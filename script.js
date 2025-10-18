@@ -1482,6 +1482,11 @@ async function initClientDashboard(clientId, clientData) {
         document.getElementById('gc-buyer-email').readOnly = true;
         purchaseModal.classList.remove('hidden');
     };
+    
+const nameInput = document.getElementById('client-settings-name');
+    if (nameInput) {
+        nameInput.value = clientData.name || '';
+    }
 
     const renderClientGiftCards = (cards) => {
         const container = document.getElementById('client-gift-cards-container');
@@ -1905,26 +1910,29 @@ onSnapshot(query(collection(db, "appointments"), where("name", "==", clientData.
     });
 
     // Add this logic inside your initClientApp function:
+// Find this block in your script.js:
 document.getElementById('client-settings-save-btn').addEventListener('click', async () => {
+    
     const newName = document.getElementById('client-settings-name').value.trim();
     
     if (!newName) {
         addNotification('error', 'Name cannot be empty.');
         return;
     }
-if (clientData) {
-    // ... existing lines to populate other fields ...
-    
-    // *** NEW: Populate the name input field ***
-    const nameInput = document.getElementById('client-settings-name');
-    if (nameInput) {
-        nameInput.value = clientData.name || '';
-    }
-}
-    // Assuming you have access to the current client's Firestore document ID 
-    // (e.g., stored globally as currentClientDocId, or via the user.uid)
-    const currentClientDocId = localStorage.getItem('currentClientDocId'); // Example retrieval
 
+    // *** FIX: Get the Client ID reliably from Firebase Auth ***
+    const user = auth.currentUser;
+    if (!user) {
+        addNotification('error', 'Authentication failed. Please log in again.');
+        return;
+    }
+    // Use the Auth UID as the document ID
+    const currentClientDocId = user.uid; 
+    
+    // Fallback: If your client documents are NOT keyed by the Auth UID, 
+    // try to get the ID from a global variable or local storage, but prioritize user.uid.
+    // const currentClientDocId = localStorage.getItem('currentClientDocId') || user.uid; 
+    
     if (!currentClientDocId) {
         addNotification('error', 'Client ID not found. Please log in again.');
         return;
@@ -1938,14 +1946,15 @@ if (clientData) {
             lastUpdated: serverTimestamp()
         });
         
+        // Update the input field immediately to reflect the change
+        document.getElementById('client-settings-name').value = newName; 
         addNotification('success', 'Name updated successfully!');
         
     } catch (error) {
         console.error('Error updating client name:', error);
-        addNotification('error', 'Failed to update name. Please try again.');
+        addNotification('error', 'Failed to update name. Please check Firestore rules and try again.');
     }
 });
-    
     // --- NEW EVENT LISTENERS FOR ACCOUNT SETTINGS ---
     const changeEmailForm = document.getElementById('client-change-email-form');
     if (changeEmailForm) {

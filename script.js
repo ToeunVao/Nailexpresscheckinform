@@ -96,6 +96,20 @@ const giftCardBackgrounds = {
     'Birthday': ['https://marketplace.canva.com/EAGhbM7XcuY/1/0/1600w/canva-white-and-blue-birthday-background-card-yqLk4e5MQjY.jpg', 'https://images.rawpixel.com/image_800/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvam9iNTE2LW51bm9vbi0xMC5qcGc.jpg', 'https://www.creativefabrica.com/wp-content/uploads/2021/08/30/Happy-birthday-background-design-Graphics-16518598-1-1-580x430.jpg']
 };
 
+const renderStars = (rating) => {
+    let stars = '';
+    const fullStar = '<i class="fas fa-star text-yellow-400"></i>';
+    const emptyStar = '<i class="fas fa-star text-gray-300"></i>';
+
+    // Ensure rating is a number between 1 and 5
+    const safeRating = Math.max(0, Math.min(5, parseInt(rating) || 0));
+
+    for (let i = 1; i <= 5; i++) {
+        stars += i <= safeRating ? fullStar : emptyStar;
+    }
+    return `<div class="text-xl mb-4">${stars}</div>`;
+};
+
 // ---
 // --- NEW SAFE DATA LOADING FUNCTION ---
 // ---
@@ -2394,28 +2408,36 @@ document.getElementById('product-modal-prev-btn').addEventListener('click', () =
 
 
 onSnapshot(query(collection(db, "finished_clients"), where("isFeatured", "==", true)), (snapshot) => {
-        allFeaturedReviews = snapshot.docs.map(doc => doc.data());
-        const container = document.getElementById('testimonials-container');
-        if (!container) return;
-        container.innerHTML = '';
-        if (allFeaturedReviews.length === 0) {
-            container.innerHTML = '<p class="text-gray-600 col-span-full text-center">No featured reviews yet. Check back soon!</p>';
-            return;
-        }
-        allFeaturedReviews.forEach(review => {
-            const reviewEl = document.createElement('div');
-            reviewEl.className = 'bg-white p-6 rounded-lg shadow-md';
-            reviewEl.innerHTML = `
-                <div class="flex items-center mb-2">
-                    <div class="text-yellow-400">${'★'.repeat(review.rating)}${'☆'.repeat(5-review.rating)}</div>
-                </div>
-                <p class="text-gray-600 italic">"${review.review}"</p>
-                <p class="text-right font-semibold text-pink-700 mt-4">- ${review.name}</p>
-            `;
-            container.appendChild(reviewEl);
-        });
-    });
+    allFeaturedReviews = snapshot.docs.map(doc => doc.data());
+    const container = document.getElementById('testimonials-container');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    // Filter out any reviews that don't have a rating or a review text
+    const validReviews = allFeaturedReviews.filter(r => r.rating && r.review);
 
+    if (validReviews.length === 0) {
+        container.innerHTML = '<p class="text-gray-600 col-span-full text-center">No featured reviews yet. Check back soon!</p>';
+        return;
+    }
+    
+    validReviews.forEach(review => {
+        const reviewEl = document.createElement('div');
+        // Use a nicer design for testimonials
+        reviewEl.className = 'bg-white p-6 rounded-xl shadow-lg border-t-4 border-pink-500'; 
+        
+        reviewEl.innerHTML = `
+            <i class="fas fa-quote-left text-pink-300 text-2xl mb-3"></i>
+            ${renderStars(review.rating)}
+            <p class="text-gray-700 italic mb-4">"${review.review}"</p>
+            <div class="text-sm font-semibold text-gray-800">
+                ${review.name || 'Anonymous Client'}
+            </div>
+            <p class="text-xs text-gray-500">${new Date(review.checkOutTimestamp.seconds * 1000).toLocaleDateString()}</p>
+        `;
+        container.appendChild(reviewEl);
+    });
+});
 
     // PASTE THIS AT THE VERY TOP of the initLandingPage() function
 const announcementModal = document.getElementById('announcement-modal');
@@ -5828,7 +5850,7 @@ const checkoutStarRatingContainer = document.getElementById('checkout-star-ratin
         // Textarea is cleared by checkoutForm.reset()
         // --- END: Reset Rating/Review ---
     };
-    
+
     rebookSelect.addEventListener('change', (e) => { if (e.target.value === 'other') { rebookOtherInput.classList.remove('hidden'); } else { rebookOtherInput.classList.add('hidden'); } });
     const technicianNameSelect = document.getElementById('technician-name-select');
     const technicianNameOther = document.getElementById('technician-name-other');

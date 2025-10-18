@@ -5246,6 +5246,20 @@ row.innerHTML = `
         });
     };
 
+const checkoutStarRatingContainer = document.getElementById('checkout-star-rating-container');
+    if (checkoutStarRatingContainer) {
+        checkoutStarRatingContainer.addEventListener('click', e => {
+            const star = e.target.closest('.fa-star');
+            if (!star) return;
+            const rating = parseInt(star.dataset.value, 10);
+            document.getElementById('checkout-rating-value').value = rating; // Use the new hidden input ID
+            checkoutStarRatingContainer.querySelectorAll('i').forEach((s, i) => { // Target stars within this container
+                s.classList.toggle('text-yellow-400', i < rating);
+            });
+        });
+    }
+
+
     // Located inside initMainApp()
     const renderClientsList = () => {
         if (!allFinishedClients || !allClients) {
@@ -5796,7 +5810,25 @@ row.innerHTML = `
         else if (draftSmsBtn) { const client = allFinishedClients.find(c => c.id === draftSmsBtn.dataset.id); if (client) generateSmsMessage(client); }
     });
 
-    const closeCheckoutModal = () => { checkoutForm.reset(); rebookOtherInput.classList.add('hidden'); checkoutModal.classList.add('hidden'); checkoutModal.classList.remove('flex'); };
+    const closeCheckoutModal = () => {
+        checkoutForm.reset(); //
+        rebookOtherInput.classList.add('hidden'); //
+        checkoutModal.classList.add('hidden'); //
+        checkoutModal.classList.remove('flex'); //
+
+        // --- START: Reset Rating/Review in Checkout Modal ---
+        const checkoutStars = document.querySelectorAll('#checkout-star-rating-container i'); //
+        if (checkoutStars) {
+            checkoutStars.forEach(s => s.classList.remove('text-yellow-400')); //
+        }
+        const checkoutRatingInput = document.getElementById('checkout-rating-value'); //
+        if (checkoutRatingInput) {
+            checkoutRatingInput.value = ''; // Clear hidden rating value
+        }
+        // Textarea is cleared by checkoutForm.reset()
+        // --- END: Reset Rating/Review ---
+    };
+    
     rebookSelect.addEventListener('change', (e) => { if (e.target.value === 'other') { rebookOtherInput.classList.remove('hidden'); } else { rebookOtherInput.classList.add('hidden'); } });
     const technicianNameSelect = document.getElementById('technician-name-select');
     const technicianNameOther = document.getElementById('technician-name-other');
@@ -5832,6 +5864,16 @@ row.innerHTML = `
                     finishedClientData.rebook = otherDateValue ? new Date(otherDateValue).toLocaleString() : 'Other';
                     if (otherDateValue) { await addDoc(collection(db, "appointments"), { name: client.name, phone: client.phone, people: client.people, bookingType: client.bookingType, services: client.services, technician: finishedClientData.technician, appointmentTimestamp: Timestamp.fromDate(new Date(otherDateValue)) }); }
                 } else { finishedClientData.rebook = 'No'; }
+                // --- START: Get Rating and Review from Checkout Modal ---
+                    const rating = parseInt(document.getElementById('checkout-rating-value').value, 10) || null; // Get rating, default to null if none selected
+                    const review = document.getElementById('checkout-review-text').value.trim() || ''; // Get review text
+                    // --- END: Get Rating and Review ---
+
+                    // Add rating and review to the data being saved
+                    finishedClientData.rating = rating; //
+                    finishedClientData.review = review; //
+                    finishedClientData.isFeatured = false; // Default featured status
+
                 await addDoc(collection(db, "finished_clients"), finishedClientData);
                 await deleteDoc(doc(db, "active_queue", clientId));
                 closeCheckoutModal();

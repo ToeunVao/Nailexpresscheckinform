@@ -3045,12 +3045,10 @@ addAppointmentFormLanding.addEventListener('submit', async (e) => {
         const service = allServicesList.find(s => s.name === serviceName);
         totalDuration += service ? service.duration : bookingSettings.defaultDuration;
     }
-
-// --- NEW: Availability Check to Prevent Double Booking ---
-    const availabilityCheck = isTechnicianAvailable(technician, bookingDate, totalDuration);
+const availabilityCheck = isTechnicianAvailable(technician, bookingDate, totalDuration);
     if (!availabilityCheck.available) {
-        addNotification('error', availabilityCheck.message); // Show the styled overlay notification
-        return; // Crucial: Stops the booking process
+        addNotification('error', availabilityCheck.message); 
+        return; 
     }
     // --- END OF THE NEW CHECK ---
 

@@ -99,58 +99,15 @@ const giftCardBackgrounds = {
 };
 
 // Global variable to store chart instances (optional, but useful)
-const chartInstances = {};
+    const initializeChart = (chartInstance, ctx, type, data, options) => {
+        if (chartInstance) { chartInstance.data = data; chartInstance.options = options; chartInstance.update(); }
+        else { chartInstance = new Chart(ctx, { type, data, options }); }
+        return chartInstance;
+    };
 
 // ====================================================================
 // Global Chart Initialization Function
 // ====================================================================
-
-const initializeChart = (canvasId, type, labels, data, options = {}) => {
-    const ctx = document.getElementById(canvasId);
-    if (!ctx) {
-        console.warn(`Chart canvas element with ID ${canvasId} not found.`);
-        return;
-    }
-
-    // Destroy existing chart instance if it exists
-    if (chartInstances[canvasId]) {
-        chartInstances[canvasId].destroy();
-    }
-
-    // Default configuration for the chart
-    const defaultOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                display: true,
-                position: 'bottom',
-            },
-            tooltip: {
-                mode: 'index',
-                intersect: false,
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true
-            }
-        }
-    };
-
-    // Merge provided options with defaults
-    const finalOptions = { ...defaultOptions, ...options };
-    
-    // Create and store the new chart instance
-    chartInstances[canvasId] = new Chart(ctx, {
-        type: type,
-        data: {
-            labels: labels,
-            datasets: data
-        },
-        options: finalOptions
-    });
-};
 
     const colorPalette = [
         { card: 'bg-pink-100', text: 'text-pink-800', bg: 'rgba(255, 99, 132, 0.5)', border: 'rgba(255, 99, 132, 1)' },
@@ -4781,11 +4738,7 @@ onSnapshot(doc(db, "settings", "holidays"), (docSnap) => {
     confirmCancelBtn.addEventListener('click', closeConfirmModal);
     document.querySelector('.confirm-modal-overlay').addEventListener('click', closeConfirmModal);
 
-    const initializeChart = (chartInstance, ctx, type, data, options) => {
-        if (chartInstance) { chartInstance.data = data; chartInstance.options = options; chartInstance.update(); }
-        else { chartInstance = new Chart(ctx, { type, data, options }); }
-        return chartInstance;
-    };
+
 
     // REPLACE your old getDateRange function with this corrected one:
     const getDateRange = (filter, specificDate = null) => {

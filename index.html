@@ -2852,6 +2852,21 @@
                     <input type="datetime-local" id="rebook-other-input"
                         class="form-input w-full p-2 mt-2 border border-gray-300 rounded-lg hidden">
                 </div>
+                <div class="border-t pt-4">
+                    <label class="block text-sm font-medium text-gray-600 mb-2">Rate Your Experience</label>
+                    <div id="checkout-star-rating-container" class="flex items-center text-3xl text-gray-300 cursor-pointer mb-2">
+                        <i class="fas fa-star" data-value="1"></i>
+                        <i class="fas fa-star" data-value="2"></i>
+                        <i class="fas fa-star" data-value="3"></i>
+                        <i class="fas fa-star" data-value="4"></i>
+                        <i class="fas fa-star" data-value="5"></i>
+                    </div>
+                    <input type="hidden" id="checkout-rating-value">
+                </div>
+                <div>
+                    <label for="checkout-review-text" class="block text-sm font-medium text-gray-600">Leave a Review (Optional)</label>
+                    <textarea id="checkout-review-text" rows="3" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" placeholder="Tell us about your visit..."></textarea>
+                </div>
             </div>
             <div class="mt-6 flex justify-end gap-3">
                 <button type="button" id="checkout-cancel-btn"

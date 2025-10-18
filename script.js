@@ -5226,20 +5226,22 @@ const loadAndRenderServices = async () => {
     const renderFinishedClients = (clients) => {
         const tbody = document.querySelector('#finished-clients-table tbody');
         if (!tbody) return;
-        tbody.innerHTML = clients.length === 0 ? `<tr><td colspan="6" class="py-6 text-center text-gray-400">No finished clients found.</td></tr>` : '';
-        clients.forEach((client, index) => {
+       tbody.innerHTML = clients.length === 0 ? `<tr><td colspan="7" class="py-6 text-center text-gray-400">No finished clients found.</td></tr>` : '';
+       clients.forEach((client, index) => {
             const row = tbody.insertRow();
             row.className = 'bg-white border-b';
-            row.innerHTML = `
-            <td class="px-6 py-4 text-center font-medium text-gray-900">${index + 1}</td>
-            <td class="px-6 py-4">${client.name}</td>
-            <td class="px-6 py-4">${client.services}</td>
-            <td class="px-6 py-4 text-center text-yellow-400">${client.rating ? '★'.repeat(client.rating) : 'N/A'}</td>
-            <td class="px-6 py-4 text-center space-x-2">
-                ${client.review ? `<button data-id="${client.id}" class="feature-review-btn text-lg ${client.isFeatured ? 'text-green-500' : 'text-gray-400'}" title="Feature on Homepage"><i class="fas fa-certificate"></i></button>` : ''}
-                <button data-id="${client.id}" class="view-feedback-btn" title="View Details"><i class="fas fa-info-circle text-lg text-gray-500 hover:text-gray-700"></i></button>
-                <button data-id="${client.id}" class="delete-btn-finished" title="Delete"><i class="fas fa-trash-alt text-lg text-red-500 hover:text-red-700"></i></button>
-            </td>`;
+row.innerHTML = `
+    <td class="px-6 py-4 text-center font-medium text-gray-900">${index + 1}</td>
+    <td class="px-6 py-4">${client.name}</td>
+    <td class="px-6 py-4">${client.people}</td>
+    <td class="px-6 py-4">${client.services}</td>
+    <td class="px-6 py-4">${client.checkInTime}</td>
+    <td class="px-6 py-4 text-center text-yellow-400">${client.rating ? '★'.repeat(client.rating) : 'N/A'}</td>
+    <td class="px-6 py-4 text-center space-x-2">
+        ${client.review ? `<button data-id="${client.id}" class="feature-review-btn text-lg ${client.isFeatured ? 'text-green-500' : 'text-gray-400'}" title="Feature on Homepage"><i class="fas fa-certificate"></i></button>` : ''}
+        <button data-id="${client.id}" class="view-feedback-btn" title="View Details"><i class="fas fa-info-circle text-lg text-gray-500 hover:text-gray-700"></i></button>
+        <button data-id="${client.id}" class="delete-btn-finished" title="Delete"><i class="fas fa-trash-alt text-lg text-red-500 hover:text-red-700"></i></button>
+    </td>`;
 
         });
     };

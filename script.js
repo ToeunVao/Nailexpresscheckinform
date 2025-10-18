@@ -1912,7 +1912,15 @@ document.getElementById('client-settings-save-btn').addEventListener('click', as
         addNotification('error', 'Name cannot be empty.');
         return;
     }
-
+if (clientData) {
+    // ... existing lines to populate other fields ...
+    
+    // *** NEW: Populate the name input field ***
+    const nameInput = document.getElementById('client-settings-name');
+    if (nameInput) {
+        nameInput.value = clientData.name || '';
+    }
+}
     // Assuming you have access to the current client's Firestore document ID 
     // (e.g., stored globally as currentClientDocId, or via the user.uid)
     const currentClientDocId = localStorage.getItem('currentClientDocId'); // Example retrieval

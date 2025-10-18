@@ -1848,6 +1848,40 @@ onSnapshot(query(collection(db, "appointments"), where("name", "==", clientData.
         }
         renderClientRoyaltyCard(clientData);
     });
+
+    // Add this logic inside your initClientApp function:
+document.getElementById('client-settings-save-btn').addEventListener('click', async () => {
+    const newName = document.getElementById('client-settings-name').value.trim();
+    
+    if (!newName) {
+        addNotification('error', 'Name cannot be empty.');
+        return;
+    }
+
+    // Assuming you have access to the current client's Firestore document ID 
+    // (e.g., stored globally as currentClientDocId, or via the user.uid)
+    const currentClientDocId = localStorage.getItem('currentClientDocId'); // Example retrieval
+
+    if (!currentClientDocId) {
+        addNotification('error', 'Client ID not found. Please log in again.');
+        return;
+    }
+    
+    try {
+        const clientDocRef = doc(db, 'clients', currentClientDocId);
+        
+        await updateDoc(clientDocRef, {
+            name: newName,
+            lastUpdated: serverTimestamp()
+        });
+        
+        addNotification('success', 'Name updated successfully!');
+        
+    } catch (error) {
+        console.error('Error updating client name:', error);
+        addNotification('error', 'Failed to update name. Please try again.');
+    }
+});
     
     // --- NEW EVENT LISTENERS FOR ACCOUNT SETTINGS ---
     const changeEmailForm = document.getElementById('client-change-email-form');

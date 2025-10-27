@@ -23,6 +23,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <link rel="stylesheet" href="style.css">
 
@@ -1997,7 +1998,11 @@
                                                         ($)</label><input type="number" id="designer-amount"
                                                         class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg"
                                                         required></div>
-
+                                                <div>
+                                                    <label for="designer-code" class="block text-sm font-medium text-gray-600">Gift Card Code (Optional)</label>
+                                                    <input type="text" id="designer-code" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg" placeholder="Leave blank for GC-">
+                                                    <p class="text-xs text-gray-500 mt-1">Enter a specific code, or leave blank to write manually after printing.</p>
+                                                </div>
                                                 <div class="border-t pt-4">
                                                     <div class="flex items-center gap-6">
                                                         <label for="designer-set-expiry"
@@ -2042,7 +2047,13 @@
                                                 <button id="save-and-print-btn"
                                                     class="w-full bg-green-500 text-white font-bold py-3 px-12 rounded-full hover:bg-green-600"><i
                                                         class="fas fa-print mr-2"></i>Save & Print</button>
-                                            </div>
+                                            <button type="button" id="download-gc-images-btn"
+    class="w-full mt-3 bg-indigo-500 text-white font-semibold py-2 px-4 rounded-xl hover:bg-indigo-600 transition duration-150 shadow-md">
+    <i class="fas fa-download mr-2"></i> Download for Print (Front/Back)
+</button>
+                                            
+                                             </div>
+                                            
                                         </div>
                                         <div class="flex items-center justify-center">
                                             <div id="printable-gift-card-area">
@@ -2051,9 +2062,10 @@
                                                     style="background-image: url('https://images.unsplash.com/photo-1596048135132-911961bd4350?q=80&w=1887&auto=format&fit=crop');">
                                                     <div class="flex justify-between items-start"
                                                         style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
-                                                        <img id="preview-logo"
-                                                            src="https://placehold.co/100x100/d63384/FFFFFF?text=NE"
-                                                            class="w-12 h-12 rounded-full border-2 border-white" />
+            <div id="preview-logo"
+                class="w-10 h-10 flex items-center justify-center text-xl font-bold rounded-full border-2 border-white bg-pink-600 text-[#ffffff">
+                NE
+            </div>
                                                         <div class="text-right">
                                                             <p class="font-parisienne text-3xl">Gift Card</p>
                                                             <p class="text-xs font-semibold tracking-wider">Nails
@@ -2079,6 +2091,35 @@
                                                             id="preview-expiry">Expires: --/--/----</p>
                                                     </div>
                                                 </div>
+<!-- Gift Card Back Card Preview for Download -->
+<div id="gc-card-preview-back"
+    class="mt-8 w-[400px] h-[228px] p-4 relative overflow-hidden shadow-xl rounded-xl transition-all duration-300 border border-gray-300"
+    style="background-color: #ffffff; color: #333; font-family: 'Poppins', sans-serif;">
+    <div class="h-full flex flex-col justify-between p-2 text-xs">
+        
+        <!-- Header/Logo Area -->
+       <div class="w-full h-10 bg-black mt-2"></div>
+
+        <!-- Terms and Conditions -->
+        <div class="mb-2 text-center mt-2 flex-grow flex items-center justify-center">
+            <p class="text-xs text-center text-gray-600 px-4 leading-relaxed">
+                    This card is redeemable for services at Nails Express. Treat this card like cash; it is not replaceable if lost or stolen. This card is non-refundable and cannot be exchanged for cash.
+                </p>
+        </div>
+
+        <!-- Contact Information -->
+        <div class="text-center pt-2 border-t mt-auto">
+            <p class="font-semibold text-pink-700 mb-0.5">Nails Express</p>
+            <p class="text-[11px] leading-tight">
+                1560 Hustonville Rd #345, Danville, KY 40422
+            </p>
+            <p class="text-[11px] font-mono mt-0.5">
+                (859) 236-2873
+            </p>
+        </div>
+    </div>
+</div>
+<!-- End Gift Card Back Card Preview -->
                                             </div>
                                         </div>
                                     </div>
@@ -2108,6 +2149,78 @@
                         </div>
 
                         <div id="membership-management-content" class="sub-tab-content hidden">
+                            <div class="mt-12 pt-8 border-t">
+    <h3 class="text-xl font-semibold text-gray-700 mb-4">Printable Membership Card Designer</h3>
+    <div class="bg-gray-50 p-6 rounded-2xl border grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        <div id="membership-designer-controls" class="space-y-4">
+            <form id="membership-card-designer-form" class="space-y-4">
+                <input type="hidden" id="designer-client-id"> <div>
+                    <label for="designer-ms-client-name" class="block text-sm font-medium text-gray-600">Client Name</label>
+                    <input type="text" id="designer-ms-client-name" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg" required placeholder="Enter client's full name">
+                </div>
+                <div>
+                    <label for="designer-ms-tier-select" class="block text-sm font-medium text-gray-600">Membership Tier</label>
+                    <select id="designer-ms-tier-select" class="form-select w-full p-2 mt-1 border border-gray-300 rounded-lg" required>
+                        </select>
+                </div>
+                <div>
+    <label class="block text-sm font-medium text-gray-600 mb-2">Membership Start Date</label>
+    <div class="flex items-center space-x-4">
+        <input type="date" id="designer-ms-start-date" class="form-input w-full p-2 border-gray-300 rounded-lg" required>
+        <div class="flex items-center">
+            <input type="checkbox" id="designer-ms-no-start-date" class="form-checkbox text-pink-600 h-4 w-4 rounded border-gray-300">
+            <label for="designer-ms-no-start-date" class="ml-2 text-sm text-gray-700 whitespace-nowrap">Write Later</label>
+        </div>
+    </div>
+    <p class="text-xs text-gray-500 mt-1" id="start-date-help-text">Select a date or choose 'Write Later'.</p>
+</div>
+                <div>
+                    <label for="designer-ms-id" class="block text-sm font-medium text-gray-600">Membership ID (Optional)</label>
+                    <input type="text" id="designer-ms-id" class="form-input w-full p-2 mt-1 border-gray-300 rounded-lg" placeholder="Leave blank for MEMBER-ID">
+                    <p class="text-xs text-gray-500 mt-1">Enter a specific ID, or leave blank to write manually after printing.</p>
+                </div>
+                 <div class="border-t pt-4">
+                    <label for="designer-ms-quantity" class="block text-sm font-medium text-gray-600">Quantity to Generate</label>
+                    <input type="number" id="designer-ms-quantity" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg" min="1" value="1">
+                 </div>
+            </form>
+             <div class="mt-6 space-y-2">
+                 <button id="generate-print-ms-cards-btn" class="w-full bg-green-500 text-white font-bold py-3 px-12 rounded-full hover:bg-green-600">
+                     <i class="fas fa-print mr-2"></i>Generate & Print Cards
+                 </button>
+                 <button id="download-ms-card-images-btn" class="w-full bg-blue-500 text-white font-bold py-3 px-12 rounded-full hover:bg-blue-600">
+                     <i class="fas fa-download mr-2"></i>Download Images (Front/Back)
+                 </button>
+             </div>
+        </div>
+
+        <div class="flex flex-col items-center space-y-4">
+            <div id="printable-membership-card-area-front" class="transform scale-90 origin-top">
+                 <p class="text-center text-sm font-semibold mb-1 text-gray-600">Front Preview</p>
+                 <div id="ms-card-preview-front" class="card rounded-lg p-4 flex flex-col justify-between bg-gradient-to-br from-gray-700 via-gray-900 to-black text-white" style="width:400px; height:228px; text-shadow: 1px 1px 3px rgba(0,0,0,0.4);">
+                     </div>
+            </div>
+             <div id="printable-membership-card-area-back" class="transform scale-90 origin-top">
+                 <p class="text-center text-sm font-semibold mb-1 text-gray-600">Back Preview (Default)</p>
+                 <div id="ms-card-preview-back" class="card rounded-lg p-4 flex flex-col justify-between bg-white text-gray-800 border" style="width:400px; height:228px; text-shadow: none;">
+                    <div class="w-full h-10 bg-black mt-2"></div>
+                    <p class="text-xs text-center text-gray-600 px-4 leading-relaxed">
+                        Welcome, VIP! This card must be presented to receive benefits. Membership is non-transferable and benefits apply only to the registered member.
+                    </p>
+                    <div class="px-4 pb-2 text-center">
+                        <p id="ms-back-signature-name" class="font-parisienne text-2xl text-gray-700">    </p>
+                        <div class="mt-10 w-full border-t border-dashed border-gray-400 pt-1 mt-1"></div>
+                        <p class="text-xs text-gray-500">Member Signature</p>
+                    </div>
+                    <div class="text-center text-xs pb-2">
+                        <p class="font-bold">Nails Express</p>
+                        <p>1560 Hustonville Rd #345, Danville, KY 40422</p>
+                    </div>
+                 </div>
+            </div>
+        </div>
+    </div>
+</div>
                             <div class="flex justify-between items-center mb-4">
                                 <h3 class="text-xl font-semibold text-gray-700">Manage Membership Tiers</h3>
                                 <button id="add-new-membership-tier-btn"
@@ -2476,6 +2589,15 @@
                     class="mt-1 block w-full p-3 border border-gray-300 rounded-lg" placeholder="e.g., 5.00"
                     required>
                 <p class="text-xs text-gray-500 mt-1">Enter shipping fee as a dollar amount.</p>
+            </div>
+            <div class="md:col-span-2 mt-4 border-t pt-4">
+                 <h4 class="text-lg font-semibold text-gray-700 mb-2">Online Gift Card Codes</h4>
+                 <div>
+                    <label for="online-gc-start-number" class="block text-sm font-medium text-gray-700">Start Number (4+ digits)</label>
+                    <input type="number" id="online-gc-start-number" class="mt-1 block w-full md:w-1/2 p-3 border border-gray-300 rounded-lg" placeholder="e.g., 1000" min="1000">
+                    <p class="text-xs text-gray-500 mt-1">Set the starting number for automatically generated online gift card codes (must be at least 1000).</p>
+                    <p class="text-xs text-gray-500">Last used code: <span id="last-used-online-gc-display">N/A</span></p>
+                 </div>
             </div>
         </div>
         <div class="mt-6">
@@ -3222,9 +3344,10 @@
                 class="absolute top-4 right-4 text-gray-500 hover:text-gray-800"><i
                     class="fas fa-times fa-lg"></i></button>
             <h2 class="text-3xl font-bold text-center text-pink-700 mb-6">Manage Gift Card</h2>
-            <div class="text-center mb-4">
-                <p class="font-mono text-lg" id="edit-gc-code"></p>
-            </div>
+            <div class="mb-4">
+    <label for="edit-gc-code-input" class="block text-sm font-medium text-gray-600">Gift Card Code</label>
+    <input type="text" id="edit-gc-code-input" class="form-input w-full p-2 mt-1 border border-gray-300 rounded-lg font-mono" required>
+</div>
             <div class="grid grid-cols-2 gap-4 mb-6 text-center">
                 <div>
                     <p class="text-sm font-medium text-gray-500">Original Amount</p>

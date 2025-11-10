@@ -4319,6 +4319,100 @@ if (emailTemplatesForm) {
         }
     });
 }
+// --- Add this block inside your initMainApp function ---
+
+    // 1. Event listener for ALL 'View Profile' buttons (handles Report and Dashboard)
+    document.addEventListener('click', (e) => {
+        const button = e.target.closest('.view-profile-btn');
+        if (button) {
+            const clientName = button.getAttribute('data-client-name');
+            if (!clientName || clientName === "null") return;
+            
+            // Find the full client object from your global 'aggregatedClients' array
+            const clientObject = aggregatedClients.find(c => c.name === clientName);
+
+            if (clientObject) {
+                // Call your EXISTING function with the full client object
+                openClientProfileModal(clientObject); 
+            } else {
+                // This handles new clients (like online bookings)
+                const partialClient = {
+                    id: null, name: clientName,
+                    phone: button.getAttribute('data-client-phone') || '', // Get phone if available
+                    email: button.getAttribute('data-client-email') || '', // Get email if available
+                    membership: null, notes: [] 
+                };
+                openClientProfileModal(partialClient);
+            }
+        }
+    });
+
+    // 2. Listener for the Modal's Close button (if not already present)
+    const closeProfileBtn = document.getElementById('close-client-profile-modal-btn');
+    if (closeProfileBtn) {
+        closeProfileBtn.addEventListener('click', () => {
+            clientProfileModal.classList.add('hidden');
+        });
+    }
+
+    // 3. Listener for the Modal's Save Notes button
+    const saveNotesBtn = document.getElementById('save-new-client-note-btn'); // (Make sure your HTML button has this ID)
+    if (saveNotesBtn) {
+        saveNotesBtn.addEventListener('click', async () => {
+            const clientId = document.getElementById('note-client-id').value;
+            const noteText = document.getElementById('new-client-note-text').value; // (Make sure your textarea has this ID)
+            const clientName = document.getElementById('profile-client-name').textContent;
+
+            if (!noteText) {
+                 addNotification('warning', 'Note text cannot be empty.');
+                 return;
+            }
+
+            try {
+                let docRef;
+                if (clientId && clientId !== "null") {
+                    // Client already exists, update their notes
+                    docRef = doc(db, "clients", clientId);
+                    await updateDoc(docRef, {
+                        notes: arrayUnion({
+                            text: noteText,
+                            timestamp: Timestamp.now()
+                        })
+                    });
+                } else {
+                    // Client does not exist, create a new client document
+                    const newClientData = {
+                        name: clientName,
+                        phone: document.getElementById('profile-client-phone').textContent,
+                        email: document.getElementById('profile-client-email').textContent,
+                        dob: '',
+                        createdAt: serverTimestamp(),
+                        notes: [
+                            {
+                                text: noteText,
+                                timestamp: Timestamp.now()
+                            }
+                        ]
+                    };
+                    const newDoc = await addDoc(collection(db, "clients"), newClientData);
+                    document.getElementById('note-client-id').value = newDoc.id; // Store new ID for next save
+                }
+                
+                addNotification('success', 'Note saved successfully!');
+                document.getElementById('new-client-note-text').value = ''; // Clear textarea
+                
+                // Refresh the modal to show the new note
+                const clientObject = aggregatedClients.find(c => c.name === clientName) || {id: clientId, name: clientName};
+                openClientProfileModal(clientObject);
+
+            } catch (error) {
+                console.error("Error saving note:", error);
+                addNotification('error', 'Failed to save note.');
+            }
+        });
+    }
+// --- End of CRM Listeners block ---
+
     // PASTE THIS ENTIRE BLOCK inside your initMainApp function
 
     const royaltySettingsForm = document.getElementById('royalty-settings-form');
@@ -5571,13 +5665,25 @@ viewReviewModal.querySelector('.modal-overlay').addEventListener('click', closeV
 
         filteredAppointments.forEach(appt => {
             tableHTML += `
-            <tr class="border-b">
+<tr class="border-b">
                 <td class="px-6 py-3 font-medium">${appt.name}</td>
                 <td class="px-6 py-3">${Array.isArray(appt.services) ? appt.services.join(', ') : appt.services}</td>
                 <td class="px-6 py-3">${appt.technician}</td>
                 <td class="px-6 py-3 text-center">${appt.people || 1}</td>
                 <td class="px-6 py-3">${new Date(appt.appointmentTimestamp.seconds * 1000).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</td>
-                <td class="px-6 py-3 text-center"><button data-id="${appt.id}" class="checkin-today-btn text-blue-500 hover:underline">Check In</button></td>
+                
+                <!-- UPDATED ACTION CELL -->
+                <td class="px-6 py-3 text-center space-x-4">
+                    <!-- 1. NEW "VIEW PROFILE" BUTTON -->
+                    <button data-client-name="${appt.name}" 
+                            class="view-profile-btn text-indigo-500 hover:text-indigo-700" 
+                            title="View Client Profile">
+                        <i class="fas fa-user-circle text-lg"></i>
+                    </button>
+                    
+                    <!-- 2. EXISTING "CHECK IN" BUTTON -->
+                    <button data-id="${appt.id}" class="checkin-today-btn text-blue-500 hover:underline">Check In</button>
+                </td>
             </tr>
         `;
         });
@@ -7657,16 +7763,20 @@ const downloadGiftCardForPrint = async () => {
     document.getElementById('today-btn').addEventListener('click', () => { document.getElementById('month-view').classList.add('hidden'); document.getElementById('month-nav').classList.add('hidden'); document.getElementById('list-view').classList.remove('hidden'); document.getElementById('today-btn').classList.add('hidden'); document.getElementById('month-view-btn').classList.remove('hidden'); renderAllBookingsList(); });
     document.getElementById('month-view-btn').addEventListener('click', () => { document.getElementById('list-view').classList.add('hidden'); document.getElementById('month-view-btn').classList.add('hidden'); document.getElementById('month-view').classList.remove('hidden'); document.getElementById('month-nav').classList.remove('hidden'); document.getElementById('today-btn').classList.remove('hidden'); });
 
-    document.getElementById('today-bookings-table').addEventListener('click', async (e) => {
-        if (e.target.classList.contains('checkin-today-btn')) {
-            const appointment = allAppointments.find(a => a.id === e.target.dataset.id);
-            if (!appointment) return;
-            try {
-                await addDoc(collection(db, "active_queue"), { name: appointment.name, phone: appointment.phone, people: appointment.people || 1, bookingType: 'Booked - Calendar', services: Array.isArray(appointment.services) ? appointment.services : [appointment.services], technician: appointment.technician, notes: appointment.notes || '', checkInTimestamp: serverTimestamp(), status: 'waiting' });
-                await deleteDoc(doc(db, "appointments", e.target.dataset.id));
-            } catch (err) { console.error("Error checking in from today's view:", err); alert("Could not check in this client."); }
-        }
-    });
+// FIX: Add a safety check for the table element
+    const todayBookingsTable = document.getElementById('today-bookings-table');
+    if (todayBookingsTable) { // This 'if' block prevents the error
+        todayBookingsTable.addEventListener('click', async (e) => {
+            if (e.target.classList.contains('checkin-today-btn')) {
+                const appointment = allAppointments.find(a => a.id === e.target.dataset.id);
+                if (!appointment) return;
+                try {
+                    await addDoc(collection(db, "active_queue"), { name: appointment.name, phone: appointment.phone, people: appointment.people || 1, bookingType: 'Booked - Calendar', services: Array.isArray(appointment.services) ? appointment.services : [appointment.services], technician: appointment.technician, notes: appointment.notes || '', checkInTimestamp: serverTimestamp(), status: 'waiting' });
+                    await deleteDoc(doc(db, "appointments", e.target.dataset.id));
+                } catch (err) { console.error("Error checking in from today's view:", err); alert("Could not check in this client."); }
+            }
+        });
+    }
 
     const clockEl = document.getElementById('live-clock'), dateEl = document.getElementById('live-date'), copyrightYear = document.getElementById('copyright-year');
     const updateTime = () => { const now = new Date(); clockEl.textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }); dateEl.textContent = now.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); copyrightYear.textContent = now.getFullYear(); };
@@ -7735,8 +7845,10 @@ const downloadGiftCardForPrint = async () => {
 
     document.getElementById('floating-booking-btn').addEventListener('click', () => { openAddAppointmentModal(getLocalDateString()); });
     // ADD THIS NEW LINE
-    document.getElementById('staff-details-date-filter').addEventListener('change', updateStaffDashboard);
-
+const staffDetailsFilter = document.getElementById('staff-details-date-filter');
+if (staffDetailsFilter) {
+    staffDetailsFilter.addEventListener('change', updateStaffDashboard);
+}
     const addUserForm = document.getElementById('add-user-form');
     const usersTableBody = document.querySelector('#users-table tbody');
     // Replace the entire renderUsers function
@@ -8300,7 +8412,7 @@ settingsForm.addEventListener('submit', async (e) => {
         populate(supplierFilterSelect, allSuppliers, 'All');
     };
 
-    const populateExpenseMonthFilter = () => {
+   function populateExpenseMonthFilter() {
         const months = [...new Set(allExpenses.map(exp => { const d = new Date(exp.date.seconds * 1000); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }))].sort().reverse();
         expenseMonthFilter.innerHTML = '<option value="all">All Months</option>';
         months.forEach(monthYear => { const [year, month] = monthYear.split('-'); expenseMonthFilter.innerHTML += `<option value="${monthYear}">${new Date(year, month - 1, 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</option>`; });

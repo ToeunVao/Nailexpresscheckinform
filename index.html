@@ -835,6 +835,7 @@
                             <table id="staff-dashboard-earning-table" class="w-full text-sm text-left text-gray-600">
                                 <thead class="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
                                     <tr>
+                                        <th scope="col" class="px-6 py-3">No</th>
                                         <th scope="col" class="px-6 py-3">Date</th>
                                         <th scope="col" class="px-6 py-3">Staff Name</th>
                                         <th scope="col" class="px-6 py-3">Service</th>
@@ -1529,6 +1530,8 @@
                                         <tr>
                                             <th class="px-6 py-3">Client Name</th>
                                             <th class="px-6 py-3">Membership Tier</th>
+                                            <th class="px-6 py-3">Total Reward</th>
+                                            <th class="px-6 py-3">Status</th>
                                             <th class="px-6 py-3">Start Date</th>
                                             <th class="px-6 py-3">Status</th>
                                             <th class="px-6 py-3 text-center">Action</th>
@@ -2203,24 +2206,64 @@
              <div id="printable-membership-card-area-back" class="transform scale-90 origin-top">
                  <p class="text-center text-sm font-semibold mb-1 text-gray-600">Back Preview (Default)</p>
                  <div id="ms-card-preview-back" class="card rounded-lg p-4 flex flex-col justify-between bg-white text-gray-800 border" style="width:400px; height:228px; text-shadow: none;">
-                    <div class="w-full h-10 bg-black mt-2"></div>
-                    <p class="text-xs text-center text-gray-600 px-4 leading-relaxed">
-                        Welcome, VIP! This card must be presented to receive benefits. Membership is non-transferable and benefits apply only to the registered member.
-                    </p>
-                    <div class="px-4 pb-2 text-center">
-                        <p id="ms-back-signature-name" class="font-parisienne text-2xl text-gray-700">    </p>
-                        <div class="mt-10 w-full border-t border-dashed border-gray-400 pt-1 mt-1"></div>
-                        <p class="text-xs text-gray-500">Member Signature</p>
-                    </div>
-                    <div class="text-center text-xs pb-2">
-                        <p class="font-bold">Nails Express</p>
-                        <p>1560 Hustonville Rd #345, Danville, KY 40422</p>
-                    </div>
-                 </div>
+    <div class="w-full h-10 bg-black mt-1"></div>
+    
+    <div class="text-xs text-center text-gray-600 px-4 leading-relaxed">
+        <p>
+            Welcome, VIP! This card must be presented to receive benefits. Membership is non-transferable.
+        </p>
+        <p class="font-bold mt-2">
+            Clients must pay with cash only to earn credit towards their cash reward.
+        </p>
+    </div>
+    
+    <div class="px-4 pb-2 text-center">
+        <p id="ms-back-signature-name" class="font-parisienne text-2xl text-gray-700"></p>
+        <div class="mt-4 w-full border-t border-dashed border-gray-400 pt-1 mt-1"></div>
+        <p class="text-xs text-gray-500">Member Signature</p>
+    </div>
+    <div class="text-center text-xs pb-2">
+        <p class="font-bold">Nails Express</p>
+        <p>1560 Hustonville Rd #345, Danville, KY 40422</p>
+    </div>
+</div>
             </div>
         </div>
     </div>
 </div>
+
+
+<!-- ADD THIS ENTIRE BLOCK to index.html -->
+<div class=" mt-8 mb-8 p-6 bg-gray-50 rounded-2xl border">
+    <h3 class="text-xl font-semibold text-gray-700 mb-4">Membership Cash Reward Settings</h3>
+    <p class="text-sm text-gray-600 mb-4">Define a cash reward for members who pay with cash. The reward is triggered when their total cash spending hits the threshold.</p>
+    <form id="membership-reward-settings-form" class="space-y-4 max-w-lg">
+        <div>
+            <label for="membership-reward-threshold" class="block text-sm font-medium text-gray-600">Spending Threshold ($)</label>
+            <input type="number" id="membership-reward-threshold" class="form-input w-full mt-1" placeholder="e.g., 500" required>
+            <p class="text-xs text-gray-500 mt-1">Amount a client must spend (in cash) to earn the reward.</p>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label for="membership-reward-type" class="block text-sm font-medium text-gray-600">Reward Type</label>
+                <select id="membership-reward-type" class="form-select w-full mt-1">
+                    <option value="fixed">Fixed ($)</option>
+                    <option value="percent">Percentage (%)</option>
+                </select>
+            </div>
+            <div>
+                <label for="membership-reward-value" class="block text-sm font-medium text-gray-600">Reward Value</label>
+                <input type="number" id="membership-reward-value" class="form-input w-full mt-1" placeholder="e.g., 25" required>
+            </div>
+        </div>
+        <div class="text-right">
+            <button type="submit" id="save-membership-reward-settings-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700">
+                Save Reward Settings
+            </button>
+        </div>
+    </form>
+</div>
+<!-- END OF NEW BLOCK -->
                             <div class="flex justify-between items-center mb-4">
                                 <h3 class="text-xl font-semibold text-gray-700">Manage Membership Tiers</h3>
                                 <button id="add-new-membership-tier-btn"
@@ -3454,7 +3497,7 @@
                 <form id="add-client-note-form">
                     <input type="hidden" id="note-client-id">
                     <label for="new-client-note" class="block text-sm font-medium text-gray-600">Add a new note</label>
-                    <textarea id="new-client-note" rows="3" class="form-input w-full mt-1"
+                    <textarea id="new-client-note" rows="3" class="form-input w-full mt-1 p-2 mt-1 border border-gray-300 rounded-lg"
                         placeholder="e.g., Prefers gel, sensitive to filing..."></textarea>
                     <div class="text-right mt-2">
                         <button type="submit"
@@ -3760,23 +3803,23 @@
             <div class="space-y-4">
                 <div>
                     <label for="tier-name" class="block text-sm font-medium text-gray-600">Tier Name</label>
-                    <input type="text" id="tier-name" class="form-input w-full mt-1" placeholder="e.g., Gold, Platinum"
+                    <input type="text" id="tier-name" class="form-input w-full mt-1 border border-gray-300 rounded-lg" placeholder="e.g., Gold, Platinum"
                         required>
                 </div>
                 <div>
                     <label for="tier-price" class="block text-sm font-medium text-gray-600">Monthly Price ($)</label>
-                    <input type="number" id="tier-price" class="form-input w-full mt-1" placeholder="e.g., 49.99"
+                    <input type="number" id="tier-price" class="form-input w-full mt-1 border border-gray-300 rounded-lg" placeholder="e.g., 49.99"
                         required>
                 </div>
                 <div>
                     <label for="tier-discount" class="block text-sm font-medium text-gray-600">Discount on all services
                         (%)</label>
-                    <input type="number" id="tier-discount" class="form-input w-full mt-1" placeholder="e.g., 10"
+                    <input type="number" id="tier-discount" class="form-input w-full mt-1 border border-gray-300 rounded-lg" placeholder="e.g., 10"
                         required>
                 </div>
                 <div>
                     <label for="tier-benefits" class="block text-sm font-medium text-gray-600">Included Benefits</label>
-                    <textarea id="tier-benefits" class="form-input w-full mt-1" rows="3"
+                    <textarea id="tier-benefits" class="form-input w-full mt-1 border border-gray-300 rounded-lg" rows="3"
                         placeholder="e.g., 2 Classic Manicures per month, 1 Free Paraffin Treatment"></textarea>
                     <p class="text-xs text-gray-500 mt-1">List one benefit per line.</p>
                 </div>
@@ -4146,7 +4189,51 @@
         </div>
     </div>
 </div>
+<!-- ADD THIS ENTIRE MODAL to index.html -->
+<div id="membership-reward-modal" class="modal hidden fixed inset-0 z-[70] flex items-center justify-center p-4">
+    <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
+    <div class="relative bg-white w-full max-w-2xl p-6 rounded-2xl shadow-xl m-4 max-h-[90vh] flex flex-col">
+        <button id="close-membership-reward-modal-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
+            <i class="fas fa-times text-2xl"></i>
+        </button>
+        <h3 class="text-2xl font-bold text-pink-700 mb-4">Cash Reward Tracker</h3>
+        <h4 id="reward-client-name" class="text-xl font-semibold text-gray-700 mb-4"></h4>
+        
+        <!-- Progress Bar -->
+        <div class="mb-4">
+            <div class="flex justify-between text-sm font-medium text-gray-600 mb-1">
+                <span>Progress</span>
+                <span id="reward-progress-text">$0 / $500</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div id="reward-progress-bar" class="bg-green-500 h-2.5 rounded-full transition-all" style="width: 0%"></div>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">Only cash payments contribute to this reward.</p>
+        </div>
 
+        <!-- Add Spending Form -->
+        <form id="log-cash-spending-form" class="space-y-4 p-4 border rounded-lg bg-gray-50">
+            <input type="hidden" id="reward-client-id">
+            <h4 class="font-semibold text-gray-700">Log New Cash Spending</h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div class="md:col-span-2">
+                    <label for="cash-spending-amount" class="block text-sm font-medium text-gray-600">Cash Amount Spent ($)</label>
+                    <input type="number" id="cash-spending-amount" step="0.01" class="form-input w-full mt-1" required placeholder="e.g., 80.00">
+                </div>
+                <button type="submit" class="bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700 h-10">Log Payment</button>
+            </div>
+        </form>
+
+        <!-- History -->
+        <div class="mt-6 flex-grow overflow-y-auto">
+            <h4 class="text-lg font-semibold text-gray-700 border-b pb-2 mb-2">History</h4>
+            <div id="reward-history-container" class="space-y-2 pr-2">
+                <p class="text-sm text-gray-500 text-center">No cash spending logged yet.</p>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- END OF NEW MODAL -->
     <script type="module" src="script.js"></script>
 </body>
 

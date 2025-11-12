@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, signInAnonymously, updateEmail, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, doc, getDoc, deleteDoc, serverTimestamp, where, getDocs, orderBy, Timestamp, updateDoc, writeBatch, setDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, doc, getDoc, deleteDoc, serverTimestamp, where, getDocs, orderBy, Timestamp, updateDoc, writeBatch, setDoc, arrayUnion, arrayRemove, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
 const firebaseConfig = {
@@ -89,6 +89,8 @@ let allFeaturedReviews = [];
 let pendingWaitlistData = null;
 let globalOnlineGcStartNumber = 1000; // Default start
 let globalLastUsedOnlineGcNumber = 0; // Will be loaded from settings
+let membershipRewardSettings = { threshold: 500, type: 'fixed', value: 25 }; // Default values
+let allClientMemberships = [];
 
 const giftCardBackgrounds = {
     'General': ['https://img.freepik.com/premium-photo/women-s-legs-with-bright-pedicure-pink-background-chamomile-flower-decoration-spa-pedicure-skincare-concept_256259-166.jpg', 'https://png.pngtree.com/thumb_back/fh260/background/20250205/pngtree-soft-pastel-floral-design-light-blue-background-image_16896113.jpg', 'https://files.123freevectors.com/wp-content/original/119522-abstract-pastel-pink-background-image.jpg'],
@@ -835,9 +837,14 @@ if (client.membership.startDate && typeof client.membership.startDate.toDate ===
                 </div>
             </div>
             <div class="card rounded-lg p-4 flex flex-col justify-between bg-white text-gray-800" style="text-shadow: none;">
-                <p class="text-xs text-center text-gray-600 px-4 leading-relaxed mt-4">
-                    Welcome, VIP! This card must be presented to receive benefits. Membership is non-transferable and benefits apply only to the registered member.
-                </p>
+                <div class="text-xs text-center text-gray-600 px-4 leading-relaxed">
+                    <p>
+                        Welcome, VIP! This card must be presented to receive benefits. Membership is non-transferable.
+                    </p>
+                    <p class="font-bold mt-2">
+                        Clients must pay with cash only to earn credit towards their cash reward.
+                    </p>
+                </div>
                 
                 <div class="px-4 pb-2 text-center">
                     <p class="font-parisienne text-2xl text-gray-700">${client.name}</p>
@@ -1594,35 +1601,57 @@ const renderClientMembershipsTable = (members) => {
     if (!tbody) return;
     tbody.innerHTML = '';
     members.forEach(member => {
+        // --- NEW: Calculate Total Spent and Total Reward from history ---
+        // Accessing the rewardHistory array
+        const history = member.membership?.rewardHistory || [];
+        
+        // Summing up all entries where type is 'reward'
+        const totalRewardEarned = history
+            .filter(item => item.type === 'reward')
+            .reduce((sum, item) => sum + (item.rewardAmount || 0), 0);
+            
+        // Summing up all entries where type is 'spending' (cash payments)
+        const totalCashSpent = history
+            .filter(item => item.type === 'spending')
+            .reduce((sum, item) => sum + (item.amount || 0), 0);
+        // --- END NEW CALCULATION ---
+
         const row = tbody.insertRow();
         const status = member.membership.status || 'Active';
         const statusColor = status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
 
-        // And change it to this (add the new print button):
-        let actionButtons = `<button data-id="${member.id}" class="print-membership-card-btn text-gray-500 hover:text-gray-700" title="View/Print Card"><i class="fas fa-id-card text-lg"></i></button>
-                     <button data-id="${member.id}" class="delete-membership-record-btn text-red-500"><i class="fas fa-trash"></i></button>`;
+        // Action buttons logic (including the reward icon)
+        let actionButtons = `
+            <button data-id="${member.id}" class="reward-tracking-btn text-green-500 hover:text-green-700" title="Manage Cash Reward">
+                <i class="fas fa-dollar-sign text-lg"></i>
+            </button>
+            <button data-id="${member.id}" class="print-membership-card-btn text-gray-500 hover:text-gray-700" title="View/Print Card">
+                <i class="fas fa-id-card text-lg"></i>
+            </button>
+            <button data-id="${member.id}" class="delete-membership-record-btn text-red-500">
+                <i class="fas fa-trash"></i>
+            </button>
+        `;
         if (status === 'Pending') {
             actionButtons = `<button data-id="${member.id}" class="activate-membership-btn text-green-500 mr-2"><i class="fas fa-check-circle"></i></button>` + actionButtons;
         }
 
-        // **** THIS BLOCK IS THE FIX ****
-        // Safely get the start date to prevent errors
         let startDate = 'Invalid Date';
         if (member.membership.startDate && typeof member.membership.startDate.toDate === 'function') {
             startDate = member.membership.startDate.toDate().toLocaleDateString();
         }
-        // **** END OF FIX ****
 
         row.innerHTML = `
             <td class="px-6 py-4">${member.name}</td>
             <td class="px-6 py-4">${member.membership.tierName}</td>
+            <td class="px-6 py-4 font-medium text-pink-600">$${totalCashSpent.toFixed(2)}</td>
+            <td class="px-6 py-4 font-medium text-green-600">$${totalRewardEarned.toFixed(2)}</td>
             <td class="px-6 py-4">${startDate}</td>
             <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-semibold rounded-full ${statusColor}">${status}</span></td>
-            <td class="px-6 py-4 text-center">${actionButtons}</td>
+            <td class="px-6 py-4 text-center space-x-2">${actionButtons}</td>
         `;
     });
 };
-
 
 
 // **** PASTE THESE TWO COMPLETE FUNCTIONS in place of your old initClientDashboard ****
@@ -3685,6 +3714,8 @@ async function initMainApp(userRole, userName) {
             }
         });
     };
+
+
     // PASTE THIS ENTIRE FUNCTION block inside initMainApp()
 
 const initAnnouncementManagement = () => {
@@ -4319,7 +4350,51 @@ if (emailTemplatesForm) {
         }
     });
 }
+
 // --- Add this block inside your initMainApp function ---
+
+    // --- Membership Reward Settings Logic ---
+   const rewardSettingsForm = document.getElementById('membership-reward-settings-form');
+    if (rewardSettingsForm) {
+        const thresholdInput = document.getElementById('membership-reward-threshold');
+        const typeInput = document.getElementById('membership-reward-type');
+        const valueInput = document.getElementById('membership-reward-value');
+
+        // 1. Load existing settings
+        onSnapshot(doc(db, "settings", "membershipReward"), (docSnap) => {
+            if (docSnap.exists()) {
+                const settings = docSnap.data();
+                membershipRewardSettings = settings; // Update global variable
+                thresholdInput.value = settings.threshold || '';
+                typeInput.value = settings.type || 'fixed';
+                valueInput.value = settings.value || '';
+            }
+        });
+
+        // 2. Save new settings
+        rewardSettingsForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const threshold = parseFloat(thresholdInput.value);
+            const type = typeInput.value;
+            const value = parseFloat(valueInput.value);
+
+            if (isNaN(threshold) || isNaN(value)) {
+                addNotification('error', 'Please enter valid numbers for threshold and reward.');
+                return;
+            }
+
+            try {
+                const newSettings = { threshold, type, value };
+                await setDoc(doc(db, "settings", "membershipReward"), newSettings);
+                membershipRewardSettings = newSettings; // Update global variable
+                addNotification('success', 'Membership reward settings saved!');
+            } catch (error) {
+                console.error("Error saving reward settings:", error);
+                addNotification('error', 'Could not save settings.');
+            }
+        });
+    }
+    // --- End of Membership Reward Settings Logic ---
 
     // 1. Event listener for ALL 'View Profile' buttons (handles Report and Dashboard)
     document.addEventListener('click', (e) => {
@@ -4413,6 +4488,67 @@ if (emailTemplatesForm) {
     }
 // --- End of CRM Listeners block ---
 
+    document.addEventListener('click', async (e) => {
+        const deleteBtn = e.target.closest('.delete-note-btn');
+        if (deleteBtn) {
+            const clientId = deleteBtn.dataset.clientId;
+            const noteTimeSeconds = parseInt(deleteBtn.dataset.noteTime); 
+
+            if (!clientId) {
+                addNotification('error', 'Cannot delete note: Client ID is missing.');
+                return;
+            }
+
+            const isConfirmed = window.confirm("Are you sure you want to permanently delete this note?");
+            
+            if (isConfirmed) {
+                try {
+                    const clientRef = doc(db, "clients", clientId);
+                    const docSnap = await getDoc(clientRef);
+                    
+                    if (docSnap.exists()) {
+                        let notes = docSnap.data().notes || [];
+                        
+                        // Find the note object that matches the timestamp
+                        const noteToRemove = notes.find(note => 
+                            // CRITICAL FIX: Ensure we match the note by the exact Firestore Timestamp object
+                            // and not just the property value.
+                            // We use the 'seconds' value which is consistent.
+                            note.timestamp && note.timestamp.seconds === noteTimeSeconds
+                        );
+
+                        if (noteToRemove) {
+                            // Use arrayRemove with the exact object found in the array
+                            await updateDoc(clientRef, {
+                                notes: arrayRemove(noteToRemove)
+                            });
+                            
+                            addNotification('success', 'Note successfully deleted.');
+
+                            // --- REFRESH MODAL LOGIC ---
+                            // Find the client object from the global list (which should be updated by onSnapshot)
+                            const clientName = document.getElementById('profile-client-name').textContent;
+                            const clientToRefresh = aggregatedClients.find(c => c.name === clientName);
+
+                            if (clientToRefresh) {
+                                openClientProfileModal(clientToRefresh);
+                            } else {
+                                // Fallback: just close and let onSnapshot redraw the data later
+                                clientProfileModal.classList.add('hidden');
+                            }
+                        } else {
+                            addNotification('error', 'Error: Could not find matching note object in database.');
+                        }
+                    } else {
+                        addNotification('error', 'Client document not found.');
+                    }
+                } catch (error) {
+                    console.error("Error deleting note:", error);
+                    addNotification('error', 'Failed to delete note due to a database error.');
+                }
+            }
+        }
+    });
     // PASTE THIS ENTIRE BLOCK inside your initMainApp function
 
     const royaltySettingsForm = document.getElementById('royalty-settings-form');
@@ -4543,7 +4679,10 @@ if (emailTemplatesForm) {
 
                 const row = royaltyCardsTableBody.insertRow();
                 row.innerHTML = `
-            <td class="px-6 py-4 font-medium">${client.name}</td>
+            <td class="px-6 py-4 font-medium"><span data-client-name="${client.name}" 
+                          class="view-profile-btn cursor-pointer text-indigo-700 hover:text-indigo-900 hover:underline font-semibold">
+                        ${client.name}
+                    </span></td>
             <td class="px-6 py-4">${client.phone || 'N/A'}</td>
             <td class="px-6 py-4 text-center font-bold">${visits}</td>
             <td class="px-6 py-4 text-center"><span class="px-2 py-1 text-xs font-semibold rounded-full ${statusColor}">${statusText}</span></td>
@@ -5666,7 +5805,12 @@ viewReviewModal.querySelector('.modal-overlay').addEventListener('click', closeV
         filteredAppointments.forEach(appt => {
             tableHTML += `
 <tr class="border-b">
-                <td class="px-6 py-3 font-medium">${appt.name}</td>
+                <td class="px-6 py-3 font-medium">
+                    <span data-client-name="${appt.name}" 
+                          class="view-profile-btn cursor-pointer text-indigo-700 hover:text-indigo-900 hover:underline font-semibold">
+                        ${appt.name}
+                    </span>
+                </td>
                 <td class="px-6 py-3">${Array.isArray(appt.services) ? appt.services.join(', ') : appt.services}</td>
                 <td class="px-6 py-3">${appt.technician}</td>
                 <td class="px-6 py-3 text-center">${appt.people || 1}</td>
@@ -5903,7 +6047,10 @@ const loadAndRenderServices = async () => {
         clients.forEach((client, index) => {
             const row = tbody.insertRow();
             row.className = 'bg-white border-b';
-            row.innerHTML = `<td class="px-6 py-4 text-center font-medium text-gray-900">${index + 1}</td><td class="px-6 py-4">${client.name}</td><td class="px-6 py-4">${client.services}</td><td class="px-6 py-4 text-center space-x-4"><button data-id="${client.id}" class="move-to-processing-btn" title="Move to Processing"><i class="fas fa-arrow-right text-lg text-blue-500 hover:text-blue-700"></i></button><button data-id="${client.id}" class="detail-btn-active" title="View Details"><i class="fas fa-info-circle text-lg text-gray-500 hover:text-gray-700"></i></button></td>`;
+            row.innerHTML = `<td class="px-6 py-4 text-center font-medium text-gray-900">${index + 1}</td><td class="px-6 py-4"><span data-client-name="${client.name}" 
+                          class="view-profile-btn cursor-pointer text-indigo-700 hover:text-indigo-900 hover:underline font-semibold">
+                        ${client.name}
+                    </span></td><td class="px-6 py-4">${client.services}</td><td class="px-6 py-4 text-center space-x-4"><button data-id="${client.id}" class="move-to-processing-btn" title="Move to Processing"><i class="fas fa-arrow-right text-lg text-blue-500 hover:text-blue-700"></i></button><button data-id="${client.id}" class="detail-btn-active" title="View Details"><i class="fas fa-info-circle text-lg text-gray-500 hover:text-gray-700"></i></button> <button data-id="${client.id}" class="check-out-btn-processing" title="Check Out"><i class="fas fa-check-circle text-lg text-green-500 hover:text-green-700"></i></button></td>`;
         });
     };
 
@@ -5914,7 +6061,10 @@ const loadAndRenderServices = async () => {
         clients.forEach((client, index) => {
             const row = tbody.insertRow();
             row.className = 'bg-white border-b';
-            row.innerHTML = `<td class="px-6 py-4 text-center font-medium text-gray-900">${index + 1}</td><td class="px-6 py-4">${client.name}</td><td class="px-6 py-4">${client.services}</td><td class="px-6 py-4">${client.technician}</td><td class="px-6 py-4">${client.checkInTime}</td><td class="px-6 py-4 text-center"><button data-id="${client.id}" class="check-out-btn-processing" title="Check Out"><i class="fas fa-check-circle text-lg text-green-500 hover:text-green-700"></i></button></td>`;
+            row.innerHTML = `<td class="px-6 py-4 text-center font-medium text-gray-900">${index + 1}</td><td class="px-6 py-4"><span data-client-name="${client.name}" 
+                          class="view-profile-btn cursor-pointer text-indigo-700 hover:text-indigo-900 hover:underline font-semibold">
+                        ${client.name}
+                    </span></td><td class="px-6 py-4">${client.services}</td><td class="px-6 py-4">${client.technician}</td><td class="px-6 py-4">${client.checkInTime}</td><td class="px-6 py-4 text-center"><button data-id="${client.id}" class="check-out-btn-processing" title="Check Out"><i class="fas fa-check-circle text-lg text-green-500 hover:text-green-700"></i></button> </td>`;
         });
     };
 
@@ -5927,7 +6077,10 @@ const loadAndRenderServices = async () => {
             row.className = 'bg-white border-b';
 row.innerHTML = `
     <td class="px-6 py-4 text-center font-medium text-gray-900">${index + 1}</td>
-    <td class="px-6 py-4">${client.name}</td>
+    <td class="px-6 py-4"><span data-client-name="${client.name}" 
+                          class="view-profile-btn cursor-pointer text-indigo-700 hover:text-indigo-900 hover:underline font-semibold">
+                        ${client.name}
+                    </span></td>
     <td class="px-6 py-4">${client.people}</td>
     <td class="px-6 py-4">${client.services}</td>
     <td class="px-6 py-4">${client.checkInTime}</td>
@@ -6015,7 +6168,12 @@ const checkoutStarRatingContainer = document.getElementById('checkout-star-ratin
             const row = tbody.insertRow();
             row.className = 'bg-white border-b';
             // *** UPDATED THIS LINE TO INCLUDE EMAIL ***
-            row.innerHTML = `<td class="px-6 py-4 font-medium text-gray-900">${client.name}</td><td class="px-6 py-4">${client.phone || 'N/A'}</td><td class="px-6 py-4">${client.email || 'N/A'}</td><td class="px-6 py-4">${client.lastVisit ? new Date(client.lastVisit).toLocaleDateString() : 'N/A'}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${client.id}" class="text-indigo-500 hover:text-indigo-700 view-client-profile-btn" title="View Profile"><i class="fas fa-user-circle text-lg"></i></button><button data-id="${client.id}" class="text-blue-500 hover:text-blue-700 edit-client-btn" title="Edit Client"><i class="fas fa-edit text-lg"></i></button><button data-id="${client.id}" class="text-red-500 hover:text-red-700 delete-client-btn" title="Delete Client"><i class="fas fa-trash-alt text-lg"></i></button></td>`;
+            row.innerHTML = `<td class="px-6 py-3 font-medium">
+                    <span data-client-name="${client.name}" 
+                          class="view-profile-btn cursor-pointer text-indigo-700 hover:text-indigo-900 hover:underline font-semibold">
+                        ${client.name}
+                    </span>
+                </td><td class="px-6 py-4">${client.phone || 'N/A'}</td><td class="px-6 py-4">${client.email || 'N/A'}</td><td class="px-6 py-4">${client.lastVisit ? new Date(client.lastVisit).toLocaleDateString() : 'N/A'}</td><td class="px-6 py-4 text-center space-x-2"><button data-id="${client.id}" class="text-indigo-500 hover:text-indigo-700 view-client-profile-btn" title="View Profile"><i class="fas fa-user-circle text-lg"></i></button><button data-id="${client.id}" class="text-blue-500 hover:text-blue-700 edit-client-btn" title="Edit Client"><i class="fas fa-edit text-lg"></i></button><button data-id="${client.id}" class="text-red-500 hover:text-red-700 delete-client-btn" title="Delete Client"><i class="fas fa-trash-alt text-lg"></i></button></td>`;
         });
     };
 
@@ -6474,9 +6632,19 @@ const renderStaffEarningsTable = (earnings, tableId, totalEarningId, totalTipId)
         sortedNotes.forEach(note => {
             const noteEl = document.createElement('div');
             noteEl.className = 'bg-yellow-50 p-3 rounded-lg border-l-4 border-yellow-300';
+            const deleteButtonHTML = clientData.id 
+                ? `
+                    <button data-client-id="${clientData.id}"
+                            data-note-time="${note.timestamp.seconds}"
+                            class="delete-note-btn text-red-500 hover:text-red-700 ml-2 p-1 rounded-full hover:bg-red-50 transition duration-150"
+                            title="Delete Note">
+                        <i class="fas fa-trash-alt text-sm"></i>
+                    </button>
+                  ` 
+                : '';
             noteEl.innerHTML = `
                 <p class="text-sm text-gray-800">${note.text}</p>
-                <p class="text-xs text-gray-500 mt-1 text-right">${new Date(note.timestamp.seconds * 1000).toLocaleString()}</p>
+                <p class="text-xs text-gray-500 mt-1 text-right">${new Date(note.timestamp.seconds * 1000).toLocaleString()}  ${deleteButtonHTML}</p>
             `;
             notesListContainer.appendChild(noteEl);
         });
@@ -6485,6 +6653,182 @@ const renderStaffEarningsTable = (earnings, tableId, totalEarningId, totalTipId)
     }
 
     clientProfileModal.classList.remove('hidden');
+};
+
+/**
+ * Renders the reward history in the modal.
+ */
+function renderRewardHistory(containerId, history) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    if (!history || history.length === 0) {
+        container.innerHTML = '<p class="text-sm text-gray-500 text-center">No history found.</p>';
+        return;
+    }
+    
+    // Sort newest first
+    history.sort((a, b) => b.timestamp.seconds - a.timestamp.seconds);
+    
+    history.forEach(item => {
+        const itemEl = document.createElement('div');
+        const date = item.timestamp.toDate().toLocaleDateString();
+        if (item.type === 'reward') {
+            itemEl.className = 'p-3 rounded-lg bg-green-100 border-l-4 border-green-500';
+            itemEl.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <span class="font-bold text-green-700">REWARD EARNED</span>
+                    <span class="font-bold text-green-700">-${item.rewardAmount.toFixed(2)} (Threshold Met)</span>
+                </div>
+                <p class="text-xs text-gray-500">${date}</p>`;
+        } else {
+            itemEl.className = 'p-3 rounded-lg bg-white border';
+            itemEl.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <span class="font-medium text-gray-700">Cash Payment Logged</span>
+                    <span class="font-medium text-gray-900">+$${item.amount.toFixed(2)}</span>
+                </div>
+                <p class="text-xs text-gray-500">${date}</p>`;
+        }
+        container.appendChild(itemEl);
+    });
+}
+
+const openMembershipRewardModal = async (client) => {
+    if (!client || !client.id) {
+        addNotification('error', 'Cannot open reward tracker: Invalid client data.');
+        return;
+    }
+    
+    const modal = document.getElementById('membership-reward-modal');
+    document.getElementById('reward-client-id').value = client.id;
+    document.getElementById('log-cash-spending-form').reset();
+    
+    // Fetch the client's full, up-to-date data
+    const clientRef = doc(db, "clients", client.id);
+    const clientSnap = await getDoc(clientRef);
+    if (!clientSnap.exists()) {
+        addNotification('error', 'Client document not found.');
+        return;
+    }
+    
+    const clientData = clientSnap.data();
+    const progress = clientData.membership?.rewardProgress || 0;
+    const history = clientData.membership?.rewardHistory || [];
+    const threshold = membershipRewardSettings.threshold || 500; // Use global setting
+
+    // --- UPDATED LOGIC: Calculate Total Reward Earned and Total Spent ---
+    const totalRewardEarned = history
+        .filter(item => item.type === 'reward')
+        .reduce((sum, item) => sum + (item.rewardAmount || 0), 0);
+        
+    const totalCashSpent = history
+        .filter(item => item.type === 'spending')
+        .reduce((sum, item) => sum + (item.amount || 0), 0);
+    // --- END UPDATED LOGIC ---
+
+    // Update Client Name + Reward/Spend Display
+    const clientNameElement = document.getElementById('reward-client-name');
+    clientNameElement.innerHTML = `
+        ${client.name} 
+        
+        <span class="text-base font-normal text-green-600 ml-2 py-1 px-3 bg-green-50 rounded-full shadow-inner">
+            Reward Earned: $${totalRewardEarned.toFixed(2)}
+        </span>
+
+        <span class="text-base font-normal text-pink-600 ml-2 py-1 px-3 bg-pink-50 rounded-full shadow-inner">
+            Total Cash Spent: $${totalCashSpent.toFixed(2)}
+        </span>
+    `;
+
+    // Update Progress Bar
+    const progressPercent = Math.min(100, (progress / threshold) * 100);
+    document.getElementById('reward-progress-text').textContent = `$${progress.toFixed(2)} / $${threshold.toFixed(2)}`;
+    document.getElementById('reward-progress-bar').style.width = `${progressPercent}%`;
+
+    // Render History
+    renderRewardHistory('reward-history-container', history);
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+};
+
+const handleLogCashSpending = async (e) => {
+    e.preventDefault();
+    const clientId = document.getElementById('reward-client-id').value;
+    const amountInput = document.getElementById('cash-spending-amount');
+    const amount = parseFloat(amountInput.value);
+
+    if (!clientId || isNaN(amount) || amount <= 0) {
+        addNotification('error', 'Please enter a valid positive amount.');
+        return;
+    }
+
+    const clientRef = doc(db, "clients", clientId);
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const clientSnap = await transaction.get(clientRef);
+            if (!clientSnap.exists()) {
+                throw "Client document not found.";
+            }
+
+            const clientData = clientSnap.data();
+            const membership = clientData.membership || {};
+            let currentProgress = membership.rewardProgress || 0;
+            let currentHistory = membership.rewardHistory || [];
+
+            // 1. Add the new spending to progress
+            currentProgress += amount;
+            
+            // 2. Add spending entry to history
+            currentHistory.push({
+                type: 'spending',
+                amount: amount,
+                timestamp: Timestamp.now()
+            });
+
+            // 3. Check if threshold is met or exceeded
+            if (currentProgress >= membershipRewardSettings.threshold) {
+                let rewardValue = 0;
+                if (membershipRewardSettings.type === 'fixed') {
+                    rewardValue = membershipRewardSettings.value;
+                } else if (membershipRewardSettings.type === 'percent') {
+                    // Reward is % of the spending that triggered it
+                    rewardValue = amount * (membershipRewardSettings.value / 100); 
+                }
+                
+                // 4. Add reward entry to history
+                currentHistory.push({
+                    type: 'reward',
+                    rewardAmount: rewardValue,
+                    timestamp: Timestamp.now()
+                });
+                
+                // 5. Reset progress (subtract threshold)
+                currentProgress -= membershipRewardSettings.threshold; 
+            }
+            
+            // 6. Update the client document
+            transaction.update(clientRef, {
+                "membership.rewardProgress": currentProgress,
+                "membership.rewardHistory": currentHistory
+            });
+        });
+        
+        addNotification('success', 'Cash spending logged successfully!');
+        // Manually refresh the modal data
+        const client = allClients.find(c => c.id === clientId); // Use global list
+        if (client) {
+            openMembershipRewardModal(client);
+        } else {
+            document.getElementById('membership-reward-modal').classList.add('hidden');
+        }
+
+    } catch (error) {
+        console.error("Error logging cash spending:", error);
+        addNotification('error', 'Failed to log spending.');
+    }
 };
 
 
@@ -7329,6 +7673,7 @@ const updateMembershipCardPreview = () => {
             </div>
         </div>
     `;
+
 };
 
 /**
@@ -7418,10 +7763,14 @@ const handlePrintMembershipCards = async () => {
                     </div>
                 </div>
                 <div class="card rounded-lg p-4 flex flex-col justify-between bg-white text-gray-800 border" style="text-shadow: none;">
-                    <div class="w-full h-10 bg-black mt-2"></div>
-                    <p class="text-xs text-center text-gray-600 px-4 leading-relaxed">
-                        Welcome, VIP! This card must be presented to receive benefits. Membership is non-transferable and benefits apply only to the registered member.
+                    <div class="text-xs text-center text-gray-600 px-4 leading-relaxed">
+                    <p>
+                        Welcome, VIP! This card must be presented to receive benefits. Membership is non-transferable.
                     </p>
+                    <p class="font-bold mt-2">
+                        Clients must pay with cash only to earn credit towards their cash reward.
+                    </p>
+                </div>
                     <div class="px-4 pb-2 text-center" ${signatureStyle}>
                         <p class="font-parisienne text-2xl text-gray-700">${signatureText}</p> 
                         <div class="w-full border-t border-dashed border-gray-400 pt-1 mt-1"></div>
@@ -8898,394 +9247,10 @@ addNailIdeaForm.addEventListener('submit', async (e) => {
         const batch = writeBatch(db);
 
         const brands = {
-            "DND": [
-                { name: "401 Angel Lace", hex: "#fce5cd", group: "Pinks & Nudes" },
-                { name: "429 Pinky Star", hex: "#f4abc4", group: "Pinks & Nudes" },
-                { name: "441 Funky Fuchsia", hex: "#d93696", group: "Pinks & Nudes" },
-                { name: "473 French Tip", hex: "#fde9f0", group: "Pinks & Nudes" },
-                { name: "499 Be My Valentine", hex: "#f7a7c8", group: "Pinks & Nudes" },
-                { name: "501 Ballet Pink", hex: "#f9ddec", group: "Pinks & Nudes" },
-                { name: "542 Tea Time", hex: "#f3d9d5", group: "Pinks & Nudes" },
-                { name: "577 Nude", hex: "#e7d4c5", group: "Pinks & Nudes" },
-                { name: "601 Ballet Pink", hex: "#f4c2c2", group: "Pinks & Nudes" },
-                { name: "610 Pinky Promise", hex: "#f5b7b1", group: "Pinks & Nudes" },
-                { name: "640 Barbie Pink", hex: "#ff82c3", group: "Pinks & Nudes" },
-                { name: "650 Rose", hex: "#e4a7b5", group: "Pinks & Nudes" },
-                { name: "661 Bubble Gum", hex: "#f7b2d5", group: "Pinks & Nudes" },
-                { name: "719 Tutti Frutti", hex: "#ff6392", group: "Pinks & Nudes" },
-                { name: "807 Cotton Candy", hex: "#ffbcd9", group: "Pinks & Nudes" },
-                { name: "857 Sheer Pink", hex: "#ffe4e1", group: "Pinks & Nudes" },
-                { name: "860 Perfect Nude", hex: "#eec9b8", group: "Pinks & Nudes" },
-                { name: "862 Milky Pink", hex: "#fceef5", group: "Pinks & Nudes" },
-                { name: "DC023 Blushing", hex: "#ffb6c1", group: "Pinks & Nudes" },
-                { name: "DC149 Antique Pink", hex: "#e0b4b4", group: "Pinks & Nudes" },
-                { name: "DC151 Rose Petal", hex: "#f9a8d4", group: "Pinks & Nudes" },
-                { name: "430 Ferrari Red", hex: "#c1121f", group: "Reds & Berries" },
-                { name: "429 Boston University Red", hex: "#cc0000", group: "Reds & Berries" },
-                { name: "498 Fiery Red", hex: "#d90429", group: "Reds & Berries" },
-                { name: "510 Red Stone", hex: "#a4161a", group: "Reds & Berries" },
-                { name: "545 Fiery Red", hex: "#ff0000", group: "Reds & Berries" },
-                { name: "633 Garnet Red", hex: "#8c0000", group: "Reds & Berries" },
-                { name: "751 Cherry Mocha", hex: "#6a0000", group: "Reds & Berries" },
-                { name: "753 Scarlett Dreams", hex: "#b20000", group: "Reds & Berries" },
-                { name: "754 Winter Berry", hex: "#a4133c", group: "Reds & Berries" },
-                { name: "757 Chili Pepper", hex: "#9b2226", group: "Reds & Berries" },
-                { name: "DC010 Red Cherry", hex: "#c9184a", group: "Reds & Berries" },
-                { name: "DC085 Cranberry", hex: "#8d0801", group: "Reds & Berries" },
-                { name: "434 Violet", hex: "#a393eb", group: "Purples" },
-                { name: "500 Lavender", hex: "#e6e6fa", group: "Purples" },
-                { name: "543 Purple Passion", hex: "#8338ec", group: "Purples" },
-                { name: "620 Grape", hex: "#6a0dad", group: "Purples" },
-                { name: "621 Purple Rain", hex: "#7b2cbf", group: "Purples" },
-                { name: "670 Lilac", hex: "#c8a2c8", group: "Purples" },
-                { name: "785 Voodoo", hex: "#5a189a", group: "Purples" },
-                { name: "DC091 Lavender Haze", hex: "#b39ddb", group: "Purples" },
-                { name: "DC105 Iris", hex: "#9d4edd", group: "Purples" },
-                { name: "DC172 Lilac Season", hex: "#c7b7e3", group: "Purples" },
-                { name: "436 Baby Blue", hex: "#89cff0", group: "Blues" },
-                { name: "502 Ocean Blue", hex: "#0081a7", group: "Blues" },
-                { name: "529 Blue River", hex: "#0077b6", group: "Blues" },
-                { name: "572 Great Smoky Mountain", hex: "#4895ef", group: "Blues" },
-                { name: "574 Blue Bell", hex: "#a2a2d0", group: "Blues" },
-                { name: "575 Blue Earth", hex: "#3f88c5", group: "Blues" },
-                { name: "622 Midnight Blue", hex: "#03045e", group: "Blues" },
-                { name: "671 Blue Hawaiian", hex: "#00b4d8", group: "Blues" },
-                { name: "734 Berry Blue", hex: "#4a4e69", group: "Blues" },
-                { name: "DC028 Navy Blue", hex: "#000080", group: "Blues" },
-                { name: "DC107 Periwinkle", hex: "#ccccff", group: "Blues" },
-                { name: "DC165 North Sea", hex: "#2b2d42", group: "Blues" },
-                { name: "431 Minty Green", hex: "#98ff98", group: "Greens" },
-                { name: "503 Lime Green", hex: "#32cd32", group: "Greens" },
-                { name: "530 Emerald Green", hex: "#50c878", group: "Greens" },
-                { name: "605 Olive Green", hex: "#808000", group: "Greens" },
-                { name: "617 Sage", hex: "#b2ac88", group: "Greens" },
-                { name: "680 Teal", hex: "#008080", group: "Greens" },
-                { name: "747 Aurora Green", hex: "#4f7942", group: "Greens" },
-                { name: "DC055 Mermaid Green", hex: "#006d77", group: "Greens" },
-                { name: "DC118 Pale Kiwi", hex: "#d0f4de", group: "Greens" },
-                { name: "DC205 Racing Green", hex: "#004b23", group: "Greens" },
-                { name: "418 Butternut Squash", hex: "#f8961e", group: "Oranges & Corals" },
-                { name: "420 Neon Orange", hex: "#ff9e00", group: "Oranges & Corals" },
-                { name: "506 Sunset Orange", hex: "#fb5607", group: "Oranges & Corals" },
-                { name: "532 Coral", hex: "#ff7f50", group: "Oranges & Corals" },
-                { name: "660 Papaya", hex: "#ffc971", group: "Oranges & Corals" },
-                { name: "729 Ambrosia", hex: "#ffbf69", group: "Oranges & Corals" },
-                { name: "756 Bonfire", hex: "#f48c06", group: "Oranges & Corals" },
-                { name: "DC011 Coral Kiss", hex: "#f77f00", group: "Oranges & Corals" },
-                { name: "DC163 Coral Castle", hex: "#ff8fab", group: "Oranges & Corals" },
-                { name: "DC205 Papaya Pop", hex: "#ff97b3", group: "Oranges & Corals" },
-                { name: "425 Sunshine Yellow", hex: "#ffca3a", group: "Yellows" },
-                { name: "525 Lemon Juice", hex: "#fdfcdc", group: "Yellows" },
-                { name: "531 Canary Yellow", hex: "#fef278", group: "Yellows" },
-                { name: "616 Lemon", hex: "#fff44f", group: "Yellows" },
-                { name: "745 Honey", hex: "#fca311", group: "Yellows" },
-                { name: "DC190 Gold Glam", hex: "#f0c808", group: "Yellows" },
-                { name: "DC2509 Gimmie' Butter", hex: "#fae152", group: "Yellows" },
-                { name: "405 Taupe", hex: "#bcae9e", group: "Browns & Neutrals" },
-                { name: "422 Brown", hex: "#6f4e37", group: "Browns & Neutrals" },
-                { name: "550 Chocolate", hex: "#492611", group: "Browns & Neutrals" },
-                { name: "607 Espresso", hex: "#362222", group: "Browns & Neutrals" },
-                { name: "750 Fudgsicle", hex: "#45322e", group: "Browns & Neutrals" },
-                { name: "971 Tele-Talking", hex: "#eaddcf", group: "Browns & Neutrals" },
-                { name: "DC075 Spiced Brown", hex: "#7f5539", group: "Browns & Neutrals" },
-                { name: "447 Black Licorice", hex: "#000000", group: "Grays, Blacks & Whites" },
-                { name: "448 Snow Flake", hex: "#ffffff", group: "Grays, Blacks & Whites" },
-                { name: "460 Gray", hex: "#8e8d8d", group: "Grays, Blacks & Whites" },
-                { name: "555 Charcoal", hex: "#3d3d3d", group: "Grays, Blacks & Whites" },
-                { name: "602 Silver", hex: "#c0c0c0", group: "Grays, Blacks & Whites" },
-                { name: "DC001 French White", hex: "#ffffff", group: "Grays, Blacks & Whites" },
-                { name: "DC002 Sugar Swizzle", hex: "#f7ede2", group: "Grays, Blacks & Whites" },
-                { name: "DC030 Charcoal Gray", hex: "#5e5e5e", group: "Grays, Blacks & Whites" },
-                { name: "443 Twinkle Little Star", hex: "#d4af37", group: "Glitters & Metallics" },
-                { name: "558 Gold", hex: "#ffd700", group: "Glitters & Metallics" },
-                { name: "645 Rose Gold", hex: "#b76e79", group: "Glitters & Metallics" },
-                { name: "740 Dazzle", hex: "#e0b0ff", group: "Glitters & Metallics" },
-                { name: "741 Diamond Eyes", hex: "#b9f2ff", group: "Glitters & Metallics" },
-                { name: "792 Bubbles", hex: "#e7feff", group: "Glitters & Metallics" },
-                { name: "795 Super-Nova", hex: "#c9bcf3", group: "Glitters & Metallics" },
-                { name: "726 Whirly Pop", hex: "#fec8d8", group: "Glitters & Metallics" },
-            ],
-            "DC": [
-                { name: "002 Sugar Swizzle", hex: "#f7ede2", group: "Pinks & Nudes" },
-                { name: "003 Dusty Pink", hex: "#e4c7c2", group: "Pinks & Nudes" },
-                { name: "005 Pinky Swear", hex: "#f5cac3", group: "Pinks & Nudes" },
-                { name: "023 Blushing", hex: "#ffb6c1", group: "Pinks & Nudes" },
-                { name: "032 Tea Rose", hex: "#f4c2c2", group: "Pinks & Nudes" },
-                { name: "045 Soft Peach", hex: "#fdebd1", group: "Pinks & Nudes" },
-                { name: "051 Ballet Slipper", hex: "#fde8e9", group: "Pinks & Nudes" },
-                { name: "062 Mauvelous", hex: "#e0b0ff", group: "Pinks & Nudes" },
-                { name: "078 Rosewood", hex: "#a87c7c", group: "Pinks & Nudes" },
-                { name: "088 Shocking Pink", hex: "#fc0fc0", group: "Pinks & Nudes" },
-                { name: "101 Peachy Keen", hex: "#f8c8a0", group: "Pinks & Nudes" },
-                { name: "115 Barefoot", hex: "#e7d2cc", group: "Pinks & Nudes" },
-                { name: "125 Cashmere", hex: "#d1b399", group: "Pinks & Nudes" },
-                { name: "149 Antique Pink", hex: "#e0b4b4", group: "Pinks & Nudes" },
-                { name: "151 Rose Petal", hex: "#f9a8d4", group: "Pinks & Nudes" },
-                { name: "166 Flamingo", hex: "#fca3b7", group: "Pinks & Nudes" },
-                { name: "175 Fuchsia", hex: "#ff00ff", group: "Pinks & Nudes" },
-                { name: "180 Pink Tutu", hex: "#f3d6e4", group: "Pinks & Nudes" },
-                { name: "007 Fire Red", hex: "#be0000", group: "Reds & Berries" },
-                { name: "008 Cherry Pop", hex: "#990000", group: "Reds & Berries" },
-                { name: "010 Red Cherry", hex: "#c9184a", group: "Reds & Berries" },
-                { name: "020 Red Stone", hex: "#a4161a", group: "Reds & Berries" },
-                { name: "035 Scarlet Letter", hex: "#ff2400", group: "Reds & Berries" },
-                { name: "048 Crimson", hex: "#dc143c", group: "Reds & Berries" },
-                { name: "058 Pomegranate", hex: "#c1121f", group: "Reds & Berries" },
-                { name: "070 Wine & Dine", hex: "#6a0000", group: "Reds & Berries" },
-                { name: "085 Cranberry", hex: "#8d0801", group: "Reds & Berries" },
-                { name: "100 Hollywood Red", hex: "#c10000", group: "Reds & Berries" },
-                { name: "123 Sangria", hex: "#7e0021", group: "Reds & Berries" },
-                { name: "135 Raspberry", hex: "#d7263d", group: "Reds & Berries" },
-                { name: "155 Ruby Red", hex: "#e0115f", group: "Reds & Berries" },
-                { name: "178 Strawberry", hex: "#fc5a8d", group: "Reds & Berries" },
-                { name: "018 Lilac Mist", hex: "#dcd0ff", group: "Purples" },
-                { name: "025 Grapevine", hex: "#5a189a", group: "Purples" },
-                { name: "038 Purple Haze", hex: "#a393eb", group: "Purples" },
-                { name: "052 Electric Purple", hex: "#bf00ff", group: "Purples" },
-                { name: "065 Violet Vixen", hex: "#8338ec", group: "Purples" },
-                { name: "075 Orchid", hex: "#af69ee", group: "Purples" },
-                { name: "091 Lavender Haze", hex: "#b39ddb", group: "Purples" },
-                { name: "105 Iris", hex: "#9d4edd", group: "Purples" },
-                { name: "118 Amethyst", hex: "#9b5de5", group: "Purples" },
-                { name: "132 Periwinkle", hex: "#b2b2e0", group: "Purples" },
-                { name: "150 Plum", hex: "#5d3a9b", group: "Purples" },
-                { name: "172 Lilac Season", hex: "#c7b7e3", group: "Purples" },
-                { name: "177 Wisteria", hex: "#cba0e1", group: "Purples" },
-                { name: "015 Ice Blue", hex: "#add8e6", group: "Blues" },
-                { name: "028 Navy Blue", hex: "#000080", group: "Blues" },
-                { name: "037 Sky Blue", hex: "#87cefa", group: "Blues" },
-                { name: "042 Royal Blue", hex: "#002366", group: "Blues" },
-                { name: "056 Ocean Deep", hex: "#0077b6", group: "Blues" },
-                { name: "072 Blue Lagoon", hex: "#0096c7", group: "Blues" },
-                { name: "083 Denim", hex: "#22577a", group: "Blues" },
-                { name: "107 Periwinkle", hex: "#ccccff", group: "Blues" },
-                { name: "120 Teal", hex: "#008080", group: "Blues" },
-                { name: "138 Sapphire", hex: "#0f52ba", group: "Blues" },
-                { name: "145 Baby Boy Blue", hex: "#a2d2ff", group: "Blues" },
-                { name: "165 North Sea", hex: "#2b2d42", group: "Blues" },
-                { name: "178 Cornflower", hex: "#6495ed", group: "Blues" },
-                { name: "026 Minty Fresh", hex: "#cce3de", group: "Greens" },
-                { name: "036 Forest Green", hex: "#014421", group: "Greens" },
-                { name: "047 Olive You", hex: "#6b705c", group: "Greens" },
-                { name: "055 Mermaid Green", hex: "#006d77", group: "Greens" },
-                { name: "068 Sage", hex: "#a3b18a", group: "Greens" },
-                { name: "080 Emerald", hex: "#009b7d", group: "Greens" },
-                { name: "108 Lime Light", hex: "#bfff00", group: "Greens" },
-                { name: "118 Pale Kiwi", hex: "#d0f4de", group: "Greens" },
-                { name: "130 Jade", hex: "#00a36c", group: "Greens" },
-                { name: "153 Hunter", hex: "#386641", group: "Greens" },
-                { name: "168 Pistachio", hex: "#a1c084", group: "Greens" },
-                { name: "179 Seafoam", hex: "#80b9a9", group: "Greens" },
-                { name: "011 Coral Kiss", hex: "#f77f00", group: "Oranges & Corals" },
-                { name: "012 Sunny Day", hex: "#fca311", group: "Oranges & Corals" },
-                { name: "027 Peach Sorbet", hex: "#ffdba1", group: "Oranges & Corals" },
-                { name: "040 Goldenrod", hex: "#daa520", group: "Oranges & Corals" },
-                { name: "053 Tangerine", hex: "#ff9505", group: "Oranges & Corals" },
-                { name: "066 Marigold", hex: "#fcc421", group: "Oranges & Corals" },
-                { name: "081 Neon Orange", hex: "#ffad00", group: "Oranges & Corals" },
-                { name: "095 Buttercup", hex: "#fae152", group: "Oranges & Corals" },
-                { name: "111 Papaya", hex: "#f8961e", group: "Oranges & Corals" },
-                { name: "133 Mango Tango", hex: "#fb8500", group: "Oranges & Corals" },
-                { name: "152 Lemonade", hex: "#fcf4a3", group: "Oranges & Corals" },
-                { name: "170 Burnt Sienna", hex: "#e85d04", group: "Oranges & Corals" },
-                { name: "190 Gold Glam", hex: "#f0c808", group: "Oranges & Corals" },
-                { name: "017 Almond", hex: "#eaddcf", group: "Browns & Neutrals" },
-                { name: "022 Toasted Brown", hex: "#8a5a44", group: "Browns & Neutrals" },
-                { name: "033 Espresso", hex: "#4a2c2a", group: "Browns & Neutrals" },
-                { name: "046 Taupe", hex: "#a99985", group: "Browns & Neutrals" },
-                { name: "060 Mocha", hex: "#6d4c41", group: "Browns & Neutrals" },
-                { name: "075 Spiced Brown", hex: "#7f5539", group: "Browns & Neutrals" },
-                { name: "089 Latte", hex: "#c4a389", group: "Browns & Neutrals" },
-                { name: "106 Caramel", hex: "#bc6c25", group: "Browns & Neutrals" },
-                { name: "117 Khaki", hex: "#b5a68d", group: "Browns & Neutrals" },
-                { name: "131 Clay", hex: "#a18276", group: "Browns & Neutrals" },
-                { name: "158 Chestnut", hex: "#744838", group: "Browns & Neutrals" },
-                { name: "173 Sandstone", hex: "#cbbba0", group: "Browns & Neutrals" },
-                { name: "001 French White", hex: "#ffffff", group: "Grays, Blacks & Whites" },
-                { name: "030 Charcoal Gray", hex: "#5e5e5e", group: "Grays, Blacks & Whites" },
-                { name: "041 Silver Lining", hex: "#d1d1d1", group: "Grays, Blacks & Whites" },
-                { name: "050 Black Out", hex: "#000000", group: "Grays, Blacks & Whites" },
-                { name: "063 Stormy", hex: "#797d7f", group: "Grays, Blacks & Whites" },
-                { name: "076 Ash", hex: "#abb2b9", group: "Grays, Blacks & Whites" },
-                { name: "099 Dove", hex: "#d8d8d8", group: "Grays, Blacks & Whites" },
-                { name: "121 Milky Way", hex: "#f8f9fa", group: "Grays, Blacks & Whites" },
-                { name: "140 Slate", hex: "#5d737e", group: "Grays, Blacks & Whites" },
-                { name: "160 Steel", hex: "#858585", group: "Grays, Blacks & Whites" },
-            ],
-            "DD": [
-                { name: "001 Bare Pink", hex: "#f4e3e0", group: "Pinks & Nudes" },
-                { name: "003 Nude Pink", hex: "#e8d1c5", group: "Pinks & Nudes" },
-                { name: "005 Pinky Nude", hex: "#e7c2b5", group: "Pinks & Nudes" },
-                { name: "025 English Rose", hex: "#d9a9a3", group: "Pinks & Nudes" },
-                { name: "032 Dusty Rose", hex: "#c99a98", group: "Pinks & Nudes" },
-                { name: "041 Soft Pink", hex: "#f6d4d3", group: "Pinks & Nudes" },
-                { name: "050 Baby Pink", hex: "#f5b7b1", group: "Pinks & Nudes" },
-                { name: "077 Flamingo Pink", hex: "#f4a2a3", group: "Pinks & Nudes" },
-                { name: "081 Barbie Pink", hex: "#e75480", group: "Pinks & Nudes" },
-                { name: "088 Hot Pink", hex: "#ff69b4", group: "Pinks & Nudes" },
-                { name: "102 Peach Puff", hex: "#f2d3b3", group: "Pinks & Nudes" },
-                { name: "111 Sandy Beach", hex: "#e4c6a8", group: "Pinks & Nudes" },
-                { name: "125 Taupe", hex: "#bcae9e", group: "Pinks & Nudes" },
-                { name: "151 Rose Gold", hex: "#e0b4b4", group: "Pinks & Nudes" },
-                { name: "203 Cotton Candy", hex: "#ffbcd9", group: "Pinks & Nudes" },
-                { name: "220 Bubblegum", hex: "#ffc1cc", group: "Pinks & Nudes" },
-                { name: "250 Mauve", hex: "#d1a3a4", group: "Pinks & Nudes" },
-                { name: "288 Peony", hex: "#eeafaf", group: "Pinks & Nudes" },
-                { name: "007 Cherry Red", hex: "#c21807", group: "Reds & Berries" },
-                { name: "008 Fire Engine Red", hex: "#ce2029", group: "Reds & Berries" },
-                { name: "036 Classic Red", hex: "#a11d21", group: "Reds & Berries" },
-                { name: "045 Deep Red", hex: "#9b1c1c", group: "Reds & Berries" },
-                { name: "058 Wine Red", hex: "#8b0000", group: "Reds & Berries" },
-                { name: "060 Burgundy", hex: "#800020", group: "Reds & Berries" },
-                { name: "075 Raspberry", hex: "#e30b5d", group: "Reds & Berries" },
-                { name: "090 Cranberry", hex: "#951a32", group: "Reds & Berries" },
-                { name: "100 Apple Red", hex: "#d71f28", group: "Reds & Berries" },
-                { name: "133 Scarlet", hex: "#ff2400", group: "Reds & Berries" },
-                { name: "144 Brick Red", hex: "#cb4154", group: "Reds & Berries" },
-                { name: "168 Sangria", hex: "#5e0b15", group: "Reds & Berries" },
-                { name: "189 Poppy", hex: "#e35335", group: "Reds & Berries" },
-                { name: "211 Merlot", hex: "#731c22", group: "Reds & Berries" },
-                { name: "245 Lipstick Red", hex: "#c00000", group: "Reds & Berries" },
-                { name: "277 Ruby", hex: "#e0115f", group: "Reds & Berries" },
-                { name: "011 Lavender", hex: "#e6e6fa", group: "Purples" },
-                { name: "012 Lilac", hex: "#c8a2c8", group: "Purples" },
-                { name: "028 Orchid", hex: "#da70d6", group: "Purples" },
-                { name: "040 Violet", hex: "#8f00ff", group: "Purples" },
-                { name: "065 Amethyst", hex: "#9966cc", group: "Purples" },
-                { name: "078 Grape", hex: "#6f2da8", group: "Purples" },
-                { name: "092 Plum", hex: "#8e4585", group: "Purples" },
-                { name: "110 Periwinkle", hex: "#ccccff", group: "Purples" },
-                { name: "123 Iris", hex: "#5a4fcf", group: "Purples" },
-                { name: "155 Royal Purple", hex: "#7851a9", group: "Purples" },
-                { name: "176 Magenta", hex: "#ff00ff", group: "Purples" },
-                { name: "210 Eggplant", hex: "#483248", group: "Purples" },
-                { name: "233 Wisteria", hex: "#c9a0dc", group: "Purples" },
-                { name: "266 Thistle", hex: "#d8bfd8", group: "Purples" },
-                { name: "299 Boysenberry", hex: "#873260", group: "Purples" },
-                { name: "013 Baby Blue", hex: "#89cff0", group: "Blues" },
-                { name: "014 Sky Blue", hex: "#87ceeb", group: "Blues" },
-                { name: "021 Tiffany Blue", hex: "#0abab5", group: "Blues" },
-                { name: "043 Royal Blue", hex: "#4169e1", group: "Blues" },
-                { name: "055 Navy Blue", hex: "#000080", group: "Blues" },
-                { name: "068 Teal", hex: "#008080", group: "Blues" },
-                { name: "084 Denim Blue", hex: "#1560bd", group: "Blues" },
-                { name: "105 Ocean Blue", hex: "#0077be", group: "Blues" },
-                { name: "115 Slate Blue", hex: "#6a5acd", group: "Blues" },
-                { name: "130 Cobalt Blue", hex: "#0047ab", group: "Blues" },
-                { name: "160 Midnight Blue", hex: "#003366", group: "Blues" },
-                { name: "181 Powder Blue", hex: "#b0e0e6", group: "Blues" },
-                { name: "200 Turquoise", hex: "#40e0d0", group: "Blues" },
-                { name: "240 Aqua", hex: "#00ffff", group: "Blues" },
-                { name: "270 Cerulean", hex: "#2a52be", group: "Blues" },
-                { name: "015 Mint Green", hex: "#98ff98", group: "Greens" },
-                { name: "016 Sage Green", hex: "#b2ac88", group: "Greens" },
-                { name: "022 Pistachio", hex: "#93c572", group: "Greens" },
-                { name: "048 Lime Green", hex: "#32cd32", group: "Greens" },
-                { name: "057 Olive Green", hex: "#808000", group: "Greens" },
-                { name: "070 Forest Green", hex: "#228b22", group: "Greens" },
-                { name: "085 Emerald Green", hex: "#50c878", group: "Greens" },
-                { name: "118 Hunter Green", hex: "#355e3b", group: "Greens" },
-                { name: "135 Kelly Green", hex: "#4cbb17", group: "Greens" },
-                { name: "150 Seafoam Green", hex: "#9fe2bf", group: "Greens" },
-                { name: "177 Jade", hex: "#00a86b", group: "Greens" },
-                { name: "195 Chartreuse", hex: "#dfff00", group: "Greens" },
-                { name: "215 Army Green", hex: "#4b5320", group: "Greens" },
-                { name: "255 Celadon", hex: "#ace1af", group: "Greens" },
-                { name: "290 Pear", hex: "#d1e231", group: "Greens" },
-                { name: "018 Peach", hex: "#ffcba4", group: "Oranges & Yellows" },
-                { name: "019 Coral", hex: "#ff7f50", group: "Oranges & Yellows" },
-                { name: "030 Pastel Yellow", hex: "#fdfd96", group: "Oranges & Yellows" },
-                { name: "031 Lemon Yellow", hex: "#fff44f", group: "Oranges & Yellows" },
-                { name: "063 Tangerine", hex: "#f28500", group: "Oranges & Yellows" },
-                { name: "072 Marigold", hex: "#ffbf00", group: "Oranges & Yellows" },
-                { name: "095 Mustard Yellow", hex: "#ffdb58", group: "Oranges & Yellows" },
-                { name: "112 Gold", hex: "#ffd700", group: "Oranges & Yellows" },
-                { name: "140 Burnt Orange", hex: "#cc5500", group: "Oranges & Yellows" },
-                { name: "165 Apricot", hex: "#fbceb1", group: "Oranges & Yellows" },
-                { name: "188 Mango", hex: "#fdb84e", group: "Oranges & Yellows" },
-                { name: "208 Buttercup", hex: "#fae052", group: "Oranges & Yellows" },
-                { name: "225 Papaya", hex: "#ffc971", group: "Oranges & Yellows" },
-                { name: "260 Cantaloupe", hex: "#fa9a50", group: "Oranges & Yellows" },
-                { name: "295 Neon Orange", hex: "#ff9933", group: "Oranges & Yellows" },
-                { name: "023 Beige", hex: "#f5f5dc", group: "Browns & Neutrals" },
-                { name: "024 Tan", hex: "#d2b48c", group: "Browns & Neutrals" },
-                { name: "035 Cream", hex: "#fffdd0", group: "Browns & Neutrals" },
-                { name: "052 Chocolate", hex: "#7b3f00", group: "Browns & Neutrals" },
-                { name: "061 Coffee", hex: "#6f4e37", group: "Browns & Neutrals" },
-                { name: "076 Caramel", hex: "#af6f09", group: "Browns & Neutrals" },
-                { name: "098 Cinnamon", hex: "#d2691e", group: "Browns & Neutrals" },
-                { name: "120 Mocha", hex: "#9d7c61", group: "Browns & Neutrals" },
-                { name: "138 Walnut", hex: "#593a28", group: "Browns & Neutrals" },
-                { name: "158 Chestnut", hex: "#954535", group: "Browns & Neutrals" },
-                { name: "180 Khaki", hex: "#c3b091", group: "Browns & Neutrals" },
-                { name: "223 Ivory", hex: "#fffff0", group: "Browns & Neutrals" },
-                { name: "252 Clay", hex: "#bca28e", group: "Browns & Neutrals" },
-                { name: "280 Toffee", hex: "#8c5a2b", group: "Browns & Neutrals" },
-                { name: "033 White", hex: "#ffffff", group: "Grays, Blacks & Whites" },
-                { name: "034 Black", hex: "#000000", group: "Grays, Blacks & Whites" },
-                { name: "049 Light Gray", hex: "#d3d3d3", group: "Grays, Blacks & Whites" },
-                { name: "059 Silver", hex: "#c0c0c0", group: "Grays, Blacks & Whites" },
-                { name: "069 Charcoal", hex: "#36454f", group: "Grays, Blacks & Whites" },
-                { name: "086 Slate Gray", hex: "#708090", group: "Grays, Blacks & Whites" },
-                { name: "101 Platinum", hex: "#e5e4e2", group: "Grays, Blacks & Whites" },
-                { name: "121 Ash Gray", hex: "#b2beb5", group: "Grays, Blacks & Whites" },
-                { name: "148 Stone", hex: "#8a795d", group: "Grays, Blacks & Whites" },
-                { name: "170 Gunmetal", hex: "#53565a", group: "Grays, Blacks & Whites" },
-                { name: "199 Onyx", hex: "#353839", group: "Grays, Blacks & Whites" },
-                { name: "230 Off White", hex: "#f8f8f8", group: "Grays, Blacks & Whites" },
-                { name: "262 Iron Gray", hex: "#615f5f", group: "Grays, Blacks & Whites" },
-                { name: "298 Jet Black", hex: "#0a0a0a", group: "Grays, Blacks & Whites" },
-            ],
-            "Royal Cat Eye": [
-                { name: "01 Ruby Slipper", hex: "#c00000", group: "Reds & Pinks" },
-                { name: "02 Garnet", hex: "#9d0208", group: "Reds & Pinks" },
-                { name: "03 Crimson", hex: "#8b0000", group: "Reds & Pinks" },
-                { name: "04 Rose Quartz", hex: "#f7cac9", group: "Reds & Pinks" },
-                { name: "05 Flamingo", hex: "#f896d8", group: "Reds & Pinks" },
-                { name: "06 Fuchsia", hex: "#e75480", group: "Reds & Pinks" },
-                { name: "07 Amethyst", hex: "#a45ee5", group: "Purples" },
-                { name: "08 Lavender", hex: "#b57edc", group: "Purples" },
-                { name: "09 Plum", hex: "#8e4585", group: "Purples" },
-                { name: "10 Grape", hex: "#6f2da8", group: "Purples" },
-                { name: "11 Violet", hex: "#7f00ff", group: "Purples" },
-                { name: "12 Indigo", hex: "#4b0082", group: "Purples" },
-                { name: "13 Sapphire", hex: "#0f52ba", group: "Blues" },
-                { name: "14 Royal Blue", hex: "#0038a8", group: "Blues" },
-                { name: "15 Cobalt", hex: "#0047ab", group: "Blues" },
-                { name: "16 Ocean", hex: "#0077b6", group: "Blues" },
-                { name: "17 Sky", hex: "#87ceeb", group: "Blues" },
-                { name: "18 Baby Blue", hex: "#a2d2ff", group: "Blues" },
-                { name: "19 Emerald", hex: "#009b7d", group: "Greens" },
-                { name: "20 Forest", hex: "#014421", group: "Greens" },
-                { name: "21 Jade", hex: "#00a86b", group: "Greens" },
-                { name: "22 Olive", hex: "#708238", group: "Greens" },
-                { name: "23 Mint", hex: "#bdfcc9", group: "Greens" },
-                { name: "24 Teal", hex: "#008080", group: "Greens" },
-                { name: "25 Gold", hex: "#ffd700", group: "Golds & Yellows" },
-                { name: "26 Champagne", hex: "#f7e7ce", group: "Golds & Yellows" },
-                { name: "27 Lemon", hex: "#fff44f", group: "Golds & Yellows" },
-                { name: "28 Copper", hex: "#b87333", group: "Golds & Yellows" },
-                { name: "29 Bronze", hex: "#cd7f32", group: "Golds & Yellows" },
-                { name: "30 Amber", hex: "#ffbf00", group: "Golds & Yellows" },
-                { name: "31 Silver", hex: "#c0c0c0", group: "Neutrals & Metallics" },
-                { name: "32 Platinum", hex: "#e5e4e2", group: "Neutrals & Metallics" },
-                { name: "33 Steel", hex: "#858585", group: "Neutrals & Metallics" },
-                { name: "34 Onyx", hex: "#353839", group: "Neutrals & Metallics" },
-                { name: "35 Diamond", hex: "#ffffff", group: "Neutrals & Metallics" },
-                { name: "36 Pearl", hex: "#f0f0e0", group: "Neutrals & Metallics" },
-                { name: "37 Chocolate", hex: "#5a3a22", group: "Browns" },
-                { name: "38 Coffee", hex: "#4b372c", group: "Browns" },
-                { name: "39 Mocha", hex: "#87624f", group: "Browns" },
-                { name: "40 Caramel", hex: "#af6f09", group: "Browns" },
-                { name: "41 Topaz", hex: "#ffc87c", group: "Browns" },
-                { name: "42 Peach", hex: "#ffc99a", group: "Browns" },
-                { name: "43 Sunset", hex: "#f28500", group: "Oranges" },
-                { name: "44 Marigold", hex: "#fca311", group: "Oranges" },
-                { name: "45 Coral", hex: "#ff7f50", group: "Oranges" },
-                { name: "46 Fire", hex: "#e25822", group: "Oranges" },
-                { name: "47 Papaya", hex: "#ff97b3", group: "Oranges" },
-                { name: "48 Tiger Eye", hex: "#b0793d", group: "Oranges" }
-            ]
+            "DND": [ ],
+            "DC": [ ],
+            "DD": [ ],
+            "Royal Cat Eye": []
         };
 
         for (const brandName in brands) {
@@ -10331,7 +10296,7 @@ if (setExpiry) {
     // ADD ALL THIS CODE AT THE END OF THE initMainApp FUNCTION
 
 
-    let allClientMemberships = [];
+    
     onSnapshot(query(collection(db, "clients"), where("membership", "!=", null)), (snapshot) => {
         allClientMemberships = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         const searchTerm = document.getElementById('search-memberships').value.toLowerCase();
@@ -10356,9 +10321,22 @@ document.querySelector('#client-memberships-table tbody')?.addEventListener('cli
     const activateBtn = e.target.closest('.activate-membership-btn');
     const printBtn = e.target.closest('.print-membership-card-btn');
     const deleteBtn = e.target.closest('.delete-membership-record-btn');
-
+  const rewardBtn = e.target.closest('.reward-tracking-btn');
+    if (rewardBtn) {
+        const clientId = rewardBtn.dataset.id;
+        
+        // FIX: Corrected typo from 'allClientMembersships' to 'allClientMemberships'
+        const client = allClientMemberships.find(m => m.id === clientId); 
+        
+        if (client) {
+            openMembershipRewardModal(client);
+        } else {
+            // Fallback notification if client data isn't immediately found
+            addNotification('error', 'Client data not yet loaded. Please try again.');
+        }
+    }
     // --- Handle Print Button ---
-    if (printBtn) {
+    else if (printBtn) {
         const clientId = printBtn.dataset.id;
         // Find the client data from the list used to render the table
         const client = allClientMemberships.find(m => m.id === clientId);
@@ -10414,6 +10392,12 @@ document.querySelector('#client-memberships-table tbody')?.addEventListener('cli
         }); // Default confirmation button text is "Delete"
     }
 });
+
+document.getElementById('close-membership-reward-modal-btn')?.addEventListener('click', () => {
+        document.getElementById('membership-reward-modal').classList.add('hidden');
+    });
+    document.getElementById('log-cash-spending-form')?.addEventListener('submit', handleLogCashSpending);
+
 
     // --- MEMBERSHIP MANAGEMENT (ADMIN) ---
     const membershipModal = document.getElementById('membership-tier-modal');

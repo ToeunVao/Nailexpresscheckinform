@@ -1640,9 +1640,10 @@ const renderClientMembershipsTable = (members) => {
         if (member.membership.startDate && typeof member.membership.startDate.toDate === 'function') {
             startDate = member.membership.startDate.toDate().toLocaleDateString();
         }
-
+        const memberId = member.id ? member.id.split('').map(char => char.charCodeAt(0)).join('').substring(0, 6) : 'N/A';
         row.innerHTML = `
             <td class="px-6 py-4">${member.name}</td>
+            <td class="px-6 py-4">${memberId}</td>
             <td class="px-6 py-4">${member.membership.tierName}</td>
             <td class="px-6 py-4 font-medium text-pink-600">$${totalCashSpent.toFixed(2)}</td>
             <td class="px-6 py-4 font-medium text-green-600">$${totalRewardEarned.toFixed(2)}</td>
@@ -6040,17 +6041,45 @@ const loadAndRenderServices = async () => {
         return filtered;
     };
 
-    const renderActiveClients = (clients) => {
+const renderActiveClients = (clients) => {
         const tbody = document.querySelector('#clients-table tbody');
         if (!tbody) return;
-        tbody.innerHTML = clients.length === 0 ? `<tr><td colspan="4" class="py-6 text-center text-gray-400">No clients in the queue.</td></tr>` : '';
+        
+        // 1. Update the colspan to 7 (6 previous columns + 1 Technician column)
+        tbody.innerHTML = clients.length === 0 ? `<tr><td colspan="7" class="py-6 text-center text-gray-400">No clients in the queue.</td></tr>` : '';
+        
         clients.forEach((client, index) => {
+            // Get the technician name, defaulting to 'Unassigned' if the field is empty
+            const assignedTech = client.technician || 'Unassigned'; 
+
             const row = tbody.insertRow();
             row.className = 'bg-white border-b';
-            row.innerHTML = `<td class="px-6 py-4 text-center font-medium text-gray-900">${index + 1}</td><td class="px-6 py-4"><span data-client-name="${client.name}" 
-                          class="view-profile-btn cursor-pointer text-indigo-700 hover:text-indigo-900 hover:underline font-semibold">
+            
+            // 2. Update row.innerHTML with the new column
+            row.innerHTML = `
+                <td class="px-6 py-4 text-center font-medium text-gray-900">${index + 1}</td>
+                <td class="px-6 py-4">
+                    <span data-client-name="${client.name}" class="view-profile-btn cursor-pointer text-indigo-700 hover:text-indigo-900 hover:underline font-semibold">
                         ${client.name}
-                    </span></td><td class="px-6 py-4">${client.services}</td><td class="px-6 py-4 text-center space-x-4"><button data-id="${client.id}" class="move-to-processing-btn" title="Move to Processing"><i class="fas fa-arrow-right text-lg text-blue-500 hover:text-blue-700"></i></button><button data-id="${client.id}" class="detail-btn-active" title="View Details"><i class="fas fa-info-circle text-lg text-gray-500 hover:text-gray-700"></i></button> <button data-id="${client.id}" class="check-out-btn-processing" title="Check Out"><i class="fas fa-check-circle text-lg text-green-500 hover:text-green-700"></i></button></td>`;
+                    </span>
+                </td>
+                
+                <td class="px-6 py-4 text-center">${client.people || 1}</td>
+                
+                <td class="px-6 py-4">${assignedTech}</td>
+                
+                <td class="px-6 py-4">${client.services}</td>
+                
+                <td class="px-6 py-4">${client.checkInTime}</td>
+                
+                <td class="px-6 py-4 text-center space-x-4">
+                    <button data-id="${client.id}" class="check-out-btn-processing" title="Fast Check Out"><i class="fas fa-receipt text-lg text-green-500 hover:text-green-700"></i></button>
+                    
+                    <button data-id="${client.id}" class="move-to-processing-btn" title="Move to Processing"><i class="fas fa-arrow-right text-lg text-blue-500 hover:text-blue-700"></i></button>
+                    
+                    <button data-id="${client.id}" class="detail-btn-active" title="View Details"><i class="fas fa-info-circle text-lg text-gray-500 hover:text-gray-700"></i></button>
+                </td>
+            `;
         });
     };
 
@@ -6064,7 +6093,7 @@ const loadAndRenderServices = async () => {
             row.innerHTML = `<td class="px-6 py-4 text-center font-medium text-gray-900">${index + 1}</td><td class="px-6 py-4"><span data-client-name="${client.name}" 
                           class="view-profile-btn cursor-pointer text-indigo-700 hover:text-indigo-900 hover:underline font-semibold">
                         ${client.name}
-                    </span></td><td class="px-6 py-4">${client.services}</td><td class="px-6 py-4">${client.technician}</td><td class="px-6 py-4">${client.checkInTime}</td><td class="px-6 py-4 text-center"><button data-id="${client.id}" class="check-out-btn-processing" title="Check Out"><i class="fas fa-check-circle text-lg text-green-500 hover:text-green-700"></i></button> </td>`;
+                    </span></td><td class="px-6 py-4 text-center">${client.people || 1}</td> <td class="px-6 py-4">${client.technician}</td><td class="px-6 py-4">${client.services}</td><td class="px-6 py-4">${client.checkInTime}</td><td class="px-6 py-4 text-center"><button data-id="${client.id}" class="check-out-btn-processing" title="Check Out"><i class="fas fa-check-circle text-lg text-green-500 hover:text-green-700"></i></button> </td>`;
         });
     };
 
@@ -6497,14 +6526,51 @@ const renderStaffEarningsTable = (earnings, tableId, totalEarningId, totalTipId)
         const checkOutBtn = e.target.closest('.check-out-btn-processing');
         if (checkOutBtn) {
             const clientId = checkOutBtn.dataset.id;
-            const client = allActiveClients.find(c => c.id === clientId);
+           const client = allActiveClients.find(c => c.id === clientId);
+            //const client = allProcessingClients.find(c => c.id === clientId);
             if (client) { document.getElementById('technician-name-select').value = client.technician; }
             document.getElementById('checkout-client-id').value = clientId;
+
             document.getElementById('checkout-source-collection').value = 'active_queue';
+            //document.getElementById('checkout-source-collection').value = 'processing_queue';
             checkoutModal.classList.remove('hidden'); checkoutModal.classList.add('flex');
         }
     });
+    // ADD THIS NEW BLOCK OF CODE to handle checkout from the Active Queue (#clients-table)
 
+document.addEventListener('click', async (e) => {
+    // Target the check-out button specifically within the Active Queue table
+    const checkOutBtn = e.target.closest('#clients-table .check-out-btn-processing'); 
+
+    // Ensure the button was clicked and it belongs to the active queue table
+    if (checkOutBtn) {
+        e.preventDefault(); 
+        
+        const clientId = checkOutBtn.dataset.id;
+        
+        // 1. Find the client data (using the same global list as your processing tab)
+        const client = allActiveClients.find(c => c.id === clientId);
+
+        // 2. Populate Technician field
+        if (client) { 
+            // NOTE: Assuming technician-name-select and checkoutModal are globally accessible
+            document.getElementById('technician-name-select').value = client.technician; 
+        }
+        
+        // 3. Set the hidden client ID
+        document.getElementById('checkout-client-id').value = clientId;
+        
+        // 4. Set the source collection to 'active_queue'
+        document.getElementById('checkout-source-collection').value = 'active_queue'; 
+        
+        // 5. Open the modal directly (replicating your Processing tab logic)
+        checkoutModal.classList.remove('hidden'); 
+        checkoutModal.classList.add('flex');
+    }
+});
+
+// --- START: NEW EVENT LISTENER FOR ACTIVE QUEUE CHECKOUT ---
+// --- END: NEW EVENT LISTENER FOR ACTIVE QUEUE CHECKOUT ---
     // Located inside initMainApp()
     const openViewDetailModal = (client, title = "Client Details") => {
         if (!client) return;
@@ -10484,7 +10550,118 @@ document.getElementById('close-membership-reward-modal-btn')?.addEventListener('
 
 
     };
+// --- START: Add Client Membership Modal Logic (NEW) ---
 
+// 1. Get elements for the new modal
+const addClientMembershipModal = document.getElementById('add-client-membership-modal');
+const addClientMembershipBtn = document.getElementById('add-client-membership-btn');
+const closeAddClientMembershipBtn = document.getElementById('close-add-client-membership-modal-btn');
+const cancelAddClientMembershipBtn = document.getElementById('add-client-membership-cancel-btn');
+const addClientMembershipForm = document.getElementById('add-client-membership-form');
+const addCmClientList = document.getElementById('add-cm-client-list');
+const addCmTierSelect = document.getElementById('add-cm-tier-select');
+
+// 2. Create the 'open' function
+const openAddClientMembershipModal = () => {
+    // Reset form just in case
+    addClientMembershipForm.reset();
+
+    // Populate clients datalist (Fulfills Requirement #3)
+    addCmClientList.innerHTML = '';
+    // Filter 'allClients' to find those *without* a membership
+    const clientsWithoutMembership = allClients.filter(c => !c.membership);
+    clientsWithoutMembership.forEach(client => {
+        // Use client.name for the value, which is what the input will show
+        addCmClientList.innerHTML += `<option value="${client.name}"></option>`;
+    });
+
+    // Populate tiers select from your global 'allMembershipTiers'
+    addCmTierSelect.innerHTML = '<option value="">Select a tier...</option>';
+    allMembershipTiers.forEach(tier => {
+        addCmTierSelect.innerHTML += `<option value="${tier.id}">${tier.name} ($${tier.price}/month)</option>`;
+    });
+
+    // Show the modal
+    addClientMembershipModal.classList.remove('hidden');
+};
+
+// 3. Create the 'close' function
+const closeAddClientMembershipModal = () => {
+    addClientMembershipForm.reset();
+    addClientMembershipModal.classList.add('hidden');
+};
+
+// 4. Add event listeners to open/close the modal
+if (addClientMembershipBtn) {
+    addClientMembershipBtn.addEventListener('click', openAddClientMembershipModal);
+}
+if (closeAddClientMembershipBtn) {
+    closeAddClientMembershipBtn.addEventListener('click', closeAddClientMembershipModal);
+}
+if (cancelAddClientMembershipBtn) {
+    cancelAddClientMembershipBtn.addEventListener('click', closeAddClientMembershipModal);
+}
+if (addClientMembershipModal) {
+    addClientMembershipModal.querySelector('.modal-overlay').addEventListener('click', closeAddClientMembershipModal);
+}
+
+// 5. Add the form submit logic
+if (addClientMembershipForm) {
+    addClientMembershipForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const clientName = document.getElementById('add-cm-client-name').value;
+        const tierId = document.getElementById('add-cm-tier-select').value;
+
+        // Find the full client object from the global 'allClients' list
+        const selectedClient = allClients.find(c => c.name === clientName);
+        // Find the full tier object from the global 'allMembershipTiers' list
+        const selectedTier = allMembershipTiers.find(t => t.id === tierId);
+
+        if (!selectedClient) {
+            addNotification('error', 'Please select a valid client from the datalist.');
+            return;
+        }
+
+        if (!selectedTier) {
+            addNotification('error', 'Please select a valid membership tier.');
+            return;
+        }
+
+        // Double-check they don't already have a membership
+        if (selectedClient.membership) {
+            addNotification('warning', `${selectedClient.name} already has a membership. You can manage it from the table.`);
+            return;
+        }
+
+        // Prepare the new membership data object
+        const membershipData = {
+            tierId: selectedTier.id,
+            tierName: selectedTier.name,
+            startDate: serverTimestamp(), // Sets start date to now
+            status: 'Active' // Admin-created are active by default
+        };
+
+        try {
+            // Get the Firestore document reference using the client's unique ID
+            const clientDocRef = doc(db, "clients", selectedClient.id);
+
+            // Update the client's document with the new membership object
+            await updateDoc(clientDocRef, {
+                membership: membershipData
+            });
+
+            addNotification('success', `Membership created for ${selectedClient.name}!`);
+            closeAddClientMembershipModal();
+
+        } catch (error) {
+            console.error("Error adding client membership:", error);
+            addNotification('error', 'Could not create membership for this client.');
+        }
+    });
+}
+
+// --- END: Add Client Membership Modal Logic (NEW) ---
     // --- Located inside initMainApp(), before loadAndRenderServices() ---
 
     const addClientNoteForm = document.getElementById('add-client-note-form');

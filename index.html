@@ -11,7 +11,7 @@
     <link rel="icon" type="image/png" href="https://placehold.co/32x32/d63384/FFFFFF?text=NE">
 
 
-    <script src="https://cdn.tailwindcss.com"></script>
+    
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,9 +21,6 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <link rel="stylesheet" href="style.css">
 
@@ -975,11 +972,16 @@
                                 <table id="clients-table" class="w-full text-sm text-left text-gray-600">
                                     <thead class="text-xs text-gray-700 uppercase bg-gray-50">
                                         <tr>
-                                            <th scope="col" class="px-6 py-3 text-center">No.</th>
-                                            <th scope="col" class="px-6 py-3">Name</th>
-                                            <th scope="col" class="px-6 py-3">Services</th>
-                                            <th scope="col" class="px-6 py-3 text-center">Action</th>
-                                        </tr>
+            <th scope="col" class="px-6 py-3 text-center">No.</th>
+            <th scope="col" class="px-6 py-3">Name</th>
+            <th scope="col" class="px-6 py-3 text-center">Group</th>
+            
+            <th scope="col" class="px-6 py-3">Technician</th>
+            
+            <th scope="col" class="px-6 py-3">Services</th>
+            <th scope="col" class="px-6 py-3">Check-in Time</th>
+            <th scope="col" class="px-6 py-3 text-center">Action</th>
+        </tr>
                                     </thead>
                                     <tbody></tbody>
                                 </table>
@@ -1001,13 +1003,14 @@
                                 <table id="processing-table" class="w-full text-sm text-left text-gray-600">
                                     <thead class="text-xs text-gray-700 uppercase bg-gray-50">
                                         <tr>
-                                            <th scope="col" class="px-6 py-3 text-center">No.</th>
-                                            <th scope="col" class="px-6 py-3">Name</th>
-                                            <th scope="col" class="px-6 py-3">Services</th>
-                                            <th scope="col" class="px-6 py-3">Technician</th>
-                                            <th scope="col" class="px-6 py-3">Check-in Time</th>
-                                            <th scope="col" class="px-6 py-3 text-center">Action</th>
-                                        </tr>
+            <th scope="col" class="px-6 py-3 text-center">No.</th>
+            <th scope="col" class="px-6 py-3">Name</th>
+            <th scope="col" class="px-6 py-3 text-center">Group</th>
+            <th scope="col" class="px-6 py-3">Technician</th>
+            <th scope="col" class="px-6 py-3">Services</th>
+            <th scope="col" class="px-6 py-3">Check-in Time</th>
+            <th scope="col" class="px-6 py-3 text-center">Action</th>
+        </tr>
                                     </thead>
                                     <tbody></tbody>
                                 </table>
@@ -1523,15 +1526,19 @@
                                 <input type="text" id="search-memberships"
                                     class="form-input w-64 p-2 border border-gray-300 rounded-lg"
                                     placeholder="Search by name or tier...">
+                                  <button id="add-client-membership-btn" class="bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors">
+        <i class="fas fa-plus mr-2"></i>Create Client Membership
+    </button>
                             </div>
                             <div class="overflow-x-auto">
                                 <table id="client-memberships-table" class="w-full text-sm text-left text-gray-600">
                                     <thead class="text-xs text-gray-700 uppercase bg-gray-50">
                                         <tr>
                                             <th class="px-6 py-3">Client Name</th>
+                                            <th class="px-6 py-3">Member ID</th>
                                             <th class="px-6 py-3">Membership Tier</th>
+                                            <th class="px-6 py-3">Total Spend</th>
                                             <th class="px-6 py-3">Total Reward</th>
-                                            <th class="px-6 py-3">Status</th>
                                             <th class="px-6 py-3">Start Date</th>
                                             <th class="px-6 py-3">Status</th>
                                             <th class="px-6 py-3 text-center">Action</th>
@@ -3440,7 +3447,46 @@
             </div>
         </div>
     </div>
+<div id="add-client-membership-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
 
+    <div class="modal-overlay absolute inset-0"></div>
+
+    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md z-10">
+        <div class="flex justify-between items-center mb-4">
+            <h3 id="add-client-membership-modal-title" class="text-xl font-bold">Create Client Membership</h3>
+            <button id="close-add-client-membership-modal-btn" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <form id="add-client-membership-form">
+            <div class="space-y-4">
+
+                <div>
+                    <label for="add-cm-client-name" class="block text-sm font-medium text-gray-700">Client Name</label>
+                    <p class="text-xs text-gray-500 mb-1">Select from existing clients who do not have a membership.</p>
+                    <input type="text" id="add-cm-client-name" list="add-cm-client-list" class="form-input mt-1 w-full p-2 border border-gray-300 rounded-lg" required>
+                    <datalist id="add-cm-client-list">
+                        </datalist>
+                </div>
+
+                <div>
+                    <label for="add-cm-tier-select" class="block text-sm font-medium text-gray-700">Membership Tier</label>
+                    <select id="add-cm-tier-select" class="form-select mt-1 w-full p-2 border border-gray-300 rounded-lg" required>
+                        <option value="">Select a tier...</option>
+                        </select>
+                </div>
+
+            </div>
+
+            <div class="mt-6 flex justify-end space-x-3">
+                <button type="button" id="add-client-membership-cancel-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg">Cancel</button>
+                <button type="submit" class="bg-green-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-green-700">Save Membership</button>
+            </div>
+        </form>
+    </div>
+</div>
+    
     <div id="client-profile-modal" class="modal hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
         <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
         <div class="relative bg-white w-full max-w-4xl p-6 rounded-2xl shadow-xl m-4 max-h-[90vh] overflow-y-auto">
@@ -4234,6 +4280,12 @@
     </div>
 </div>
 <!-- END OF NEW MODAL -->
+ <script src="https://cdn.tailwindcss.com"></script>
+     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+
     <script type="module" src="script.js"></script>
 </body>
 

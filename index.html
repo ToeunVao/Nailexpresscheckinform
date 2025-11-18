@@ -9,21 +9,14 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#d63384">
     <link rel="icon" type="image/png" href="https://placehold.co/32x32/d63384/FFFFFF?text=NE">
-
-
-    
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;500;600&family=Parisienne&display=swap"
         rel="stylesheet">
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-
+ <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css">
-
 </head>
 
 <body class="bg-gray-100">
@@ -1663,10 +1656,11 @@
                                 <div><label for="new-user-email"
                                         class="block text-sm font-medium text-gray-600">Email</label><input type="email"
                                         id="new-user-email" class="form-input w-full mt-1" required></div>
-                                <div><label for="new-user-password"
-                                        class="block text-sm font-medium text-gray-600">Password</label><input
-                                        type="password" id="new-user-password" class="form-input w-full mt-1"
-                                        placeholder="Min. 6 characters"></div>
+                                <div>
+    <label for="new-user-uid" class="block text-sm font-medium text-gray-600">User UID</label>
+    <input type="text" id="new-user-uid" class="form-input w-full mt-1" 
+           placeholder="Paste UID from Firebase Console" required>
+</div>
                                 <div><label for="user-role"
                                         class="block text-sm font-medium text-gray-600">Role</label><select
                                         id="user-role" class="form-select w-full mt-1">
@@ -1674,6 +1668,7 @@
                                         <option value="staff">Staff</option>
                                         <option value="admin">Admin</option>
                                     </select></div>
+                                
                                 <div>
                                     <label for="payout-type" class="block text-sm font-medium text-gray-600">Payout
                                         Type</label>
@@ -1683,6 +1678,10 @@
                                     </select>
                                     <p class="text-xs text-gray-500 mt-1">Determines how staff payout is calculated.</p>
                                 </div>
+                                <div>
+    <label for="new-user-commission" class="block text-sm font-medium text-gray-600">Commission (%)</label>
+    <input type="number" id="new-user-commission" class="form-input w-full mt-1" placeholder="e.g., 70" required min="0" max="100">
+</div>
                                 <div class="self-end"><button type="submit"
                                         class="w-full bg-pink-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-700">Add/Update
                                         User</button></div>
@@ -4280,7 +4279,6 @@
     </div>
 </div>
 <!-- END OF NEW MODAL -->
- <script src="https://cdn.tailwindcss.com"></script>
      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>

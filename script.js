@@ -5609,7 +5609,8 @@ viewReviewModal.querySelector('.modal-overlay').addEventListener('click', closeV
             const payoutType = staff.payoutType || 'standard';
             const totalEarning = staffTotals[staff.name] || 0;
             let totalPayout;
-
+    const commissionPercentage = staff.commissionRate || 70;
+    const commissionDecimal = commissionPercentage / 100;
             if (payoutType === 'commission_plus_tips') {
                 const { startDate, endDate } = getDateRange(currentDashboardRangeFilter, currentDashboardDateFilter);
                 const staffPeriodEarnings = allEarnings.filter(e => {
@@ -5617,9 +5618,9 @@ viewReviewModal.querySelector('.modal-overlay').addEventListener('click', closeV
                     return e.staffName === staff.name && earnDate >= startDate && earnDate <= endDate;
                 });
                 const totalTip = staffPeriodEarnings.reduce((sum, e) => sum + (e.tip || 0), 0);
-                totalPayout = (totalEarning * 0.70) + totalTip;
+                totalPayout = (totalEarning * commissionDecimal) + totalTip;
             } else {
-                totalPayout = totalEarning * 0.70;
+                totalPayout = totalEarning * commissionDecimal;
             }
 
             const checkPayout = totalPayout * 0.70;
@@ -5736,10 +5737,12 @@ viewReviewModal.querySelector('.modal-overlay').addEventListener('click', closeV
         const staffMember = techniciansAndStaff.find(s => s.name === currentUserName);
         const payoutType = staffMember ? staffMember.payoutType : 'standard';
         let myTotalPayout;
+        const commissionPercentage = (staffMember && staffMember.commissionRate) ? staffMember.commissionRate : 70;
+        const commissionDecimal = commissionPercentage / 100;
         if (payoutType === 'commission_plus_tips') {
-            myTotalPayout = (myTotalEarning * 0.70) + myTotalTips;
+            myTotalPayout = (myTotalEarning * commissionDecimal) + myTotalTips;
         } else {
-            myTotalPayout = myTotalEarning * 0.70;
+            myTotalPayout = myTotalEarning * commissionDecimal;
         }
         const myCheckPayout = myTotalPayout * 0.70;
         const myCashPayout = myTotalPayout - myCheckPayout;
@@ -5945,10 +5948,13 @@ viewReviewModal.querySelector('.modal-overlay').addEventListener('click', closeV
                 timeData[key].earning += item[staffNameLower] || 0;
             }
         });
+        const staffMember = techniciansAndStaff.find(s => s.name === staffName);
+const commissionPercentage = (staffMember && staffMember.commissionRate) ? staffMember.commissionRate : 70;
+const commissionDecimal = commissionPercentage / 100;
 
         const populateDatasets = (key) => {
             const earning = timeData[key]?.earning || 0;
-            const payout = earning * 0.70;
+            const payout = earning * commissionDecimal;
             const checkPayout = payout * 0.70;
             const cashPayout = payout - checkPayout;
 
@@ -6412,14 +6418,19 @@ const renderStaffEarningsTable = (earnings, tableId, totalEarningId, totalTipId)
             const payoutType = staffMember ? staffMember.payoutType : 'standard';
             const totalEarningForStaff = grandTotals[name] || 0;
             let totalPayout;
+            // START: ADD THESE LINES
+    // Get the custom rate, or default to 70 if not set
+    const commissionPercentage = (staffMember && staffMember.commissionRate) ? staffMember.commissionRate : 70;
+    const commissionDecimal = commissionPercentage / 100; // Converts 70 to 0.7
+    // END: ADD THESE LINES
 
             if (payoutType === 'commission_plus_tips') {
                 const { startDate, endDate } = getDateRange(currentSalonEarningRangeFilter, currentSalonEarningDateFilter);
                 const staffPeriodEarnings = allEarnings.filter(e => e.staffName.toLowerCase() === name && e.date.toDate() >= startDate && e.date.toDate() <= endDate);
                 const totalTipForStaff = staffPeriodEarnings.reduce((sum, e) => sum + (e.tip || 0), 0);
-                totalPayout = (totalEarningForStaff * 0.70) + totalTipForStaff;
+                totalPayout = (totalEarningForStaff * commissionDecimal) + totalTipForStaff;
             } else {
-                totalPayout = totalEarningForStaff * 0.70;
+                totalPayout = totalEarningForStaff * commissionDecimal;
             }
 
             const check70 = totalPayout * 0.70;
@@ -7524,10 +7535,22 @@ calendarGrid.addEventListener('click', (e) => {
             dataForExport.push({}, totals);
             const commissionRow = { Date: "Commission 70%:" }, check70Row = { Date: "70% of Check:" }, cash30Row = { Date: "30% of Cash:" };
             techniciansAndStaff.forEach(tech => {
-                const techTotal = totals[tech.name] || 0;
-                const commission70 = techTotal * 0.70, check70 = commission70 * 0.70, cash30 = commission70 - check70;
-                commissionRow[tech.name] = commission70; check70Row[tech.name] = check70; cash30Row[tech.name] = cash30;
-            });
+    const techTotal = totals[tech.name] || 0;
+
+    // Get the custom commission rate
+    const staffMember = techniciansAndStaff.find(s => s.name === tech.name);
+    const commissionPercentage = (staffMember && staffMember.commissionRate) ? staffMember.commissionRate : 70;
+    const commissionDecimal = commissionPercentage / 100;
+
+    // Use the custom rate for the main commission value
+    const commissionValue = techTotal * commissionDecimal;
+    const check70 = commissionValue * 0.70; // This 70% is your check/cash split
+    const cash30 = commissionValue - check70;
+
+    commissionRow[tech.name] = commissionValue;
+    check70Row[tech.name] = check70;
+    cash30Row[tech.name] = cash30;
+});
             dataForExport.push(commissionRow, check70Row, cash30Row);
         }
         const worksheet = XLSX.utils.json_to_sheet(dataForExport);
@@ -8375,46 +8398,97 @@ if (staffDetailsFilter) {
             updatePublicTechnicianList(users);
         }
     });
+
     addUserForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const userId = document.getElementById('edit-user-id').value;
-        const name = document.getElementById('new-user-name').value, phone = document.getElementById('new-user-phone').value, email = document.getElementById('new-user-email').value, password = document.getElementById('new-user-password').value, role = document.getElementById('user-role').value;
-        const payoutType = document.getElementById('payout-type').value; // Add this line
+    e.preventDefault();
+
+    // 1. Get all values from the form
+    const userId = document.getElementById('edit-user-id').value; // For editing
+    const name = document.getElementById('new-user-name').value;
+    const phone = document.getElementById('new-user-phone').value;
+    const email = document.getElementById('new-user-email').value;
+    const role = document.getElementById('user-role').value;
+    const payoutType = document.getElementById('payout-type').value;
+
+    // Get the NEW fields
+    const commissionRate = parseFloat(document.getElementById('new-user-commission').value);
+    const uid = document.getElementById('new-user-uid').value; // Get the UID from the new input
+
+    // 2. Validate Commission
+    if (isNaN(commissionRate) || commissionRate < 0 || commissionRate > 100) {
+        addNotification('error', 'Please enter a valid commission rate (0-100).');
+        return;
+    }
+
+    // 3. Prepare the data
+    const userData = {
+        name: name,
+        phone: phone,
+        email: email,
+        role: role,
+        payoutType: payoutType,
+        commissionRate: commissionRate // Your new field
+    };
+
+    try {
         if (userId) {
-            await setDoc(doc(db, "users", userId), { name, phone, email, role, payoutType }); // Add payoutType here
-            alert("User updated.");
+            // This is an EDIT of an existing user
+            await setDoc(doc(db, "users", userId), userData, { merge: true }); // Use merge to be safe
+            addNotification('success', 'User updated successfully!');
         } else {
-            if (!password || password.length < 6) { return alert("Password must be at least 6 characters."); }
-            try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                await setDoc(doc(db, "users", userCredential.user.uid), { name, phone, email, role, payoutType }); // And here
-                alert("User created!");
-            } catch (error) { console.error("Error creating user:", error); alert("Error creating user: " + error.message); }
+            // This is a NEW user creation
+            if (!uid) {
+                addNotification('error', 'User UID is required. Please get it from the Firebase Console.');
+                return;
+            }
+            // We use the manually-provided UID as the document ID
+            await setDoc(doc(db, "users", uid), userData);
+            addNotification('success', 'User profile created successfully!');
         }
+
+        // 4. Reset the form
         addUserForm.reset();
         document.getElementById('edit-user-id').value = '';
         document.getElementById('new-user-email').disabled = false;
-        document.getElementById('new-user-password').required = true;
-    });
+        // Re-enable and clear the UID field
+        document.getElementById('new-user-uid').disabled = false;
+        document.getElementById('new-user-uid').value = ''; 
+
+    } catch (error) {
+        console.error("Error saving user document:", error);
+        addNotification('error', 'Error saving user profile: ' + error.message);
+    }
+});
+
 
     usersTableBody.addEventListener('click', async (e) => {
         const editBtn = e.target.closest('.edit-user-btn');
         const deleteBtn = e.target.closest('.delete-user-btn');
         if (editBtn) {
-            const userDoc = await getDoc(doc(db, "users", editBtn.dataset.id));
-            if (userDoc.exists()) {
-                const user = userDoc.data();
-                document.getElementById('edit-user-id').value = editBtn.dataset.id;
-                document.getElementById('new-user-name').value = user.name;
-                document.getElementById('new-user-phone').value = user.phone;
-                document.getElementById('new-user-email').value = user.email;
-                document.getElementById('new-user-email').disabled = true;
-                document.getElementById('new-user-password').required = false;
-                document.getElementById('new-user-password').placeholder = "Leave blank to keep same password";
-                document.getElementById('user-role').value = user.role;
-                document.getElementById('payout-type').value = user.payoutType || 'standard'; // Add this line
-            }
-        }
+    const userDoc = await getDoc(doc(db, "users", editBtn.dataset.id));
+    if (userDoc.exists()) {
+        const user = userDoc.data();
+        document.getElementById('edit-user-id').value = editBtn.dataset.id;
+        document.getElementById('new-user-name').value = user.name;
+        document.getElementById('new-user-phone').value = user.phone;
+        document.getElementById('new-user-email').value = user.email;
+        document.getElementById('new-user-email').disabled = true; // Keep email non-editable
+        document.getElementById('user-role').value = user.role;
+        document.getElementById('payout-type').value = user.payoutType || 'standard';
+
+        // START: ADD/MODIFY THESE LINES
+
+        // Populate the new commission field
+        document.getElementById('new-user-commission').value = user.commissionRate || 70; // Default to 70 if not set
+
+        // Populate and disable the UID field (it should not be changed)
+        const uidInput = document.getElementById('new-user-uid');
+        uidInput.value = editBtn.dataset.id; // The UID is the document ID
+        uidInput.disabled = true; // Prevent editing the UID
+
+        // END: ADD/MODIFY THESE LINES
+    }
+}
         if (deleteBtn) { showConfirmModal("Delete this user?", async () => { await deleteDoc(doc(db, "users", deleteBtn.dataset.id)); alert("User role deleted. Login must be deleted from Firebase console."); }); }
     });
 

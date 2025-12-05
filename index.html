@@ -1168,7 +1168,7 @@
                         </div>
                     </div>
                     <div id="reports-content" class="main-section hidden">
-                        <div class="mb-4 border-b border-gray-200">
+                        <div id="admin-earning-report-section" class="mb-4 border-b border-gray-200">
                             <ul class="flex flex-wrap -mb-px text-sm font-medium text-center scrollable-tabs"
                                 id="reports-sub-tabs">
                                 <li class="mr-2"><button class="sub-tab-btn inline-block p-4 rounded-t-lg active"
@@ -1190,7 +1190,59 @@
 
                             </ul>
                         </div>
+<!-- New Staff Earning Report Section - Hidden for Admins -->
+<div id="staff-earning-report-section" class="hidden space-y-4">
+    <h2 class="text-3xl font-bold text-pink-700">My Individual Earning Matrix</h2>
 
+    <div class="flex flex-wrap items-center justify-between bg-gray-50 p-4 rounded-xl shadow-inner gap-4">
+        
+        <div class="flex items-center gap-4 bg-white px-4 py-2 rounded-lg border">
+            <span class="text-sm font-semibold text-gray-600">Show:</span>
+            <label class="inline-flex items-center cursor-pointer">
+                <input type="radio" name="matrix-view-type" value="earning" checked class="form-radio text-pink-600">
+                <span class="ml-2 text-sm text-gray-700">Earning</span>
+            </label>
+            <label class="inline-flex items-center cursor-pointer">
+                <input type="radio" name="matrix-view-type" value="tip" class="form-radio text-green-600">
+                <span class="ml-2 text-sm text-gray-700">Tip</span>
+            </label>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <label for="matrix-month-filter" class="text-sm font-semibold text-gray-700">Month:</label>
+            <select id="matrix-month-filter" class="form-select p-2 border border-gray-300 rounded-lg text-sm">
+                <option value="all">All Months</option>
+                <option value="0">January</option>
+                <option value="1">February</option>
+                <option value="2">March</option>
+                <option value="3">April</option>
+                <option value="4">May</option>
+                <option value="5">June</option>
+                <option value="6">July</option>
+                <option value="7">August</option>
+                <option value="8">September</option>
+                <option value="9">October</option>
+                <option value="10">November</option>
+                <option value="11">December</option>
+            </select>
+        </div>
+        
+        <div id="staff-report-loading" class="text-pink-600 hidden text-sm font-bold">
+            <i class="fas fa-spinner fa-spin mr-2"></i>Loading Data...
+        </div>
+    </div>
+
+    <div class="overflow-x-auto bg-white p-2 rounded-xl shadow-lg border">
+        <table id="staff-earning-matrix-table" class="min-w-full text-xs text-center border-collapse">
+            <thead class="bg-pink-600 text-white font-bold sticky top-0">
+                </thead>
+            <tbody class="divide-y divide-gray-200">
+                </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="admin-earning-report-section-sub" class="subb">
                         <div id="salon-earning-report-content" class="sub-tab-content">
                             <div class="mb-6 border-b pb-3">
                                 <h3 class="text-xl font-semibold text-gray-700">Salon Earning Report</h3>
@@ -1274,7 +1326,6 @@
                                 </table>
                             </div>
                         </div>
-
                         <div id="staff-earning-report-content" class="sub-tab-content hidden">
                             <h3
                                 class="text-xl font-semibold text-gray-700 border-b pb-3 mb-6 flex justify-between items-center">
@@ -1605,7 +1656,7 @@
                                 <canvas id="profit-chart"></canvas>
                             </div>
                         </div>
-
+</div>
 
                     </div>
 

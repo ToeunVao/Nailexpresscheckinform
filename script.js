@@ -92,12 +92,461 @@ let globalLastUsedOnlineGcNumber = 0; // Will be loaded from settings
 let membershipRewardSettings = { threshold: 500, type: 'fixed', value: 25 }; // Default values
 let allClientMemberships = [];
 
+let allStaffEarnings = [];
+let currentMatrixViewType = 'earning'; // 'earning' or 'tip'
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
 const giftCardBackgrounds = {
     'General': ['https://img.freepik.com/premium-photo/women-s-legs-with-bright-pedicure-pink-background-chamomile-flower-decoration-spa-pedicure-skincare-concept_256259-166.jpg', 'https://png.pngtree.com/thumb_back/fh260/background/20250205/pngtree-soft-pastel-floral-design-light-blue-background-image_16896113.jpg', 'https://files.123freevectors.com/wp-content/original/119522-abstract-pastel-pink-background-image.jpg'],
     'Holidays': ['https://media.istockphoto.com/id/1281966270/vector/christmas-background-with-snowflakes.jpg?s=612x612&w=0&k=20&c=3t2mJbipFc4aln2M8qDbd3kJvUwtjl1md1F3Rj0xVI4=', 'https://media.istockphoto.com/id/1180986336/vector/red-bokeh-snowflakes-background.jpg?s=612x612&w=0&k=20&c=NR_Hf8C2owuvtCxtjk789Ckynqdm6l2oDWLHwI7uqlE=', 'https://png.pngtree.com/background/20210710/original/pngtree-red-christmas-snow-winter-cartoon-show-board-background-picture-image_979028.jpg'],
     'Valentines': ['https://slidescorner.com/wp-content/uploads/2023/02/01-Cute-Pink-Hearts-Valentines-Day-Background-Aesthetic-FREE-by-SlidesCorner.com_.jpg', 'https://images.rawpixel.com/image_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDIzLTExL2xhdXJhc3RlZmFubzI2Nl9waW5rX3ZhbGVudGluZXNfZGF5X2JhY2tncm91bmRfd2l0aF9oZWFydHNfYm9rZV9kZTAzMWNjMy05MmJmLTQ2NzAtYjliZC0wN2Y2ZDkzYTM1ZDBfMS5qcGc.jpg', 'https://cms-artifacts.artlist.io/content/motion_array/1390934/Valentines_Day_Romantic_Background_high_resolution_preview_1390934.jpg?Expires=2037527646045&Key-Pair-Id=K2ZDLYDZI2R1DF&Signature=fCbOC95RTvVc0Ld-pyxhFN5gzuS-VqGG1UYsxvu48kx8A6rdAPf~gjuv0sVBrV~0p0~2u99BYafKT5oRUsRbluBt9c8eH4k~YXVcT2KdNrQUjVD-wKS2qTcgdp8aVDYCCILMkFT4hrWRWzKlsjjgoBe7mAIaHV3cc2iqMErb-qGWlk8jX0J8vLfCvXH~daNNPMqO7tssbeYiHVrD7y89fbJ0YRVfR6wwb1AoBLseF8-7IsAZe8Hh2bn-kUEp8KocRZ4X7DBTFD~9Ho-E0HeRym4oZ37u3BdLAqY-y0a1HdIf3dOXXkF6X~UQpMlPtxTvWj4857QSez20b1mhnBhpsQ__'],
     'Birthday': ['https://marketplace.canva.com/EAGhbM7XcuY/1/0/1600w/canva-white-and-blue-birthday-background-card-yqLk4e5MQjY.jpg', 'https://images.rawpixel.com/image_800/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvam9iNTE2LW51bm9vbi0xMC5qcGc.jpg', 'https://www.creativefabrica.com/wp-content/uploads/2021/08/30/Happy-birthday-background-design-Graphics-16518598-1-1-580x430.jpg']
 };
+
+const renderEarningsMatrix = (earningsData) => {
+    const table = document.getElementById('staff-earning-matrix-table');
+    if (!table) return;
+
+    const thead = table.querySelector('thead');
+    const tbody = table.querySelector('tbody');
+    const monthFilter = document.getElementById('matrix-month-filter').value;
+    const currentYear = new Date().getFullYear();
+
+    // 1. Build Table Header (Date 1 to 31 + Total)
+    let headerHTML = '<tr><th class="p-2 border border-pink-700 bg-pink-700 sticky left-0 z-10 w-24">Month</th>';
+    for (let day = 1; day <= 31; day++) {
+        headerHTML += `<th class="p-1 border border-pink-500 w-8">${day}</th>`;
+    }
+    headerHTML += `<th class="p-2 border border-pink-700 bg-pink-800 font-bold">Total</th></tr>`;
+    thead.innerHTML = headerHTML;
+
+    // 2. Initialize Data Structure (12 Months x 31 Days)
+    let matrixData = {};
+    for (let m = 0; m < 12; m++) {
+        matrixData[m] = new Array(32).fill(0); // Index 1-31 used for days
+    }
+
+   // 3. Fill Data from Firestore Earnings
+    earningsData.forEach(item => {
+        // Ensure you are using the correct property names from your Firestore documents:
+        // 'earning' and 'tip' must exist in your database records.
+        const earningValue = parseFloat(item.earning) || 0;
+        const tipValue = parseFloat(item.tip) || 0;
+
+        const d = item.date instanceof Date ? item.date : item.date.toDate();
+        const currentYear = new Date().getFullYear();
+
+        // Check if the current item is being processed and why it might fail
+        if (d.getFullYear() !== currentYear) {
+            // console.log(`[DEBUG] Skipping record from year: ${d.getFullYear()}`);
+            return; // Skip records not in the current year
+        }
+
+        const month = d.getMonth(); // 0-11
+        const day = d.getDate();    // 1-31
+        
+        // --- IMPORTANT DEBUG LOG ---
+        if (day === 1 && month === 0) { // Log the first day of the year found
+             console.log(`[DEBUG] Processing record: Date ${d.toLocaleDateString()}, Earning ${earningValue}, Tip ${tipValue}`);
+        }
+        // ---------------------------
+
+        const value = currentMatrixViewType === 'earning' 
+            ? earningValue 
+            : tipValue;
+        
+        // This is where the data should accumulate. Ensure it's not always 0.
+        matrixData[month][day] += value;
+    });
+
+    // 4. Render Table Body
+    tbody.innerHTML = '';
+    
+    for (let m = 0; m < 12; m++) {
+        // Apply Month Filter
+        if (monthFilter !== 'all' && parseInt(monthFilter) !== m) continue;
+
+        let rowHTML = `<tr class="hover:bg-gray-50 transition-colors">`;
+        
+        // Month Name Column (Sticky Left)
+        rowHTML += `<td class="p-2 font-bold text-gray-700 bg-gray-100 border border-gray-300 sticky left-0 text-left z-10">${MONTH_NAMES[m]}</td>`;
+
+        let monthTotal = 0;
+
+        // Columns 1-31
+        for (let day = 1; day <= 31; day++) {
+            const val = matrixData[m][day];
+            monthTotal += val;
+            
+            // Style: Grey out invalid days (e.g., Feb 30), Bold non-zero values
+            const daysInMonth = new Date(currentYear, m + 1, 0).getDate();
+            let cellClass = "border border-gray-200 p-1";
+            let cellContent = "";
+
+            if (day > daysInMonth) {
+                cellClass += " bg-gray-200"; // Invalid day
+            } else if (val > 0) {
+                cellClass += currentMatrixViewType === 'earning' ? " text-pink-600 font-bold bg-pink-50" : " text-green-600 font-bold bg-green-50";
+                cellContent = val.toFixed(0); // Show whole numbers to save space, or .toFixed(1)
+            } else {
+                cellContent = "-";
+                cellClass += " text-gray-300";
+            }
+
+            rowHTML += `<td class="${cellClass}">${cellContent}</td>`;
+        }
+
+        // Total Column
+        rowHTML += `<td class="p-2 border border-gray-300 font-bold bg-gray-100 text-gray-800">$${monthTotal.toFixed(2)}</td>`;
+        rowHTML += `</tr>`;
+        tbody.insertAdjacentHTML('beforeend', rowHTML);
+    }
+};
+// FIX: Define the missing function to filter staff earnings
+function applyStaffEarningFilters(earnings, dateFilter, rangeFilter) {
+    let filtered = earnings;
+    const today = getLocalDateString();
+    
+    // 1. Apply Date Filter (Highest Priority)
+    if (dateFilter) {
+        // Assuming e.date is a YYYY-MM-DD string
+        return filtered.filter(e => e.date === dateFilter);
+    }
+
+    // 2. Apply Range Filter
+    const now = new Date();
+    const currentMonth = now.getMonth(); // 0-indexed
+    const currentYear = now.getFullYear();
+
+    switch (rangeFilter) {
+        case '0': // Today
+            filtered = filtered.filter(e => e.date === today);
+            break;
+        case '1': // This Week (Last 7 days, including today)
+            const oneWeekAgo = new Date(now);
+            oneWeekAgo.setDate(now.getDate() - 6); // start from 6 days ago + today = 7 days
+            const oneWeekAgoString = getLocalDateString(oneWeekAgo);
+            
+            filtered = filtered.filter(e => {
+                // Assuming e.date is YYYY-MM-DD string
+                return e.date >= oneWeekAgoString && e.date <= today;
+            });
+            break;
+        case '2': // Last 30 Days (including today)
+            const thirtyDaysAgo = new Date(now);
+            thirtyDaysAgo.setDate(now.getDate() - 29); // start from 29 days ago + today = 30 days
+            const thirtyDaysAgoString = getLocalDateString(thirtyDaysAgo);
+            
+            filtered = filtered.filter(e => {
+                // Assuming e.date is YYYY-MM-DD string
+                return e.date >= thirtyDaysAgoString && e.date <= today;
+            });
+            break;
+        case '3': // This Month
+            filtered = filtered.filter(e => {
+                const dateParts = e.date.split('-');
+                if (dateParts.length < 3) return false;
+                // month from split is 1-indexed (e.g., '12' for December)
+                const month = parseInt(dateParts[1]);
+                const year = parseInt(dateParts[0]);
+
+                return (month - 1) === currentMonth && year === currentYear;
+            });
+            break;
+        // Default: Specific Month (if rangeFilter is a month index '0', '1', ..., '11')
+        default: 
+            const monthIndex = parseInt(rangeFilter);
+            if (!isNaN(monthIndex) && monthIndex >= 0 && monthIndex <= 11) {
+                 filtered = filtered.filter(e => {
+                    const dateParts = e.date.split('-');
+                    if (dateParts.length < 3) return false;
+                    const month = parseInt(dateParts[1]);
+                    const year = parseInt(dateParts[0]);
+
+                    return (month - 1) === monthIndex && year === currentYear;
+                });
+            }
+            break;
+    }
+
+    return filtered;
+}
+
+
+function renderStaffReport(staffId, earningsData) {
+    const container = document.getElementById('staff-earnings-report-container');
+    if (!container) return;
+
+    if (earningsData.length === 0) {
+        container.innerHTML = `<p class="text-center text-gray-500 py-4 border rounded-lg bg-white">No earnings recorded for Staff ID: ${staffId} on the selected date/filter.</p>`;
+        return;
+    }
+
+    // Example calculation: sum up the 'total' field from each document
+    const totalEarnings = earningsData.reduce((sum, doc) => sum + (doc.total || 0), 0);
+    const totalCommission = totalEarnings * 0.4; // Example 40% commission rate
+
+    container.innerHTML = `
+        <div class="space-y-4">
+            <h3 class="text-2xl font-extrabold text-pink-600 mb-4">Staff Earnings Report</h3>
+            <p class="text-sm text-gray-600 font-medium">Staff ID: <span class="font-mono bg-gray-100 px-2 py-1 rounded-md text-pink-800">${staffId}</span></p>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Total Earnings Card -->
+                <div class="p-5 bg-white rounded-xl shadow-lg border border-pink-100 transition duration-300 hover:shadow-xl">
+                    <p class="text-sm text-gray-500 font-medium">Total Earnings (Gross)</p>
+                    <p class="text-3xl font-bold text-green-600 mt-1">$${totalEarnings.toFixed(2)}</p>
+                </div>
+                <!-- Commission Card -->
+                <div class="p-5 bg-white rounded-xl shadow-lg border border-pink-100 transition duration-300 hover:shadow-xl">
+                    <p class="text-sm text-gray-500 font-medium">Estimated Commission (40%)</p>
+                    <p class="text-3xl font-bold text-blue-600 mt-1">$${totalCommission.toFixed(2)}</p>
+                </div>
+            </div>
+            
+            <!-- Detailed list of transactions -->
+            <div class="bg-white p-4 rounded-xl shadow-inner max-h-80 overflow-y-auto mt-4">
+                <h4 class="text-lg font-semibold mb-3 border-b pb-2 text-pink-700">Detailed Transactions (${earningsData.length})</h4>
+                <div class="space-y-3">
+                    ${earningsData.map(e => `
+                        <div class="flex justify-between items-center text-sm border-b last:border-b-0 pb-2">
+                            <span class="text-gray-700 font-medium">${e.date || 'N/A'}</span>
+                            <span class="text-gray-500 text-xs">${e.clientName || 'N/A'}</span>
+                            <span class="font-bold text-right text-green-600">$${(e.total || 0).toFixed(2)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function fetchStaffEarnings(staffId, dateFilter) {
+    // 1. **CRITICAL FIX**: Using the PUBLIC/SHARED data path ensures the manager (current user) 
+    // can access earnings data logged for all staff members.
+    const earningsCollectionPath = `artifacts/${appId}/public/data/salon_earnings`;
+    const earningsColRef = collection(db, earningsCollectionPath);
+
+    let q = query(
+        earningsColRef,
+        where('staffId', '==', staffId) // The field name must match exactly (case-sensitive)
+    );
+
+    if (dateFilter) {
+        // Add a date filter if provided. Assumes 'date' field stores YYYY-MM-DD string.
+        q = query(q, where('date', '==', dateFilter));
+    }
+    
+    // --- Original Log Lines Replicated for Debug ---
+    console.log("[STAFF REPORT DEBUG] Querying for Staff ID:", staffId);
+    console.log("[STAFF REPORT DEBUG] Querying Collection Path:", earningsCollectionPath);
+
+    // Attach real-time listener
+    return onSnapshot(q, (snapshot) => {
+        const staffEarnings = [];
+        snapshot.forEach((doc) => {
+            staffEarnings.push({ id: doc.id, ...doc.data() });
+        });
+
+        // The user's original log output started here (line 126 in their code):
+        console.log("[STAFF REPORT DEBUG] Fetched", staffEarnings.length, "earnings documents.");
+
+        if (staffEarnings.length === 0) {
+            console.log(" [STAFF REPORT DEBUG] Zero documents found. Check the following in your database:");
+            console.log(" 1. Collection:", earningsCollectionPath);
+            console.log(" 2. Field Name: 'staffId' (Must match this exactly, case-sensitive)");
+            console.log(" 3. Field Value: Must match the Staff ID shown above.");
+        }
+        // --- End Log Lines ---
+        
+        // Update the global earnings data and render
+        allSalonEarnings = staffEarnings;
+        renderStaffReport(staffId, staffEarnings);
+
+    }, (error) => {
+        console.error("Error fetching staff earnings:", error);
+    });
+}
+
+function setupStaffDetailsPage(initialStaffId) {
+    const todayString = getLocalDateString();
+    
+    const dateInput = document.getElementById('staff-details-date-filter');
+    if (!dateInput) {
+        console.error("Staff details date filter input not found.");
+        return;
+    }
+    dateInput.value = todayString; // Set default date
+    
+    // Initial fetch for the specified staff ID and today's date
+    let unsubscribe = fetchStaffEarnings(initialStaffId, dateInput.value);
+
+    // Event listener to re-query when the date filter changes
+    dateInput.addEventListener('change', () => {
+        const newDateFilter = dateInput.value;
+        if (unsubscribe) {
+            unsubscribe(); // Detach old listener
+        }
+        // Re-run the fetch with the new date filter
+        unsubscribe = fetchStaffEarnings(initialStaffId, newDateFilter); 
+    });
+}
+
+
+// Helper function for staff to get their individual earnings report
+function setupStaffEarningsListener(staffId, attempt = 1) {
+    // 1. Check for immediate dependencies
+    if (!staffId) {
+        console.error("Staff ID not available for earnings report setup.");
+        return;
+    }
+
+    // --- FIX: Check if staff list is loaded, if not, retry ---
+    if (techniciansAndStaff.length === 0) {
+        if (attempt < 5) {
+            console.log(`[DEBUG RETRY] Staff list not yet loaded. Retrying in 500ms (Attempt ${attempt}/5).`);
+            setTimeout(() => setupStaffEarningsListener(staffId, attempt + 1), 500);
+        } else {
+            console.error("Staff list failed to load after 5 attempts. Cannot set up earnings report.");
+        }
+        return; // Stop execution until retry
+    }
+    // -----------------------------------------------------------
+
+    // 1. Find the Staff Member's Name (We are now sure techniciansAndStaff is populated)
+    
+    // --- DEBUG LOGS ---
+    console.log(`[DEBUG STAFF LIST] Array Size: ${techniciansAndStaff.length}`);
+    if (techniciansAndStaff.length > 0) {
+        console.log("[DEBUG STAFF LIST] First item structure (to check for UID field name):", techniciansAndStaff[0]);
+    }
+    // --------------------------------------------------
+
+    // --- CRITICAL FIX: Check staff.id against staffId ---
+    const currentStaff = techniciansAndStaff.find(staff => 
+        staff.id === staffId || staff.uid === staffId || staff.staffId === staffId
+    );
+    // --- END CRITICAL FIX ---
+    
+    // If the staff object is not found, we cannot proceed.
+    if (!currentStaff) {
+        console.error("Could not find staff member details for ID:", staffId, "in the techniciansAndStaff list.");
+        return;
+    }
+
+    // Successfully found staff. Log name for confirmation.
+    console.log(`[DEBUG FOUND] Found staff member: ${currentStaff.name}`);
+
+
+    // The field in the document that holds the earning is the lowercase name.
+    const staffNameKey = currentStaff.name.toLowerCase(); 
+    
+    // --- FIX: Aligning collection name with existing security rule `match /earnings/{doc=**}` ---
+    const collectionNameThatHoldsEarnings = "earnings"; // Changed to 'earnings' to match existing security rule path
+    const staffEarningsRef = collection(db, collectionNameThatHoldsEarnings);
+    
+    // Filter field: Assuming 'staffName' field exists in the new staffEarnings documents
+    // If this still returns 0, the field might be 'staffId' instead of 'staffName'.
+    const staffNameFilterField = "staffName";
+    
+    // --- REVERT QUERY: Use the 'where' clause again on the new collection ---
+    const q = query(staffEarningsRef, where(staffNameFilterField, "==", currentStaff.name)); 
+    console.warn(`[DEBUG QUERY - FOCUSED] Querying CORRECTED collection '${collectionNameThatHoldsEarnings}' where field '${staffNameFilterField}' equals '${currentStaff.name}'.`);
+    // --- END REVERT QUERY ---
+    
+    const loadingElement = document.getElementById('staff-report-loading');
+    if (loadingElement) loadingElement.classList.remove('hidden');
+
+    onSnapshot(q, (snapshot) => {
+        // --- CRITICAL DEBUG LOGS ---
+        console.log(`[DEBUG STEP 1] Documents received from Firestore: ${snapshot.docs.length}`);
+        
+        if (snapshot.docs.length > 0) {
+            console.log("[DEBUG RAW DATA] First Document Fields:", snapshot.docs[0].data());
+        } else {
+            console.error("Query still fetching 0 records. Check: 1) Collection name is correct ('earnings') 2) Document field is 'staffName' and value is 'TJ' 3) Missing Index.");
+        }
+        // -------------------------
+
+        allStaffEarnings = snapshot.docs.map(doc => { 
+            const data = doc.data();
+            
+            // 3. PARSE DATA USING THE NAME KEY
+            // --- CRITICAL FIX: Use 'earning' and 'tip' as literal keys, as confirmed by raw data ---
+            const calculatedEarning = parseFloat(data.earning) || 0;
+            const calculatedTip = parseFloat(data.tip) || 0; 
+            // --- END CRITICAL FIX ---
+            
+            const parsedData = {
+                id: doc.id,
+                ...data,
+                // Check multiple date field possibilities (using a chain)
+                date: data.finishTimestamp && data.finishTimestamp.toDate ? data.finishTimestamp.toDate() : (data.appointmentTimestamp && data.appointmentTimestamp.toDate ? data.appointmentTimestamp.toDate() : (data.date && data.date.toDate ? data.date.toDate() : new Date())),
+                
+                // Use the dynamically retrieved values
+                earning: calculatedEarning,
+                tip: calculatedTip,
+            };
+            
+            return parsedData;
+        });
+
+        // Only call render if data was successfully fetched
+        if (allStaffEarnings.length > 0) {
+            renderEarningsMatrix(allStaffEarnings);
+        } else {
+            // Clear the table if no data is found
+            document.getElementById('staff-earning-matrix-table').querySelector('tbody').innerHTML = '<tr><td colspan="33" class="p-4 text-center text-gray-500">No earnings data found for this year.</td></tr>';
+        }
+        
+        if (loadingElement) loadingElement.classList.add('hidden');
+    }, (error) => {
+        console.error("Error fetching staff earnings:", error);
+        if (loadingElement) loadingElement.classList.add('hidden');
+    });
+}
+
+function setupStaffReportFilters() {
+    const dateFilter = document.getElementById('staff-earning-date-filter');
+    const rangeFilter = document.getElementById('staff-earning-range-filter');
+    const todayString = getLocalDateString(); 
+
+    if (dateFilter) {
+        // Set default filter to today's date if no filter is set
+        if (!currentStaffEarningDateFilter && !currentStaffEarningRangeFilter) {
+            dateFilter.value = todayString;
+            currentStaffEarningDateFilter = todayString;
+        }
+
+        dateFilter.addEventListener('change', (e) => {
+            currentStaffEarningDateFilter = e.target.value;
+            // When filtering by date, clear the month range filter
+            if (rangeFilter) rangeFilter.value = ''; 
+            currentStaffEarningRangeFilter = '';
+            
+            const validEarnings = allStaffEarnings.filter(e => e.totalEarning > 0);
+            const filtered = applyStaffEarningFilters(validEarnings, currentStaffEarningDateFilter, currentStaffEarningRangeFilter);
+            renderStaffEarningsReport(filtered);
+        });
+    }
+
+    if (rangeFilter) {
+        // Ensure month filter dropdown is populated (assuming it has 12 options for months)
+        
+        rangeFilter.addEventListener('change', (e) => {
+            currentStaffEarningRangeFilter = e.target.value;
+            // When filtering by month, clear the date filter
+            if (dateFilter) dateFilter.value = '';
+            currentStaffEarningDateFilter = '';
+
+            const validEarnings = allStaffEarnings.filter(e => e.totalEarning > 0);
+            const filtered = applyStaffEarningFilters(validEarnings, currentStaffEarningDateFilter, currentStaffEarningRangeFilter);
+            renderStaffEarningsReport(filtered);
+        });
+    }
+}
+
+
 
 // Global variable to store chart instances (optional, but useful)
     const initializeChart = (chartInstance, ctx, type, data, options) => {
@@ -243,7 +692,7 @@ onAuthStateChanged(auth, async (user) => {
                     const userData = userDocSnap.data();
                     currentUserRole = userData.role;
                     currentUserName = userData.name;
-
+                    const currentStaff = { ...userData, id: user.uid };
                     loadingScreen.style.display = 'none';
                     landingPageContent.style.display = 'none';
                     clientDashboardContent.style.display = 'none';
@@ -252,6 +701,44 @@ onAuthStateChanged(auth, async (user) => {
                     if (!mainAppInitialized) {
                         initMainApp(currentUserRole, currentUserName);
                         mainAppInitialized = true;
+                    }
+                   // --- START OF FIX: Define userRole and get elements ---
+
+                    // 1. Get the current user's role (now safe because currentStaff is defined above)
+                    const userRole = currentStaff?.role || 'staff'; 
+
+                    // 2. Define the report elements
+                    const adminReport = document.getElementById('admin-earning-report-section'); 
+                    const adminReportSub = document.getElementById('admin-earning-report-section-sub');
+                    const staffReport = document.getElementById('staff-earning-report-section');
+                    // Check for reports-content container as well
+                    const reportSection = document.getElementById('reports-content'); 
+
+                    // --- END OF FIX ---
+
+                    // Only run this logic if the report section is actually active/relevant
+                    // or move this inside the tab click listener if preferred.
+                    if (userRole === 'admin') {
+                        if (adminReport) adminReport.classList.remove('hidden');
+                        if (adminReportSub) adminReportSub.classList.remove('hidden');
+                        if (staffReport) staffReport.classList.add('hidden');
+                        // Ensure admin listeners are running here
+                    } else {
+                        // User is Staff
+                        if (adminReport) adminReport.classList.add('hidden');
+                        if (adminReportSub) adminReportSub.classList.add('hidden');
+                        if (staffReport) staffReport.classList.remove('hidden');
+                        
+                        // Initialize staff-specific data and filters
+                        // Ensure these functions are defined and hoisted (using function keyword)
+                        if (typeof setupStaffReportFilters === 'function') setupStaffReportFilters(); 
+                        if (typeof setupStaffEarningsListener === 'function') setupStaffEarningsListener(user.uid); 
+                          // NEW LOG: Confirming execution flow for staff
+                        console.log("%c[EXECUTION CONFIRM] Staff Report initialization started.", 'color: #155724; background-color: #d4edda; border: 1px solid #c3e6cb; padding: 5px; border-radius: 4px;');
+
+                        // Initialize staff-specific data and filters
+                        setupStaffReportFilters(); 
+                        setupStaffEarningsListener(user.uid); 
                     }
                 } else {
                     // Not Admin/Staff, check if it's an existing Client
@@ -416,7 +903,6 @@ onAuthStateChanged(auth, async (user) => {
         landingPageContent.style.display = 'none';
     }
 });
-
 
 // Add this near the other onSnapshot listeners in your script.js
 onSnapshot(doc(db, "settings", "ecommerce"), (docSnap) => {
@@ -3875,6 +4361,8 @@ if (birthdayRewardsForm) {
             Booking
             <span id="booking-nav-count" class="absolute -top-1 -right-1 bg-blue-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center hidden">0</span>
         </button>
+        
+            <button class="top-nav-btn" data-target="report">Report</button>
     `;
 
     // Add admin-only links if the user is an admin
@@ -3883,7 +4371,6 @@ if (birthdayRewardsForm) {
 
             <button class="top-nav-btn" data-target="nails-idea">Nails Inspo</button>
             <button class="top-nav-btn" data-target="color-chart">Color Chart</button>
-            <button class="top-nav-btn" data-target="report">Report</button>
             <button class="top-nav-btn" data-target="setting">Setting</button>
         `;
     }
@@ -6454,6 +6941,8 @@ const renderStaffEarningsTable = (earnings, tableId, totalEarningId, totalTipId)
         });
     };
 
+/**old2 */
+
     const openServiceModal = (category) => {
         modalTitle.textContent = category;
         modalContent.innerHTML = '';
@@ -6581,6 +7070,25 @@ document.addEventListener('click', async (e) => {
 });
 
 // --- START: NEW EVENT LISTENER FOR ACTIVE QUEUE CHECKOUT ---
+// --- Staff Matrix Filters Listeners ---
+
+// 1. Radio Buttons (Earning vs Tip)
+const matrixRadios = document.querySelectorAll('input[name="matrix-view-type"]');
+matrixRadios.forEach(radio => {
+    radio.addEventListener('change', (e) => {
+        currentMatrixViewType = e.target.value; // Update global state
+        renderEarningsMatrix(allStaffEarnings); // Re-render table
+    });
+});
+
+// 2. Month Dropdown Filter
+const matrixMonthSelect = document.getElementById('matrix-month-filter');
+if (matrixMonthSelect) {
+    matrixMonthSelect.addEventListener('change', () => {
+        renderEarningsMatrix(allStaffEarnings); // Re-render with active filter
+    });
+}
+
 // --- END: NEW EVENT LISTENER FOR ACTIVE QUEUE CHECKOUT ---
     // Located inside initMainApp()
     const openViewDetailModal = (client, title = "Client Details") => {
@@ -7980,6 +8488,7 @@ const downloadMembershipCardForPrint = async () => {
     addNotification('success', 'Membership Card downloads complete.');
 };
 
+/**old */
 
 // Locate this section: // --- NEW: Printable Membership Card Designer Logic (Final Update) ---
 // Add the listener below the initialization function call:

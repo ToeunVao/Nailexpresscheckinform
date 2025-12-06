@@ -7072,15 +7072,61 @@ document.addEventListener('click', async (e) => {
 // --- START: NEW EVENT LISTENER FOR ACTIVE QUEUE CHECKOUT ---
 // --- Staff Matrix Filters Listeners ---
 
-// 1. Radio Buttons (Earning vs Tip)
-const matrixRadios = document.querySelectorAll('input[name="matrix-view-type"]');
-matrixRadios.forEach(radio => {
-    radio.addEventListener('change', (e) => {
-        currentMatrixViewType = e.target.value; // Update global state
-        renderEarningsMatrix(allStaffEarnings); // Re-render table
-    });
-});
+// --- NEW LOGIC: iOS Segmented Control Switcher ---
 
+const btnEarning = document.getElementById('matrix-btn-earning');
+const btnTip = document.getElementById('matrix-btn-tip');
+const slider = document.getElementById('matrix-toggle-slider');
+
+if (btnEarning && btnTip && slider) {
+    // Function to update UI state
+    const updateMatrixToggleUI = (type) => {
+        if (type === 'earning') {
+            // Move Slider Left
+            slider.style.transform = 'translateX(0)';
+            
+            // Style Earning Button (Active)
+            btnEarning.classList.add('text-pink-600', 'font-bold');
+            btnEarning.classList.remove('text-gray-500', 'font-medium');
+            
+            // Style Tip Button (Inactive)
+            btnTip.classList.add('text-gray-500', 'font-medium');
+            btnTip.classList.remove('text-green-600', 'font-bold');
+        } else {
+            // Move Slider Right (Width is approx 50%, so we translate 100% of its own width + gap)
+            // Since the slider width is calculated as calc(50% - 4px), translating 100% of the container width 
+            // is tricky with just CSS classes. We use the container width.
+            // A safer transform for 50% movement in this specific layout:
+            slider.style.transform = 'translateX(100%) translateX(4px)'; 
+            
+            // Style Earning Button (Inactive)
+            btnEarning.classList.add('text-gray-500', 'font-medium');
+            btnEarning.classList.remove('text-pink-600', 'font-bold');
+            
+            // Style Tip Button (Active)
+            btnTip.classList.add('text-green-600', 'font-bold');
+            btnTip.classList.remove('text-gray-500', 'font-medium');
+        }
+    };
+
+    // Event Listener: Click Earning
+    btnEarning.addEventListener('click', () => {
+        if (currentMatrixViewType !== 'earning') {
+            currentMatrixViewType = 'earning';
+            updateMatrixToggleUI('earning');
+            renderEarningsMatrix(allStaffEarnings);
+        }
+    });
+
+    // Event Listener: Click Tip
+    btnTip.addEventListener('click', () => {
+        if (currentMatrixViewType !== 'tip') {
+            currentMatrixViewType = 'tip';
+            updateMatrixToggleUI('tip');
+            renderEarningsMatrix(allStaffEarnings);
+        }
+    });
+}
 // 2. Month Dropdown Filter
 const matrixMonthSelect = document.getElementById('matrix-month-filter');
 if (matrixMonthSelect) {

@@ -1196,17 +1196,24 @@
 
     <div class="flex flex-wrap items-center justify-between bg-gray-50 p-4 rounded-xl shadow-inner gap-4">
         
-        <div class="flex items-center gap-4 bg-white px-4 py-2 rounded-lg border">
-            <span class="text-sm font-semibold text-gray-600">Show:</span>
-            <label class="inline-flex items-center cursor-pointer">
-                <input type="radio" name="matrix-view-type" value="earning" checked class="form-radio text-pink-600">
-                <span class="ml-2 text-sm text-gray-700">Earning</span>
-            </label>
-            <label class="inline-flex items-center cursor-pointer">
-                <input type="radio" name="matrix-view-type" value="tip" class="form-radio text-green-600">
-                <span class="ml-2 text-sm text-gray-700">Tip</span>
-            </label>
-        </div>
+<!-- NEW CODE: iOS Style Segmented Control -->
+<div class="flex items-center gap-3">
+    <span class="text-sm font-semibold text-gray-600">Show:</span>
+    <div class="relative bg-gray-200 rounded-lg p-1 flex items-center shadow-inner w-48 h-10">
+        <!-- The Sliding Background Highlight -->
+        <div id="matrix-toggle-slider" class="absolute left-1 top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-md shadow transition-all duration-300 ease-in-out transform translate-x-0"></div>
+        
+        <!-- Button 1: Earning -->
+        <button type="button" id="matrix-btn-earning" class="relative z-10 w-1/2 text-sm font-bold text-pink-600 transition-colors duration-200 text-center focus:outline-none">
+            Earning
+        </button>
+        
+        <!-- Button 2: Tip -->
+        <button type="button" id="matrix-btn-tip" class="relative z-10 w-1/2 text-sm font-medium text-gray-500 transition-colors duration-200 text-center focus:outline-none">
+            Tip
+        </button>
+    </div>
+</div>
 
         <div class="flex items-center gap-2">
             <label for="matrix-month-filter" class="text-sm font-semibold text-gray-700">Month:</label>
